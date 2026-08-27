@@ -301,6 +301,60 @@ label {
     margin: 8px 0 0;
 }
 
+.hunt-picker {
+    max-width: 700px;
+    margin: 20px auto;
+}
+
+.hunt-results {
+    max-height: 260px;
+    overflow-y: auto;
+    margin-top: 10px;
+    border-radius: 9px;
+    border: 1px solid rgba(217,164,65,.25);
+}
+
+.hunt-result-item {
+    padding: 11px 14px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(217,164,65,.15);
+    background: rgba(8,32,42,.5);
+    transition: background .1s ease;
+}
+
+.hunt-result-item:last-child {
+    border-bottom: none;
+}
+
+.hunt-result-item:hover,
+.hunt-result-item.active {
+    background: rgba(217,164,65,.22);
+}
+
+.hunt-preview {
+    margin-top: 16px;
+    text-align: center;
+}
+
+.hunt-preview img {
+    width: 100%;
+    max-width: 320px;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 3px solid var(--gold);
+    box-shadow: 0 10px 24px rgba(0,0,0,.4);
+}
+
+.hunt-preview div {
+    margin-top: 10px;
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--gold-bright);
+}
+
 
 /* ================================
    LOBBY
@@ -645,6 +699,37 @@ Play online with a friend
 
 
 <div
+    id="opVariantField"
+    class="field">
+
+<label>One Piece Play Style</label>
+
+<div class="sizes">
+
+<button
+    id="variantBoard"
+    class="size variant-btn selected"
+    onclick="setVariant('board')">
+🎯 Classic Board
+</button>
+
+<button
+    id="variantHunt"
+    class="size variant-btn"
+    onclick="setVariant('hunt')">
+🔍 Character Hunt
+</button>
+
+</div>
+
+<p class="anime-hint">
+Character Hunt: search &amp; pick any canon character by name, no board — great for playing over a Discord call.
+</p>
+
+</div>
+
+
+<div
     id="animePoll"
     class="field hidden">
 
@@ -686,9 +771,9 @@ Characters will be pulled randomly from every series you check.
 </div>
 
 
-<div class="field">
-
-<label>Number of Cards</label>
+<div
+    id="cardsField"
+    class="field">
 
 <div class="sizes">
 
@@ -874,6 +959,31 @@ Your opponent won't see your choice.
 </div>
 
 
+<div
+    id="huntSecretPicker"
+    class="hunt-picker hidden">
+
+<input
+    id="huntSecretSearch"
+    placeholder="Search a canon character by name...">
+
+<div
+    id="huntSecretResults"
+    class="hunt-results">
+</div>
+
+<div
+    id="huntSecretPreview"
+    class="hunt-preview hidden">
+
+<img id="huntSecretPreviewImg" src="" alt="">
+<div id="huntSecretPreviewName"></div>
+
+</div>
+
+</div>
+
+
 <div style="text-align:center">
 
 <button
@@ -936,6 +1046,48 @@ Loading...
 <div
     id="board"
     class="board">
+</div>
+
+
+<div
+    id="huntGuessArea"
+    class="hunt-picker hidden">
+
+<p class="anime-hint" style="text-align:center">
+Ask your questions via Discord, then search and submit your guess below.
+</p>
+
+<input
+    id="huntGuessSearch"
+    placeholder="Search a canon character by name...">
+
+<div
+    id="huntGuessResults"
+    class="hunt-results">
+</div>
+
+<div
+    id="huntGuessPreview"
+    class="hunt-preview hidden">
+
+<img id="huntGuessPreviewImg" src="" alt="">
+<div id="huntGuessPreviewName"></div>
+
+</div>
+
+<div style="text-align:center; margin-top:12px">
+
+<button
+    id="huntSubmitGuess"
+    disabled
+    onclick="submitHuntGuess()">
+
+🔍 SUBMIT GUESS
+
+</button>
+
+</div>
+
 </div>
 
 
@@ -1169,6 +1321,12 @@ let boardSize = 24;
 // "onepiece" or "anime" — chosen on the home screen before creating a room.
 let mode = "onepiece";
 
+// "board" or "hunt" — only meaningful when mode === "onepiece".
+let variant = "board";
+
+// Currently selected character in the Hunt-mode guess search, if any.
+let huntGuessChoice = null;
+
 let board = [];
 
 let selectedSecret = null;
@@ -1329,6 +1487,320 @@ const CHARACTER_LIBRARY = [
 ];
 
 /* =========================================
+   CHARACTER HUNT DIRECTORY (One Piece)
+   ---------------------------------------
+   Name-searchable roster for "Character Hunt"
+   mode. Add your own image for each name at
+   the matching path in images/directory/.
+========================================= */
+
+const CHARACTER_DIRECTORY = [
+    { name: "Monkey D. Luffy", image: "images/directory/monkey-d-luffy.jpg" },
+    { name: "Roronoa Zoro", image: "images/directory/roronoa-zoro.jpg" },
+    { name: "Nami", image: "images/directory/nami.jpg" },
+    { name: "Usopp", image: "images/directory/usopp.jpg" },
+    { name: "Sanji", image: "images/directory/sanji.jpg" },
+    { name: "Tony Tony Chopper", image: "images/directory/tony-tony-chopper.jpg" },
+    { name: "Nico Robin", image: "images/directory/nico-robin.jpg" },
+    { name: "Franky", image: "images/directory/franky.jpg" },
+    { name: "Brook", image: "images/directory/brook.jpg" },
+    { name: "Jinbe", image: "images/directory/jinbe.jpg" },
+    { name: "Portgas D. Ace", image: "images/directory/portgas-d-ace.jpg" },
+    { name: "Sabo", image: "images/directory/sabo.jpg" },
+    { name: "Shanks", image: "images/directory/shanks.jpg" },
+    { name: "Buggy", image: "images/directory/buggy.jpg" },
+    { name: "Silvers Rayleigh", image: "images/directory/silvers-rayleigh.jpg" },
+    { name: "Monkey D. Dragon", image: "images/directory/monkey-d-dragon.jpg" },
+    { name: "Monkey D. Garp", image: "images/directory/monkey-d-garp.jpg" },
+    { name: "Boa Hancock", image: "images/directory/boa-hancock.jpg" },
+    { name: "Trafalgar Law", image: "images/directory/trafalgar-law.jpg" },
+    { name: "Eustass Kid", image: "images/directory/eustass-kid.jpg" },
+    { name: "Nefertari Vivi", image: "images/directory/nefertari-vivi.jpg" },
+    { name: "Crocodile", image: "images/directory/crocodile.jpg" },
+    { name: "Marco", image: "images/directory/marco.jpg" },
+    { name: "Yamato", image: "images/directory/yamato.jpg" },
+    { name: "Kaido", image: "images/directory/kaido.jpg" },
+    { name: "Charlotte Linlin", image: "images/directory/charlotte-linlin.jpg" },
+    { name: "Edward Newgate", image: "images/directory/edward-newgate.jpg" },
+    { name: "Marshall D. Teach", image: "images/directory/marshall-d-teach.jpg" },
+    { name: "Donquixote Doflamingo", image: "images/directory/donquixote-doflamingo.jpg" },
+    { name: "Bartholomew Kuma", image: "images/directory/bartholomew-kuma.jpg" },
+    { name: "Jewelry Bonney", image: "images/directory/jewelry-bonney.jpg" },
+    { name: "Killer", image: "images/directory/killer.jpg" },
+    { name: "Basil Hawkins", image: "images/directory/basil-hawkins.jpg" },
+    { name: "Capone Bege", image: "images/directory/capone-bege.jpg" },
+    { name: "X Drake", image: "images/directory/x-drake.jpg" },
+    { name: "Urouge", image: "images/directory/urouge.jpg" },
+    { name: "Scratchmen Apoo", image: "images/directory/scratchmen-apoo.jpg" },
+    { name: "Vinsmoke Judge", image: "images/directory/vinsmoke-judge.jpg" },
+    { name: "Vinsmoke Reiju", image: "images/directory/vinsmoke-reiju.jpg" },
+    { name: "Vinsmoke Ichiji", image: "images/directory/vinsmoke-ichiji.jpg" },
+    { name: "Vinsmoke Niji", image: "images/directory/vinsmoke-niji.jpg" },
+    { name: "Vinsmoke Yonji", image: "images/directory/vinsmoke-yonji.jpg" },
+    { name: "Sengoku", image: "images/directory/sengoku.jpg" },
+    { name: "Issho", image: "images/directory/issho.jpg" },
+    { name: "Borsalino", image: "images/directory/borsalino.jpg" },
+    { name: "Sakazuki", image: "images/directory/sakazuki.jpg" },
+    { name: "Kuzan", image: "images/directory/kuzan.jpg" },
+    { name: "Smoker", image: "images/directory/smoker.jpg" },
+    { name: "Tashigi", image: "images/directory/tashigi.jpg" },
+    { name: "Coby", image: "images/directory/coby.jpg" },
+    { name: "Helmeppo", image: "images/directory/helmeppo.jpg" },
+    { name: "Zephyr", image: "images/directory/zephyr.jpg" },
+    { name: "Momonga", image: "images/directory/momonga.jpg" },
+    { name: "Vergo", image: "images/directory/vergo.jpg" },
+    { name: "Gecko Moria", image: "images/directory/gecko-moria.jpg" },
+    { name: "Dracule Mihawk", image: "images/directory/dracule-mihawk.jpg" },
+    { name: "Edward Weevil", image: "images/directory/edward-weevil.jpg" },
+    { name: "Jozu", image: "images/directory/jozu.jpg" },
+    { name: "Vista", image: "images/directory/vista.jpg" },
+    { name: "Izo", image: "images/directory/izo.jpg" },
+    { name: "Curiel", image: "images/directory/curiel.jpg" },
+    { name: "Blenheim", image: "images/directory/blenheim.jpg" },
+    { name: "Charlotte Katakuri", image: "images/directory/charlotte-katakuri.jpg" },
+    { name: "Charlotte Smoothie", image: "images/directory/charlotte-smoothie.jpg" },
+    { name: "Charlotte Cracker", image: "images/directory/charlotte-cracker.jpg" },
+    { name: "Charlotte Perospero", image: "images/directory/charlotte-perospero.jpg" },
+    { name: "Charlotte Oven", image: "images/directory/charlotte-oven.jpg" },
+    { name: "Charlotte Daifuku", image: "images/directory/charlotte-daifuku.jpg" },
+    { name: "Charlotte Compote", image: "images/directory/charlotte-compote.jpg" },
+    { name: "Charlotte Pudding", image: "images/directory/charlotte-pudding.jpg" },
+    { name: "Charlotte Chiffon", image: "images/directory/charlotte-chiffon.jpg" },
+    { name: "King", image: "images/directory/king.jpg" },
+    { name: "Queen", image: "images/directory/queen.jpg" },
+    { name: "Jack", image: "images/directory/jack.jpg" },
+    { name: "Who's-Who", image: "images/directory/who-s-who.jpg" },
+    { name: "Ulti", image: "images/directory/ulti.jpg" },
+    { name: "Page One", image: "images/directory/page-one.jpg" },
+    { name: "Black Maria", image: "images/directory/black-maria.jpg" },
+    { name: "Sasaki", image: "images/directory/sasaki.jpg" },
+    { name: "Emporio Ivankov", image: "images/directory/emporio-ivankov.jpg" },
+    { name: "Inazuma", image: "images/directory/inazuma.jpg" },
+    { name: "Karasu", image: "images/directory/karasu.jpg" },
+    { name: "Belo Betty", image: "images/directory/belo-betty.jpg" },
+    { name: "Morley", image: "images/directory/morley.jpg" },
+    { name: "Lindbergh", image: "images/directory/lindbergh.jpg" },
+    { name: "Koala", image: "images/directory/koala.jpg" },
+    { name: "Kinemon", image: "images/directory/kinemon.jpg" },
+    { name: "Kanjuro", image: "images/directory/kanjuro.jpg" },
+    { name: "Raizo", image: "images/directory/raizo.jpg" },
+    { name: "Denjiro", image: "images/directory/denjiro.jpg" },
+    { name: "Kawamatsu", image: "images/directory/kawamatsu.jpg" },
+    { name: "Nekomamushi", image: "images/directory/nekomamushi.jpg" },
+    { name: "Inuarashi", image: "images/directory/inuarashi.jpg" },
+    { name: "Kozuki Oden", image: "images/directory/kozuki-oden.jpg" },
+    { name: "Kozuki Toki", image: "images/directory/kozuki-toki.jpg" },
+    { name: "Kozuki Momonosuke", image: "images/directory/kozuki-momonosuke.jpg" },
+    { name: "Kozuki Hiyori", image: "images/directory/kozuki-hiyori.jpg" },
+    { name: "Shimotsuki Yasuie", image: "images/directory/shimotsuki-yasuie.jpg" },
+    { name: "Kurozumi Orochi", image: "images/directory/kurozumi-orochi.jpg" },
+    { name: "Shutenmaru", image: "images/directory/shutenmaru.jpg" },
+    { name: "Rob Lucci", image: "images/directory/rob-lucci.jpg" },
+    { name: "Kaku", image: "images/directory/kaku.jpg" },
+    { name: "Kalifa", image: "images/directory/kalifa.jpg" },
+    { name: "Blueno", image: "images/directory/blueno.jpg" },
+    { name: "Jabra", image: "images/directory/jabra.jpg" },
+    { name: "Kumadori", image: "images/directory/kumadori.jpg" },
+    { name: "Spandam", image: "images/directory/spandam.jpg" },
+    { name: "Fukurou", image: "images/directory/fukurou.jpg" },
+    { name: "Spandine", image: "images/directory/spandine.jpg" },
+    { name: "Daz Bones", image: "images/directory/daz-bones.jpg" },
+    { name: "Bon Kurei", image: "images/directory/bon-kurei.jpg" },
+    { name: "Galdino", image: "images/directory/galdino.jpg" },
+    { name: "Miss Doublefinger", image: "images/directory/miss-doublefinger.jpg" },
+    { name: "Miss Merry Christmas", image: "images/directory/miss-merry-christmas.jpg" },
+    { name: "Miss Valentine", image: "images/directory/miss-valentine.jpg" },
+    { name: "Miss Goldenweek", image: "images/directory/miss-goldenweek.jpg" },
+    { name: "Fisher Tiger", image: "images/directory/fisher-tiger.jpg" },
+    { name: "Otohime", image: "images/directory/otohime.jpg" },
+    { name: "Neptune", image: "images/directory/neptune.jpg" },
+    { name: "Shirahoshi", image: "images/directory/shirahoshi.jpg" },
+    { name: "Wadatsumi", image: "images/directory/wadatsumi.jpg" },
+    { name: "Vander Decken IX", image: "images/directory/vander-decken-ix.jpg" },
+    { name: "Hody Jones", image: "images/directory/hody-jones.jpg" },
+    { name: "Nefertari Cobra", image: "images/directory/nefertari-cobra.jpg" },
+    { name: "Pell", image: "images/directory/pell.jpg" },
+    { name: "Chaka", image: "images/directory/chaka.jpg" },
+    { name: "Igaram", image: "images/directory/igaram.jpg" },
+    { name: "Enel", image: "images/directory/enel.jpg" },
+    { name: "Gan Fall", image: "images/directory/gan-fall.jpg" },
+    { name: "Wyper", image: "images/directory/wyper.jpg" },
+    { name: "Conis", image: "images/directory/conis.jpg" },
+    { name: "Aisa", image: "images/directory/aisa.jpg" },
+    { name: "Iceburg", image: "images/directory/iceburg.jpg" },
+    { name: "Paulie", image: "images/directory/paulie.jpg" },
+    { name: "Zambai", image: "images/directory/zambai.jpg" },
+    { name: "Tilestone", image: "images/directory/tilestone.jpg" },
+    { name: "Perona", image: "images/directory/perona.jpg" },
+    { name: "Absalom", image: "images/directory/absalom.jpg" },
+    { name: "Hogback", image: "images/directory/hogback.jpg" },
+    { name: "Ryuma", image: "images/directory/ryuma.jpg" },
+    { name: "Cindry", image: "images/directory/cindry.jpg" },
+    { name: "Boa Sandersonia", image: "images/directory/boa-sandersonia.jpg" },
+    { name: "Boa Marigold", image: "images/directory/boa-marigold.jpg" },
+    { name: "Elder Nyon", image: "images/directory/elder-nyon.jpg" },
+    { name: "Magellan", image: "images/directory/magellan.jpg" },
+    { name: "Hannyabal", image: "images/directory/hannyabal.jpg" },
+    { name: "Sadi", image: "images/directory/sadi.jpg" },
+    { name: "Domino", image: "images/directory/domino.jpg" },
+    { name: "Jaguar D. Saul", image: "images/directory/jaguar-d-saul.jpg" },
+    { name: "Nico Olvia", image: "images/directory/nico-olvia.jpg" },
+    { name: "Professor Clover", image: "images/directory/professor-clover.jpg" },
+    { name: "Imu", image: "images/directory/imu.jpg" },
+    { name: "Saint Jaygarcia Saturn", image: "images/directory/saint-jaygarcia-saturn.jpg" },
+    { name: "Marcus Mars", image: "images/directory/marcus-mars.jpg" },
+    { name: "Nusjuro", image: "images/directory/nusjuro.jpg" },
+    { name: "Ju Peter", image: "images/directory/ju-peter.jpg" },
+    { name: "Topman Warcury", image: "images/directory/topman-warcury.jpg" },
+    { name: "Riku Dold III", image: "images/directory/riku-dold-iii.jpg" },
+    { name: "Caesar Clown", image: "images/directory/caesar-clown.jpg" },
+    { name: "Monet", image: "images/directory/monet.jpg" },
+    { name: "Brownbeard", image: "images/directory/brownbeard.jpg" },
+    { name: "Trebol", image: "images/directory/trebol.jpg" },
+    { name: "Pica", image: "images/directory/pica.jpg" },
+    { name: "Diamante", image: "images/directory/diamante.jpg" },
+    { name: "Sugar", image: "images/directory/sugar.jpg" },
+    { name: "Bellamy", image: "images/directory/bellamy.jpg" },
+    { name: "Cavendish", image: "images/directory/cavendish.jpg" },
+    { name: "Rebecca", image: "images/directory/rebecca.jpg" },
+    { name: "Kyros", image: "images/directory/kyros.jpg" },
+    { name: "Viola", image: "images/directory/viola.jpg" },
+    { name: "Streusen", image: "images/directory/streusen.jpg" },
+    { name: "Pekoms", image: "images/directory/pekoms.jpg" },
+    { name: "Carrot", image: "images/directory/carrot.jpg" },
+    { name: "Wanda", image: "images/directory/wanda.jpg" },
+    { name: "Foxy", image: "images/directory/foxy.jpg" },
+    { name: "Hamburg", image: "images/directory/hamburg.jpg" },
+    { name: "Porche", image: "images/directory/porche.jpg" },
+    { name: "Wapol", image: "images/directory/wapol.jpg" },
+    { name: "Dalton", image: "images/directory/dalton.jpg" },
+    { name: "Kureha", image: "images/directory/kureha.jpg" },
+    { name: "Chess", image: "images/directory/chess.jpg" },
+    { name: "Kuromarimo", image: "images/directory/kuromarimo.jpg" },
+    { name: "Alvida", image: "images/directory/alvida.jpg" },
+    { name: "Morgan", image: "images/directory/morgan.jpg" },
+    { name: "Kuro", image: "images/directory/kuro.jpg" },
+    { name: "Jango", image: "images/directory/jango.jpg" },
+    { name: "Don Krieg", image: "images/directory/don-krieg.jpg" },
+    { name: "Gin", image: "images/directory/gin.jpg" },
+    { name: "Arlong", image: "images/directory/arlong.jpg" },
+    { name: "Genzo", image: "images/directory/genzo.jpg" },
+    { name: "Kaya", image: "images/directory/kaya.jpg" },
+    { name: "Gaimon", image: "images/directory/gaimon.jpg" },
+    { name: "Bepo", image: "images/directory/bepo.jpg" },
+    { name: "Shachi", image: "images/directory/shachi.jpg" },
+    { name: "Penguin", image: "images/directory/penguin.jpg" },
+    { name: "Ikkaku", image: "images/directory/ikkaku.jpg" },
+    { name: "Wanze", image: "images/directory/wanze.jpg" },
+    { name: "Heracles", image: "images/directory/heracles.jpg" },
+    { name: "Cabaji", image: "images/directory/cabaji.jpg" },
+    { name: "Mohji", image: "images/directory/mohji.jpg" },
+    { name: "Richie", image: "images/directory/richie.jpg" },
+    { name: "Sentomaru", image: "images/directory/sentomaru.jpg" },
+    { name: "Pacifista", image: "images/directory/pacifista.jpg" },
+    { name: "Baby 5", image: "images/directory/baby-5.jpg" },
+    { name: "Buffalo", image: "images/directory/buffalo.jpg" },
+    { name: "Gladius", image: "images/directory/gladius.jpg" },
+    { name: "Machvise", image: "images/directory/machvise.jpg" },
+    { name: "Lao G", image: "images/directory/lao-g.jpg" },
+    { name: "Dellinger", image: "images/directory/dellinger.jpg" },
+    { name: "Jora", image: "images/directory/jora.jpg" },
+    { name: "Senor Pink", image: "images/directory/senor-pink.jpg" },
+    { name: "Charlotte Mont-d'Or", image: "images/directory/charlotte-mont-d-or.jpg" },
+    { name: "Charlotte Amande", image: "images/directory/charlotte-amande.jpg" },
+    { name: "Charlotte Brulee", image: "images/directory/charlotte-brulee.jpg" },
+    { name: "Charlotte Galette", image: "images/directory/charlotte-galette.jpg" },
+    { name: "Charlotte Opera", image: "images/directory/charlotte-opera.jpg" },
+    { name: "Charlotte Snack", image: "images/directory/charlotte-snack.jpg" },
+    { name: "Charlotte Cadenza", image: "images/directory/charlotte-cadenza.jpg" },
+    { name: "Charlotte Angel", image: "images/directory/charlotte-angel.jpg" },
+    { name: "Charlotte Anana", image: "images/directory/charlotte-anana.jpg" },
+    { name: "Zeus", image: "images/directory/zeus.jpg" },
+    { name: "Prometheus", image: "images/directory/prometheus.jpg" },
+    { name: "Napoleon", image: "images/directory/napoleon.jpg" },
+    { name: "Judge", image: "images/directory/judge.jpg" },
+    { name: "Cosette", image: "images/directory/cosette.jpg" },
+    { name: "Sora Vinsmoke", image: "images/directory/sora-vinsmoke.jpg" },
+    { name: "Kid Killer", image: "images/directory/kid-killer.jpg" },
+    { name: "Heat", image: "images/directory/heat.jpg" },
+    { name: "Wire", image: "images/directory/wire.jpg" },
+    { name: "Diez Barrels", image: "images/directory/diez-barrels.jpg" },
+    { name: "Rocks D. Xebec", image: "images/directory/rocks-d-xebec.jpg" },
+    { name: "Buggy the Clown", image: "images/directory/buggy-the-clown.jpg" },
+    { name: "Croccodile", image: "images/directory/croccodile.jpg" },
+    { name: "Miss All Sunday", image: "images/directory/miss-all-sunday.jpg" },
+    { name: "Vice Admiral Doberman", image: "images/directory/vice-admiral-doberman.jpg" },
+    { name: "Vice Admiral Strawberry", image: "images/directory/vice-admiral-strawberry.jpg" },
+    { name: "Vice Admiral Onigumo", image: "images/directory/vice-admiral-onigumo.jpg" },
+    { name: "Rear Admiral Bastille", image: "images/directory/rear-admiral-bastille.jpg" },
+    { name: "Yeti Cool Brothers", image: "images/directory/yeti-cool-brothers.jpg" },
+    { name: "Wetton", image: "images/directory/wetton.jpg" },
+    { name: "Broggy", image: "images/directory/broggy.jpg" },
+    { name: "Dorry", image: "images/directory/dorry.jpg" },
+    { name: "Camie", image: "images/directory/camie.jpg" },
+    { name: "Pappug", image: "images/directory/pappug.jpg" },
+    { name: "Hatchan", image: "images/directory/hatchan.jpg" },
+    { name: "Keimi", image: "images/directory/keimi.jpg" },
+    { name: "Duval", image: "images/directory/duval.jpg" },
+    { name: "Bellett", image: "images/directory/bellett.jpg" },
+    { name: "Tonjit", image: "images/directory/tonjit.jpg" },
+    { name: "Aokiji Kuzan", image: "images/directory/aokiji-kuzan.jpg" },
+    { name: "Absalom Hogback", image: "images/directory/absalom-hogback.jpg" },
+    { name: "Victoria Cindry", image: "images/directory/victoria-cindry.jpg" },
+    { name: "Gyro", image: "images/directory/gyro.jpg" },
+    { name: "Wolf", image: "images/directory/wolf.jpg" },
+    { name: "Hamlet", image: "images/directory/hamlet.jpg" },
+    { name: "Momonosuke", image: "images/directory/momonosuke.jpg" },
+    { name: "Shinobu", image: "images/directory/shinobu.jpg" },
+    { name: "Kikunojo", image: "images/directory/kikunojo.jpg" },
+    { name: "Ashura Doji", image: "images/directory/ashura-doji.jpg" },
+    { name: "Orochi", image: "images/directory/orochi.jpg" },
+    { name: "Kaido King of the Beasts", image: "images/directory/kaido-king-of-the-beasts.jpg" },
+    { name: "Apoo", image: "images/directory/apoo.jpg" },
+    { name: "Hyogoro", image: "images/directory/hyogoro.jpg" },
+    { name: "O-Toko", image: "images/directory/o-toko.jpg" },
+    { name: "O-Kiku", image: "images/directory/o-kiku.jpg" },
+    { name: "Franosuke", image: "images/directory/franosuke.jpg" },
+    { name: "Onimaru", image: "images/directory/onimaru.jpg" },
+    { name: "Speed", image: "images/directory/speed.jpg" },
+    { name: "Bartolomeo", image: "images/directory/bartolomeo.jpg" },
+    { name: "Ideo", image: "images/directory/ideo.jpg" },
+    { name: "Blue Gilly", image: "images/directory/blue-gilly.jpg" },
+    { name: "Sai", image: "images/directory/sai.jpg" },
+    { name: "Ricky", image: "images/directory/ricky.jpg" },
+    { name: "Leo", image: "images/directory/leo.jpg" },
+    { name: "Rebecca Rasho", image: "images/directory/rebecca-rasho.jpg" },
+    { name: "Riku Doldo III", image: "images/directory/riku-doldo-iii.jpg" },
+    { name: "Kyros the Slayer", image: "images/directory/kyros-the-slayer.jpg" },
+    { name: "Elizabello II", image: "images/directory/elizabello-ii.jpg" },
+    { name: "Suleiman", image: "images/directory/suleiman.jpg" },
+    { name: "Chinjao", image: "images/directory/chinjao.jpg" },
+    { name: "Hajrudin", image: "images/directory/hajrudin.jpg" },
+    { name: "Abdullah", image: "images/directory/abdullah.jpg" },
+    { name: "Jeet", image: "images/directory/jeet.jpg" },
+    { name: "Orlumbus", image: "images/directory/orlumbus.jpg" },
+    { name: "Robin Nico", image: "images/directory/robin-nico.jpg" },
+    { name: "Franky Cutty Flam", image: "images/directory/franky-cutty-flam.jpg" },
+    { name: "Bege Capone", image: "images/directory/bege-capone.jpg" },
+    { name: "Chiffon Streusen", image: "images/directory/chiffon-streusen.jpg" },
+    { name: "Germa 66 Soldiers", image: "images/directory/germa-66-soldiers.jpg" },
+    { name: "Niji Vinsmoke", image: "images/directory/niji-vinsmoke.jpg" },
+    { name: "Wadd", image: "images/directory/wadd.jpg" },
+    { name: "Gyats", image: "images/directory/gyats.jpg" },
+    { name: "Vinsmoke Sanji", image: "images/directory/vinsmoke-sanji.jpg" },
+    { name: "Nami Bellemere", image: "images/directory/nami-bellemere.jpg" },
+    { name: "Bellemere", image: "images/directory/bellemere.jpg" },
+    { name: "Nojiko", image: "images/directory/nojiko.jpg" },
+    { name: "Woop Slap", image: "images/directory/woop-slap.jpg" },
+    { name: "Makino", image: "images/directory/makino.jpg" },
+    { name: "Shanks Red Hair", image: "images/directory/shanks-red-hair.jpg" },
+    { name: "Lucky Roux", image: "images/directory/lucky-roux.jpg" },
+    { name: "Yasopp", image: "images/directory/yasopp.jpg" },
+    { name: "Benn Beckman", image: "images/directory/benn-beckman.jpg" },
+    { name: "Rockstar", image: "images/directory/rockstar.jpg" },
+];
+
+/* =========================================
    ANIME EDITION LIBRARY
    ---------------------------------------
    Each key is an anime series. Add more file
@@ -1339,138 +1811,138 @@ const CHARACTER_LIBRARY = [
 const ANIME_LIBRARY = {
 
     naruto: [
-        "images/anime/naruto/na1.jpg",
-        "images/anime/naruto/na2.jpg",
-        "images/anime/naruto/na3.jpg",
-        "images/anime/naruto/na4.jpg",
-        "images/anime/naruto/na5.jpg",
-        "images/anime/naruto/na6.jpg",
-        "images/anime/naruto/na7.jpg",
-        "images/anime/naruto/na8.jpg",
-        "images/anime/naruto/na9.jpg",
-        "images/anime/naruto/na10.jpg",
-        "images/anime/naruto/na11.jpg",
-        "images/anime/naruto/na12.jpg",
-        "images/anime/naruto/na13.jpg",
-        "images/anime/naruto/na14.jpg",
-        "images/anime/naruto/na15.jpg",
-        "images/anime/naruto/na16.jpg",
-        "images/anime/naruto/na17.jpg",
-        "images/anime/naruto/na18.jpg",
-        "images/anime/naruto/na19.jpg",
-        "images/anime/naruto/na20.jpg",
-        "images/anime/naruto/na21.jpg",
-        "images/anime/naruto/na22.jpg",
-        "images/anime/naruto/na23.jpg",
-        "images/anime/naruto/na24.jpg"
+        "images/anime/naruto/1.jpg",
+        "images/anime/naruto/2.jpg",
+        "images/anime/naruto/3.jpg",
+        "images/anime/naruto/4.jpg",
+        "images/anime/naruto/5.jpg",
+        "images/anime/naruto/6.jpg",
+        "images/anime/naruto/7.jpg",
+        "images/anime/naruto/8.jpg",
+        "images/anime/naruto/9.jpg",
+        "images/anime/naruto/10.jpg",
+        "images/anime/naruto/11.jpg",
+        "images/anime/naruto/12.jpg",
+        "images/anime/naruto/13.jpg",
+        "images/anime/naruto/14.jpg",
+        "images/anime/naruto/15.jpg",
+        "images/anime/naruto/16.jpg",
+        "images/anime/naruto/17.jpg",
+        "images/anime/naruto/18.jpg",
+        "images/anime/naruto/19.jpg",
+        "images/anime/naruto/20.jpg",
+        "images/anime/naruto/21.jpg",
+        "images/anime/naruto/22.jpg",
+        "images/anime/naruto/23.jpg",
+        "images/anime/naruto/24.jpg"
     ],
 
     dragonball: [
-        "images/anime/dragonball/db1.jpg",
-        "images/anime/dragonball/db2.jpg",
-        "images/anime/dragonball/db3.jpg",
-        "images/anime/dragonball/db4.jpg",
-        "images/anime/dragonball/db5.jpg",
-        "images/anime/dragonball/db6.jpg",
-        "images/anime/dragonball/db7.jpg",
-        "images/anime/dragonball/db8.jpg",
-        "images/anime/dragonball/db9.jpg",
-        "images/anime/dragonball/db10.jpg",
-        "images/anime/dragonball/db11.jpg",
-        "images/anime/dragonball/db12.jpg",
-        "images/anime/dragonball/db13.jpg",
-        "images/anime/dragonball/db14.jpg",
-        "images/anime/dragonball/db15.jpg",
-        "images/anime/dragonball/db16.jpg",
-        "images/anime/dragonball/db17.jpg",
-        "images/anime/dragonball/db18.jpg",
-        "images/anime/dragonball/db19.jpg",
-        "images/anime/dragonball/db20.jpg",
-        "images/anime/dragonball/db21.jpg",
-        "images/anime/dragonball/db22.jpg",
-        "images/anime/dragonball/db23.jpg",
-        "images/anime/dragonball/db24.jpg"
+        "images/anime/dragonball/1.jpg",
+        "images/anime/dragonball/2.jpg",
+        "images/anime/dragonball/3.jpg",
+        "images/anime/dragonball/4.jpg",
+        "images/anime/dragonball/5.jpg",
+        "images/anime/dragonball/6.jpg",
+        "images/anime/dragonball/7.jpg",
+        "images/anime/dragonball/8.jpg",
+        "images/anime/dragonball/9.jpg",
+        "images/anime/dragonball/10.jpg",
+        "images/anime/dragonball/11.jpg",
+        "images/anime/dragonball/12.jpg",
+        "images/anime/dragonball/13.jpg",
+        "images/anime/dragonball/14.jpg",
+        "images/anime/dragonball/15.jpg",
+        "images/anime/dragonball/16.jpg",
+        "images/anime/dragonball/17.jpg",
+        "images/anime/dragonball/18.jpg",
+        "images/anime/dragonball/19.jpg",
+        "images/anime/dragonball/20.jpg",
+        "images/anime/dragonball/21.jpg",
+        "images/anime/dragonball/22.jpg",
+        "images/anime/dragonball/23.jpg",
+        "images/anime/dragonball/24.jpg"
     ],
 
     jjk: [
-        "images/anime/jjk/jk1.jpg",
-        "images/anime/jjk/jk2.jpg",
-        "images/anime/jjk/jk3.jpg",
-        "images/anime/jjk/jk4.jpg",
-        "images/anime/jjk/jk5.jpg",
-        "images/anime/jjk/jk6.jpg",
-        "images/anime/jjk/jk7.jpg",
-        "images/anime/jjk/jk8.jpg",
-        "images/anime/jjk/jk9.jpg",
-        "images/anime/jjk/jk10.jpg",
-        "images/anime/jjk/jk11.jpg",
-        "images/anime/jjk/jk12.jpg",
-        "images/anime/jjk/jk13.jpg",
-        "images/anime/jjk/jk14.jpg",
-        "images/anime/jjk/jk15.jpg",
-        "images/anime/jjk/jk16.jpg",
-        "images/anime/jjk/jk17.jpg",
-        "images/anime/jjk/jk18.jpg",
-        "images/anime/jjk/jk19.jpg",
-        "images/anime/jjk/jk20.jpg",
-        "images/anime/jjk/jk21.jpg",
-        "images/anime/jjk/jk22.jpg",
-        "images/anime/jjk/jk23.jpg",
-        "images/anime/jjk/jk24.jpg"
+        "images/anime/jjk/1.jpg",
+        "images/anime/jjk/2.jpg",
+        "images/anime/jjk/3.jpg",
+        "images/anime/jjk/4.jpg",
+        "images/anime/jjk/5.jpg",
+        "images/anime/jjk/6.jpg",
+        "images/anime/jjk/7.jpg",
+        "images/anime/jjk/8.jpg",
+        "images/anime/jjk/9.jpg",
+        "images/anime/jjk/10.jpg",
+        "images/anime/jjk/11.jpg",
+        "images/anime/jjk/12.jpg",
+        "images/anime/jjk/13.jpg",
+        "images/anime/jjk/14.jpg",
+        "images/anime/jjk/15.jpg",
+        "images/anime/jjk/16.jpg",
+        "images/anime/jjk/17.jpg",
+        "images/anime/jjk/18.jpg",
+        "images/anime/jjk/19.jpg",
+        "images/anime/jjk/20.jpg",
+        "images/anime/jjk/21.jpg",
+        "images/anime/jjk/22.jpg",
+        "images/anime/jjk/23.jpg",
+        "images/anime/jjk/24.jpg"
     ],
 
     demonslayer: [
-        "images/anime/demonslayer/ds1.jpg",
-        "images/anime/demonslayer/ds2.jpg",
-        "images/anime/demonslayer/ds3.jpg",
-        "images/anime/demonslayer/ds4.jpg",
-        "images/anime/demonslayer/ds5.jpg",
-        "images/anime/demonslayer/ds6.jpg",
-        "images/anime/demonslayer/ds7.jpg",
-        "images/anime/demonslayer/ds8.jpg",
-        "images/anime/demonslayer/ds9.jpg",
-        "images/anime/demonslayer/ds10.jpg",
-        "images/anime/demonslayer/ds11.jpg",
-        "images/anime/demonslayer/ds12.jpg",
-        "images/anime/demonslayer/ds13.jpg",
-        "images/anime/demonslayer/ds14.jpg",
-        "images/anime/demonslayer/ds15.jpg",
-        "images/anime/demonslayer/ds16.jpg",
-        "images/anime/demonslayer/ds17.jpg",
-        "images/anime/demonslayer/ds18.jpg",
-        "images/anime/demonslayer/ds19.jpg",
-        "images/anime/demonslayer/ds20.jpg",
-        "images/anime/demonslayer/ds21.jpg",
-        "images/anime/demonslayer/ds22.jpg",
-        "images/anime/demonslayer/ds23.jpg",
-        "images/anime/demonslayer/ds24.jpg"
+        "images/anime/demonslayer/1.jpg",
+        "images/anime/demonslayer/2.jpg",
+        "images/anime/demonslayer/3.jpg",
+        "images/anime/demonslayer/4.jpg",
+        "images/anime/demonslayer/5.jpg",
+        "images/anime/demonslayer/6.jpg",
+        "images/anime/demonslayer/7.jpg",
+        "images/anime/demonslayer/8.jpg",
+        "images/anime/demonslayer/9.jpg",
+        "images/anime/demonslayer/10.jpg",
+        "images/anime/demonslayer/11.jpg",
+        "images/anime/demonslayer/12.jpg",
+        "images/anime/demonslayer/13.jpg",
+        "images/anime/demonslayer/14.jpg",
+        "images/anime/demonslayer/15.jpg",
+        "images/anime/demonslayer/16.jpg",
+        "images/anime/demonslayer/17.jpg",
+        "images/anime/demonslayer/18.jpg",
+        "images/anime/demonslayer/19.jpg",
+        "images/anime/demonslayer/20.jpg",
+        "images/anime/demonslayer/21.jpg",
+        "images/anime/demonslayer/22.jpg",
+        "images/anime/demonslayer/23.jpg",
+        "images/anime/demonslayer/24.jpg"
     ],
 
     bleach: [
-        "images/anime/bleach/bc1.jpg",
-        "images/anime/bleach/bc2.jpg",
-        "images/anime/bleach/bc3.jpg",
-        "images/anime/bleach/bc4.jpg",
-        "images/anime/bleach/bc5.jpg",
-        "images/anime/bleach/bc6.jpg",
-        "images/anime/bleach/bc7.jpg",
-        "images/anime/bleach/bc8.jpg",
-        "images/anime/bleach/bc9.jpg",
-        "images/anime/bleach/bc10.jpg",
-        "images/anime/bleach/bc11.jpg",
-        "images/anime/bleach/bc12.jpg",
-        "images/anime/bleach/bc13.jpg",
-        "images/anime/bleach/bc14.jpg",
-        "images/anime/bleach/bc15.jpg",
-        "images/anime/bleach/bc16.jpg",
-        "images/anime/bleach/bc17.jpg",
-        "images/anime/bleach/bc18.jpg",
-        "images/anime/bleach/bc19.jpg",
-        "images/anime/bleach/bc20.jpg",
-        "images/anime/bleach/bc21.jpg",
-        "images/anime/bleach/bc22.jpg",
-        "images/anime/bleach/bc23.jpg",
-        "images/anime/bleach/bc24.jpg"
+        "images/anime/bleach/1.jpg",
+        "images/anime/bleach/2.jpg",
+        "images/anime/bleach/3.jpg",
+        "images/anime/bleach/4.jpg",
+        "images/anime/bleach/5.jpg",
+        "images/anime/bleach/6.jpg",
+        "images/anime/bleach/7.jpg",
+        "images/anime/bleach/8.jpg",
+        "images/anime/bleach/9.jpg",
+        "images/anime/bleach/10.jpg",
+        "images/anime/bleach/11.jpg",
+        "images/anime/bleach/12.jpg",
+        "images/anime/bleach/13.jpg",
+        "images/anime/bleach/14.jpg",
+        "images/anime/bleach/15.jpg",
+        "images/anime/bleach/16.jpg",
+        "images/anime/bleach/17.jpg",
+        "images/anime/bleach/18.jpg",
+        "images/anime/bleach/19.jpg",
+        "images/anime/bleach/20.jpg",
+        "images/anime/bleach/21.jpg",
+        "images/anime/bleach/22.jpg",
+        "images/anime/bleach/23.jpg",
+        "images/anime/bleach/24.jpg"
     ]
 
 };
@@ -1598,6 +2070,68 @@ function setMode(newMode) {
             newMode !== "anime"
         );
 
+
+    // The Character Hunt / Classic Board choice only applies to
+    // One Piece mode. Switching to Anime Mix always falls back to a
+    // normal board (Anime Mix doesn't support Hunt in this version).
+    document
+        .getElementById(
+            "opVariantField"
+        )
+        .classList
+        .toggle(
+            "hidden",
+            newMode === "anime"
+        );
+
+    if (
+        newMode === "anime"
+    ) {
+        setVariant("board");
+    }
+
+}
+
+
+window.setVariant =
+function setVariant(newVariant) {
+
+    variant =
+        newVariant;
+
+
+    document
+        .querySelectorAll(".variant-btn")
+        .forEach(
+            btn =>
+                btn.classList.remove(
+                    "selected"
+                )
+        );
+
+
+    document
+        .getElementById(
+            newVariant === "hunt"
+                ? "variantHunt"
+                : "variantBoard"
+        )
+        .classList.add(
+            "selected"
+        );
+
+
+    // Board size is meaningless in Hunt mode — there's no board.
+    document
+        .getElementById(
+            "cardsField"
+        )
+        .classList
+        .toggle(
+            "hidden",
+            newVariant === "hunt"
+        );
+
 }
 
 
@@ -1682,6 +2216,83 @@ async function() {
         alert(
             "Enter your name first."
         );
+
+        return;
+
+    }
+
+
+    // Character Hunt has no board at all — it's a name-search picker
+    // instead. Handle it completely separately and return early so the
+    // existing board-generation path below stays untouched.
+    if (
+        mode === "onepiece"
+        && variant === "hunt"
+    ) {
+
+        room =
+            generateCode();
+
+        myPlayer =
+            1;
+
+        board =
+            [];
+
+        const huntRoomRef =
+            ref(
+                db,
+                "rooms/" + room
+            );
+
+        await set(
+            huntRoomRef,
+            {
+
+                mode:
+                    "onepiece",
+
+                variant:
+                    "hunt",
+
+                animes:
+                    [],
+
+                player1: {
+
+                    uid:
+                        user.uid,
+
+                    name:
+                        name,
+
+                    ready:
+                        false
+
+                },
+
+                player2:
+                    null,
+
+                status:
+                    "waiting",
+
+                turn:
+                    1,
+
+                winner:
+                    null,
+
+                result:
+                    null
+
+            }
+        );
+
+        onDisconnect(huntRoomRef)
+            .remove();
+
+        openLobby();
 
         return;
 
@@ -1795,6 +2406,9 @@ async function() {
 
             mode:
                 mode,
+
+            variant:
+                "board",
 
             animes:
                 selectedAnimes,
@@ -2254,6 +2868,75 @@ async function() {
 
 
 /* =========================================
+   HUNT MODE — SEARCH HELPER
+   ---------------------------------------
+   Wires a text input + results container to
+   live-filter CHARACTER_DIRECTORY by name.
+   Calls onSelect(characterObj) when a result
+   is clicked. Reused by both the secret-pick
+   screen and the in-game guess screen.
+========================================= */
+
+function setupHuntSearch(inputEl, resultsEl, onSelect) {
+
+    inputEl.value = "";
+    resultsEl.innerHTML = "";
+
+    inputEl.oninput = function () {
+
+        const query =
+            inputEl.value
+                .trim()
+                .toLowerCase();
+
+        resultsEl.innerHTML = "";
+
+        if (
+            query.length < 2
+        ) {
+            return;
+        }
+
+        const matches =
+            CHARACTER_DIRECTORY
+                .filter(
+                    c =>
+                        c.name
+                            .toLowerCase()
+                            .includes(query)
+                )
+                .slice(0, 30);
+
+        matches.forEach(
+            character => {
+
+                const item =
+                    document.createElement("div");
+
+                item.className =
+                    "hunt-result-item";
+
+                item.textContent =
+                    character.name;
+
+                item.onclick =
+                    function () {
+                        onSelect(character);
+                    };
+
+                resultsEl.appendChild(
+                    item
+                );
+
+            }
+        );
+
+    };
+
+}
+
+
+/* =========================================
    SECRET SCREEN
 ========================================= */
 
@@ -2298,6 +2981,67 @@ function showSecretScreen() {
         )
         .disabled =
         true;
+
+
+    const isHunt =
+        currentRoomData.variant === "hunt";
+
+
+    document
+        .getElementById("secretGrid")
+        .classList
+        .toggle("hidden", isHunt);
+
+
+    document
+        .getElementById("huntSecretPicker")
+        .classList
+        .toggle("hidden", !isHunt);
+
+
+    if (
+        isHunt
+    ) {
+
+        document
+            .getElementById("huntSecretPreview")
+            .classList
+            .add("hidden");
+
+        setupHuntSearch(
+            document.getElementById("huntSecretSearch"),
+            document.getElementById("huntSecretResults"),
+            character => {
+
+                // Reuse confirmSecret() completely unchanged: it reads
+                // board[selectedSecret], so a one-item "board" holding
+                // just the chosen character satisfies it perfectly.
+                board = [character];
+                selectedSecret = 0;
+
+                document
+                    .getElementById("huntSecretPreviewImg")
+                    .src = character.image;
+
+                document
+                    .getElementById("huntSecretPreviewName")
+                    .textContent = character.name;
+
+                document
+                    .getElementById("huntSecretPreview")
+                    .classList
+                    .remove("hidden");
+
+                document
+                    .getElementById("confirmSecret")
+                    .disabled = false;
+
+            }
+        );
+
+        return;
+
+    }
 
 
     board.forEach(
@@ -2456,6 +3200,15 @@ function waitForBothPlayers() {
 
     secretGrid.innerHTML = "";
 
+    // The waiting message below is appended into secretGrid — make
+    // sure it's visible even if we were just in the Hunt picker.
+    secretGrid.classList.remove("hidden");
+
+    document
+        .getElementById("huntSecretPicker")
+        .classList
+        .add("hidden");
+
 
     document
         .getElementById(
@@ -2611,6 +3364,55 @@ function showGameScreen(data) {
     const gameElement = document.getElementById("game");
     const wasVisible = !gameElement.classList.contains("hidden");
     showOnly("game");
+
+    const isHunt = data.variant === "hunt";
+
+    document.getElementById("board").classList.toggle("hidden", isHunt);
+    document.getElementById("huntGuessArea").classList.toggle("hidden", !isHunt);
+    document.getElementById("guessButton").classList.toggle("hidden", isHunt);
+    document.getElementById("endTurnButton").classList.toggle("hidden", isHunt);
+
+    if (isHunt) {
+
+        document.getElementById("turnText").textContent = "Character Hunt";
+
+        if (!awaitingGuess) {
+            document.getElementById("gameStatus").textContent =
+                "Ask via Discord, then search & submit your guess.";
+        }
+
+        // Only wire the search box once per hunt round — re-running it
+        // on every Firebase update (which fires often) would wipe out
+        // whatever the player has already typed.
+        if (!wasVisible || !gameScreenWasShown) {
+
+            huntGuessChoice = null;
+
+            document.getElementById("huntGuessPreview").classList.add("hidden");
+            document.getElementById("huntSubmitGuess").disabled = true;
+
+            setupHuntSearch(
+                document.getElementById("huntGuessSearch"),
+                document.getElementById("huntGuessResults"),
+                character => {
+
+                    huntGuessChoice = character;
+
+                    document.getElementById("huntGuessPreviewImg").src = character.image;
+                    document.getElementById("huntGuessPreviewName").textContent = character.name;
+                    document.getElementById("huntGuessPreview").classList.remove("hidden");
+                    document.getElementById("huntSubmitGuess").disabled = false;
+
+                }
+            );
+
+        }
+
+        gameScreenWasShown = true;
+        return;
+
+    }
+
     const newBoard = Array.isArray(data.board) ? data.board : [];
     const signature = newBoard.map(c => c.id).join("|");
     if (!wasVisible || !gameScreenWasShown || signature !== renderedBoardSignature) {
@@ -2804,6 +3606,58 @@ async function makeGuess(index) {
 
         updateGameHeader(currentRoomData);
     }
+}
+
+/* =========================================
+   HUNT MODE — SUBMIT GUESS
+   ---------------------------------------
+   No turns, no board. Either player can
+   submit whenever they're ready. Writes to
+   the exact same rooms/{room}/guess shape
+   as makeGuess(), so the existing guess
+   verification listener works unchanged.
+========================================= */
+
+window.submitHuntGuess =
+async function () {
+
+    if (
+        !huntGuessChoice
+        || !currentRoomData
+        || currentRoomData.status !== "playing"
+    ) {
+        return;
+    }
+
+    awaitingGuess = true;
+
+    document.getElementById("huntSubmitGuess").disabled = true;
+    document.getElementById("gameStatus").textContent =
+        "Checking your guess...";
+
+    try {
+        await set(
+            ref(db, "rooms/" + room + "/guess"),
+            {
+                player: Number(myPlayer),
+                characterId: huntGuessChoice.id,
+                timestamp: Date.now()
+            }
+        );
+
+        document.getElementById("gameStatus").textContent =
+            "Waiting for the result...";
+
+    } catch (e) {
+        console.error("Guess submission failed:", e);
+        awaitingGuess = false;
+
+        document.getElementById("gameStatus").textContent =
+            "Could not submit guess: " + (e.message || "Firebase error");
+
+        document.getElementById("huntSubmitGuess").disabled = false;
+    }
+
 }
 
 /* =========================================
