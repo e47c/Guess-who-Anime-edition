@@ -301,60 +301,6 @@ label {
     margin: 8px 0 0;
 }
 
-.hunt-picker {
-    max-width: 700px;
-    margin: 20px auto;
-}
-
-.hunt-results {
-    max-height: 260px;
-    overflow-y: auto;
-    margin-top: 10px;
-    border-radius: 9px;
-    border: 1px solid rgba(217,164,65,.25);
-}
-
-.hunt-result-item {
-    padding: 11px 14px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 14px;
-    border-bottom: 1px solid rgba(217,164,65,.15);
-    background: rgba(8,32,42,.5);
-    transition: background .1s ease;
-}
-
-.hunt-result-item:last-child {
-    border-bottom: none;
-}
-
-.hunt-result-item:hover,
-.hunt-result-item.active {
-    background: rgba(217,164,65,.22);
-}
-
-.hunt-preview {
-    margin-top: 16px;
-    text-align: center;
-}
-
-.hunt-preview img {
-    width: 100%;
-    max-width: 320px;
-    aspect-ratio: 1;
-    object-fit: cover;
-    border-radius: 12px;
-    border: 3px solid var(--gold);
-    box-shadow: 0 10px 24px rgba(0,0,0,.4);
-}
-
-.hunt-preview div {
-    margin-top: 10px;
-    font-family: var(--font-display);
-    font-size: 22px;
-    color: var(--gold-bright);
-}
-
 
 /* ================================
    LOBBY
@@ -699,37 +645,6 @@ Play online with a friend
 
 
 <div
-    id="opVariantField"
-    class="field">
-
-<label>One Piece Play Style</label>
-
-<div class="sizes">
-
-<button
-    id="variantBoard"
-    class="size variant-btn selected"
-    onclick="setVariant('board')">
-🎯 Classic Board
-</button>
-
-<button
-    id="variantHunt"
-    class="size variant-btn"
-    onclick="setVariant('hunt')">
-🔍 Character Hunt
-</button>
-
-</div>
-
-<p class="anime-hint">
-Character Hunt: search &amp; pick any canon character by name, no board — great for playing over a Discord call.
-</p>
-
-</div>
-
-
-<div
     id="animePoll"
     class="field hidden">
 
@@ -771,9 +686,9 @@ Characters will be pulled randomly from every series you check.
 </div>
 
 
-<div
-    id="cardsField"
-    class="field">
+<div class="field">
+
+<label>Number of Cards</label>
 
 <div class="sizes">
 
@@ -959,31 +874,6 @@ Your opponent won't see your choice.
 </div>
 
 
-<div
-    id="huntSecretPicker"
-    class="hunt-picker hidden">
-
-<input
-    id="huntSecretSearch"
-    placeholder="Search a canon character by name...">
-
-<div
-    id="huntSecretResults"
-    class="hunt-results">
-</div>
-
-<div
-    id="huntSecretPreview"
-    class="hunt-preview hidden">
-
-<img id="huntSecretPreviewImg" src="" alt="">
-<div id="huntSecretPreviewName"></div>
-
-</div>
-
-</div>
-
-
 <div style="text-align:center">
 
 <button
@@ -1046,48 +936,6 @@ Loading...
 <div
     id="board"
     class="board">
-</div>
-
-
-<div
-    id="huntGuessArea"
-    class="hunt-picker hidden">
-
-<p class="anime-hint" style="text-align:center">
-Ask your questions via Discord, then search and submit your guess below.
-</p>
-
-<input
-    id="huntGuessSearch"
-    placeholder="Search a canon character by name...">
-
-<div
-    id="huntGuessResults"
-    class="hunt-results">
-</div>
-
-<div
-    id="huntGuessPreview"
-    class="hunt-preview hidden">
-
-<img id="huntGuessPreviewImg" src="" alt="">
-<div id="huntGuessPreviewName"></div>
-
-</div>
-
-<div style="text-align:center; margin-top:12px">
-
-<button
-    id="huntSubmitGuess"
-    disabled
-    onclick="submitHuntGuess()">
-
-🔍 SUBMIT GUESS
-
-</button>
-
-</div>
-
 </div>
 
 
@@ -1321,12 +1169,6 @@ let boardSize = 24;
 // "onepiece" or "anime" — chosen on the home screen before creating a room.
 let mode = "onepiece";
 
-// "board" or "hunt" — only meaningful when mode === "onepiece".
-let variant = "board";
-
-// Currently selected character in the Hunt-mode guess search, if any.
-let huntGuessChoice = null;
-
 let board = [];
 
 let selectedSecret = null;
@@ -1487,320 +1329,6 @@ const CHARACTER_LIBRARY = [
 ];
 
 /* =========================================
-   CHARACTER HUNT DIRECTORY (One Piece)
-   ---------------------------------------
-   Name-searchable roster for "Character Hunt"
-   mode. Add your own image for each name at
-   the matching path in images/directory/.
-========================================= */
-
-const CHARACTER_DIRECTORY = [
-    { name: "Monkey D. Luffy", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Monkey%20D.%20Luffy%20Portrait.png" },
-    { name: "Roronoa Zoro", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Roronoa%20Zoro%20Portrait.png" },
-    { name: "Nami", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Nami%20Portrait.png" },
-    { name: "Usopp", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Usopp%20Portrait.png" },
-    { name: "Sanji", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Sanji%20Portrait.png" },
-    { name: "Tony Tony Chopper", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Tony%20Tony%20Chopper%20Portrait.png" },
-    { name: "Nico Robin", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Nico%20Robin%20Portrait.png" },
-    { name: "Franky", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Franky%20Portrait.png" },
-    { name: "Brook", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Brook%20Portrait.png" },
-    { name: "Jinbe", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Jinbe%20Portrait.png" },
-    { name: "Portgas D. Ace", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Portgas%20D.%20Ace%20Portrait.png" },
-    { name: "Sabo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Sabo%20Portrait.png" },
-    { name: "Shanks", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Shanks%20Portrait.png" },
-    { name: "Buggy", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Buggy%20Portrait.png" },
-    { name: "Silvers Rayleigh", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Silvers%20Rayleigh%20Portrait.png" },
-    { name: "Monkey D. Dragon", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Monkey%20D.%20Dragon%20Portrait.png" },
-    { name: "Monkey D. Garp", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Monkey%20D.%20Garp%20Portrait.png" },
-    { name: "Boa Hancock", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Boa%20Hancock%20Portrait.png" },
-    { name: "Trafalgar Law", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Trafalgar%20D.%20Water%20Law%20Portrait.png" },
-    { name: "Eustass Kid", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Eustass%20Kid%20Portrait.png" },
-    { name: "Nefertari Vivi", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Nefertari%20Vivi%20Portrait.png" },
-    { name: "Crocodile", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Crocodile%20Portrait.png" },
-    { name: "Marco", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Marco%20Portrait.png" },
-    { name: "Yamato", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Yamato%20Portrait.png" },
-    { name: "Kaido", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kaido%20Portrait.png" },
-    { name: "Charlotte Linlin", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Linlin%20Portrait.png" },
-    { name: "Edward Newgate", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Edward%20Newgate%20Portrait.png" },
-    { name: "Marshall D. Teach", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Marshall%20D.%20Teach%20Portrait.png" },
-    { name: "Donquixote Doflamingo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Donquixote%20Doflamingo%20Portrait.png" },
-    { name: "Bartholomew Kuma", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Bartholomew%20Kuma%20Portrait.png" },
-    { name: "Jewelry Bonney", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Jewelry%20Bonney%20Portrait.png" },
-    { name: "Killer", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Killer%20Portrait.png" },
-    { name: "Basil Hawkins", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Basil%20Hawkins%20Portrait.png" },
-    { name: "Capone Bege", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Capone%20Bege%20Portrait.png" },
-    { name: "X Drake", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/X%20Drake%20Portrait.png" },
-    { name: "Urouge", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Urouge%20Portrait.png" },
-    { name: "Scratchmen Apoo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Scratchmen%20Apoo%20Portrait.png" },
-    { name: "Vinsmoke Judge", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Vinsmoke%20Judge%20Portrait.png" },
-    { name: "Vinsmoke Reiju", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Vinsmoke%20Reiju%20Portrait.png" },
-    { name: "Vinsmoke Ichiji", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Vinsmoke%20Ichiji%20Portrait.png" },
-    { name: "Vinsmoke Niji", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Vinsmoke%20Niji%20Portrait.png" },
-    { name: "Vinsmoke Yonji", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Vinsmoke%20Yonji%20Portrait.png" },
-    { name: "Sengoku", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Sengoku%20Portrait.png" },
-    { name: "Issho", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Issho%20Portrait.png" },
-    { name: "Borsalino", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Borsalino%20Portrait.png" },
-    { name: "Sakazuki", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Sakazuki%20Portrait.png" },
-    { name: "Kuzan", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kuzan%20Portrait.png" },
-    { name: "Smoker", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Smoker%20Portrait.png" },
-    { name: "Tashigi", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Tashigi%20Portrait.png" },
-    { name: "Coby", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Koby%20Portrait.png" },
-    { name: "Helmeppo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Helmeppo%20Portrait.png" },
-    { name: "Zephyr", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Zephyr%20Portrait.png" },
-    { name: "Momonga", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Momonga%20Portrait.png" },
-    { name: "Vergo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Vergo%20Portrait.png" },
-    { name: "Gecko Moria", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Gecko%20Moria%20Portrait.png" },
-    { name: "Dracule Mihawk", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Dracule%20Mihawk%20Portrait.png" },
-    { name: "Edward Weevil", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Edward%20Weevil%20Portrait.png" },
-    { name: "Jozu", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Jozu%20Portrait.png" },
-    { name: "Vista", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Vista%20Portrait.png" },
-    { name: "Izo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Izo%20Portrait.png" },
-    { name: "Curiel", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Curiel%20Portrait.png" },
-    { name: "Blenheim", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Blenheim%20Portrait.png" },
-    { name: "Charlotte Katakuri", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Katakuri%20Portrait.png" },
-    { name: "Charlotte Smoothie", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Smoothie%20Portrait.png" },
-    { name: "Charlotte Cracker", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Cracker%20Portrait.png" },
-    { name: "Charlotte Perospero", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Perospero%20Portrait.png" },
-    { name: "Charlotte Oven", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Oven%20Portrait.png" },
-    { name: "Charlotte Daifuku", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Daifuku%20Portrait.png" },
-    { name: "Charlotte Compote", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Compote%20Portrait.png" },
-    { name: "Charlotte Pudding", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Pudding%20Portrait.png" },
-    { name: "Charlotte Chiffon", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Chiffon%20Portrait.png" },
-    { name: "King", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/King%20Portrait.png" },
-    { name: "Queen", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Queen%20Portrait.png" },
-    { name: "Jack", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Jack%20Portrait.png" },
-    { name: "Who's-Who", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Who%27s-Who%20Portrait.png" },
-    { name: "Ulti", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Ulti%20Portrait.png" },
-    { name: "Page One", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Page%20One%20Portrait.png" },
-    { name: "Black Maria", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Black%20Maria%20Portrait.png" },
-    { name: "Sasaki", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Sasaki%20Portrait.png" },
-    { name: "Emporio Ivankov", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Emporio%20Ivankov%20Portrait.png" },
-    { name: "Inazuma", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Inazuma%20Portrait.png" },
-    { name: "Karasu", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Karasu%20Portrait.png" },
-    { name: "Belo Betty", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Belo%20Betty%20Portrait.png" },
-    { name: "Morley", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Morley%20Portrait.png" },
-    { name: "Lindbergh", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Lindbergh%20Portrait.png" },
-    { name: "Koala", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Koala%20Portrait.png" },
-    { name: "Kinemon", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kinemon%20Portrait.png" },
-    { name: "Kanjuro", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kanjuro%20Portrait.png" },
-    { name: "Raizo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Raizo%20Portrait.png" },
-    { name: "Denjiro", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Denjiro%20Portrait.png" },
-    { name: "Kawamatsu", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kawamatsu%20Portrait.png" },
-    { name: "Nekomamushi", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Nekomamushi%20Portrait.png" },
-    { name: "Inuarashi", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Inuarashi%20Portrait.png" },
-    { name: "Kozuki Oden", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kouzuki%20Oden%20Portrait.png" },
-    { name: "Kozuki Toki", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kouzuki%20Toki%20Portrait.png" },
-    { name: "Kozuki Momonosuke", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kouzuki%20Momonosuke%20Portrait.png" },
-    { name: "Kozuki Hiyori", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kouzuki%20Hiyori%20Portrait.png" },
-    { name: "Shimotsuki Yasuie", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Shimotsuki%20Yasuie%20Portrait.png" },
-    { name: "Kurozumi Orochi", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kurozumi%20Orochi%20Portrait.png" },
-    { name: "Shutenmaru", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Shutenmaru%20Portrait.png" },
-    { name: "Rob Lucci", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Rob%20Lucci%20Portrait.png" },
-    { name: "Kaku", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kaku%20Portrait.png" },
-    { name: "Kalifa", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kalifa%20Portrait.png" },
-    { name: "Blueno", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Blueno%20Portrait.png" },
-    { name: "Jabra", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Jabra%20Portrait.png" },
-    { name: "Kumadori", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kumadori%20Portrait.png" },
-    { name: "Spandam", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Spandam%20Portrait.png" },
-    { name: "Fukurou", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Fukurou%20Portrait.png" },
-    { name: "Spandine", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Spandine%20Portrait.png" },
-    { name: "Daz Bones", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Daz%20Bonez%20Portrait.png" },
-    { name: "Bon Kurei", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Bentham%20Portrait.png" },
-    { name: "Galdino", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Galdino%20Portrait.png" },
-    { name: "Miss Doublefinger", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Zala%20Portrait.png" },
-    { name: "Miss Merry Christmas", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Drophy%20Portrait.png" },
-    { name: "Miss Valentine", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Mikita%20Portrait.png" },
-    { name: "Miss Goldenweek", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Marianne%20Portrait.png" },
-    { name: "Fisher Tiger", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Fisher%20Tiger%20Portrait.png" },
-    { name: "Otohime", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Otohime%20Portrait.png" },
-    { name: "Neptune", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Neptune%20Portrait.png" },
-    { name: "Shirahoshi", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Shirahoshi%20Portrait.png" },
-    { name: "Wadatsumi", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Wadatsumi%20Portrait.png" },
-    { name: "Vander Decken IX", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Vander%20Decken%20IX%20Portrait.png" },
-    { name: "Hody Jones", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Hody%20Jones%20Portrait.png" },
-    { name: "Nefertari Cobra", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Nefertari%20Cobra%20Portrait.png" },
-    { name: "Pell", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Pell%20Portrait.png" },
-    { name: "Chaka", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Chaka%20Portrait.png" },
-    { name: "Igaram", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Igaram%20Portrait.png" },
-    { name: "Enel", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Enel%20Portrait.png" },
-    { name: "Gan Fall", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Gan%20Fall%20Portrait.png" },
-    { name: "Wyper", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Wyper%20Portrait.png" },
-    { name: "Conis", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Conis%20Portrait.png" },
-    { name: "Aisa", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Aisa%20Portrait.png" },
-    { name: "Iceburg", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Iceburg%20Portrait.png" },
-    { name: "Paulie", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Paulie%20Portrait.png" },
-    { name: "Zambai", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Zambai%20Portrait.png" },
-    { name: "Tilestone", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Tilestone%20Portrait.png" },
-    { name: "Perona", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Perona%20Portrait.png" },
-    { name: "Absalom", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Absalom%20Portrait.png" },
-    { name: "Hogback", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Hogback%20Portrait.png" },
-    { name: "Ryuma", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Ryuma%20Portrait.png" },
-    { name: "Cindry", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Cindry%20Portrait.png" },
-    { name: "Boa Sandersonia", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Boa%20Sandersonia%20Portrait.png" },
-    { name: "Boa Marigold", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Boa%20Marigold%20Portrait.png" },
-    { name: "Elder Nyon", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Gloriosa%20Portrait.png" },
-    { name: "Magellan", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Magellan%20Portrait.png" },
-    { name: "Hannyabal", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Hannyabal%20Portrait.png" },
-    { name: "Sadi", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Sadi%20Portrait.png" },
-    { name: "Domino", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Domino%20Portrait.png" },
-    { name: "Jaguar D. Saul", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Jaguar%20D.%20Saul%20Portrait.png" },
-    { name: "Nico Olvia", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Nico%20Olvia%20Portrait.png" },
-    { name: "Professor Clover", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Professor%20Clover%20Portrait.png" },
-    { name: "Imu", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Imu%20Portrait.png" },
-    { name: "Saint Jaygarcia Saturn", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Saint%20Jaygarcia%20Saturn%20Portrait.png" },
-    { name: "Marcus Mars", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Marcus%20Mars%20Portrait.png" },
-    { name: "Nusjuro", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Ethanbaron%20V.%20Nusjuro%20Portrait.png" },
-    { name: "Ju Peter", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Shepherd%20Ju%20Peter%20Portrait.png" },
-    { name: "Topman Warcury", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Topman%20Warcury%20Portrait.png" },
-    { name: "Riku Dold III", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Riku%20Doldo%20III%20Portrait.png" },
-    { name: "Caesar Clown", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Caesar%20Clown%20Portrait.png" },
-    { name: "Monet", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Monet%20Portrait.png" },
-    { name: "Brownbeard", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Brownbeard%20Portrait.png" },
-    { name: "Trebol", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Trebol%20Portrait.png" },
-    { name: "Pica", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Pica%20Portrait.png" },
-    { name: "Diamante", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Diamante%20Portrait.png" },
-    { name: "Sugar", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Sugar%20Portrait.png" },
-    { name: "Bellamy", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Bellamy%20Portrait.png" },
-    { name: "Cavendish", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Cavendish%20Portrait.png" },
-    { name: "Rebecca", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Rebecca%20Portrait.png" },
-    { name: "Kyros", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kyros%20Portrait.png" },
-    { name: "Viola", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Viola%20Portrait.png" },
-    { name: "Streusen", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Streusen%20Portrait.png" },
-    { name: "Pekoms", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Pekoms%20Portrait.png" },
-    { name: "Carrot", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Carrot%20Portrait.png" },
-    { name: "Wanda", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Wanda%20Portrait.png" },
-    { name: "Foxy", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Foxy%20Portrait.png" },
-    { name: "Hamburg", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Hamburg%20Portrait.png" },
-    { name: "Porche", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Porche%20Portrait.png" },
-    { name: "Wapol", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Wapol%20Portrait.png" },
-    { name: "Dalton", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Dalton%20Portrait.png" },
-    { name: "Kureha", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kureha%20Portrait.png" },
-    { name: "Chess", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Chess%20Portrait.png" },
-    { name: "Kuromarimo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kuromarimo%20Portrait.png" },
-    { name: "Alvida", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Alvida%20Portrait.png" },
-    { name: "Morgan", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Morgan%20Portrait.png" },
-    { name: "Kuro", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kuro%20Portrait.png" },
-    { name: "Jango", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Jango%20Portrait.png" },
-    { name: "Don Krieg", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Don%20Krieg%20Portrait.png" },
-    { name: "Gin", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Gin%20Portrait.png" },
-    { name: "Arlong", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Arlong%20Portrait.png" },
-    { name: "Genzo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Genzo%20Portrait.png" },
-    { name: "Kaya", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kaya%20Portrait.png" },
-    { name: "Gaimon", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Gaimon%20Portrait.png" },
-    { name: "Bepo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Bepo%20Portrait.png" },
-    { name: "Shachi", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Shachi%20Portrait.png" },
-    { name: "Penguin", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Penguin%20Portrait.png" },
-    { name: "Ikkaku", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Ikkaku%20Portrait.png" },
-    { name: "Wanze", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Wanze%20Portrait.png" },
-    { name: "Heracles", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Heracles%20Portrait.png" },
-    { name: "Cabaji", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Cabaji%20Portrait.png" },
-    { name: "Mohji", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Mohji%20Portrait.png" },
-    { name: "Richie", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Richie%20Portrait.png" },
-    { name: "Sentomaru", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Sentomaru%20Portrait.png" },
-    { name: "Pacifista", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Pacifista%20Portrait.png" },
-    { name: "Baby 5", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Baby%205%20Portrait.png" },
-    { name: "Buffalo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Buffalo%20Portrait.png" },
-    { name: "Gladius", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Gladius%20Portrait.png" },
-    { name: "Machvise", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Machvise%20Portrait.png" },
-    { name: "Lao G", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Lao%20G%20Portrait.png" },
-    { name: "Dellinger", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Dellinger%20Portrait.png" },
-    { name: "Jora", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Jora%20Portrait.png" },
-    { name: "Senor Pink", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Senor%20Pink%20Portrait.png" },
-    { name: "Charlotte Mont-d'Or", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Mont-d%27Or%20Portrait.png" },
-    { name: "Charlotte Amande", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Amande%20Portrait.png" },
-    { name: "Charlotte Brulee", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Brulee%20Portrait.png" },
-    { name: "Charlotte Galette", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Galette%20Portrait.png" },
-    { name: "Charlotte Opera", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Opera%20Portrait.png" },
-    { name: "Charlotte Snack", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Snack%20Portrait.png" },
-    { name: "Charlotte Cadenza", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Cadenza%20Portrait.png" },
-    { name: "Charlotte Angel", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Angel%20Portrait.png" },
-    { name: "Charlotte Anana", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Anana%20Portrait.png" },
-    { name: "Zeus", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Zeus%20Portrait.png" },
-    { name: "Prometheus", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Prometheus%20Portrait.png" },
-    { name: "Napoleon", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Napoleon%20Portrait.png" },
-    { name: "Judge", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Vinsmoke%20Judge%20Portrait.png" },
-    { name: "Cosette", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Cosette%20Portrait.png" },
-    { name: "Sora Vinsmoke", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Sora%20Vinsmoke%20Portrait.png" },
-    { name: "Kid Killer", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Killer%20Portrait.png" },
-    { name: "Heat", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Heat%20Portrait.png" },
-    { name: "Wire", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Wire%20Portrait.png" },
-    { name: "Diez Barrels", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Diez%20Barrels%20Portrait.png" },
-    { name: "Rocks D. Xebec", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Rocks%20D.%20Xebec%20Portrait.png" },
-    { name: "Buggy the Clown", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Buggy%20Portrait.png" },
-    { name: "Croccodile", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Crocodile%20Portrait.png" },
-    { name: "Miss All Sunday", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Nico%20Robin%20Portrait.png" },
-    { name: "Vice Admiral Doberman", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Doberman%20Portrait.png" },
-    { name: "Vice Admiral Strawberry", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Strawberry%20Portrait.png" },
-    { name: "Vice Admiral Onigumo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Onigumo%20Portrait.png" },
-    { name: "Rear Admiral Bastille", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Bastille%20Portrait.png" },
-    { name: "Yeti Cool Brothers", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Yeti%20Cool%20Brothers%20Portrait.png" },
-    { name: "Wetton", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Wetton%20Portrait.png" },
-    { name: "Broggy", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Broggy%20Portrait.png" },
-    { name: "Dorry", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Dorry%20Portrait.png" },
-    { name: "Camie", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Camie%20Portrait.png" },
-    { name: "Pappug", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Pappug%20Portrait.png" },
-    { name: "Hatchan", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Hatchan%20Portrait.png" },
-    { name: "Keimi", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Keimi%20Portrait.png" },
-    { name: "Duval", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Duval%20Portrait.png" },
-    { name: "Bellett", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Bellett%20Portrait.png" },
-    { name: "Tonjit", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Tonjit%20Portrait.png" },
-    { name: "Aokiji Kuzan", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kuzan%20Portrait.png" },
-    { name: "Absalom Hogback", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Absalom%20Portrait.png" },
-    { name: "Victoria Cindry", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Cindry%20Portrait.png" },
-    { name: "Gyro", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Gyro%20Portrait.png" },
-    { name: "Wolf", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Wolf%20Portrait.png" },
-    { name: "Hamlet", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Hamlet%20Portrait.png" },
-    { name: "Momonosuke", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kouzuki%20Momonosuke%20Portrait.png" },
-    { name: "Shinobu", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Shinobu%20Portrait.png" },
-    { name: "Kikunojo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kikunojo%20Portrait.png" },
-    { name: "Ashura Doji", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Ashura%20Doji%20Portrait.png" },
-    { name: "Orochi", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kurozumi%20Orochi%20Portrait.png" },
-    { name: "Kaido King of the Beasts", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kaido%20Portrait.png" },
-    { name: "Apoo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Apoo%20Portrait.png" },
-    { name: "Hyogoro", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Hyogoro%20Portrait.png" },
-    { name: "O-Toko", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Otoko%20Portrait.png" },
-    { name: "O-Kiku", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kikunojo%20Portrait.png" },
-    { name: "Franosuke", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Franky%20Portrait.png" },
-    { name: "Onimaru", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Onimaru%20Portrait.png" },
-    { name: "Speed", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Speed%20Portrait.png" },
-    { name: "Bartolomeo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Bartolomeo%20Portrait.png" },
-    { name: "Ideo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Ideo%20Portrait.png" },
-    { name: "Blue Gilly", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Blue%20Gilly%20Portrait.png" },
-    { name: "Sai", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Sai%20Portrait.png" },
-    { name: "Ricky", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Ricky%20Portrait.png" },
-    { name: "Leo", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Leo%20Portrait.png" },
-    { name: "Rebecca Rasho", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Rebecca%20Portrait.png" },
-    { name: "Riku Doldo III", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Riku%20Doldo%20III%20Portrait.png" },
-    { name: "Kyros the Slayer", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Kyros%20Portrait.png" },
-    { name: "Elizabello II", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Elizabello%20II%20Portrait.png" },
-    { name: "Suleiman", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Suleiman%20Portrait.png" },
-    { name: "Chinjao", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Chinjao%20Portrait.png" },
-    { name: "Hajrudin", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Hajrudin%20Portrait.png" },
-    { name: "Abdullah", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Abdullah%20Portrait.png" },
-    { name: "Jeet", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Jeet%20Portrait.png" },
-    { name: "Orlumbus", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Orlumbus%20Portrait.png" },
-    { name: "Robin Nico", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Nico%20Robin%20Portrait.png" },
-    { name: "Franky Cutty Flam", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Franky%20Portrait.png" },
-    { name: "Bege Capone", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Capone%20Bege%20Portrait.png" },
-    { name: "Chiffon Streusen", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Charlotte%20Chiffon%20Portrait.png" },
-    { name: "Germa 66 Soldiers", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Germa%2066%20Portrait.png" },
-    { name: "Niji Vinsmoke", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Vinsmoke%20Niji%20Portrait.png" },
-    { name: "Wadd", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Wadd%20Portrait.png" },
-    { name: "Gyats", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Gyats%20Portrait.png" },
-    { name: "Vinsmoke Sanji", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Sanji%20Portrait.png" },
-    { name: "Nami Bellemere", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Nami%20Portrait.png" },
-    { name: "Bellemere", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Bellemere%20Portrait.png" },
-    { name: "Nojiko", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Nojiko%20Portrait.png" },
-    { name: "Woop Slap", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Woop%20Slap%20Portrait.png" },
-    { name: "Makino", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Makino%20Portrait.png" },
-    { name: "Shanks Red Hair", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Shanks%20Portrait.png" },
-    { name: "Lucky Roux", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Lucky%20Roux%20Portrait.png" },
-    { name: "Yasopp", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Yasopp%20Portrait.png" },
-    { name: "Benn Beckman", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Benn%20Beckman%20Portrait.png" },
-    { name: "Rockstar", image: "https://onepiece.fandom.com/wiki/Special:Redirect/file/Rockstar%20Portrait.png" },
-];
-
-/* =========================================
    ANIME EDITION LIBRARY
    ---------------------------------------
    Each key is an anime series. Add more file
@@ -1811,138 +1339,138 @@ const CHARACTER_DIRECTORY = [
 const ANIME_LIBRARY = {
 
     naruto: [
-        "images/anime/naruto/1.jpg",
-        "images/anime/naruto/2.jpg",
-        "images/anime/naruto/3.jpg",
-        "images/anime/naruto/4.jpg",
-        "images/anime/naruto/5.jpg",
-        "images/anime/naruto/6.jpg",
-        "images/anime/naruto/7.jpg",
-        "images/anime/naruto/8.jpg",
-        "images/anime/naruto/9.jpg",
-        "images/anime/naruto/10.jpg",
-        "images/anime/naruto/11.jpg",
-        "images/anime/naruto/12.jpg",
-        "images/anime/naruto/13.jpg",
-        "images/anime/naruto/14.jpg",
-        "images/anime/naruto/15.jpg",
-        "images/anime/naruto/16.jpg",
-        "images/anime/naruto/17.jpg",
-        "images/anime/naruto/18.jpg",
-        "images/anime/naruto/19.jpg",
-        "images/anime/naruto/20.jpg",
-        "images/anime/naruto/21.jpg",
-        "images/anime/naruto/22.jpg",
-        "images/anime/naruto/23.jpg",
-        "images/anime/naruto/24.jpg"
+        "images/anime/naruto/na1.jpg",
+        "images/anime/naruto/na2.jpg",
+        "images/anime/naruto/na3.jpg",
+        "images/anime/naruto/na4.jpg",
+        "images/anime/naruto/na5.jpg",
+        "images/anime/naruto/na6.jpg",
+        "images/anime/naruto/na7.jpg",
+        "images/anime/naruto/na8.jpg",
+        "images/anime/naruto/na9.jpg",
+        "images/anime/naruto/na10.jpg",
+        "images/anime/naruto/na11.jpg",
+        "images/anime/naruto/na12.jpg",
+        "images/anime/naruto/na13.jpg",
+        "images/anime/naruto/na14.jpg",
+        "images/anime/naruto/na15.jpg",
+        "images/anime/naruto/na16.jpg",
+        "images/anime/naruto/na17.jpg",
+        "images/anime/naruto/na18.jpg",
+        "images/anime/naruto/na19.jpg",
+        "images/anime/naruto/na20.jpg",
+        "images/anime/naruto/na21.jpg",
+        "images/anime/naruto/na22.jpg",
+        "images/anime/naruto/na23.jpg",
+        "images/anime/naruto/na24.jpg"
     ],
 
     dragonball: [
-        "images/anime/dragonball/1.jpg",
-        "images/anime/dragonball/2.jpg",
-        "images/anime/dragonball/3.jpg",
-        "images/anime/dragonball/4.jpg",
-        "images/anime/dragonball/5.jpg",
-        "images/anime/dragonball/6.jpg",
-        "images/anime/dragonball/7.jpg",
-        "images/anime/dragonball/8.jpg",
-        "images/anime/dragonball/9.jpg",
-        "images/anime/dragonball/10.jpg",
-        "images/anime/dragonball/11.jpg",
-        "images/anime/dragonball/12.jpg",
-        "images/anime/dragonball/13.jpg",
-        "images/anime/dragonball/14.jpg",
-        "images/anime/dragonball/15.jpg",
-        "images/anime/dragonball/16.jpg",
-        "images/anime/dragonball/17.jpg",
-        "images/anime/dragonball/18.jpg",
-        "images/anime/dragonball/19.jpg",
-        "images/anime/dragonball/20.jpg",
-        "images/anime/dragonball/21.jpg",
-        "images/anime/dragonball/22.jpg",
-        "images/anime/dragonball/23.jpg",
-        "images/anime/dragonball/24.jpg"
+        "images/anime/dragonball/db1.jpg",
+        "images/anime/dragonball/db2.jpg",
+        "images/anime/dragonball/db3.jpg",
+        "images/anime/dragonball/db4.jpg",
+        "images/anime/dragonball/db5.jpg",
+        "images/anime/dragonball/db6.jpg",
+        "images/anime/dragonball/db7.jpg",
+        "images/anime/dragonball/db8.jpg",
+        "images/anime/dragonball/db9.jpg",
+        "images/anime/dragonball/db10.jpg",
+        "images/anime/dragonball/db11.jpg",
+        "images/anime/dragonball/db12.jpg",
+        "images/anime/dragonball/db13.jpg",
+        "images/anime/dragonball/db14.jpg",
+        "images/anime/dragonball/db15.jpg",
+        "images/anime/dragonball/db16.jpg",
+        "images/anime/dragonball/db17.jpg",
+        "images/anime/dragonball/db18.jpg",
+        "images/anime/dragonball/db19.jpg",
+        "images/anime/dragonball/db20.jpg",
+        "images/anime/dragonball/db21.jpg",
+        "images/anime/dragonball/db22.jpg",
+        "images/anime/dragonball/db23.jpg",
+        "images/anime/dragonball/db24.jpg"
     ],
 
     jjk: [
-        "images/anime/jjk/1.jpg",
-        "images/anime/jjk/2.jpg",
-        "images/anime/jjk/3.jpg",
-        "images/anime/jjk/4.jpg",
-        "images/anime/jjk/5.jpg",
-        "images/anime/jjk/6.jpg",
-        "images/anime/jjk/7.jpg",
-        "images/anime/jjk/8.jpg",
-        "images/anime/jjk/9.jpg",
-        "images/anime/jjk/10.jpg",
-        "images/anime/jjk/11.jpg",
-        "images/anime/jjk/12.jpg",
-        "images/anime/jjk/13.jpg",
-        "images/anime/jjk/14.jpg",
-        "images/anime/jjk/15.jpg",
-        "images/anime/jjk/16.jpg",
-        "images/anime/jjk/17.jpg",
-        "images/anime/jjk/18.jpg",
-        "images/anime/jjk/19.jpg",
-        "images/anime/jjk/20.jpg",
-        "images/anime/jjk/21.jpg",
-        "images/anime/jjk/22.jpg",
-        "images/anime/jjk/23.jpg",
-        "images/anime/jjk/24.jpg"
+        "images/anime/jjk/jk1.jpg",
+        "images/anime/jjk/jk2.jpg",
+        "images/anime/jjk/jk3.jpg",
+        "images/anime/jjk/jk4.jpg",
+        "images/anime/jjk/jk5.jpg",
+        "images/anime/jjk/jk6.jpg",
+        "images/anime/jjk/jk7.jpg",
+        "images/anime/jjk/jk8.jpg",
+        "images/anime/jjk/jk9.jpg",
+        "images/anime/jjk/jk10.jpg",
+        "images/anime/jjk/jk11.jpg",
+        "images/anime/jjk/jk12.jpg",
+        "images/anime/jjk/jk13.jpg",
+        "images/anime/jjk/jk14.jpg",
+        "images/anime/jjk/jk15.jpg",
+        "images/anime/jjk/jk16.jpg",
+        "images/anime/jjk/jk17.jpg",
+        "images/anime/jjk/jk18.jpg",
+        "images/anime/jjk/jk19.jpg",
+        "images/anime/jjk/jk20.jpg",
+        "images/anime/jjk/jk21.jpg",
+        "images/anime/jjk/jk22.jpg",
+        "images/anime/jjk/jk23.jpg",
+        "images/anime/jjk/jk24.jpg"
     ],
 
     demonslayer: [
-        "images/anime/demonslayer/1.jpg",
-        "images/anime/demonslayer/2.jpg",
-        "images/anime/demonslayer/3.jpg",
-        "images/anime/demonslayer/4.jpg",
-        "images/anime/demonslayer/5.jpg",
-        "images/anime/demonslayer/6.jpg",
-        "images/anime/demonslayer/7.jpg",
-        "images/anime/demonslayer/8.jpg",
-        "images/anime/demonslayer/9.jpg",
-        "images/anime/demonslayer/10.jpg",
-        "images/anime/demonslayer/11.jpg",
-        "images/anime/demonslayer/12.jpg",
-        "images/anime/demonslayer/13.jpg",
-        "images/anime/demonslayer/14.jpg",
-        "images/anime/demonslayer/15.jpg",
-        "images/anime/demonslayer/16.jpg",
-        "images/anime/demonslayer/17.jpg",
-        "images/anime/demonslayer/18.jpg",
-        "images/anime/demonslayer/19.jpg",
-        "images/anime/demonslayer/20.jpg",
-        "images/anime/demonslayer/21.jpg",
-        "images/anime/demonslayer/22.jpg",
-        "images/anime/demonslayer/23.jpg",
-        "images/anime/demonslayer/24.jpg"
+        "images/anime/demonslayer/ds1.jpg",
+        "images/anime/demonslayer/ds2.jpg",
+        "images/anime/demonslayer/ds3.jpg",
+        "images/anime/demonslayer/ds4.jpg",
+        "images/anime/demonslayer/ds5.jpg",
+        "images/anime/demonslayer/ds6.jpg",
+        "images/anime/demonslayer/ds7.jpg",
+        "images/anime/demonslayer/ds8.jpg",
+        "images/anime/demonslayer/ds9.jpg",
+        "images/anime/demonslayer/ds10.jpg",
+        "images/anime/demonslayer/ds11.jpg",
+        "images/anime/demonslayer/ds12.jpg",
+        "images/anime/demonslayer/ds13.jpg",
+        "images/anime/demonslayer/ds14.jpg",
+        "images/anime/demonslayer/ds15.jpg",
+        "images/anime/demonslayer/ds16.jpg",
+        "images/anime/demonslayer/ds17.jpg",
+        "images/anime/demonslayer/ds18.jpg",
+        "images/anime/demonslayer/ds19.jpg",
+        "images/anime/demonslayer/ds20.jpg",
+        "images/anime/demonslayer/ds21.jpg",
+        "images/anime/demonslayer/ds22.jpg",
+        "images/anime/demonslayer/ds23.jpg",
+        "images/anime/demonslayer/ds24.jpg"
     ],
 
     bleach: [
-        "images/anime/bleach/1.jpg",
-        "images/anime/bleach/2.jpg",
-        "images/anime/bleach/3.jpg",
-        "images/anime/bleach/4.jpg",
-        "images/anime/bleach/5.jpg",
-        "images/anime/bleach/6.jpg",
-        "images/anime/bleach/7.jpg",
-        "images/anime/bleach/8.jpg",
-        "images/anime/bleach/9.jpg",
-        "images/anime/bleach/10.jpg",
-        "images/anime/bleach/11.jpg",
-        "images/anime/bleach/12.jpg",
-        "images/anime/bleach/13.jpg",
-        "images/anime/bleach/14.jpg",
-        "images/anime/bleach/15.jpg",
-        "images/anime/bleach/16.jpg",
-        "images/anime/bleach/17.jpg",
-        "images/anime/bleach/18.jpg",
-        "images/anime/bleach/19.jpg",
-        "images/anime/bleach/20.jpg",
-        "images/anime/bleach/21.jpg",
-        "images/anime/bleach/22.jpg",
-        "images/anime/bleach/23.jpg",
-        "images/anime/bleach/24.jpg"
+        "images/anime/bleach/bc1.jpg",
+        "images/anime/bleach/bc2.jpg",
+        "images/anime/bleach/bc3.jpg",
+        "images/anime/bleach/bc4.jpg",
+        "images/anime/bleach/bc5.jpg",
+        "images/anime/bleach/bc6.jpg",
+        "images/anime/bleach/bc7.jpg",
+        "images/anime/bleach/bc8.jpg",
+        "images/anime/bleach/bc9.jpg",
+        "images/anime/bleach/bc10.jpg",
+        "images/anime/bleach/bc11.jpg",
+        "images/anime/bleach/bc12.jpg",
+        "images/anime/bleach/bc13.jpg",
+        "images/anime/bleach/bc14.jpg",
+        "images/anime/bleach/bc15.jpg",
+        "images/anime/bleach/bc16.jpg",
+        "images/anime/bleach/bc17.jpg",
+        "images/anime/bleach/bc18.jpg",
+        "images/anime/bleach/bc19.jpg",
+        "images/anime/bleach/bc20.jpg",
+        "images/anime/bleach/bc21.jpg",
+        "images/anime/bleach/bc22.jpg",
+        "images/anime/bleach/bc23.jpg",
+        "images/anime/bleach/bc24.jpg"
     ]
 
 };
@@ -2070,68 +1598,6 @@ function setMode(newMode) {
             newMode !== "anime"
         );
 
-
-    // The Character Hunt / Classic Board choice only applies to
-    // One Piece mode. Switching to Anime Mix always falls back to a
-    // normal board (Anime Mix doesn't support Hunt in this version).
-    document
-        .getElementById(
-            "opVariantField"
-        )
-        .classList
-        .toggle(
-            "hidden",
-            newMode === "anime"
-        );
-
-    if (
-        newMode === "anime"
-    ) {
-        setVariant("board");
-    }
-
-}
-
-
-window.setVariant =
-function setVariant(newVariant) {
-
-    variant =
-        newVariant;
-
-
-    document
-        .querySelectorAll(".variant-btn")
-        .forEach(
-            btn =>
-                btn.classList.remove(
-                    "selected"
-                )
-        );
-
-
-    document
-        .getElementById(
-            newVariant === "hunt"
-                ? "variantHunt"
-                : "variantBoard"
-        )
-        .classList.add(
-            "selected"
-        );
-
-
-    // Board size is meaningless in Hunt mode — there's no board.
-    document
-        .getElementById(
-            "cardsField"
-        )
-        .classList
-        .toggle(
-            "hidden",
-            newVariant === "hunt"
-        );
-
 }
 
 
@@ -2216,83 +1682,6 @@ async function() {
         alert(
             "Enter your name first."
         );
-
-        return;
-
-    }
-
-
-    // Character Hunt has no board at all — it's a name-search picker
-    // instead. Handle it completely separately and return early so the
-    // existing board-generation path below stays untouched.
-    if (
-        mode === "onepiece"
-        && variant === "hunt"
-    ) {
-
-        room =
-            generateCode();
-
-        myPlayer =
-            1;
-
-        board =
-            [];
-
-        const huntRoomRef =
-            ref(
-                db,
-                "rooms/" + room
-            );
-
-        await set(
-            huntRoomRef,
-            {
-
-                mode:
-                    "onepiece",
-
-                variant:
-                    "hunt",
-
-                animes:
-                    [],
-
-                player1: {
-
-                    uid:
-                        user.uid,
-
-                    name:
-                        name,
-
-                    ready:
-                        false
-
-                },
-
-                player2:
-                    null,
-
-                status:
-                    "waiting",
-
-                turn:
-                    1,
-
-                winner:
-                    null,
-
-                result:
-                    null
-
-            }
-        );
-
-        onDisconnect(huntRoomRef)
-            .remove();
-
-        openLobby();
 
         return;
 
@@ -2406,9 +1795,6 @@ async function() {
 
             mode:
                 mode,
-
-            variant:
-                "board",
 
             animes:
                 selectedAnimes,
@@ -2868,75 +2254,6 @@ async function() {
 
 
 /* =========================================
-   HUNT MODE — SEARCH HELPER
-   ---------------------------------------
-   Wires a text input + results container to
-   live-filter CHARACTER_DIRECTORY by name.
-   Calls onSelect(characterObj) when a result
-   is clicked. Reused by both the secret-pick
-   screen and the in-game guess screen.
-========================================= */
-
-function setupHuntSearch(inputEl, resultsEl, onSelect) {
-
-    inputEl.value = "";
-    resultsEl.innerHTML = "";
-
-    inputEl.oninput = function () {
-
-        const query =
-            inputEl.value
-                .trim()
-                .toLowerCase();
-
-        resultsEl.innerHTML = "";
-
-        if (
-            query.length < 2
-        ) {
-            return;
-        }
-
-        const matches =
-            CHARACTER_DIRECTORY
-                .filter(
-                    c =>
-                        c.name
-                            .toLowerCase()
-                            .includes(query)
-                )
-                .slice(0, 30);
-
-        matches.forEach(
-            character => {
-
-                const item =
-                    document.createElement("div");
-
-                item.className =
-                    "hunt-result-item";
-
-                item.textContent =
-                    character.name;
-
-                item.onclick =
-                    function () {
-                        onSelect(character);
-                    };
-
-                resultsEl.appendChild(
-                    item
-                );
-
-            }
-        );
-
-    };
-
-}
-
-
-/* =========================================
    SECRET SCREEN
 ========================================= */
 
@@ -2981,67 +2298,6 @@ function showSecretScreen() {
         )
         .disabled =
         true;
-
-
-    const isHunt =
-        currentRoomData.variant === "hunt";
-
-
-    document
-        .getElementById("secretGrid")
-        .classList
-        .toggle("hidden", isHunt);
-
-
-    document
-        .getElementById("huntSecretPicker")
-        .classList
-        .toggle("hidden", !isHunt);
-
-
-    if (
-        isHunt
-    ) {
-
-        document
-            .getElementById("huntSecretPreview")
-            .classList
-            .add("hidden");
-
-        setupHuntSearch(
-            document.getElementById("huntSecretSearch"),
-            document.getElementById("huntSecretResults"),
-            character => {
-
-                // Reuse confirmSecret() completely unchanged: it reads
-                // board[selectedSecret], so a one-item "board" holding
-                // just the chosen character satisfies it perfectly.
-                board = [character];
-                selectedSecret = 0;
-
-                document
-                    .getElementById("huntSecretPreviewImg")
-                    .src = character.image;
-
-                document
-                    .getElementById("huntSecretPreviewName")
-                    .textContent = character.name;
-
-                document
-                    .getElementById("huntSecretPreview")
-                    .classList
-                    .remove("hidden");
-
-                document
-                    .getElementById("confirmSecret")
-                    .disabled = false;
-
-            }
-        );
-
-        return;
-
-    }
 
 
     board.forEach(
@@ -3200,15 +2456,6 @@ function waitForBothPlayers() {
 
     secretGrid.innerHTML = "";
 
-    // The waiting message below is appended into secretGrid — make
-    // sure it's visible even if we were just in the Hunt picker.
-    secretGrid.classList.remove("hidden");
-
-    document
-        .getElementById("huntSecretPicker")
-        .classList
-        .add("hidden");
-
 
     document
         .getElementById(
@@ -3364,55 +2611,6 @@ function showGameScreen(data) {
     const gameElement = document.getElementById("game");
     const wasVisible = !gameElement.classList.contains("hidden");
     showOnly("game");
-
-    const isHunt = data.variant === "hunt";
-
-    document.getElementById("board").classList.toggle("hidden", isHunt);
-    document.getElementById("huntGuessArea").classList.toggle("hidden", !isHunt);
-    document.getElementById("guessButton").classList.toggle("hidden", isHunt);
-    document.getElementById("endTurnButton").classList.toggle("hidden", isHunt);
-
-    if (isHunt) {
-
-        document.getElementById("turnText").textContent = "Character Hunt";
-
-        if (!awaitingGuess) {
-            document.getElementById("gameStatus").textContent =
-                "Ask via Discord, then search & submit your guess.";
-        }
-
-        // Only wire the search box once per hunt round — re-running it
-        // on every Firebase update (which fires often) would wipe out
-        // whatever the player has already typed.
-        if (!wasVisible || !gameScreenWasShown) {
-
-            huntGuessChoice = null;
-
-            document.getElementById("huntGuessPreview").classList.add("hidden");
-            document.getElementById("huntSubmitGuess").disabled = true;
-
-            setupHuntSearch(
-                document.getElementById("huntGuessSearch"),
-                document.getElementById("huntGuessResults"),
-                character => {
-
-                    huntGuessChoice = character;
-
-                    document.getElementById("huntGuessPreviewImg").src = character.image;
-                    document.getElementById("huntGuessPreviewName").textContent = character.name;
-                    document.getElementById("huntGuessPreview").classList.remove("hidden");
-                    document.getElementById("huntSubmitGuess").disabled = false;
-
-                }
-            );
-
-        }
-
-        gameScreenWasShown = true;
-        return;
-
-    }
-
     const newBoard = Array.isArray(data.board) ? data.board : [];
     const signature = newBoard.map(c => c.id).join("|");
     if (!wasVisible || !gameScreenWasShown || signature !== renderedBoardSignature) {
@@ -3609,58 +2807,6 @@ async function makeGuess(index) {
 }
 
 /* =========================================
-   HUNT MODE — SUBMIT GUESS
-   ---------------------------------------
-   No turns, no board. Either player can
-   submit whenever they're ready. Writes to
-   the exact same rooms/{room}/guess shape
-   as makeGuess(), so the existing guess
-   verification listener works unchanged.
-========================================= */
-
-window.submitHuntGuess =
-async function () {
-
-    if (
-        !huntGuessChoice
-        || !currentRoomData
-        || currentRoomData.status !== "playing"
-    ) {
-        return;
-    }
-
-    awaitingGuess = true;
-
-    document.getElementById("huntSubmitGuess").disabled = true;
-    document.getElementById("gameStatus").textContent =
-        "Checking your guess...";
-
-    try {
-        await set(
-            ref(db, "rooms/" + room + "/guess"),
-            {
-                player: Number(myPlayer),
-                characterId: huntGuessChoice.id,
-                timestamp: Date.now()
-            }
-        );
-
-        document.getElementById("gameStatus").textContent =
-            "Waiting for the result...";
-
-    } catch (e) {
-        console.error("Guess submission failed:", e);
-        awaitingGuess = false;
-
-        document.getElementById("gameStatus").textContent =
-            "Could not submit guess: " + (e.message || "Firebase error");
-
-        document.getElementById("huntSubmitGuess").disabled = false;
-    }
-
-}
-
-/* =========================================
    FINISH
 ========================================= */
 
@@ -3842,15 +2988,6 @@ function() {
 };
 
 </script>
-
-
-<!--
-  Hunt character images:
-  Primary source: One Piece Wiki Character Portraits / Character Images.
-  The directory retains the original 303 character names and now points to
-  the Wiki's portrait redirect URLs. Some aliases/typos are mapped to the
-  Wiki's canonical character/file name.
--->
 
 </body>
 
