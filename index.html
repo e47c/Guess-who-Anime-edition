@@ -1693,6 +1693,77 @@ function shuffle(array) {
 
 
 /* =========================================
+   BALANCED PICK
+   Splits the board evenly across the chosen
+   series so a big library (One Piece) can't
+   swamp the smaller ones. Leftover slots go to
+   random series; if a series runs out of
+   images, its share is handed to the others.
+========================================= */
+
+function pickBalanced(keys, size) {
+
+    const pools =
+        keys.map(
+            key => shuffle(ANIME_LIBRARY[key] || [])
+        );
+
+    const picked =
+        pools.map(() => []);
+
+    let remaining = size;
+
+    while (remaining > 0) {
+
+        const open =
+            pools
+                .map((pool, i) => i)
+                .filter(
+                    i => picked[i].length < pools[i].length
+                );
+
+        if (open.length === 0) break;
+
+        const share =
+            Math.floor(remaining / open.length);
+
+        if (share === 0) {
+
+            // Fewer slots left than series: give one each to random series.
+            shuffle(open)
+                .slice(0, remaining)
+                .forEach(i => {
+                    picked[i].push(pools[i][picked[i].length]);
+                });
+
+            remaining = 0;
+
+        } else {
+
+            open.forEach(i => {
+                const take =
+                    Math.min(
+                        share,
+                        pools[i].length - picked[i].length
+                    );
+
+                for (let n = 0; n < take; n++) {
+                    picked[i].push(pools[i][picked[i].length]);
+                }
+
+                remaining -= take;
+            });
+
+        }
+
+    }
+
+    return shuffle(picked.flat());
+
+}
+
+
+/* =========================================
    CREATE ROOM
 ========================================= */
 
@@ -1755,10 +1826,8 @@ async function() {
 
 
     const selected =
-        shuffle(
-            sourcePool
-        ).slice(
-            0,
+        pickBalanced(
+            selectedAnimes,
             boardSize
         );
 
