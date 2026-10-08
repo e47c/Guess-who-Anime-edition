@@ -599,7 +599,7 @@ label {
     -webkit-mask-image: radial-gradient(ellipse at center, transparent 20%, #000 80%);
             mask-image: radial-gradient(ellipse at center, transparent 20%, #000 80%);
 }
-#home .panel {
+#home .panel, #lobby .panel, #result .panel {
     z-index: 1;
     max-width: 680px;
     padding: 40px 34px 34px;
@@ -608,7 +608,7 @@ label {
     border-radius: 2px;
     box-shadow: 10px 10px 0 var(--luffy-red), 10px 10px 0 3px var(--ink), 0 30px 70px rgba(0,0,0,.55);
 }
-#home .panel::before { display: none; }
+#home .panel::before, #lobby .panel::before, #result .panel::before { display: none; }
 
 #home h1 { margin: 0 0 6px; display: flex; flex-direction: column; align-items: center; line-height: .95; text-shadow: none; }
 #home h1 span { font-family: var(--font-display); font-weight: 400; display: block; }
@@ -637,8 +637,8 @@ label {
 #home input#name:focus, #home #joinArea input:focus { outline: none; background: rgba(255,206,84,.1); border-bottom-color: var(--sakura); }
 
 /* series tiles */
-#home .anime-poll { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-#home .anime-option {
+.series-pick .anime-poll { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.series-pick .anime-option {
     position: relative; isolation: isolate; overflow: hidden;
     min-height: 92px; padding: 10px 12px; margin: 0;
     display: flex; align-items: flex-end;
@@ -646,20 +646,20 @@ label {
     background: none; font-size: 15px; font-weight: 800; line-height: 1.1;
     transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
 }
-#home .anime-option input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; z-index: 3; }
-#home .anime-option .bg { position: absolute; inset: 0; z-index: -2; background: rgba(241,236,255,.05); transition: background .15s ease; }
-#home .anime-option .kanji {
+.series-pick .anime-option input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; z-index: 3; }
+.series-pick .anime-option .bg { position: absolute; inset: 0; z-index: -2; background: rgba(241,236,255,.05); transition: background .15s ease; }
+.series-pick .anime-option .kanji {
     position: absolute; z-index: -1; right: -4px; top: -10px;
     font: 400 64px/1 var(--font-display); color: var(--c); opacity: .38;
     transition: opacity .15s ease, color .15s ease, transform .15s ease;
 }
-#home .anime-option:hover { border-color: var(--c); }
-#home .anime-option input:checked ~ .bg { background: var(--c); }
-#home .anime-option input:checked ~ .kanji { color: var(--ink); opacity: .28; transform: scale(1.12) rotate(-6deg); }
-#home .anime-option input:checked ~ .name { color: var(--ink); }
-#home .anime-option:has(input:checked) { border-color: var(--ink); transform: translate(-2px,-2px) rotate(-1deg); box-shadow: 4px 4px 0 var(--ink); }
-#home .anime-option input:focus-visible ~ .bg { outline: 3px solid var(--gold-bright); outline-offset: -5px; }
-#home .anime-hint { margin-top: 12px; font-size: 13px; }
+.series-pick .anime-option:hover { border-color: var(--c); }
+.series-pick .anime-option input:checked ~ .bg { background: var(--c); }
+.series-pick .anime-option input:checked ~ .kanji { color: var(--ink); opacity: .28; transform: scale(1.12) rotate(-6deg); }
+.series-pick .anime-option input:checked ~ .name { color: var(--ink); }
+.series-pick .anime-option:has(input:checked) { border-color: var(--ink); transform: translate(-2px,-2px) rotate(-1deg); box-shadow: 4px 4px 0 var(--ink); }
+.series-pick .anime-option input:focus-visible ~ .bg { outline: 3px solid var(--gold-bright); outline-offset: -5px; }
+.series-pick .anime-hint { margin-top: 12px; font-size: 13px; }
 
 /* board size */
 #home .sizes { gap: 8px; }
@@ -686,9 +686,89 @@ label {
 @media (max-width: 520px) {
     #home.screen { padding: 14px; }
     #home .panel { padding: 32px 18px 26px; box-shadow: 6px 6px 0 var(--luffy-red), 6px 6px 0 3px var(--ink); }
-    #home .anime-poll { grid-template-columns: repeat(2, 1fr); }
+    .series-pick .anime-poll { grid-template-columns: repeat(2, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) { #home .t-big { animation: none; } #home * { transition: none !important; } }
+
+
+/* =========================================================
+   LOBBY / SECRET / GAME / RESULT — same manga skin
+========================================================= */
+#lobby h1, #secret h1, #result h1 {
+    font-family: var(--font-display); font-weight: 400; color: var(--gold);
+    -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill;
+    text-shadow: 3px 3px 0 var(--luffy-red), 5px 5px 0 var(--ink);
+    transform: skewX(-6deg); font-size: clamp(34px, 7vw, 52px); margin: 0 0 14px;
+}
+.pop {
+    font-family: var(--font-display); font-weight: 400; letter-spacing: .03em; font-size: 17px;
+    border: 3px solid var(--ink); border-radius: 3px; transform: skewX(-8deg); box-shadow: 4px 4px 0 var(--ink);
+}
+.pop:hover:not(:disabled) { transform: skewX(-8deg) translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); filter: none; }
+.pop:active:not(:disabled) { transform: skewX(-8deg) translate(3px,3px); box-shadow: 1px 1px 0 var(--ink); }
+.pop.secondary { background: var(--sakura); color: var(--ink); }
+.pop.ghost { background: transparent; box-shadow: none; border-color: rgba(241,236,255,.35); }
+
+#lobby .panel { max-width: 520px; text-align: center; }
+.lobby-label { margin: 0; color: var(--parchment-dim); }
+#lobby .room-code {
+    background: var(--gold); color: var(--ink); border: 3px solid var(--ink); border-radius: 3px;
+    transform: skewX(-6deg); box-shadow: 6px 6px 0 var(--luffy-red);
+    letter-spacing: .3em; font-size: clamp(30px, 9vw, 44px); padding: 12px 8px 12px 20px;
+}
+.lobby-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 6px; }
+#lobby .player { background: rgba(241,236,255,.05); border: 2px solid rgba(241,236,255,.22); border-left: 6px solid var(--gold); border-radius: 2px; text-align: left; }
+
+#secret { padding: 28px 16px; }
+#secret > div:first-child p { color: var(--parchment-dim); }
+.secret-card { position: relative; border: 3px solid rgba(241,236,255,.25); border-radius: 3px; }
+.secret-card:hover { border-color: var(--gold); transform: translate(-2px,-2px); box-shadow: 4px 4px 0 var(--ink); }
+.secret-card.selected { border-color: var(--ink); outline: 4px solid var(--gold); box-shadow: 5px 5px 0 var(--luffy-red); transform: rotate(-1.5deg) scale(1.05); z-index: 2; }
+
+.game-header { background: linear-gradient(180deg, rgba(11,10,20,.97), rgba(28,16,48,.94)); border-bottom: 3px solid var(--gold); box-shadow: 0 4px 0 var(--luffy-red); }
+.turn { -webkit-text-stroke: 1px var(--ink); paint-order: stroke fill; text-shadow: 2px 2px 0 var(--luffy-red); transform: skewX(-6deg); transform-origin: left; }
+.card { border: 3px solid rgba(241,236,255,.22); border-radius: 3px; }
+.card:hover { border-color: var(--gold); transform: translate(-1px,-1px); }
+.card img, .secret-card img, .portrait img { opacity: 0; transition: opacity .3s ease; }
+.card img.loaded, .secret-card img.loaded, .portrait img.loaded { opacity: 1; }
+.card.flipping { animation: flipcard .33s ease-in-out; }
+@keyframes flipcard { 0% { transform: perspective(500px) rotateY(0); } 50% { transform: perspective(500px) rotateY(90deg); } 100% { transform: perspective(500px) rotateY(0); } }
+.cname {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 4px 4px; font-size: 11px; font-weight: 800; line-height: 1.1;
+    text-align: center; color: #fff; background: linear-gradient(transparent, rgba(11,10,20,.93));
+    opacity: 0; transition: opacity .15s ease; pointer-events: none; z-index: 2;
+}
+.card:hover .cname, .secret-card:hover .cname, .secret-card.selected .cname, .show-names .cname { opacity: 1; }
+
+#result .panel.result { max-width: 900px; }
+.versus { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; margin: 18px 0; }
+.fighter { background: rgba(241,236,255,.05); border: 3px solid rgba(241,236,255,.2); border-radius: 3px; padding: 12px; transition: all .3s ease; }
+.fighter.champ { border-color: var(--gold); box-shadow: 6px 6px 0 var(--luffy-red); transform: rotate(-1deg); }
+.fighter .who { font-weight: 800; margin-bottom: 8px; }
+.portrait { aspect-ratio: 1; max-width: 260px; margin: 0 auto; border: 3px solid var(--ink); background: var(--ocean-deep); overflow: hidden; }
+.portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fighter .cap { margin-top: 8px; font-weight: 700; color: var(--gold-bright); min-height: 1.3em; }
+.vs { font-family: var(--font-display); font-size: 34px; color: var(--luffy-red); text-shadow: 2px 2px 0 var(--ink); }
+.stat { border: 2px solid rgba(241,236,255,.2); border-radius: 3px; background: rgba(241,236,255,.05); }
+.streak { color: var(--gold-bright); font-weight: 800; }
+.result-msg { color: var(--parchment-dim); margin: 0; }
+#resultPanel.win .result-title { animation: slam .55s cubic-bezier(.2,1.4,.4,1) both; }
+#resultPanel.lose { animation: shake .5s ease; }
+#resultPanel.lose .result-title { color: #a9a3c9; text-shadow: 3px 3px 0 #3a2f5a, 5px 5px 0 var(--ink); }
+@keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-9px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
+#result.lose-bg::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 25; box-shadow: inset 0 0 170px 40px rgba(230,62,109,.5); animation: fadeout 1.8s ease forwards; }
+@keyframes fadeout { to { opacity: 0; } }
+.fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30; }
+.rematch { margin-top: 20px; padding: 16px; border: 3px dashed rgba(241,236,255,.3); text-align: left; }
+.rematch .sizes .size { font-family: var(--font-display); font-size: 20px; }
+
+.opp-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 60; display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; padding: 10px 14px; background: var(--luffy-red); color: #fff; font-weight: 700; border-bottom: 3px solid var(--ink); }
+.opp-banner button { padding: 8px 14px; font-size: 15px; }
+#toast { position: fixed; left: 50%; bottom: 24px; z-index: 70; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; background: var(--ink); color: var(--parchment); border: 2px solid var(--gold); padding: 10px 18px; border-radius: 3px; font-weight: 700; transition: all .25s ease; max-width: 90vw; text-align: center; }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+.mute-btn { position: fixed; right: 14px; bottom: 14px; z-index: 50; width: 44px; height: 44px; padding: 0; border-radius: 50%; font-size: 20px; background: var(--ink); border: 2px solid var(--gold); box-shadow: none; }
+@media (max-width: 700px) { .versus { grid-template-columns: 1fr 1fr; } .vs { display: none; } }
+@media (prefers-reduced-motion: reduce) { .card.flipping, #resultPanel.lose, #result.lose-bg::before { animation: none; } }
 
 </style>
 
@@ -727,8 +807,7 @@ Pick your series. Hide a character. Guess theirs first.
 
 
 <div
-    id="animePoll"
-    class="field">
+    id="animePoll" class="field series-pick">
 
 <label>Series in play</label>
 
@@ -850,87 +929,24 @@ JOIN ROOM
      LOBBY
 ========================================= -->
 
-<div
-    id="lobby"
-    class="screen center hidden">
-
+<div id="lobby" class="screen center hidden">
 <div class="panel">
-
-<h1>🏴‍☠️ Crew Assembly</h1>
-
-<p style="text-align:center">
-Room Code
-</p>
-
-<div
-    id="roomCode"
-    class="room-code">
-------
+<h1>Waiting room</h1>
+<p class="lobby-label">Room code</p>
+<div id="roomCode" class="room-code">------</div>
+<div class="lobby-actions">
+<button class="pop" onclick="copyInviteLink()">🔗 Copy invite link</button>
+<button class="pop secondary" onclick="copyRoomCode()">📋 Copy code</button>
 </div>
-
-<button
-    style="display:block;margin:auto"
-    onclick="copyRoomCode()">
-
-📋 COPY CODE
-
-</button>
-
-
 <div style="margin-top:25px">
-
-<div class="player">
-
-<span id="p1Name">
-Player 1
-</span>
-
-<span class="ready">
-● Ready
-</span>
-
+<div class="player"><span id="p1Name">Player 1</span><span class="ready">● Ready</span></div>
+<div class="player"><span id="p2Name">Waiting...</span><span id="p2Status">○ Waiting</span></div>
 </div>
-
-
-<div class="player">
-
-<span id="p2Name">
-Waiting...
-</span>
-
-<span id="p2Status">
-○ Waiting
-</span>
-
+<p id="lobbyStatus" style="text-align:center;color:rgba(241,236,255,.65)">Waiting for opponent...</p>
+<button id="startButton" class="pop hidden" style="width:100%;margin-top:15px" onclick="startGame()">START GAME</button>
+<button class="pop ghost" style="width:100%;margin-top:12px" onclick="exitGame()">Exit game</button>
 </div>
-
 </div>
-
-
-<p
-    id="lobbyStatus"
-    style="text-align:center;color:rgba(243,230,200,.65)">
-
-Waiting for opponent...
-
-</p>
-
-
-<button
-    id="startButton"
-    class="hidden"
-    style="width:100%;margin-top:15px"
-    onclick="startGame()">
-
-START GAME
-
-</button>
-
-</div>
-
-</div>
-
-
 
 <!-- =========================================
      SECRET
@@ -943,7 +959,7 @@ START GAME
 <div style="text-align:center">
 
 <h1>
-Pick Your Secret Crewmate
+Pick your secret character
 </h1>
 
 <p style="color:rgba(243,230,200,.65)">
@@ -964,8 +980,7 @@ Your opponent won't see your choice.
 <div style="text-align:center">
 
 <button
-    id="confirmSecret"
-    disabled
+    id="confirmSecret" class="pop" disabled
     onclick="confirmSecret()">
 
 CONFIRM CHARACTER
@@ -1011,8 +1026,10 @@ Loading...
 </div>
 
 
-<button id="guessButton" onclick="toggleGuess()">🎯 GUESS</button>
-<button id="endTurnButton" onclick="endTurn()">END TURN</button>
+<button id="namesButton" class="pop secondary hidden" onclick="toggleNames()">🏷️ NAMES</button>
+<button id="guessButton" class="pop" onclick="toggleGuess()">🎯 GUESS</button>
+<button id="endTurnButton" class="pop secondary" onclick="endTurn()">END TURN</button>
+<button class="pop ghost" onclick="exitGame()">EXIT</button>
 
 
 </div>
@@ -1034,143 +1051,48 @@ Loading...
      RESULT
 ========================================= -->
 
-<div
-    id="result"
-    class="screen hidden">
-
-<div class="panel result">
-
-<h1 id="winnerText">
-🏆 WINNER
-</h1>
-
-<p id="resultMessage"></p>
-
-
-<div class="characters">
-
-
-<div class="character">
-
-<h3 id="resultName1">
-Player 1
-</h3>
-
-<img
-    id="resultImage1">
-
-<p>
-Secret Character
-</p>
-
+<div id="result" class="screen hidden">
+<canvas id="fx" class="fx"></canvas>
+<div class="panel result" id="resultPanel">
+<h1 id="winnerText" class="result-title">VICTORY</h1>
+<p id="resultMessage" class="result-msg"></p>
+<div class="versus">
+<div class="fighter" id="fighter1"><div class="who" id="resultName1">Player 1</div><div class="portrait"><img id="resultImage1" alt=""></div><div class="cap" id="resultCap1">???</div></div>
+<div class="vs">VS</div>
+<div class="fighter" id="fighter2"><div class="who" id="resultName2">Player 2</div><div class="portrait"><img id="resultImage2" alt=""></div><div class="cap" id="resultCap2">???</div></div>
 </div>
-
-
-<div class="character">
-
-<h3 id="resultName2">
-Player 2
-</h3>
-
-<img
-    id="resultImage2">
-
-<p>
-Secret Character
-</p>
-
-</div>
-
-
-</div>
-
-
 <div class="stats">
-
-
-<div class="stat">
-
-<div id="statName1">
-Player 1
+<div class="stat"><div id="statName1">Player 1</div><div id="wins1" class="big-number">0</div><div>Total wins</div><div id="streak1" class="streak">🔥 Streak: 0</div><div id="best1">Best: 0</div></div>
+<div class="stat"><div id="statName2">Player 2</div><div id="wins2" class="big-number">0</div><div>Total wins</div><div id="streak2" class="streak">🔥 Streak: 0</div><div id="best2">Best: 0</div></div>
 </div>
-
-<div
-    id="wins1"
-    class="big-number">
-
-0
-
-</div>
-
-<div>
-Total Wins
-</div>
-
-<div id="streak1">
-🔥 Streak: 0
-</div>
-
-<div id="best1">
-Best: 0
-</div>
-
-</div>
-
-
-<div class="stat">
-
-<div id="statName2">
-Player 2
-</div>
-
-<div
-    id="wins2"
-    class="big-number">
-
-0
-
-</div>
-
-<div>
-Total Wins
-</div>
-
-<div id="streak2">
-🔥 Streak: 0
-</div>
-
-<div id="best2">
-Best: 0
-</div>
-
-</div>
-
-
-</div>
-
-
 <div class="actions">
-
-<button onclick="rematch()">
-🔄 REMATCH
-</button>
-
-<button
-    class="secondary"
-    onclick="location.reload()">
-
-MAIN MENU
-
-</button>
-
+<button class="pop" onclick="openRematch()">🔄 REMATCH</button>
+<button class="pop secondary" onclick="exitGame()">EXIT GAME</button>
+</div>
+<div id="rematchPanel" class="rematch hidden">
+<label>Series for the next round</label>
+<div id="rematchPoll" class="anime-poll series-pick">
+<label class="anime-option" style="--c:#ff4d6d"><input type="checkbox" value="onepiece"><span class="bg"></span><span class="kanji" aria-hidden="true">海賊</span><span class="name">One Piece</span></label>
+<label class="anime-option" style="--c:#ff9f1c"><input type="checkbox" value="naruto"><span class="bg"></span><span class="kanji" aria-hidden="true">忍</span><span class="name">Naruto</span></label>
+<label class="anime-option" style="--c:#3ea6ff"><input type="checkbox" value="dragonball"><span class="bg"></span><span class="kanji" aria-hidden="true">龍</span><span class="name">Dragon Ball</span></label>
+<label class="anime-option" style="--c:#b388ff"><input type="checkbox" value="jjk"><span class="bg"></span><span class="kanji" aria-hidden="true">呪</span><span class="name">Jujutsu Kaisen</span></label>
+<label class="anime-option" style="--c:#2ec4a6"><input type="checkbox" value="demonslayer"><span class="bg"></span><span class="kanji" aria-hidden="true">鬼</span><span class="name">Demon Slayer</span></label>
+<label class="anime-option" style="--c:#e8e8f4"><input type="checkbox" value="bleach"><span class="bg"></span><span class="kanji" aria-hidden="true">霊</span><span class="name">Bleach</span></label>
+</div>
+<label style="margin-top:14px">Board size</label>
+<div class="sizes">
+<button class="size rs" data-n="24" onclick="setRematchSize(24)">24</button>
+<button class="size rs" data-n="48" onclick="setRematchSize(48)">48</button>
+<button class="size rs" data-n="96" onclick="setRematchSize(96)">96</button>
+</div>
+<button class="pop" style="width:100%;margin-top:16px" onclick="rematch()">START REMATCH</button>
+</div>
+</div>
 </div>
 
-
-</div>
-
-</div>
-
-
+<div id="oppBanner" class="opp-banner hidden"><span>Opponent disconnected. They may be reconnecting.</span><button class="pop secondary" onclick="exitGame()">Exit game</button></div>
+<div id="toast"></div>
+<button id="muteBtn" class="mute-btn" onclick="toggleMute()" aria-label="Toggle sound">🔊</button>
 
 <!-- =========================================
      FIREBASE
@@ -1565,6 +1487,350 @@ const ANIME_LIBRARY = {
 // One Piece now lives inside the anime library like any other series.
 ANIME_LIBRARY.onepiece = CHARACTER_LIBRARY;
 
+/* =========================================
+   CHARACTER NAMES
+   Fill in the name between the quotes for each image.
+   Empty names are simply not shown.
+========================================= */
+const CHARACTER_NAMES = {
+    "images/character1.jpg": "",
+    "images/character2.jpg": "",
+    "images/character3.jpg": "",
+    "images/character4.jpg": "",
+    "images/character5.jpg": "",
+    "images/character6.jpg": "",
+    "images/character7.jpg": "",
+    "images/character8.jpg": "",
+    "images/character9.jpg": "",
+    "images/character10.jpg": "",
+    "images/character11.jpg": "",
+    "images/character12.jpg": "",
+    "images/character13.jpg": "",
+    "images/character14.jpg": "",
+    "images/character15.jpg": "",
+    "images/character16.jpg": "",
+    "images/character17.jpg": "",
+    "images/character18.jpg": "",
+    "images/character19.jpg": "",
+    "images/character20.jpg": "",
+    "images/character21.jpg": "",
+    "images/character22.jpg": "",
+    "images/character23.jpg": "",
+    "images/character24.jpg": "",
+    "images/character25.jpg": "",
+    "images/character26.jpg": "",
+    "images/character27.jpg": "",
+    "images/character28.jpg": "",
+    "images/character29.jpg": "",
+    "images/character30.jpg": "",
+    "images/character31.jpg": "",
+    "images/character32.jpg": "",
+    "images/character33.jpg": "",
+    "images/character34.jpg": "",
+    "images/character35.jpg": "",
+    "images/character36.jpg": "",
+    "images/character37.jpg": "",
+    "images/character38.jpg": "",
+    "images/character39.jpg": "",
+    "images/character40.jpg": "",
+    "images/character41.jpg": "",
+    "images/character42.jpg": "",
+    "images/character43.jpg": "",
+    "images/character44.jpg": "",
+    "images/character45.jpg": "",
+    "images/character46.jpg": "",
+    "images/character47.jpg": "",
+    "images/character48.jpg": "",
+    "images/character49.jpg": "",
+    "images/character50.jpg": "",
+    "images/character51.jpg": "",
+    "images/character52.jpg": "",
+    "images/character53.jpg": "",
+    "images/character54.jpg": "",
+    "images/character55.jpg": "",
+    "images/character56.jpg": "",
+    "images/character57.jpg": "",
+    "images/character58.jpg": "",
+    "images/character59.jpg": "",
+    "images/character60.jpg": "",
+    "images/character61.jpg": "",
+    "images/character62.jpg": "",
+    "images/character63.jpg": "",
+    "images/character64.jpg": "",
+    "images/character65.jpg": "",
+    "images/character66.jpg": "",
+    "images/character67.jpg": "",
+    "images/character68.jpg": "",
+    "images/character69.jpg": "",
+    "images/character70.jpg": "",
+    "images/character71.jpg": "",
+    "images/character72.jpg": "",
+    "images/character73.jpg": "",
+    "images/character74.jpg": "",
+    "images/character75.jpg": "",
+    "images/character76.jpg": "",
+    "images/character77.jpg": "",
+    "images/character78.jpg": "",
+    "images/character79.jpg": "",
+    "images/character80.jpg": "",
+    "images/character81.jpg": "",
+    "images/character82.jpg": "",
+    "images/character83.jpg": "",
+    "images/character84.jpg": "",
+    "images/character85.jpg": "",
+    "images/character86.jpg": "",
+    "images/character87.jpg": "",
+    "images/character88.jpg": "",
+    "images/character89.jpg": "",
+    "images/character90.jpg": "",
+    "images/character91.jpg": "",
+    "images/character92.jpg": "",
+    "images/character93.jpg": "",
+    "images/character94.jpg": "",
+    "images/character95.jpg": "",
+    "images/character96.jpg": "",
+    "images/anime/naruto/na1.jpg": "",
+    "images/anime/naruto/na2.jpg": "",
+    "images/anime/naruto/na3.jpg": "",
+    "images/anime/naruto/na4.jpg": "",
+    "images/anime/naruto/na5.jpg": "",
+    "images/anime/naruto/na6.jpg": "",
+    "images/anime/naruto/na7.jpg": "",
+    "images/anime/naruto/na8.jpg": "",
+    "images/anime/naruto/na9.jpg": "",
+    "images/anime/naruto/na10.jpg": "",
+    "images/anime/naruto/na11.jpg": "",
+    "images/anime/naruto/na12.jpg": "",
+    "images/anime/naruto/na13.jpg": "",
+    "images/anime/naruto/na14.jpg": "",
+    "images/anime/naruto/na15.jpg": "",
+    "images/anime/naruto/na16.jpg": "",
+    "images/anime/naruto/na17.jpg": "",
+    "images/anime/naruto/na18.jpg": "",
+    "images/anime/naruto/na19.jpg": "",
+    "images/anime/naruto/na20.jpg": "",
+    "images/anime/naruto/na21.jpg": "",
+    "images/anime/naruto/na22.jpg": "",
+    "images/anime/naruto/na23.jpg": "",
+    "images/anime/naruto/na24.jpg": "",
+    "images/anime/dragonball/db1.jpg": "",
+    "images/anime/dragonball/db2.jpg": "",
+    "images/anime/dragonball/db3.jpg": "",
+    "images/anime/dragonball/db4.jpg": "",
+    "images/anime/dragonball/db5.jpg": "",
+    "images/anime/dragonball/db6.jpg": "",
+    "images/anime/dragonball/db7.jpg": "",
+    "images/anime/dragonball/db8.jpg": "",
+    "images/anime/dragonball/db9.jpg": "",
+    "images/anime/dragonball/db10.jpg": "",
+    "images/anime/dragonball/db11.jpg": "",
+    "images/anime/dragonball/db12.jpg": "",
+    "images/anime/dragonball/db13.jpg": "",
+    "images/anime/dragonball/db14.jpg": "",
+    "images/anime/dragonball/db15.jpg": "",
+    "images/anime/dragonball/db16.jpg": "",
+    "images/anime/dragonball/db17.jpg": "",
+    "images/anime/dragonball/db18.jpg": "",
+    "images/anime/dragonball/db19.jpg": "",
+    "images/anime/dragonball/db20.jpg": "",
+    "images/anime/dragonball/db21.jpg": "",
+    "images/anime/dragonball/db22.jpg": "",
+    "images/anime/dragonball/db23.jpg": "",
+    "images/anime/dragonball/db24.jpg": "",
+    "images/anime/jjk/jk1.jpg": "",
+    "images/anime/jjk/jk2.jpg": "",
+    "images/anime/jjk/jk3.jpg": "",
+    "images/anime/jjk/jk4.jpg": "",
+    "images/anime/jjk/jk5.jpg": "",
+    "images/anime/jjk/jk6.jpg": "",
+    "images/anime/jjk/jk7.jpg": "",
+    "images/anime/jjk/jk8.jpg": "",
+    "images/anime/jjk/jk9.jpg": "",
+    "images/anime/jjk/jk10.jpg": "",
+    "images/anime/jjk/jk11.jpg": "",
+    "images/anime/jjk/jk12.jpg": "",
+    "images/anime/jjk/jk13.jpg": "",
+    "images/anime/jjk/jk14.jpg": "",
+    "images/anime/jjk/jk15.jpg": "",
+    "images/anime/jjk/jk16.jpg": "",
+    "images/anime/jjk/jk17.jpg": "",
+    "images/anime/jjk/jk18.jpg": "",
+    "images/anime/jjk/jk19.jpg": "",
+    "images/anime/jjk/jk20.jpg": "",
+    "images/anime/jjk/jk21.jpg": "",
+    "images/anime/jjk/jk22.jpg": "",
+    "images/anime/jjk/jk23.jpg": "",
+    "images/anime/jjk/jk24.jpg": "",
+    "images/anime/demonslayer/ds1.jpg": "",
+    "images/anime/demonslayer/ds2.jpg": "",
+    "images/anime/demonslayer/ds3.jpg": "",
+    "images/anime/demonslayer/ds4.jpg": "",
+    "images/anime/demonslayer/ds5.jpg": "",
+    "images/anime/demonslayer/ds6.jpg": "",
+    "images/anime/demonslayer/ds7.jpg": "",
+    "images/anime/demonslayer/ds8.jpg": "",
+    "images/anime/demonslayer/ds9.jpg": "",
+    "images/anime/demonslayer/ds10.jpg": "",
+    "images/anime/demonslayer/ds11.jpg": "",
+    "images/anime/demonslayer/ds12.jpg": "",
+    "images/anime/demonslayer/ds13.jpg": "",
+    "images/anime/demonslayer/ds14.jpg": "",
+    "images/anime/demonslayer/ds15.jpg": "",
+    "images/anime/demonslayer/ds16.jpg": "",
+    "images/anime/demonslayer/ds17.jpg": "",
+    "images/anime/demonslayer/ds18.jpg": "",
+    "images/anime/demonslayer/ds19.jpg": "",
+    "images/anime/demonslayer/ds20.jpg": "",
+    "images/anime/demonslayer/ds21.jpg": "",
+    "images/anime/demonslayer/ds22.jpg": "",
+    "images/anime/demonslayer/ds23.jpg": "",
+    "images/anime/demonslayer/ds24.jpg": "",
+    "images/anime/bleach/bc1.jpg": "",
+    "images/anime/bleach/bc2.jpg": "",
+    "images/anime/bleach/bc3.jpg": "",
+    "images/anime/bleach/bc4.jpg": "",
+    "images/anime/bleach/bc5.jpg": "",
+    "images/anime/bleach/bc6.jpg": "",
+    "images/anime/bleach/bc7.jpg": "",
+    "images/anime/bleach/bc8.jpg": "",
+    "images/anime/bleach/bc9.jpg": "",
+    "images/anime/bleach/bc10.jpg": "",
+    "images/anime/bleach/bc11.jpg": "",
+    "images/anime/bleach/bc12.jpg": "",
+    "images/anime/bleach/bc13.jpg": "",
+    "images/anime/bleach/bc14.jpg": "",
+    "images/anime/bleach/bc15.jpg": "",
+    "images/anime/bleach/bc16.jpg": "",
+    "images/anime/bleach/bc17.jpg": "",
+    "images/anime/bleach/bc18.jpg": "",
+    "images/anime/bleach/bc19.jpg": "",
+    "images/anime/bleach/bc20.jpg": "",
+    "images/anime/bleach/bc21.jpg": "",
+    "images/anime/bleach/bc22.jpg": "",
+    "images/anime/bleach/bc23.jpg": "",
+    "images/anime/bleach/bc24.jpg": "",
+};
+
+const $ = id => document.getElementById(id);
+const HAS_NAMES = () => Object.values(CHARACTER_NAMES).some(Boolean);
+const nameOf = image => CHARACTER_NAMES[image] || "";
+
+/* ---------- toast ---------- */
+let toastTimer = null;
+function toast(msg) {
+    const t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
+}
+
+/* ---------- session (rejoin after refresh) ---------- */
+const SKEY = "gw_session";
+function saveSession() {
+    try {
+        localStorage.setItem(SKEY, JSON.stringify({ room, player: myPlayer }));
+        localStorage.setItem("gw_name", ($("name").value || "").trim());
+    } catch (e) {}
+}
+function clearSession() { try { localStorage.removeItem(SKEY); } catch (e) {} }
+
+/* ---------- sound ---------- */
+let audioCtx = null;
+let muted = false;
+try { muted = localStorage.getItem("gw_muted") === "1"; } catch (e) {}
+function tone(f1, f2, dur, type = "square", vol = .06, delay = 0) {
+    if (muted) return;
+    try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const t = audioCtx.currentTime + delay, o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+        g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+        o.connect(g); g.connect(audioCtx.destination); o.start(t); o.stop(t + dur);
+    } catch (e) {}
+}
+function sfx(name) {
+    const fx = {
+        flip:  () => tone(620, 260, .09, "square", .05),
+        pick:  () => tone(500, 900, .1, "triangle", .07),
+        turn:  () => { tone(660, 660, .12, "triangle", .08); tone(990, 990, .18, "triangle", .08, .12); },
+        guess: () => tone(160, 520, .35, "sawtooth", .06),
+        win:   () => [523, 659, 784, 1047].forEach((f, i) => tone(f, f, .22, "triangle", .09, i * .13)),
+        lose:  () => [392, 330, 262, 196].forEach((f, i) => tone(f, f * .97, .28, "sawtooth", .06, i * .17))
+    };
+    (fx[name] || (() => {}))();
+}
+window.toggleMute = function () {
+    muted = !muted;
+    try { localStorage.setItem("gw_muted", muted ? "1" : "0"); } catch (e) {}
+    $("muteBtn").textContent = muted ? "🔇" : "🔊";
+};
+
+/* ---------- images: fallback + fade-in ---------- */
+const FALLBACK_IMG = "data:image/svg+xml;utf8," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#2a1747"/><circle cx="50" cy="42" r="17" fill="#5b2a9e"/><path d="M18 96c4-24 20-32 32-32s28 8 32 32z" fill="#5b2a9e"/><text x="50" y="49" font-size="24" text-anchor="middle" fill="#ffce54" font-family="sans-serif" font-weight="700">?</text></svg>');
+function applyImg(img, src) {
+    img.classList.remove("loaded", "missing");
+    img.onload = () => img.classList.add("loaded");
+    img.onerror = () => { img.onerror = null; img.classList.add("missing"); img.src = FALLBACK_IMG; };
+    img.src = src;
+    return img;
+}
+function makeImg(src) {
+    const img = new Image(); img.alt = ""; img.draggable = false; img.decoding = "async";
+    return applyImg(img, src);
+}
+function preloadImages(list) { list.forEach(src => { const i = new Image(); i.src = src; }); }
+function addName(card, image) {
+    const n = nameOf(image); if (!n) return;
+    card.title = n;
+    const s = document.createElement("span"); s.className = "cname"; s.textContent = n; card.appendChild(s);
+}
+
+/* ---------- presence (opponent left) ---------- */
+function startPresence() {
+    const myRef = ref(db, "rooms/" + room + "/presence/p" + myPlayer);
+    onValue(ref(db, ".info/connected"), snap => {
+        if (snap.val() === true) {
+            onDisconnect(myRef).set(false).then(() => set(myRef, true)).catch(() => {});
+        }
+    });
+}
+function updatePresenceBanner(data) {
+    const opp = myPlayer === 1 ? "p2" : "p1";
+    const oppExists = myPlayer === 1 ? !!data.player2 : !!data.player1;
+    const gone = oppExists && data.presence && data.presence[opp] === false;
+    $("oppBanner").classList.toggle("hidden", !gone);
+}
+
+/* ---------- confetti ---------- */
+function confetti() {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const c = $("fx"), ctx = c.getContext("2d"); c.width = innerWidth; c.height = innerHeight;
+    const cols = ["#ffce54", "#e63e6d", "#57e0d0", "#f1ecff", "#b388ff"];
+    const ps = Array.from({ length: 150 }, () => ({
+        x: innerWidth / 2, y: innerHeight * .35, vx: (Math.random() - .5) * 18, vy: -Math.random() * 14 - 4,
+        s: 6 + Math.random() * 7, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: cols[Math.random() * cols.length | 0]
+    }));
+    let t = 0;
+    (function frame() {
+        ctx.clearRect(0, 0, c.width, c.height);
+        ps.forEach(p => {
+            p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c;
+            ctx.fillRect(-p.s / 2, -p.s / 3, p.s, p.s * .6); ctx.restore();
+        });
+        if (++t < 230) requestAnimationFrame(frame); else ctx.clearRect(0, 0, c.width, c.height);
+    })();
+}
+
+let lastSfxTurn = null;
+let exiting = false;
+let namesOn = false;
+try { namesOn = localStorage.getItem("gw_names") === "1"; } catch (e) {}
+let unsubReveal = null;
+let rematchSize = 24;
+
+
+
 
 /* =========================================
    HELPERS
@@ -1903,8 +2169,7 @@ async function() {
        waiting, Firebase removes the room.
     */
 
-    onDisconnect(roomRef)
-        .remove();
+    saveSession();
 
 
     openLobby();
@@ -1918,130 +2183,26 @@ async function() {
 
 window.joinRoom =
 async function() {
+    const name = $("name").value.trim();
+    const code = $("joinCode").value.trim().toUpperCase();
+    if (!name) { alert("Enter your name first."); return; }
+    if (code.length !== 6) { alert("Enter a 6-character room code."); return; }
 
-    const name =
-        document
-            .getElementById("name")
-            .value
-            .trim();
+    const roomRef = ref(db, "rooms/" + code);
+    const snapshot = await get(roomRef);
+    if (!snapshot.exists()) { alert("Room not found."); return; }
+    const data = snapshot.val();
 
+    // Coming back to a room you're already in = rejoin.
+    if (data.player1 && data.player1.uid === user.uid) { room = code; myPlayer = 1; saveSession(); openLobby(); return; }
+    if (data.player2 && data.player2.uid === user.uid) { room = code; myPlayer = 2; saveSession(); openLobby(); return; }
+    if (data.player2) { alert("This room is already full."); return; }
 
-    const code =
-        document
-            .getElementById("joinCode")
-            .value
-            .trim()
-            .toUpperCase();
-
-
-    if (!name) {
-
-        alert(
-            "Enter your name first."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        code.length !== 6
-    ) {
-
-        alert(
-            "Enter a 6-character room code."
-        );
-
-        return;
-
-    }
-
-
-    const roomRef =
-        ref(
-            db,
-            "rooms/" + code
-        );
-
-
-    const snapshot =
-        await get(roomRef);
-
-
-    if (!snapshot.exists()) {
-
-        alert(
-            "Room not found."
-        );
-
-        return;
-
-    }
-
-
-    const data =
-        snapshot.val();
-
-
-    if (
-        data.player2
-    ) {
-
-        alert(
-            "This room is already full."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        data.player1.uid
-        === user.uid
-    ) {
-
-        alert(
-            "You cannot join your own room."
-        );
-
-        return;
-
-    }
-
-
-    room =
-        code;
-
-
-    myPlayer =
-        2;
-
-
-    await update(
-        roomRef,
-        {
-
-            player2: {
-
-                uid:
-                    user.uid,
-
-                name:
-                    name,
-
-                ready:
-                    false
-
-            }
-
-        }
-    );
-
-
+    room = code;
+    myPlayer = 2;
+    await update(roomRef, { player2: { uid: user.uid, name: name, ready: false } });
+    saveSession();
     openLobby();
-
 };
 
 
@@ -2050,22 +2211,10 @@ async function() {
 ========================================= */
 
 function openLobby() {
-
-    showOnly(
-        "lobby"
-    );
-
-
-    document
-        .getElementById(
-            "roomCode"
-        )
-        .textContent =
-        room;
-
-
+    showOnly("lobby");
+    $("roomCode").textContent = room;
     listenToRoom();
-
+    startPresence();
 }
 
 
@@ -2081,8 +2230,7 @@ function listenToRoom() {
     onValue(roomRef, snapshot => {
 
         if (!snapshot.exists()) {
-            alert("The room no longer exists.");
-            location.reload();
+            clearSession(); if (!exiting) alert("The game was ended. Returning to the menu."); location.href = location.pathname;
             return;
         }
 
@@ -2092,7 +2240,7 @@ function listenToRoom() {
         // (matters most for the joining player, whose local button
         // clicks on the home screen shouldn't be the source of truth
         // once a real room with real data exists).
-        applyTheme();
+        applyTheme(); updatePresenceBanner(currentRoomData);
 
         // Keep the local board size synchronized with the room.
         if (currentRoomData.boardSize) {
@@ -2175,11 +2323,13 @@ function listenToRoom() {
                 guess: null
             };
 
-            if (winner === 1) {
-                updates["player1/wins"] = player1Wins + 1;
-            } else {
-                updates["player2/wins"] = player2Wins + 1;
-            }
+            const cur = { 1: Number((currentRoomData.player1 || {}).streak) || 0, 2: Number((currentRoomData.player2 || {}).streak) || 0 };
+            const best = { 1: Number((currentRoomData.player1 || {}).best) || 0, 2: Number((currentRoomData.player2 || {}).best) || 0 };
+            const loser = winner === 1 ? 2 : 1;
+            updates["player" + winner + "/wins"] = (winner === 1 ? player1Wins : player2Wins) + 1;
+            updates["player" + winner + "/streak"] = cur[winner] + 1;
+            updates["player" + winner + "/best"] = Math.max(best[winner], cur[winner] + 1);
+            updates["player" + loser + "/streak"] = 0;
 
             await update(ref(db, "rooms/" + room), updates);
 
@@ -2326,11 +2476,7 @@ async function() {
 
 function showSecretScreen() {
 
-    resultShown = false;
-
-    showOnly(
-        "secret"
-    );
+    resultShown = false; lastSfxTurn = null; showOnly("secret");
 
 
     const grid =
@@ -2343,12 +2489,13 @@ function showSecretScreen() {
     grid.innerHTML = "";
 
 
-    board =
-        currentRoomData.board;
-
-
-    selectedSecret =
-        null;
+    board = currentRoomData.board;
+    preloadImages(board.map(c => c.image));
+    selectedSecret = null;
+    setTimeout(() => {
+        const me = myPlayer === 1 ? currentRoomData.player1 : currentRoomData.player2;
+        if (me && me.ready) waitForBothPlayers();   // refreshed after already picking
+    }, 0);
 
 
     document
@@ -2380,19 +2527,7 @@ function showSecretScreen() {
                 "secret-card";
 
 
-            const img =
-                document.createElement(
-                    "img"
-                );
-
-
-            img.src =
-                character.image;
-
-
-            card.appendChild(
-                img
-            );
+            card.appendChild(makeImg(character.image)); addName(card, character.image);
 
 
             card.onclick =
@@ -2416,8 +2551,7 @@ function showSecretScreen() {
                     );
 
 
-                    selectedSecret =
-                        index;
+                    selectedSecret = index; sfx("pick");
 
 
                     document
@@ -2695,39 +2829,56 @@ function showGameScreen(data) {
    RENDER BOARD
 ========================================= */
 
+function boardSig() {
+    const str = board.map(c => c.image).join("|"); let h = 0;
+    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+    return String(h);
+}
+function saveElim() {
+    try {
+        const list = [...document.querySelectorAll("#board .card")].map((c, i) => c.classList.contains("eliminated") ? i : -1).filter(i => i >= 0);
+        localStorage.setItem("gw_elim_" + room, JSON.stringify({ sig: boardSig(), list }));
+    } catch (e) {}
+}
+function flipCard(card) {
+    if (card.classList.contains("flipping")) return;
+    card.classList.add("flipping"); sfx("flip");
+    setTimeout(() => { card.classList.toggle("eliminated"); saveElim(); }, 150);
+    setTimeout(() => card.classList.remove("flipping"), 330);
+}
+window.toggleNames = function () {
+    namesOn = !namesOn;
+    try { localStorage.setItem("gw_names", namesOn ? "1" : "0"); } catch (e) {}
+    $("board").classList.toggle("show-names", namesOn);
+};
 function renderBoard() {
-    const element = document.getElementById("board");
+    const element = $("board");
     element.innerHTML = "";
-    element.className = "board size" + boardSize;
+    element.className = "board size" + boardSize + (namesOn ? " show-names" : "");
+    $("namesButton").classList.toggle("hidden", !HAS_NAMES());
+
+    let elim = [];
+    try {
+        const d = JSON.parse(localStorage.getItem("gw_elim_" + room) || "null");
+        if (d && d.sig === boardSig()) elim = d.list || [];
+    } catch (e) {}
 
     board.forEach((character, index) => {
         const card = document.createElement("div");
         card.className = "card";
         card.dataset.index = index;
-
-        const img = document.createElement("img");
-        img.src = character.image;
-        img.alt = "";
-        img.draggable = false;
-        card.appendChild(img);
-
+        if (elim.includes(index)) card.classList.add("eliminated");
+        card.appendChild(makeImg(character.image));
+        addName(card, character.image);
         card.onclick = function () {
-            if (guessMode) {
-                makeGuess(index);
-                return;
-            }
-
-            // Normal Guess Who elimination.
-            if (!currentRoomData || Number(currentRoomData.turn) !== Number(myPlayer)) {
-                return;
-            }
-
-            card.classList.toggle("eliminated");
+            if (guessMode) { makeGuess(index); return; }
+            if (!currentRoomData || Number(currentRoomData.turn) !== Number(myPlayer)) return;
+            flipCard(card);
         };
-
         element.appendChild(card);
     });
 }
+
 
 /* =========================================
    HEADER
@@ -2751,7 +2902,7 @@ function updateGameHeader(data) {
         return;
     }
 
-    guessButton.disabled = !mine;
+    if (mine && lastSfxTurn !== turnPlayer) sfx("turn"); lastSfxTurn = turnPlayer; guessButton.disabled = !mine;
     endButton.disabled = !mine;
     if (!mine) {
         guessMode = false;
@@ -2836,7 +2987,7 @@ async function makeGuess(index) {
     if (Number(currentRoomData.turn) !== Number(myPlayer)) return;
 
     const character = board[index];
-    if (!character) return;
+    if (!character) return; if (!confirm("Guess " + (nameOf(character.image) || "this character") + "?")) return; sfx("guess");
 
     guessMode = false;
     awaitingGuess = true;
@@ -2891,148 +3042,123 @@ async function finishGame(winner, correct) {
 ========================================= */
 
 async function showResultScreen(data) {
-    // Prevent the result screen's own Firebase reveal write from
-    // recursively re-entering this function through the room listener.
     if (resultShown) return;
     resultShown = true;
-
-    guessMode = false;
-    awaitingGuess = false;
-    gameScreenWasShown = false;
-    renderedBoardSignature = "";
-    
+    guessMode = false; awaitingGuess = false; gameScreenWasShown = false; renderedBoardSignature = "";
     showOnly("result");
+    $("rematchPanel").classList.add("hidden");
 
-    document.getElementById("winnerText").textContent =
-        "🏆 " + (Number(data.winner) === 1 ? data.player1.name : data.player2.name) + " WINS!";
+    const iWon = Number(data.winner) === Number(myPlayer);
+    const winnerData = Number(data.winner) === 1 ? data.player1 : data.player2;
+    const panel = $("resultPanel"), screen = $("result");
+    panel.classList.remove("win", "lose"); panel.classList.add(iWon ? "win" : "lose");
+    screen.classList.remove("lose-bg"); void screen.offsetWidth; if (!iWon) screen.classList.add("lose-bg");
 
-    document.getElementById("resultMessage").textContent =
-        data.result === "correct"
-            ? "Correct guess!"
-            : "Wrong guess! The opponent wins.";
+    $("winnerText").textContent = iWon ? "VICTORY" : "DEFEAT";
+    $("resultMessage").textContent = data.result === "correct"
+        ? (iWon ? "You guessed their character!" : winnerData.name + " guessed your character.")
+        : (iWon ? "They guessed wrong. You win!" : "Wrong guess. " + winnerData.name + " takes the round.");
 
-    document.getElementById("resultName1").textContent = data.player1.name;
-    document.getElementById("resultName2").textContent = data.player2.name;
+    [1, 2].forEach(n => {
+        const p = data["player" + n] || {};
+        $("resultName" + n).textContent = p.name || "Player " + n;
+        $("statName" + n).textContent = p.name || "Player " + n;
+        $("wins" + n).textContent = String(Number(p.wins) || 0);
+        $("streak" + n).textContent = "🔥 Streak: " + (Number(p.streak) || 0);
+        $("best" + n).textContent = "Best: " + (Number(p.best) || 0);
+        $("fighter" + n).classList.toggle("champ", Number(data.winner) === n);
+        $("resultCap" + n).textContent = "???";
+        const img = $("resultImage" + n); img.classList.remove("loaded"); img.removeAttribute("src");
+    });
+
+    sfx(iWon ? "win" : "lose");
+    if (iWon) confetti();
 
     // Each player reveals their own secret only after the match ends.
-    // This avoids reading the opponent's private secret during gameplay.
     try {
-        const mySecretSnapshot = await get(
-            ref(db, "rooms/" + room + "/private/" + user.uid + "/secret")
-        );
+        const snap = await get(ref(db, "rooms/" + room + "/private/" + user.uid + "/secret"));
+        if (snap.exists()) await set(ref(db, "rooms/" + room + "/revealed/player" + myPlayer), snap.val());
+    } catch (error) { console.error("Could not reveal your character:", error); }
 
-        if (mySecretSnapshot.exists()) {
-            await set(
-                ref(db, "rooms/" + room + "/revealed/player" + myPlayer),
-                mySecretSnapshot.val()
-            );
-        }
-    } catch (error) {
-        console.error("Could not reveal your character:", error);
-    }
-
-    // Read whatever has been revealed so far. Firebase will notify both
-    // browsers again when the other player reveals theirs.
-    const revealedRef = ref(db, "rooms/" + room + "/revealed");
-    onValue(revealedRef, snapshot => {
+    if (unsubReveal) unsubReveal();
+    unsubReveal = onValue(ref(db, "rooms/" + room + "/revealed"), snapshot => {
         const revealed = snapshot.val() || {};
-
-        if (revealed.player1) {
-            document.getElementById("resultImage1").src = revealed.player1.image;
-        }
-
-        if (revealed.player2) {
-            document.getElementById("resultImage2").src = revealed.player2.image;
-        }
-    }, { onlyOnce: false });
-
-    document.getElementById("statName1").textContent = data.player1.name;
-    document.getElementById("statName2").textContent = data.player2.name;
-    document.getElementById("wins1").textContent =
-        String((data.player1 && Number(data.player1.wins)) || 0);
-    document.getElementById("wins2").textContent =
-        String((data.player2 && Number(data.player2.wins)) || 0);
+        [1, 2].forEach(n => {
+            const r = revealed["player" + n];
+            if (r) { applyImg($("resultImage" + n), r.image); $("resultCap" + n).textContent = nameOf(r.image) || "Secret character"; }
+        });
+    });
 }
 
+
 /* =========================================
-   REMATCH
+   REMATCH (either player, series can change)
 ========================================= */
 
-window.rematch =
-async function() {
+window.setRematchSize = function (n) {
+    rematchSize = Number(n);
+    document.querySelectorAll("#rematchPanel .rs").forEach(b => b.classList.toggle("selected", Number(b.dataset.n) === rematchSize));
+};
 
-    if (
-        myPlayer !== 1
-    ) {
+window.openRematch = function () {
+    const panel = $("rematchPanel");
+    panel.classList.toggle("hidden");
+    if (panel.classList.contains("hidden")) return;
+    const cur = (currentRoomData && currentRoomData.animes) || [];
+    document.querySelectorAll("#rematchPoll input").forEach(cb => { cb.checked = cur.includes(cb.value); });
+    setRematchSize(boardSize);
+};
 
-        alert(
-            "The room creator starts the rematch."
-        );
+window.rematch = async function () {
+    const keys = [...document.querySelectorAll("#rematchPoll input:checked")].map(c => c.value);
+    if (!keys.length) { toast("Pick at least one series."); return; }
+    const total = keys.reduce((n, k) => n + (ANIME_LIBRARY[k] || []).length, 0);
+    if (total < rematchSize) { toast("Those series don't have " + rematchSize + " images."); return; }
 
-        return;
-
-    }
-
-
-    await update(
-        ref(
-            db,
-            "rooms/" + room
-        ),
-        {
-
-            status:
-                "selecting",
-
-            winner:
-                null,
-
-            result:
-                null,
-
-            winner:
-                null,
-
-            guessedCharacter:
-                null,
-
-            finishedAt:
-                null,
-
-            "player1/ready":
-                false,
-
-            "player2/ready":
-                false,
-
-            turn:
-                1,
-
-            revealed:
-                null
-
-        }
-    );
-
+    const newBoard = pickBalanced(keys, rematchSize).map((image, i) => ({ id: "c" + i, image }));
+    try {
+        await update(ref(db, "rooms/" + room), {
+            status: "selecting", board: newBoard, boardSize: rematchSize, animes: keys,
+            winner: null, result: null, guessedCharacter: null, finishedAt: null,
+            guess: null, revealed: null, turn: 1,
+            "player1/ready": false, "player2/ready": false
+        });
+    } catch (e) { console.error(e); toast("Could not start the rematch."); }
 };
 
 
 /* =========================================
-   COPY ROOM
+   SHARE / LEAVE
 ========================================= */
 
-window.copyRoomCode =
-function() {
+window.copyRoomCode = function () {
+    navigator.clipboard.writeText(room).then(() => toast("Room code copied"), () => toast("Code: " + room));
+};
 
-    navigator.clipboard.writeText(
-        room
-    );
+window.copyInviteLink = async function () {
+    const url = location.origin + location.pathname + "?room=" + room;
+    if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
+        try { await navigator.share({ title: "Guess Who: Anime Edition", text: "Join my game!", url }); return; } catch (e) {}
+    }
+    try { await navigator.clipboard.writeText(url); toast("Invite link copied"); }
+    catch (e) { prompt("Copy this invite link:", url); }
+};
 
+window.leaveRoom = async function () {
+    try {
+        if (myPlayer === 1 && currentRoomData && !currentRoomData.player2) await remove(ref(db, "rooms/" + room));
+    } catch (e) {}
+    clearSession();
+    location.href = location.pathname;
+};
 
-    alert(
-        "Room code copied!"
-    );
-
+window.exitGame = async function () {
+    if (!confirm("Exit the game? This deletes the room for both players.")) return;
+    exiting = true;
+    try { await remove(ref(db, "rooms/" + room)); }
+    catch (e) { console.error("Could not delete room:", e); }
+    clearSession();
+    location.href = location.pathname;
 };
 
 
@@ -3053,6 +3179,40 @@ function() {
         );
 
 };
+
+
+/* =========================================
+   START UP: rejoin or open invite link
+========================================= */
+async function initApp() {
+    try { $("name").value = localStorage.getItem("gw_name") || ""; } catch (e) {}
+    $("muteBtn").textContent = muted ? "🔇" : "🔊";
+    if (!user) return;
+
+    const invite = (new URLSearchParams(location.search).get("room") || "").toUpperCase();
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(SKEY) || "null"); } catch (e) {}
+
+    if (saved && saved.room && (!invite || invite === saved.room)) {
+        try {
+            const snap = await get(ref(db, "rooms/" + saved.room));
+            if (snap.exists()) {
+                const d = snap.val();
+                const p = d.player1 && d.player1.uid === user.uid ? 1 : (d.player2 && d.player2.uid === user.uid ? 2 : 0);
+                if (p) { room = saved.room; myPlayer = p; saveSession(); openLobby(); toast("Rejoined room " + room); return; }
+            }
+            clearSession();
+        } catch (e) { console.error("Rejoin failed:", e); }
+    }
+
+    if (invite) {
+        $("joinCode").value = invite;
+        showJoin();
+        toast("Invite loaded. Enter your name and tap Join.");
+        if (!$("name").value) $("name").focus();
+    }
+}
+await initApp();
 
 </script>
 
