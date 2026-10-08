@@ -770,6 +770,27 @@ label {
 @media (max-width: 700px) { .versus { grid-template-columns: 1fr 1fr; } .vs { display: none; } }
 @media (prefers-reduced-motion: reduce) { .card.flipping, #resultPanel.lose, #result.lose-bg::before { animation: none; } }
 
+
+/* ===== HEADBANZ ===== */
+.hb-only{display:none!important}
+body.hb-mode .series-pick .anime-option.hb-only{display:flex!important}
+#home .modebtn{flex:1;font-family:var(--font-display);font-size:20px;padding:10px 0;background:transparent;color:var(--parchment);border:2px solid rgba(241,236,255,.3);border-radius:3px;box-shadow:none;transform:skewX(-8deg)}
+#home .modebtn:hover:not(:disabled){transform:skewX(-8deg) translateY(-1px);box-shadow:none;border-color:var(--gold)}
+#home .modebtn.selected{background:var(--gold);color:var(--ink);border-color:var(--ink);box-shadow:4px 4px 0 var(--luffy-red)}
+.hb-wrap{max-width:460px;margin:22px auto;padding:0 14px;text-align:center}
+.hb-label{font-family:var(--font-display);font-size:22px;color:var(--gold-bright);margin-bottom:12px}
+.hb-card{background:rgba(241,236,255,.06);border:3px solid var(--gold);box-shadow:8px 8px 0 var(--luffy-red);padding:14px;border-radius:3px}
+.hb-pic{aspect-ratio:2/3;max-height:52vh;margin:0 auto;border:3px solid var(--ink);background:var(--ocean-deep);overflow:hidden}
+.hb-pic img{width:100%;height:100%;object-fit:cover;display:block}
+.hb-name{font-family:var(--font-display);font-size:34px;line-height:1.1;margin-top:12px;color:var(--parchment)}
+.hb-name.big{font-size:clamp(44px,12vw,72px);padding:40px 0}
+.hb-series{color:var(--sakura);font-weight:700;margin-top:4px}
+.hb-me{margin-top:20px;padding:12px;border:3px dashed rgba(241,236,255,.3);color:var(--parchment-dim);font-size:14px;line-height:1.6}
+.hb-me b{font-family:var(--font-display);font-size:24px;color:var(--gold-bright)}
+.hb-picker{position:fixed;inset:0;z-index:40;background:rgba(11,10,20,.95);padding:18px 14px;overflow-y:auto}
+.hb-picker>div{max-width:520px;margin:0 auto}
+.hb-opt{display:flex;align-items:center;gap:10px;width:100%;margin-top:8px;text-align:left;background:rgba(241,236,255,.07);color:var(--parchment);border:2px solid rgba(241,236,255,.22);border-radius:3px;box-shadow:none;padding:8px 10px}
+.hb-opt img{width:42px;height:56px;object-fit:cover;flex-shrink:0}
 </style>
 
 </head>
@@ -806,6 +827,8 @@ Pick your series. Hide a character. Guess theirs first.
 </div>
 
 
+<div class="field"><label>Game mode</label><div class="sizes"><button id="modeGW" class="modebtn selected" onclick="setGameType('gw')">Guess Who</button><button id="modeHB" class="modebtn" onclick="setGameType('hb')">Headbanz</button></div>
+<p class="anime-hint" id="modeHint">Classic board. Pick a secret, flip cards, guess theirs.</p></div>
 <div
     id="animePoll" class="field series-pick">
 
@@ -841,7 +864,14 @@ Pick your series. Hide a character. Guess theirs first.
 <label class="anime-option" style="--c:#e8e8f4">
 <input type="checkbox" value="bleach">
 <span class="bg"></span><span class="kanji" aria-hidden="true">霊</span><span class="name">Bleach</span>
-</label>
+</label><label class="anime-option hb-only" style="--c:#c9a227"><input type="checkbox" value="aot"><span class="bg"></span><span class="kanji" aria-hidden="true">巨</span><span class="name">Attack on Titan</span></label>
+<label class="anime-option hb-only" style="--c:#3ec46d"><input type="checkbox" value="mha"><span class="bg"></span><span class="kanji" aria-hidden="true">英</span><span class="name">My Hero Academia</span></label>
+<label class="anime-option hb-only" style="--c:#6fd36f"><input type="checkbox" value="hxh"><span class="bg"></span><span class="kanji" aria-hidden="true">狩</span><span class="name">Hunter x Hunter</span></label>
+<label class="anime-option hb-only" style="--c:#d0d0e0"><input type="checkbox" value="deathnote"><span class="bg"></span><span class="kanji" aria-hidden="true">死</span><span class="name">Death Note</span></label>
+<label class="anime-option hb-only" style="--c:#e0503a"><input type="checkbox" value="fma"><span class="bg"></span><span class="kanji" aria-hidden="true">錬</span><span class="name">Fullmetal Alchemist</span></label>
+<label class="anime-option hb-only" style="--c:#ff6b35"><input type="checkbox" value="chainsaw"><span class="bg"></span><span class="kanji" aria-hidden="true">鎖</span><span class="name">Chainsaw Man</span></label>
+<label class="anime-option hb-only" style="--c:#f48fb1"><input type="checkbox" value="spyfamily"><span class="bg"></span><span class="kanji" aria-hidden="true">諜</span><span class="name">Spy x Family</span></label>
+
 
 </div>
 
@@ -852,9 +882,9 @@ Characters are drawn at random from every series you tick.
 </div>
 
 
-<div class="field">
-
-<label>Board size</label>
+<div class="field hidden" id="diffField"><label>Difficulty</label><div class="sizes"><button class="modebtn dbtn" data-d="easy" onclick="setDiff('easy')">Easy</button><button class="modebtn dbtn selected" data-d="normal" onclick="setDiff('normal')">Normal</button><button class="modebtn dbtn" data-d="hard" onclick="setDiff('hard')">Hard</button></div>
+<p class="anime-hint">Easy = the most popular characters of each series. Hard = deep cuts too.</p></div>
+<div class="field" id="sizeField"><label>Board size</label>
 
 <div class="sizes">
 
@@ -1051,6 +1081,14 @@ Loading...
      RESULT
 ========================================= -->
 
+<div id="hb" class="hidden">
+<div class="game-header"><div class="game-header-inner"><div><div class="turn">Headbanz</div><div class="status">Ask yes/no questions on your call. Guess yours when ready.</div></div>
+<button class="pop" onclick="hbOpenGuess()">🎯 GUESS MINE</button><button class="pop ghost" onclick="exitGame()">EXIT</button></div></div>
+<div class="hb-wrap"><div class="hb-label" id="hbOppLabel"></div><div class="hb-card" id="hbCard"></div>
+<div class="hb-me">Your character: <b>???</b><br><span id="hbWrong"></span></div></div>
+<div id="hbPicker" class="hb-picker hidden"><div><input id="hbSearch" placeholder="Type a name or nickname..." autocomplete="off"><div id="hbList"></div>
+<button class="pop ghost" style="width:100%;margin-top:14px" onclick="hbCloseGuess()">Cancel</button></div></div>
+</div>
 <div id="result" class="screen hidden">
 <canvas id="fx" class="fx"></canvas>
 <div class="panel result" id="resultPanel">
@@ -1840,7 +1878,7 @@ function showOnly(id) {
 
     document
         .querySelectorAll(
-            "#home,#lobby,#secret,#game,#result"
+            "#home,#lobby,#secret,#game,#hb,#result"
         )
         .forEach(
             el =>
@@ -2033,6 +2071,181 @@ function pickBalanced(keys, size) {
    CREATE ROOM
 ========================================= */
 
+/* =========================================
+   HEADBANZ MODE
+   AniList (free API) gives hundreds of characters
+   with images. If it can't be reached, the built-in
+   names below keep the mode working (name-only cards).
+========================================= */
+let homeMode = "gw", homeDiff = "normal", hbKey = "", hbWrongSeen = 0, hbBusy = false;
+const HB_SERIES = {
+    onepiece: { id: 21, re: /one piece/i, label: "One Piece", names: "Monkey D. Luffy|Roronoa Zoro|Nami|Usopp|Sanji|Tony Tony Chopper|Nico Robin|Franky|Brook|Portgas D. Ace|Trafalgar Law|Shanks|Dracule Mihawk|Boa Hancock|Kaido|Sabo" },
+    naruto: { id: 1735, re: /naruto/i, label: "Naruto", names: "Naruto Uzumaki|Sasuke Uchiha|Sakura Haruno|Kakashi Hatake|Itachi Uchiha|Gaara|Rock Lee|Hinata Hyuga|Shikamaru Nara|Jiraiya|Tsunade|Orochimaru|Minato Namikaze|Madara Uchiha|Obito Uchiha|Might Guy" },
+    dragonball: { id: 813, re: /dragon ball/i, label: "Dragon Ball", names: "Goku|Vegeta|Gohan|Piccolo|Krillin|Trunks|Frieza|Cell|Majin Buu|Bulma|Master Roshi|Android 18|Beerus|Whis|Broly|Jiren" },
+    jjk: { id: 113415, re: /jujutsu/i, label: "Jujutsu Kaisen", names: "Yuji Itadori|Megumi Fushiguro|Nobara Kugisaki|Satoru Gojo|Ryomen Sukuna|Maki Zenin|Toge Inumaki|Panda|Kento Nanami|Suguru Geto|Mahito|Yuta Okkotsu|Toji Fushiguro|Aoi Todo|Choso|Kenjaku" },
+    demonslayer: { id: 101922, re: /kimetsu|demon slayer/i, label: "Demon Slayer", names: "Tanjiro Kamado|Nezuko Kamado|Zenitsu Agatsuma|Inosuke Hashibira|Giyu Tomioka|Shinobu Kocho|Kyojuro Rengoku|Tengen Uzui|Mitsuri Kanroji|Muichiro Tokito|Muzan Kibutsuji|Akaza|Doma|Kokushibo|Daki|Kanao Tsuyuri" },
+    bleach: { id: 269, re: /bleach/i, label: "Bleach", names: "Ichigo Kurosaki|Rukia Kuchiki|Orihime Inoue|Uryu Ishida|Renji Abarai|Byakuya Kuchiki|Kisuke Urahara|Toshiro Hitsugaya|Kenpachi Zaraki|Sosuke Aizen|Gin Ichimaru|Ulquiorra Cifer|Grimmjow Jaegerjaquez|Yoruichi Shihoin|Yhwach|Yasutora Sado" },
+    aot: { id: 16498, re: /shingeki|attack on titan/i, label: "Attack on Titan", names: "Eren Yeager|Mikasa Ackerman|Armin Arlert|Levi Ackerman|Erwin Smith|Hange Zoe|Reiner Braun|Annie Leonhart|Jean Kirstein|Sasha Blouse|Historia Reiss|Zeke Yeager|Connie Springer|Bertholdt Hoover" },
+    mha: { id: 21459, re: /hero academia|boku no hero/i, label: "My Hero Academia", names: "Izuku Midoriya|Katsuki Bakugo|Shoto Todoroki|Ochaco Uraraka|Tenya Iida|All Might|Eraser Head|Endeavor|Hawks|Tomura Shigaraki|Dabi|Himiko Toga|Tsuyu Asui|Momo Yaoyorozu" },
+    hxh: { id: 11061, re: /hunter/i, label: "Hunter x Hunter", names: "Gon Freecss|Killua Zoldyck|Kurapika|Leorio Paradinight|Hisoka Morow|Chrollo Lucilfer|Meruem|Isaac Netero|Illumi Zoldyck|Ging Freecss|Biscuit Krueger|Kite|Feitan|Neferpitou" },
+    deathnote: { id: 1535, re: /death note/i, label: "Death Note", names: "Light Yagami|L|Misa Amane|Ryuk|Near|Mello|Watari|Soichiro Yagami|Rem|Teru Mikami|Kiyomi Takada|Touta Matsuda" },
+    fma: { id: 5114, re: /fullmetal/i, label: "Fullmetal Alchemist", names: "Edward Elric|Alphonse Elric|Winry Rockbell|Roy Mustang|Riza Hawkeye|Maes Hughes|Scar|Van Hohenheim|Envy|Greed|Lust|Ling Yao|Olivier Armstrong|Izumi Curtis" },
+    chainsaw: { id: 127230, re: /chainsaw/i, label: "Chainsaw Man", names: "Denji|Power|Aki Hayakawa|Makima|Pochita|Kobeni Higashiyama|Himeno|Angel Devil|Reze|Quanxi|Kishibe|Asa Mitaka" },
+    spyfamily: { id: 140960, re: /spy/i, label: "Spy x Family", names: "Anya Forger|Loid Forger|Yor Forger|Bond Forger|Damian Desmond|Becky Blackbell|Franky Franklin|Yuri Briar|Fiona Frost|Sylvia Sherwood" }
+};
+const HB_PAGES = { easy: 1, normal: 3, hard: 6 };   // 25 characters per page, most popular first
+const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$search,type:ANIME,sort:POPULARITY_DESC){title{romaji english} characters(page:$page,perPage:25,sort:[FAVOURITES_DESC]){nodes{id name{full native alternative} image{large}}}}}";
+
+window.setGameType = function (t) {
+    homeMode = t;
+    document.body.classList.toggle("hb-mode", t === "hb");
+    $("modeGW").classList.toggle("selected", t === "gw");
+    $("modeHB").classList.toggle("selected", t === "hb");
+    $("sizeField").classList.toggle("hidden", t === "hb");
+    $("diffField").classList.toggle("hidden", t !== "hb");
+    if (t !== "hb") document.querySelectorAll(".hb-only input").forEach(c => { c.checked = false; });
+    $("modeHint").textContent = t === "hb"
+        ? "You see your opponent's character, they see yours. Ask yes/no questions on your call, then guess your own."
+        : "Classic board. Pick a secret, flip cards, guess theirs.";
+};
+window.setDiff = function (d) {
+    homeDiff = d;
+    document.querySelectorAll(".dbtn").forEach(b => b.classList.toggle("selected", b.dataset.d === d));
+};
+
+async function aniFetch(vars) {
+    const r = await fetch("https://graphql.anilist.co", { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ query: HB_Q, variables: vars }) });
+    if (!r.ok) throw new Error("AniList " + r.status);
+    const j = await r.json();
+    if (j.errors || !j.data || !j.data.Media) throw new Error("AniList error");
+    return j.data.Media;
+}
+
+async function hbSeriesChars(key, pages) {
+    const s = HB_SERIES[key]; let id = s.id; const out = [];
+    for (let p = 1; p <= pages; p++) {
+        let m;
+        try { m = await aniFetch({ id: id, search: id ? null : s.label, page: p }); }
+        catch (e) { if (p === 1 && id) { id = null; p = 0; continue; } if (p === 1) throw e; break; }
+        if (p === 1 && id && !s.re.test((m.title.romaji || "") + " " + (m.title.english || ""))) { id = null; p = 0; continue; }  // wrong show: retry by title search
+        const nodes = (m.characters && m.characters.nodes) || [];
+        nodes.forEach(n => {
+            const img = n.image && n.image.large && !/default/i.test(n.image.large) ? n.image.large : "";
+            out.push({ id: "a" + n.id, n: n.name.full, a: [...(n.name.alternative || []), n.name.native].filter(Boolean).slice(0, 5), i: img, s: s.label });
+        });
+        if (nodes.length < 25) break;
+    }
+    return out;
+}
+
+async function hbBuildPool(keys, diff) {
+    const all = []; let offline = false;
+    for (const key of keys) {
+        let list = [];
+        try { list = await hbSeriesChars(key, HB_PAGES[diff] || 3); } catch (e) { console.warn("AniList failed for", key, e); }
+        if (!list.length) {
+            offline = true;
+            const s = HB_SERIES[key];
+            list = s.names.split("|").map((n, i) => ({ id: "f" + key + i, n: n, i: "", s: s.label }));
+        }
+        all.push(...list);
+    }
+    if (offline) toast("Couldn't reach AniList for some series. Using built-in names (no pictures).");
+    const seen = new Set();
+    return all.filter(c => { const k = c.n.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
+}
+
+async function createHB(name, keys) {
+    if (hbBusy) return; hbBusy = true;
+    toast("Loading characters...");
+    try {
+        const pool = await hbBuildPool(keys, homeDiff);
+        if (pool.length < 2) { alert("Not enough characters found."); return; }
+        room = generateCode(); myPlayer = 1;
+        await set(ref(db, "rooms/" + room), {
+            gameType: "headbanz", mode: mode, animes: keys, difficulty: homeDiff, hb: { pool: pool },
+            player1: { uid: user.uid, name: name, ready: false }, player2: null,
+            status: "waiting", turn: 1, winner: null, result: null
+        });
+        saveSession(); openLobby();
+    } catch (e) { console.error(e); alert("Could not create the room: " + (e.message || e)); }
+    finally { hbBusy = false; }
+}
+
+function hbRound(extra) {
+    const d = currentRoomData, n = d.hb.pool.length, a = Math.floor(Math.random() * n);
+    let b; do { b = Math.floor(Math.random() * n); } while (b === a);
+    return Object.assign({ status: "playing", turn: 1, guess: null, winner: null, result: null, finishedAt: null, revealed: null,
+        "hb/p1": a, "hb/p2": b, "hb/wrong": null, "hb/round": (Number(d.hb.round) || 0) + 1 }, extra || {});
+}
+async function hbStart() {
+    resultShown = false; awaitingGuess = false;
+    try { await update(ref(db, "rooms/" + room), hbRound()); } catch (e) { toast("Could not start."); }
+}
+async function hbRematch() {
+    resultShown = false; awaitingGuess = false;
+    try { await update(ref(db, "rooms/" + room), hbRound()); } catch (e) { toast("Could not start the rematch."); }
+}
+
+function showHB(data) {
+    showOnly("hb"); resultShown = false; awaitingGuess = false;
+    const hb = data.hb, pool = hb.pool, opp = myPlayer === 1 ? 2 : 1, c = pool[hb["p" + opp]];
+    if (!c) return;
+    const oppName = (data["player" + opp] || {}).name || "Opponent";
+    const wrong = Object.values(hb.wrong || {});
+    const mine = wrong.filter(w => Number(w.p) === Number(myPlayer));
+    const theirs = wrong.filter(w => Number(w.p) === opp);
+    const key = (hb.round || 0) + ":" + hb.p1 + ":" + hb.p2;
+    if (key !== hbKey) {
+        hbKey = key; hbWrongSeen = mine.length; hbCloseGuess();
+        $("hbOppLabel").textContent = oppName + "'s character (only you can see this)";
+        const card = $("hbCard"); card.innerHTML = "";
+        if (c.i) { const w = document.createElement("div"); w.className = "hb-pic"; w.appendChild(makeImg(c.i)); card.appendChild(w); }
+        const nm = document.createElement("div"); nm.className = "hb-name" + (c.i ? "" : " big"); nm.textContent = c.n; card.appendChild(nm);
+        const sr = document.createElement("div"); sr.className = "hb-series"; sr.textContent = c.s; card.appendChild(sr);
+    } else if (mine.length > hbWrongSeen) {
+        hbWrongSeen = mine.length; sfx("lose"); toast("Not that one. Keep asking!");
+    }
+    const nameOfIdx = w => (pool[w.c] || {}).n || "?";
+    $("hbWrong").textContent = (mine.length ? "Your misses: " + mine.map(nameOfIdx).join(", ") : "No wrong guesses yet")
+        + (theirs.length ? " | " + oppName + "'s misses: " + theirs.map(nameOfIdx).join(", ") : "");
+}
+
+const nz = s => String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+window.hbOpenGuess = function () {
+    $("hbPicker").classList.remove("hidden"); $("hbSearch").value = ""; hbList(); $("hbSearch").focus();
+};
+function hbCloseGuess() { $("hbPicker").classList.add("hidden"); }
+window.hbCloseGuess = hbCloseGuess;
+function hbList() {
+    if (!currentRoomData || !currentRoomData.hb) return;
+    const pool = currentRoomData.hb.pool, q = nz($("hbSearch").value), toks = q.split(" ").filter(Boolean);
+    const bad = new Set(Object.values(currentRoomData.hb.wrong || {}).filter(w => Number(w.p) === Number(myPlayer)).map(w => String(w.c)));
+    const res = [];
+    pool.forEach((c, i) => {
+        if (bad.has(String(i))) return;
+        const hay = nz([c.n, ...(c.a || [])].join(" "));   // matches any alternate name too
+        if (toks.every(t => hay.includes(t))) res.push({ c: c, i: i, s: nz(c.n).startsWith(q) ? 0 : 1 });
+    });
+    res.sort((x, y) => x.s - y.s || x.c.n.localeCompare(y.c.n));
+    const box = $("hbList"); box.innerHTML = "";
+    res.slice(0, 8).forEach(r => {
+        const b = document.createElement("button"); b.className = "hb-opt";
+        if (r.c.i) b.appendChild(makeImg(r.c.i));
+        const sp = document.createElement("span"); sp.textContent = r.c.n + " (" + r.c.s + ")"; b.appendChild(sp);
+        b.onclick = () => hbSubmit(r.i); box.appendChild(b);
+    });
+    if (!res.length) box.textContent = "No match. Try another spelling or nickname.";
+}
+$("hbSearch").addEventListener("input", hbList);
+async function hbSubmit(i) {
+    const c = currentRoomData.hb.pool[i];
+    if (!confirm('Guess "' + c.n + '" as YOUR character?')) return;
+    sfx("guess"); hbCloseGuess();
+    try { await set(ref(db, "rooms/" + room + "/guess"), { player: Number(myPlayer), characterId: i, timestamp: Date.now() }); }
+    catch (e) { toast("Could not send the guess."); }
+}
+
 window.createRoom =
 async function() {
 
@@ -2067,6 +2280,7 @@ async function() {
         alert("Pick at least one anime series.");
         return;
     }
+    if (homeMode === "hb") return createHB(name, selectedAnimes);
 
     const sourcePool =
         selectedAnimes.flatMap(
@@ -2249,6 +2463,7 @@ function listenToRoom() {
 
         updateLobby(currentRoomData);
 
+        if (currentRoomData.gameType === "headbanz" && currentRoomData.status === "playing") { showHB(currentRoomData); return; }
         if (currentRoomData.status === "selecting") {
             if (document.getElementById("secret").classList.contains("hidden")) {
                 showSecretScreen();
@@ -2282,11 +2497,20 @@ function listenToRoom() {
 
         // The player who made the guess does not know the opponent's secret.
         // Only the opponent validates it.
-        if (Number(guess.player) === Number(myPlayer)) return;
+        const hbRoom = currentRoomData && currentRoomData.gameType === "headbanz";
+        if (hbRoom ? Number(guess.player) !== Number(myPlayer) : Number(guess.player) === Number(myPlayer)) return;
 
         if (!currentRoomData || currentRoomData.status !== "playing") return;
 
         try {
+            let correct;
+            if (currentRoomData.gameType === "headbanz") {
+                correct = String(currentRoomData.hb["p" + guess.player]) === String(guess.characterId);
+                if (!correct) {
+                    await update(ref(db, "rooms/" + room), { guess: null, ["hb/wrong/w" + Date.now()]: { p: Number(guess.player), c: guess.characterId } });
+                    return;
+                }
+            } else {
             const secretSnapshot = await get(
                 ref(db, "rooms/" + room + "/private/" + user.uid + "/secret")
             );
@@ -2297,8 +2521,9 @@ function listenToRoom() {
 
             const mySecret = secretSnapshot.val();
 
-            const correct =
+            correct =
                 String(mySecret.id) === String(guess.characterId);
+            }
 
             const winner =
                 correct
@@ -2423,6 +2648,7 @@ function updateLobby(data) {
 
 window.startGame =
 async function() {
+    if (currentRoomData && currentRoomData.gameType === "headbanz") return hbStart();
 
     if (
         !currentRoomData
@@ -3074,6 +3300,12 @@ async function showResultScreen(data) {
     sfx(iWon ? "win" : "lose");
     if (iWon) confetti();
 
+    if (data.gameType === "headbanz") {
+        const pool = data.hb.pool;
+        $("resultMessage").textContent = iWon ? "You figured out your character!" : winnerData.name + " guessed their character first.";
+        [1, 2].forEach(n => { const c = pool[data.hb["p" + n]] || {}; applyImg($("resultImage" + n), c.i || FALLBACK_IMG); $("resultCap" + n).textContent = c.n || "???"; });
+        return;
+    }
     // Each player reveals their own secret only after the match ends.
     try {
         const snap = await get(ref(db, "rooms/" + room + "/private/" + user.uid + "/secret"));
@@ -3101,6 +3333,7 @@ window.setRematchSize = function (n) {
 };
 
 window.openRematch = function () {
+    if (currentRoomData && currentRoomData.gameType === "headbanz") return hbRematch();
     const panel = $("rematchPanel");
     panel.classList.toggle("hidden");
     if (panel.classList.contains("hidden")) return;
