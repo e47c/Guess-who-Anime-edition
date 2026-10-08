@@ -8,16 +8,16 @@
 <meta name="viewport"
       content="width=device-width, initial-scale=1.0">
 
-<title>Guess Who: One Piece Edition</title>
+<title>Guess Who: Anime Edition</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
 <style>
 
 /* =========================================================
-   GUESS WHO: ONE PIECE EDITION
+   GUESS WHO: ANIME EDITION
    Design tokens
    ---------------------------------------------------------
    ink       #17110b  near-black, wood/ink
@@ -53,7 +53,7 @@
 
 /* ================================
    ANIME EDITION THEME
-   Swapped in on <body> via JS
+   Swapped in on <body class="anime-theme"> via JS
    whenever mode === "anime".
 ================================ */
 
@@ -583,6 +583,113 @@ label {
 
 }
 
+
+/* =========================================================
+   HOME MENU — manga cover treatment (scoped to #home)
+========================================================= */
+#home { position: relative; overflow: hidden; }
+#home::before, #home::after { content:""; position:absolute; inset:-10%; pointer-events:none; }
+#home::before { /* halftone dots fading toward the middle */
+    background: radial-gradient(circle, rgba(255,206,84,.22) 1.4px, transparent 1.8px) 0 0/16px 16px;
+    -webkit-mask-image: radial-gradient(ellipse at center, transparent 25%, #000 85%);
+            mask-image: radial-gradient(ellipse at center, transparent 25%, #000 85%);
+}
+#home::after { /* speed lines radiating from behind the panel */
+    background: repeating-conic-gradient(from 0deg at 50% 45%, rgba(241,236,255,.07) 0 1.2deg, transparent 1.2deg 9deg);
+    -webkit-mask-image: radial-gradient(ellipse at center, transparent 20%, #000 80%);
+            mask-image: radial-gradient(ellipse at center, transparent 20%, #000 80%);
+}
+#home .panel {
+    z-index: 1;
+    max-width: 680px;
+    padding: 40px 34px 34px;
+    background: linear-gradient(165deg, rgba(28,16,48,.94), rgba(14,8,28,.96));
+    border: 3px solid var(--parchment);
+    border-radius: 2px;
+    box-shadow: 10px 10px 0 var(--luffy-red), 10px 10px 0 3px var(--ink), 0 30px 70px rgba(0,0,0,.55);
+}
+#home .panel::before { display: none; }
+
+#home h1 { margin: 0 0 6px; display: flex; flex-direction: column; align-items: center; line-height: .95; text-shadow: none; }
+#home h1 span { font-family: var(--font-display); font-weight: 400; display: block; }
+#home .t-top, #home .t-bot { font-size: 17px; letter-spacing: .32em; color: var(--sakura); margin-right: -.32em; }
+#home .t-big {
+    font-size: clamp(64px, 17vw, 112px);
+    margin: 4px 0 6px;
+    color: var(--gold);
+    transform: skewX(-8deg) rotate(-2deg);
+    -webkit-text-stroke: 3px var(--ink);
+    paint-order: stroke fill;
+    text-shadow: 5px 5px 0 var(--luffy-red), 8px 8px 0 var(--ink);
+    animation: slam .55s cubic-bezier(.2,1.4,.4,1) both;
+}
+@keyframes slam { from { transform: skewX(-8deg) rotate(-2deg) scale(1.5); opacity: 0; } to { opacity: 1; } }
+
+#home .subtitle { margin: 14px 0 28px; font-size: 15px; color: var(--parchment-dim); }
+
+#home label { font-size: 14px; letter-spacing: .02em; text-transform: none; color: var(--parchment); font-weight: 800; }
+#home input#name, #home #joinArea input {
+    background: rgba(241,236,255,.06);
+    border: 0; border-bottom: 3px solid var(--gold);
+    border-radius: 3px 3px 0 0;
+    font-size: 18px; font-weight: 600;
+}
+#home input#name:focus, #home #joinArea input:focus { outline: none; background: rgba(255,206,84,.1); border-bottom-color: var(--sakura); }
+
+/* series tiles */
+#home .anime-poll { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+#home .anime-option {
+    position: relative; isolation: isolate; overflow: hidden;
+    min-height: 92px; padding: 10px 12px; margin: 0;
+    display: flex; align-items: flex-end;
+    border: 2px solid rgba(241,236,255,.22); border-radius: 3px;
+    background: none; font-size: 15px; font-weight: 800; line-height: 1.1;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+#home .anime-option input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; z-index: 3; }
+#home .anime-option .bg { position: absolute; inset: 0; z-index: -2; background: rgba(241,236,255,.05); transition: background .15s ease; }
+#home .anime-option .kanji {
+    position: absolute; z-index: -1; right: -4px; top: -10px;
+    font: 400 64px/1 var(--font-display); color: var(--c); opacity: .38;
+    transition: opacity .15s ease, color .15s ease, transform .15s ease;
+}
+#home .anime-option:hover { border-color: var(--c); }
+#home .anime-option input:checked ~ .bg { background: var(--c); }
+#home .anime-option input:checked ~ .kanji { color: var(--ink); opacity: .28; transform: scale(1.12) rotate(-6deg); }
+#home .anime-option input:checked ~ .name { color: var(--ink); }
+#home .anime-option:has(input:checked) { border-color: var(--ink); transform: translate(-2px,-2px) rotate(-1deg); box-shadow: 4px 4px 0 var(--ink); }
+#home .anime-option input:focus-visible ~ .bg { outline: 3px solid var(--gold-bright); outline-offset: -5px; }
+#home .anime-hint { margin-top: 12px; font-size: 13px; }
+
+/* board size */
+#home .sizes { gap: 8px; }
+#home .size {
+    font-family: var(--font-display); font-size: 22px; padding: 10px 0;
+    background: transparent; color: var(--parchment);
+    border: 2px solid rgba(241,236,255,.3); border-radius: 3px; box-shadow: none;
+    transform: skewX(-8deg);
+}
+#home .size:hover:not(:disabled) { transform: skewX(-8deg) translateY(-1px); box-shadow: none; border-color: var(--gold); }
+#home .size.selected { background: var(--gold); color: var(--ink); border-color: var(--ink); box-shadow: 4px 4px 0 var(--luffy-red); }
+
+/* actions */
+#home .main-buttons { gap: 14px; margin-top: 28px; }
+#home .main-buttons button {
+    font-family: var(--font-display); font-weight: 400; font-size: 20px; letter-spacing: .04em; padding: 16px 10px;
+    border: 3px solid var(--ink); border-radius: 3px; transform: skewX(-8deg);
+    box-shadow: 5px 5px 0 var(--ink);
+}
+#home .main-buttons button:hover:not(:disabled) { transform: skewX(-8deg) translate(-2px,-2px); box-shadow: 7px 7px 0 var(--ink); filter: none; }
+#home .main-buttons button:active:not(:disabled) { transform: skewX(-8deg) translate(3px,3px); box-shadow: 1px 1px 0 var(--ink); }
+#home .main-buttons .secondary { background: var(--sakura); color: var(--ink); }
+
+@media (max-width: 520px) {
+    #home.screen { padding: 14px; }
+    #home .panel { padding: 32px 18px 26px; box-shadow: 6px 6px 0 var(--luffy-red), 6px 6px 0 3px var(--ink); }
+    #home .anime-poll { grid-template-columns: repeat(2, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { #home .t-big { animation: none; } #home * { transition: none !important; } }
+
 </style>
 
 </head>
@@ -600,10 +707,10 @@ label {
 
 <div class="panel">
 
-<h1 id="homeTitle">☠️ Guess Who: One Piece Edition</h1>
+<h1 id="homeTitle"><span class="t-top">Guess Who</span><span class="t-big">Anime</span><span class="t-bot">Edition</span></h1>
 
 <div class="subtitle">
-Play online with a friend
+Pick your series. Hide a character. Guess theirs first.
 </div>
 
 
@@ -619,68 +726,48 @@ Play online with a friend
 </div>
 
 
-<div class="field">
-
-<label>Game Mode</label>
-
-<div class="sizes">
-
-<button
-    id="modeOnePiece"
-    class="size mode-btn selected"
-    onclick="setMode('onepiece')">
-☠️ One Piece
-</button>
-
-<button
-    id="modeAnime"
-    class="size mode-btn"
-    onclick="setMode('anime')">
-🌀 Anime Mix
-</button>
-
-</div>
-
-</div>
-
-
 <div
     id="animePoll"
-    class="field hidden">
+    class="field">
 
-<label>Choose Anime Series</label>
+<label>Series in play</label>
 
 <div class="anime-poll">
 
-<label class="anime-option">
+<label class="anime-option" style="--c:#ff4d6d">
+<input type="checkbox" value="onepiece" checked>
+<span class="bg"></span><span class="kanji" aria-hidden="true">海賊</span><span class="name">One Piece</span>
+</label>
+
+<label class="anime-option" style="--c:#ff9f1c">
 <input type="checkbox" value="naruto">
-Naruto
+<span class="bg"></span><span class="kanji" aria-hidden="true">忍</span><span class="name">Naruto</span>
 </label>
 
-<label class="anime-option">
+<label class="anime-option" style="--c:#3ea6ff">
 <input type="checkbox" value="dragonball">
-Dragon Ball
+<span class="bg"></span><span class="kanji" aria-hidden="true">龍</span><span class="name">Dragon Ball</span>
 </label>
 
-<label class="anime-option">
+<label class="anime-option" style="--c:#b388ff">
 <input type="checkbox" value="jjk">
-Jujutsu Kaisen
+<span class="bg"></span><span class="kanji" aria-hidden="true">呪</span><span class="name">Jujutsu Kaisen</span>
 </label>
 
-<label class="anime-option">
+<label class="anime-option" style="--c:#2ec4a6">
 <input type="checkbox" value="demonslayer">
-Demon Slayer
+<span class="bg"></span><span class="kanji" aria-hidden="true">鬼</span><span class="name">Demon Slayer</span>
 </label>
 
-<label class="anime-option">
+<label class="anime-option" style="--c:#e8e8f4">
 <input type="checkbox" value="bleach">
-Bleach
+<span class="bg"></span><span class="kanji" aria-hidden="true">霊</span><span class="name">Bleach</span>
 </label>
 
 </div>
 
 <p class="anime-hint">
-Characters will be pulled randomly from every series you check.
+Characters are drawn at random from every series you tick.
 </p>
 
 </div>
@@ -688,7 +775,7 @@ Characters will be pulled randomly from every series you check.
 
 <div class="field">
 
-<label>Number of Cards</label>
+<label>Board size</label>
 
 <div class="sizes">
 
@@ -1166,8 +1253,8 @@ let myPlayer = null;
 
 let boardSize = 24;
 
-// "onepiece" or "anime" — chosen on the home screen before creating a room.
-let mode = "onepiece";
+// The game is now a single Anime Edition; One Piece is one of the selectable series.
+const mode = "anime";
 
 let board = [];
 
@@ -1475,6 +1562,9 @@ const ANIME_LIBRARY = {
 
 };
 
+// One Piece now lives inside the anime library like any other series.
+ANIME_LIBRARY.onepiece = CHARACTER_LIBRARY;
+
 
 /* =========================================
    HELPERS
@@ -1532,72 +1622,11 @@ function setSize(size) {
 
 
 /*
-   Swaps the background image and color palette between
-   the One Piece and Anime Mix themes. Purely cosmetic —
-   never touches game state.
+   The game is always the Anime Edition theme now.
+   (Kept as a function so the room listener can still call it.)
 */
-function applyTheme(themeMode) {
-
-    document.body.classList.toggle(
-        "anime-theme",
-        themeMode === "anime"
-    );
-
-    const title =
-        document.getElementById("homeTitle");
-
-    if (title) {
-
-        title.textContent =
-            themeMode === "anime"
-                ? "⚡ Guess Who: Anime Edition"
-                : "☠️ Guess Who: One Piece Edition";
-
-    }
-
-}
-
-
-window.setMode =
-function setMode(newMode) {
-
-    mode =
-        newMode;
-
-    applyTheme(newMode);
-
-
-    document
-        .querySelectorAll(".mode-btn")
-        .forEach(
-            btn =>
-                btn.classList.remove(
-                    "selected"
-                )
-        );
-
-
-    document
-        .getElementById(
-            newMode === "anime"
-                ? "modeAnime"
-                : "modeOnePiece"
-        )
-        .classList.add(
-            "selected"
-        );
-
-
-    document
-        .getElementById(
-            "animePoll"
-        )
-        .classList
-        .toggle(
-            "hidden",
-            newMode !== "anime"
-        );
-
+function applyTheme() {
+    document.body.classList.add("anime-theme");
 }
 
 
@@ -1688,63 +1717,32 @@ async function() {
     }
 
 
-    let sourcePool =
-        CHARACTER_LIBRARY;
+    const selectedAnimes =
+        Array.from(
+            document.querySelectorAll(
+                "#animePoll input[type=checkbox]:checked"
+            )
+        ).map(
+            cb => cb.value
+        );
 
-    let selectedAnimes =
-        [];
-
-    if (
-        mode === "anime"
-    ) {
-
-        selectedAnimes =
-            Array.from(
-                document.querySelectorAll(
-                    "#animePoll input[type=checkbox]:checked"
-                )
-            ).map(
-                cb => cb.value
-            );
-
-        if (
-            selectedAnimes.length === 0
-        ) {
-
-            alert(
-                "Pick at least one anime for Anime Mix mode."
-            );
-
-            return;
-
-        }
-
-        sourcePool =
-            selectedAnimes.flatMap(
-                key => ANIME_LIBRARY[key] || []
-            );
-
+    if (selectedAnimes.length === 0) {
+        alert("Pick at least one anime series.");
+        return;
     }
 
+    const sourcePool =
+        selectedAnimes.flatMap(
+            key => ANIME_LIBRARY[key] || []
+        );
 
-    if (
-        sourcePool.length
-        < boardSize
-    ) {
-
+    if (sourcePool.length < boardSize) {
         alert(
             "You need at least "
             + boardSize
-            + " images in your library"
-            + (
-                mode === "anime"
-                    ? " across the anime you selected."
-                    : "."
-            )
+            + " images across the series you selected."
         );
-
         return;
-
     }
 
 
@@ -2025,7 +2023,7 @@ function listenToRoom() {
         // (matters most for the joining player, whose local button
         // clicks on the home screen shouldn't be the source of truth
         // once a real room with real data exists).
-        applyTheme(currentRoomData.mode || "onepiece");
+        applyTheme();
 
         // Keep the local board size synchronized with the room.
         if (currentRoomData.boardSize) {
