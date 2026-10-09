@@ -867,6 +867,28 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;bac
 #home .join-area { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
 #home .join-area input { flex: 1 1 160px; min-width: 0; }
 #home .join-area button { flex: 1 1 140px; margin-top: 0 !important; width: auto !important; }
+/* ---- series logos blended into tiles ----
+   Drop files at images/logos/<series-key>.png (e.g. onepiece.png, naruto.png).
+   Missing files are ignored and the tile keeps its text name. */
+.series-pick .anime-option .logo{
+    position:absolute; inset:0; z-index:0; margin:auto;
+    width:82%; height:74%; object-fit:contain; pointer-events:none;
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,.65));
+    opacity:.92; transition:transform .2s ease, opacity .2s ease, filter .2s ease;
+}
+.series-pick .anime-option.has-logo{align-items:center;justify-content:center}
+.series-pick .anime-option.has-logo .kanji{opacity:.16}
+.series-pick .anime-option.has-logo .name{
+    position:absolute; left:8px; bottom:5px; z-index:1;
+    font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    opacity:0; transition:opacity .2s ease;
+}
+.series-pick .anime-option.has-logo:hover .logo{transform:scale(1.06)}
+.series-pick .anime-option.has-logo:hover .name{opacity:.85}
+.series-pick .anime-option.has-logo:not(:has(input:checked)) .logo{opacity:.7;filter:grayscale(.35) drop-shadow(0 2px 6px rgba(0,0,0,.65))}
+.series-pick .anime-option.has-logo:hover:not(:has(input:checked)) .logo{opacity:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.65))}
+.series-pick .anime-option input:checked ~ .logo{opacity:1;transform:scale(1.04)}
+.series-pick .anime-option input:checked ~ .name{color:var(--ink)}
 </style>
 
 </head>
@@ -3786,6 +3808,23 @@ await initApp();
 
 </script>
 
+<script>
+/* Inject logos into series tiles (main menu + rematch poll) */
+(function(){
+    function addLogos(){
+        document.querySelectorAll('.series-pick .anime-option').forEach(function(tile){
+            if(tile.querySelector('.logo')) return;
+            var input=tile.querySelector('input'); if(!input) return;
+            var img=new Image();
+            img.className='logo'; img.alt=''; img.decoding='async';
+            img.onload=function(){ tile.classList.add('has-logo'); tile.appendChild(img); };
+            img.onerror=function(){ /* no logo file yet: keep text name */ };
+            img.src='images/logos/'+input.value+'.png';
+        });
+    }
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',addLogos); else addLogos();
+})();
+</script>
 </body>
 
 </html>
