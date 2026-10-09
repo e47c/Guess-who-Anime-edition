@@ -1917,85 +1917,66 @@ window.toggleMute = function () {
     $("muteBtn").textContent = muted ? "🔇" : "🔊";
 };
 
-/* ---------- series themed sound effects ----------
-   Each series has a synthesized signature sound (no audio files needed).
-   Optional: use your own audio by filling CUSTOM_SFX, e.g.
-   CUSTOM_SFX.naruto = { select: "sounds/naruto/select.mp3", win: "sounds/naruto/win.mp3" };
-   Missing/broken files fall back to the built-in sound. */
-const CUSTOM_SFX = {};
-function actx() {
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === "suspended") audioCtx.resume();
-    return audioCtx;
+/* ---------- per-series win sounds ----------
+   Drop your sounds in:  sounds/win/<series-key>.mp3   (.ogg / .wav / .m4a also work)
+   Keys: onepiece naruto dragonball jjk demonslayer bleach aot mha hxh deathnote
+         chainsaw blackclover jojo rezero fireforce frieren gachiakuta windbreaker
+   When the results show up, EVERYONE in the room hears the sound of the series the
+   winner's character belongs to. A series with no file just plays nothing extra. */
+const WIN_SOUND_DIR = "sounds/win/";
+const WIN_SOUND_EXTS = ["mp3", "ogg", "wav", "m4a"];
+const WIN_SOUND_VOLUME = 0.9;          // 0 to 1
+const WIN_SOUND_DELAY_MS = 600;        // wait for the normal win/lose jingle to finish (0 = play right away)
+const WIN_SOUND_CLASSIC_USES = "own";  // classic mode: "own" = winner's own secret character, "guessed" = the character they guessed
+const winAudio = {};
+let winSoundDone = false;
+function winSoundLoad(key) {
+    if (!key) return null;
+    if (winAudio[key]) return winAudio[key];
+    const entry = winAudio[key] = { el: null, state: "loading", queued: false };
+    let i = 0;
+    const next = () => {
+        if (i >= WIN_SOUND_EXTS.length) { entry.state = "none"; entry.queued = false; return; }
+        const a = new Audio(); a.preload = "auto"; a.volume = WIN_SOUND_VOLUME;
+        a.addEventListener("canplaythrough", () => {
+            entry.el = a; entry.state = "ready";
+            if (entry.queued) { entry.queued = false; winSoundPlayEntry(entry); }
+        }, { once: true });
+        a.addEventListener("error", next, { once: true });
+        a.src = WIN_SOUND_DIR + key + "." + WIN_SOUND_EXTS[i++];
+        a.load();
+    };
+    next();
+    return entry;
 }
-function noise(dur, type, f1, f2, vol = .06, delay = 0, q = 1) {
-    if (muted) return;
-    try {
-        const c = actx(), t = c.currentTime + delay, n = Math.max(1, Math.floor(c.sampleRate * dur));
-        const buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
-        for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
-        const src = c.createBufferSource(), flt = c.createBiquadFilter(), g = c.createGain();
-        src.buffer = buf; flt.type = type; flt.Q.value = q;
-        flt.frequency.setValueAtTime(f1, t); flt.frequency.exponentialRampToValueAtTime(f2, t + dur);
-        g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
-        src.connect(flt); flt.connect(g); g.connect(c.destination); src.start(t); src.stop(t + dur);
-    } catch (e) {}
+function winSoundPlayEntry(entry) {
+    try { entry.el.currentTime = 0; entry.el.volume = WIN_SOUND_VOLUME; const p = entry.el.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
 }
-const SERIES_SFX = {
-    // ship bell + treasure chime
-    onepiece: () => { tone(1568, 1500, .35, "triangle", .07); tone(1568, 1500, .35, "triangle", .07, .16); [659, 784, 988, 1319].forEach((f, i) => tone(f, f, .18, "triangle", .06, .34 + i * .07)); },
-    // ninja hand seals, then summoning poof
-    naruto: () => { [0, .08, .16, .24].forEach(d => noise(.04, "highpass", 3500, 2500, .09, d)); tone(160, 40, .35, "sine", .16, .36); noise(.45, "lowpass", 3000, 200, .12, .36); },
-    // ki charge, power-up
-    dragonball: () => { tone(90, 900, .6, "sawtooth", .06); tone(95, 940, .6, "square", .03); noise(.6, "bandpass", 200, 2200, .06, 0, 2); },
-    // cursed energy: tritone drone + domain gong
-    jjk: () => { tone(110, 108, .8, "sine", .1); tone(156, 154, .8, "sine", .08); tone(55, 54, .9, "sawtooth", .035); noise(.5, "lowpass", 400, 80, .07); },
-    // sword slash + ring
-    demonslayer: () => { noise(.16, "highpass", 9000, 1500, .12); tone(2400, 2300, .5, "sine", .05, .08); tone(3600, 3500, .4, "sine", .025, .08); },
-    // zanpakuto clash
-    bleach: () => { noise(.06, "highpass", 5000, 3000, .1); tone(1800, 1750, .35, "triangle", .07, .02); tone(2700, 2650, .3, "triangle", .04, .02); tone(220, 90, .3, "sine", .1, .05); },
-    // ODM gear zip + clank + war drum
-    aot: () => { noise(.3, "bandpass", 600, 5000, .09, 0, 3); tone(300, 180, .08, "square", .06, .3); tone(90, 40, .3, "sine", .18, .38); },
-    // heroic brass fanfare
-    mha: () => { [392, 523, 659, 784].forEach((f, i) => { tone(f, f, .2, "sawtooth", .05, i * .09); tone(f, f, .2, "square", .02, i * .09); }); },
-    // nen aura + license ping
-    hxh: () => { tone(300, 900, .5, "sine", .07); tone(305, 910, .5, "sine", .05); tone(1760, 1760, .35, "triangle", .06, .45); },
-    // pen scratches + ominous bell
-    deathnote: () => { [0, .07, .15].forEach(d => noise(.05, "bandpass", 4500, 2500, .08, d, 4)); tone(98, 96, 1.1, "sine", .14, .28); tone(196, 194, .9, "sine", .06, .28); },
-    // chainsaw revving
-    chainsaw: () => { [0, .14, .28].forEach((d, i) => { tone(70 + i * 20, 220 + i * 60, .14, "sawtooth", .08, d); tone(35 + i * 10, 110 + i * 30, .14, "square", .05, d); }); noise(.45, "bandpass", 800, 2500, .04, 0, 1); },
-    // grimoire magic sparkle
-    blackclover: () => { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, f * 1.01, .22, "triangle", .06, i * .06)); noise(.4, "highpass", 2000, 6000, .03); },
-    // menacing rumble + ORA thumps
-    jojo: () => { tone(55, 52, .7, "sawtooth", .06); noise(.7, "lowpass", 250, 90, .1); [.3, .38, .46, .54].forEach(d => tone(140, 45, .07, "sine", .16, d)); },
-    // heartbeat + time rewind
-    rezero: () => { tone(80, 35, .14, "sine", .2); tone(80, 35, .16, "sine", .18, .2); tone(1200, 300, .4, "triangle", .05, .5); tone(300, 1200, .3, "triangle", .04, .75); },
-    // ignition + fire roar
-    fireforce: () => { noise(.12, "highpass", 4000, 6000, .08); noise(.6, "bandpass", 300, 1800, .1, .05, 1.5); tone(70, 140, .5, "sawtooth", .05, .05); },
-    // soft magic bell
-    frieren: () => { [1319, 1568, 1976, 2349].forEach((f, i) => tone(f, f, .7, "sine", .045, i * .11)); },
-    // junk clank + spray paint
-    gachiakuta: () => { tone(180, 120, .1, "square", .08); tone(260, 200, .1, "square", .06, .1); noise(.08, "highpass", 3000, 1500, .1, .2); noise(.35, "highpass", 5000, 7000, .05, .28); },
-    // wind gust + bofurin bell
-    windbreaker: () => { noise(.55, "bandpass", 300, 1500, .09, 0, 2); tone(1568, 1560, .6, "sine", .06, .3); tone(2349, 2340, .45, "sine", .03, .3); }
-};
-function seriesSfx(key, kind = "select") {
+function winSoundPreload(keys) { (Array.isArray(keys) ? keys : Object.values(keys || {})).forEach(winSoundLoad); }
+function winSoundPlay(key) {
     if (muted || !key) return;
-    let done = false;
-    const synth = () => { if (done) return; done = true; (SERIES_SFX[key] || (() => {}))(); };
-    const file = CUSTOM_SFX[key] && CUSTOM_SFX[key][kind];
-    if (file) {
-        try { const a = new Audio(file); a.volume = .7; a.onerror = synth; a.play().then(() => { done = true; }).catch(synth); return; } catch (e) {}
-    }
-    synth();
+    const entry = winSoundLoad(key);
+    if (entry.state === "ready") winSoundPlayEntry(entry);
+    else if (entry.state === "loading") entry.queued = true;
 }
-let lastSeriesSfx = 0;
-document.addEventListener("change", e => {
-    const el = e.target;
-    if (!el || !el.matches || !el.matches('.anime-option input[type="checkbox"]') || !el.checked) return;
-    const now = Date.now(); if (now - lastSeriesSfx < 120) return; lastSeriesSfx = now;
-    seriesSfx(el.value, "select");
-});
+function winSoundPlayLater(key) { if (key) setTimeout(() => winSoundPlay(key), WIN_SOUND_DELAY_MS); }
+function seriesKeyFromImage(img) { const m = /anime\/([^\/]+)\//.exec(String(img || "")); return m ? m[1] : null; }
+// Headbanz: sound of the series of the round's (or match's) winner's character
+function hbWinSound(hb) {
+    const players = arr(hb.players).map(Number), order = arr(hb.order).map(Number), out = arr(hb.out).map(Number);
+    let w = null;
+    if (hb.phase === "match") w = hb.tie ? null : Number(hb.winner);
+    else if (order.length) w = order[0];
+    else if (players.length === 2) w = players.find(p => !out.includes(p)) || null;
+    const c = w && hb.chars && hb.chars["p" + w];
+    if (!c) return;
+    const key = Object.keys(HB_SERIES).find(k => HB_SERIES[k].label === c.s);
+    winSoundPlayLater(key);
+}
+// some browsers (iOS Safari) need a tap before audio may play: unlock the loaded sounds on the first tap
+document.addEventListener("pointerdown", () => {
+    Object.values(winAudio).forEach(en => { if (en.el && en.el.paused) { en.el.muted = true; const p = en.el.play(); if (p && p.then) p.then(() => { en.el.pause(); en.el.currentTime = 0; en.el.muted = false; }).catch(() => { en.el.muted = false; }); } });
+}, { once: true });
 
 /* ---------- images: fallback + fade-in ---------- */
 const FALLBACK_IMG = "data:image/svg+xml;utf8," + encodeURIComponent(
@@ -2716,6 +2697,7 @@ function showHB(data) {
     if (hb.phase !== hbSeen.phase && hbSeen.phase) {
         if (hb.phase === "match") { if (Number(hb.winner) === me) { sfx("win"); hbConfetti(); } else sfx("lose"); }
         else if (hb.phase === "round") sfx(order.includes(me) ? "win" : "lose");
+        hbWinSound(hb);
     }
     hbSeen.wrong = myWrong; hbSeen.order = order.length; hbSeen.phase = hb.phase;
 
@@ -2981,7 +2963,7 @@ function listenToRoom() {
         // (matters most for the joining player, whose local button
         // clicks on the home screen shouldn't be the source of truth
         // once a real room with real data exists).
-        applyTheme(); updatePresenceBanner(currentRoomData);
+        applyTheme(); updatePresenceBanner(currentRoomData); winSoundPreload(currentRoomData.animes);
 
         // Keep the local board size synchronized with the room.
         if (currentRoomData.boardSize) {
@@ -3797,6 +3779,7 @@ async function finishGame(winner, correct) {
 async function showResultScreen(data) {
     if (resultShown) return;
     resultShown = true;
+    winSoundDone = false;
     guessMode = false; awaitingGuess = false; gameScreenWasShown = false; renderedBoardSignature = "";
     showOnly("result");
     $("rematchPanel").classList.add("hidden");
@@ -3825,10 +3808,6 @@ async function showResultScreen(data) {
     });
 
     sfx(iWon ? "win" : "lose");
-    if (iWon) {
-        const ks = arr(data.animes);
-        if (ks.length) setTimeout(() => seriesSfx(ks[Math.floor(Math.random() * ks.length)], "win"), 550);
-    }
     if (iWon) confetti();
 
     if (data.gameType === "headbanz") {
@@ -3846,6 +3825,10 @@ async function showResultScreen(data) {
     if (unsubReveal) unsubReveal();
     unsubReveal = onValue(ref(db, "rooms/" + room + "/revealed"), snapshot => {
         const revealed = snapshot.val() || {};
+        if (!winSoundDone) {
+            const w = Number(data.winner), who = WIN_SOUND_CLASSIC_USES === "guessed" ? 3 - w : w, rw = revealed["player" + who];
+            if (rw && rw.image) { winSoundDone = true; winSoundPlayLater(seriesKeyFromImage(rw.image)); }
+        }
         [1, 2].forEach(n => {
             const r = revealed["player" + n];
             if (r) { applyImg($("resultImage" + n), r.image); $("resultCap" + n).textContent = nameOf(r.image) || "Secret character"; }
