@@ -791,6 +791,13 @@ body.hb-mode .series-pick .anime-option.hb-only{display:flex!important}
 .hb-picker>div{max-width:520px;margin:0 auto}
 .hb-opt{display:flex;align-items:center;gap:10px;width:100%;margin-top:8px;text-align:left;background:rgba(241,236,255,.07);color:var(--parchment);border:2px solid rgba(241,236,255,.22);border-radius:3px;box-shadow:none;padding:8px 10px}
 .hb-opt img{width:42px;height:56px;object-fit:cover;flex-shrink:0}
+.hb-answer{margin-top:16px;padding:12px;border:3px solid var(--gold);background:rgba(255,206,84,.08);font-weight:700}
+.hb-btns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.hb-btns .pop{flex:1;min-width:90px}
+.hb-y{background:#2e9e5b}.hb-last{margin-top:12px;font-weight:700;color:var(--gold-bright);min-height:1.3em}
+.hb-q{font-family:var(--font-display);font-size:96px;line-height:1;color:var(--gold);text-shadow:4px 4px 0 var(--luffy-red)}
+.hb-tally{margin-top:8px;font-weight:700;color:var(--parchment)}
+.hbflip .portrait{animation:hbrev .9s ease both}
+@keyframes hbrev{from{transform:perspective(600px) rotateY(90deg);opacity:0}to{transform:perspective(600px) rotateY(0);opacity:1}}
 </style>
 
 </head>
@@ -871,6 +878,14 @@ Pick your series. Hide a character. Guess theirs first.
 <label class="anime-option hb-only" style="--c:#e0503a"><input type="checkbox" value="fma"><span class="bg"></span><span class="kanji" aria-hidden="true">錬</span><span class="name">Fullmetal Alchemist</span></label>
 <label class="anime-option hb-only" style="--c:#ff6b35"><input type="checkbox" value="chainsaw"><span class="bg"></span><span class="kanji" aria-hidden="true">鎖</span><span class="name">Chainsaw Man</span></label>
 <label class="anime-option hb-only" style="--c:#f48fb1"><input type="checkbox" value="spyfamily"><span class="bg"></span><span class="kanji" aria-hidden="true">諜</span><span class="name">Spy x Family</span></label>
+<label class="anime-option hb-only" style="--c:#f2c94c"><input type="checkbox" value="blackclover"><span class="bg"></span><span class="kanji" aria-hidden="true">黒</span><span class="name">Black Clover</span></label>
+<label class="anime-option hb-only" style="--c:#c77dff"><input type="checkbox" value="jojo"><span class="bg"></span><span class="kanji" aria-hidden="true">奇</span><span class="name">JoJo's Bizarre Adventure</span></label>
+<label class="anime-option hb-only" style="--c:#8ecae6"><input type="checkbox" value="rezero"><span class="bg"></span><span class="kanji" aria-hidden="true">死</span><span class="name">Re:Zero</span></label>
+<label class="anime-option hb-only" style="--c:#ff7b54"><input type="checkbox" value="fireforce"><span class="bg"></span><span class="kanji" aria-hidden="true">炎</span><span class="name">Fire Force</span></label>
+<label class="anime-option hb-only" style="--c:#a8e6cf"><input type="checkbox" value="frieren"><span class="bg"></span><span class="kanji" aria-hidden="true">葬</span><span class="name">Frieren</span></label>
+<label class="anime-option hb-only" style="--c:#ffd166"><input type="checkbox" value="gachiakuta"><span class="bg"></span><span class="kanji" aria-hidden="true">塵</span><span class="name">Gachiakuta</span></label>
+<label class="anime-option hb-only" style="--c:#e5383b"><input type="checkbox" value="tokyoghoul"><span class="bg"></span><span class="kanji" aria-hidden="true">喰</span><span class="name">Tokyo Ghoul</span></label>
+<label class="anime-option hb-only" style="--c:#4cc9f0"><input type="checkbox" value="windbreaker"><span class="bg"></span><span class="kanji" aria-hidden="true">風</span><span class="name">Wind Breaker</span></label>
 
 
 </div>
@@ -883,7 +898,7 @@ Characters are drawn at random from every series you tick.
 
 
 <div class="field hidden" id="diffField"><label>Difficulty</label><div class="sizes"><button class="modebtn dbtn" data-d="easy" onclick="setDiff('easy')">Easy</button><button class="modebtn dbtn selected" data-d="normal" onclick="setDiff('normal')">Normal</button><button class="modebtn dbtn" data-d="hard" onclick="setDiff('hard')">Hard</button></div>
-<p class="anime-hint">Easy = the most popular characters of each series. Hard = deep cuts too.</p></div>
+<p class="anime-hint">Easy = famous characters to guess. Hard = lesser-known ones. You can search any character when guessing, on every difficulty.</p></div>
 <div class="field" id="sizeField"><label>Board size</label>
 
 <div class="sizes">
@@ -1082,10 +1097,12 @@ Loading...
 ========================================= -->
 
 <div id="hb" class="hidden">
-<div class="game-header"><div class="game-header-inner"><div><div class="turn">Headbanz</div><div class="status">Ask yes/no questions on your call. Guess yours when ready.</div></div>
+<div class="game-header"><div class="game-header-inner"><div><div class="turn" id="hbTurn">Headbanz</div><div class="status" id="hbStatus"></div></div>
 <button class="pop" onclick="hbOpenGuess()">🎯 GUESS MINE</button><button class="pop ghost" onclick="exitGame()">EXIT</button></div></div>
 <div class="hb-wrap"><div class="hb-label" id="hbOppLabel"></div><div class="hb-card" id="hbCard"></div>
-<div class="hb-me">Your character: <b>???</b><br><span id="hbWrong"></span></div></div>
+<div id="hbAnswer" class="hb-answer hidden"><div id="hbAskText"></div><div class="hb-btns"><button class="pop hb-y" onclick="hbAnswer('y')">✅ YES</button><button class="pop hb-n" onclick="hbAnswer('n')">❌ NO</button><button class="pop secondary" onclick="hbAnswer('s')">🤷 SOMETIMES</button></div></div>
+<div class="hb-last" id="hbLast"></div>
+<div class="hb-me"><div class="hb-q">?</div>Your card (hidden until the round ends)<div id="hbTally" class="hb-tally"></div><div id="hbWrong"></div></div></div>
 <div id="hbPicker" class="hb-picker hidden"><div><input id="hbSearch" placeholder="Type a name or nickname..." autocomplete="off"><div id="hbList"></div>
 <button class="pop ghost" style="width:100%;margin-top:14px" onclick="hbCloseGuess()">Cancel</button></div></div>
 </div>
@@ -2091,7 +2108,15 @@ const HB_SERIES = {
     deathnote: { id: 1535, re: /death note/i, label: "Death Note", names: "Light Yagami|L|Misa Amane|Ryuk|Near|Mello|Watari|Soichiro Yagami|Rem|Teru Mikami|Kiyomi Takada|Touta Matsuda" },
     fma: { id: 5114, re: /fullmetal/i, label: "Fullmetal Alchemist", names: "Edward Elric|Alphonse Elric|Winry Rockbell|Roy Mustang|Riza Hawkeye|Maes Hughes|Scar|Van Hohenheim|Envy|Greed|Lust|Ling Yao|Olivier Armstrong|Izumi Curtis" },
     chainsaw: { id: 127230, re: /chainsaw/i, label: "Chainsaw Man", names: "Denji|Power|Aki Hayakawa|Makima|Pochita|Kobeni Higashiyama|Himeno|Angel Devil|Reze|Quanxi|Kishibe|Asa Mitaka" },
-    spyfamily: { id: 140960, re: /spy/i, label: "Spy x Family", names: "Anya Forger|Loid Forger|Yor Forger|Bond Forger|Damian Desmond|Becky Blackbell|Franky Franklin|Yuri Briar|Fiona Frost|Sylvia Sherwood" }
+    spyfamily: { id: 140960, re: /spy/i, label: "Spy x Family", names: "Anya Forger|Loid Forger|Yor Forger|Bond Forger|Damian Desmond|Becky Blackbell|Franky Franklin|Yuri Briar|Fiona Frost|Sylvia Sherwood" },
+    blackclover: { id: 97940, re: /black clover/i, label: "Black Clover", names: "Asta|Yuno|Noelle Silva|Yami Sukehiro|Julius Novachrono|Mimosa Vermillion|Luck Voltia|Magna Swing|Vanessa Enoteca|Charmy Pappitson|Zora Ideale|Nacht Faust|Fuegoleon Vermillion" },
+    jojo: { id: 14719, re: /jojo/i, label: "JoJo's Bizarre Adventure", names: "Jotaro Kujo|Joseph Joestar|Jonathan Joestar|Dio Brando|Giorno Giovanna|Josuke Higashikata|Jolyne Cujoh|Noriaki Kakyoin|Jean Pierre Polnareff|Bruno Bucciarati|Yoshikage Kira|Diavolo|Johnny Joestar|Gyro Zeppeli" },
+    rezero: { id: 21355, re: /re:?zero/i, label: "Re:Zero", names: "Subaru Natsuki|Emilia|Rem|Ram|Beatrice|Puck|Roswaal L Mathers|Felt|Reinhard van Astrea|Echidna|Otto Suwen|Garfiel Tinsel|Wilhelm van Astrea" },
+    fireforce: { id: 105310, re: /fire force|enen/i, label: "Fire Force", names: "Shinra Kusakabe|Arthur Boyle|Maki Oze|Tamaki Kotatsu|Iris|Sho Kusakabe|Takehisa Hinawa|Akitaru Obi|Benimaru Shinmon|Princess Hibana|Vulcan Joseph|Rekka Hoshimiya" },
+    frieren: { id: 154587, re: /frieren|sousou/i, label: "Frieren", names: "Frieren|Fern|Stark|Himmel|Heiter|Eisen|Flamme|Serie|Sein|Ubel|Land|Denken|Methode|Aura" },
+    gachiakuta: { id: null, re: /gachiakuta/i, label: "Gachiakuta", names: "Rudo|Enjin|Riyo|Zanka|Jabber" },
+    tokyoghoul: { id: 22319, re: /tokyo ghoul/i, label: "Tokyo Ghoul", names: "Ken Kaneki|Touka Kirishima|Rize Kamishiro|Juuzou Suzuya|Koutarou Amon|Hideyoshi Nagachika|Ayato Kirishima|Kishou Arima|Shuu Tsukiyama|Hinami Fueguchi|Uta|Nishiki Nishio|Renji Yomo" },
+    windbreaker: { id: null, re: /wind breaker/i, label: "Wind Breaker", names: "Haruka Sakura|Hajime Umemiya|Akihiko Nirei|Kotoha Tachibana|Jo Togame|Toma Hiragi|Kyotaro Sugishita|Mitsuki Kiryu" }
 };
 const HB_PAGES = { easy: 1, normal: 3, hard: 6 };   // 25 characters per page, most popular first
 const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$search,type:ANIME,sort:POPULARITY_DESC){title{romaji english} characters(page:$page,perPage:25,sort:[FAVOURITES_DESC]){nodes{id name{full native alternative} image{large}}}}}";
@@ -2113,8 +2138,9 @@ window.setDiff = function (d) {
     document.querySelectorAll(".dbtn").forEach(b => b.classList.toggle("selected", b.dataset.d === d));
 };
 
-async function aniFetch(vars) {
+async function aniFetch(vars, retry) {
     const r = await fetch("https://graphql.anilist.co", { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ query: HB_Q, variables: vars }) });
+    if (r.status === 429 && !retry) { await new Promise(z => setTimeout(z, 2500)); return aniFetch(vars, true); }
     if (!r.ok) throw new Error("AniList " + r.status);
     const j = await r.json();
     if (j.errors || !j.data || !j.data.Media) throw new Error("AniList error");
@@ -2131,7 +2157,7 @@ async function hbSeriesChars(key, pages) {
         const nodes = (m.characters && m.characters.nodes) || [];
         nodes.forEach(n => {
             const img = n.image && n.image.large && !/default/i.test(n.image.large) ? n.image.large : "";
-            out.push({ id: "a" + n.id, n: n.name.full, a: [...(n.name.alternative || []), n.name.native].filter(Boolean).slice(0, 5), i: img, s: s.label });
+            out.push({ id: "a" + n.id, n: n.name.full, a: [...(n.name.alternative || []), n.name.native].filter(Boolean).slice(0, 4), i: img.replace(HB_IMG, ""), s: s.label, r: out.length });
         });
         if (nodes.length < 25) break;
     }
@@ -2142,11 +2168,11 @@ async function hbBuildPool(keys, diff) {
     const all = []; let offline = false;
     for (const key of keys) {
         let list = [];
-        try { list = await hbSeriesChars(key, HB_PAGES[diff] || 3); } catch (e) { console.warn("AniList failed for", key, e); }
+        try { list = await hbSeriesChars(key, 5); } catch (e) { console.warn("AniList failed for", key, e); }
         if (!list.length) {
             offline = true;
             const s = HB_SERIES[key];
-            list = s.names.split("|").map((n, i) => ({ id: "f" + key + i, n: n, i: "", s: s.label }));
+            list = s.names.split("|").map((n, i) => ({ id: "f" + key + i, n: n, i: "", s: s.label, r: i }));
         }
         all.push(...list);
     }
@@ -2157,7 +2183,7 @@ async function hbBuildPool(keys, diff) {
 
 async function createHB(name, keys) {
     if (hbBusy) return; hbBusy = true;
-    toast("Loading characters...");
+    toast("Loading characters (a few seconds)...");
     try {
         const pool = await hbBuildPool(keys, homeDiff);
         if (pool.length < 2) { alert("Not enough characters found."); return; }
@@ -2173,10 +2199,14 @@ async function createHB(name, keys) {
 }
 
 function hbRound(extra) {
-    const d = currentRoomData, n = d.hb.pool.length, a = Math.floor(Math.random() * n);
-    let b; do { b = Math.floor(Math.random() * n); } while (b === a);
+    const d = currentRoomData, pool = d.hb.pool;
+    const R = { easy: [0, 20], normal: [20, 60], hard: [60, 125] }[d.difficulty] || [20, 60];   // rank by popularity inside each series
+    let el = []; pool.forEach((c, i) => { if (c.r >= R[0] && c.r < R[1]) el.push(i); });
+    if (el.length < 2) el = pool.map((c, i) => i);
+    const a = el[Math.floor(Math.random() * el.length)];
+    let b; do { b = el[Math.floor(Math.random() * el.length)]; } while (b === a);
     return Object.assign({ status: "playing", turn: 1, guess: null, winner: null, result: null, finishedAt: null, revealed: null,
-        "hb/p1": a, "hb/p2": b, "hb/wrong": null, "hb/round": (Number(d.hb.round) || 0) + 1 }, extra || {});
+        "hb/p1": a, "hb/p2": b, "hb/wrong": null, "hb/tally": null, "hb/last": null, "hb/round": (Number(d.hb.round) || 0) + 1 }, extra || {});
 }
 async function hbStart() {
     resultShown = false; awaitingGuess = false;
@@ -2187,28 +2217,52 @@ async function hbRematch() {
     try { await update(ref(db, "rooms/" + room), hbRound()); } catch (e) { toast("Could not start the rematch."); }
 }
 
+let hbLastSeen = 0;
+const HB_IMG = "https://s4.anilist.co/file/anilistcdn/character/large/";
+const hbImg = c => !c || !c.i ? "" : (/^http/.test(c.i) ? c.i : HB_IMG + c.i);
+let hbLock = false;
+window.hbAnswer = async function (a) {
+    const d = currentRoomData, asker = Number(d.turn);
+    if (hbLock || !d || d.status !== "playing" || asker === Number(myPlayer)) return;
+    hbLock = true; setTimeout(() => { hbLock = false; }, 500);
+    const t = ((d.hb.tally || {})["p" + asker]) || {};
+    const up = { ["hb/tally/p" + asker + "/" + a]: (Number(t[a]) || 0) + 1, "hb/last": { p: asker, a: a, t: Date.now() } };
+    if (a !== "y") up.turn = Number(myPlayer);   // Yes keeps the turn; No / Sometimes passes it
+    try { await update(ref(db, "rooms/" + room), up); } catch (e) { toast("Could not send the answer."); }
+};
 function showHB(data) {
     showOnly("hb"); resultShown = false; awaitingGuess = false;
-    const hb = data.hb, pool = hb.pool, opp = myPlayer === 1 ? 2 : 1, c = pool[hb["p" + opp]];
+    const hb = data.hb, pool = hb.pool, me = Number(myPlayer), opp = me === 1 ? 2 : 1, c = pool[hb["p" + opp]];
     if (!c) return;
-    const oppName = (data["player" + opp] || {}).name || "Opponent";
-    const wrong = Object.values(hb.wrong || {});
-    const mine = wrong.filter(w => Number(w.p) === Number(myPlayer));
-    const theirs = wrong.filter(w => Number(w.p) === opp);
+    const turn = Number(data.turn), mine = turn === me, nm = n => (data["player" + n] || {}).name || "Player " + n;
+    const wrong = Object.values(hb.wrong || {}), myMiss = wrong.filter(w => w.p === me || Number(w.p) === me);
     const key = (hb.round || 0) + ":" + hb.p1 + ":" + hb.p2;
     if (key !== hbKey) {
-        hbKey = key; hbWrongSeen = mine.length; hbCloseGuess();
-        $("hbOppLabel").textContent = oppName + "'s character (only you can see this)";
+        hbKey = key; hbWrongSeen = myMiss.length; hbCloseGuess();
+        $("hbOppLabel").textContent = nm(opp) + "'s character (only you can see this)";
         const card = $("hbCard"); card.innerHTML = "";
-        if (c.i) { const w = document.createElement("div"); w.className = "hb-pic"; w.appendChild(makeImg(c.i)); card.appendChild(w); }
-        const nm = document.createElement("div"); nm.className = "hb-name" + (c.i ? "" : " big"); nm.textContent = c.n; card.appendChild(nm);
+        if (c.i) { const w = document.createElement("div"); w.className = "hb-pic"; w.appendChild(makeImg(hbImg(c))); card.appendChild(w); }
+        const n1 = document.createElement("div"); n1.className = "hb-name" + (c.i ? "" : " big"); n1.textContent = c.n; card.appendChild(n1);
         const sr = document.createElement("div"); sr.className = "hb-series"; sr.textContent = c.s; card.appendChild(sr);
-    } else if (mine.length > hbWrongSeen) {
-        hbWrongSeen = mine.length; sfx("lose"); toast("Not that one. Keep asking!");
+    } else if (myMiss.length > hbWrongSeen) {
+        hbWrongSeen = myMiss.length; sfx("lose"); toast("Not that one. Keep asking!");
     }
-    const nameOfIdx = w => (pool[w.c] || {}).n || "?";
-    $("hbWrong").textContent = (mine.length ? "Your misses: " + mine.map(nameOfIdx).join(", ") : "No wrong guesses yet")
-        + (theirs.length ? " | " + oppName + "'s misses: " + theirs.map(nameOfIdx).join(", ") : "");
+    if (mine && lastSfxTurn !== turn) sfx("turn"); lastSfxTurn = turn;
+    $("hbTurn").textContent = mine ? "Your turn" : nm(turn) + "'s turn";
+    $("hbStatus").textContent = mine ? "Ask a yes/no question out loud. You keep the turn while the answer is Yes." : nm(turn) + " is asking. Tap the answer (or just say it).";
+    $("hbAnswer").classList.toggle("hidden", mine);
+    $("hbAskText").textContent = "Answer " + nm(turn) + "'s question:";
+    const L = hb.last;
+    if (L) {
+        $("hbLast").textContent = nm(L.p) + " asked: " + ({ y: "YES (keeps the turn)", n: "NO (turn passes)", s: "SOMETIMES (turn passes)" }[L.a] || "");
+        if (hbLastSeen && L.t !== hbLastSeen) sfx("pick"); hbLastSeen = L.t;
+    } else { $("hbLast").textContent = ""; hbLastSeen = 0; }
+    const tl = n => { const x = (hb.tally || {})["p" + n] || {}; return nm(n) + ": ✅" + (x.y || 0) + " ❌" + (x.n || 0) + " 🤷" + (x.s || 0); };
+    $("hbTally").textContent = tl(1) + "  |  " + tl(2);
+    const nmI = w => (pool[w.c] || {}).n || "?";
+    const theirs = wrong.filter(w => Number(w.p) === opp);
+    $("hbWrong").textContent = (myMiss.length ? "Your misses: " + myMiss.map(nmI).join(", ") : "")
+        + (theirs.length ? (myMiss.length ? " | " : "") + nm(opp) + "'s misses: " + theirs.map(nmI).join(", ") : "");
 }
 
 const nz = s => String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
@@ -2231,7 +2285,7 @@ function hbList() {
     const box = $("hbList"); box.innerHTML = "";
     res.slice(0, 8).forEach(r => {
         const b = document.createElement("button"); b.className = "hb-opt";
-        if (r.c.i) b.appendChild(makeImg(r.c.i));
+        if (r.c.i) b.appendChild(makeImg(hbImg(r.c)));
         const sp = document.createElement("span"); sp.textContent = r.c.n + " (" + r.c.s + ")"; b.appendChild(sp);
         b.onclick = () => hbSubmit(r.i); box.appendChild(b);
     });
@@ -2507,7 +2561,7 @@ function listenToRoom() {
             if (currentRoomData.gameType === "headbanz") {
                 correct = String(currentRoomData.hb["p" + guess.player]) === String(guess.characterId);
                 if (!correct) {
-                    await update(ref(db, "rooms/" + room), { guess: null, ["hb/wrong/w" + Date.now()]: { p: Number(guess.player), c: guess.characterId } });
+                    await update(ref(db, "rooms/" + room), { guess: null, turn: Number(guess.player) === 1 ? 2 : 1, ["hb/wrong/w" + Date.now()]: { p: Number(guess.player), c: guess.characterId } });
                     return;
                 }
             } else {
@@ -3301,9 +3355,9 @@ async function showResultScreen(data) {
     if (iWon) confetti();
 
     if (data.gameType === "headbanz") {
-        const pool = data.hb.pool;
+        const pool = data.hb.pool; $("resultPanel").classList.add("hbflip");
         $("resultMessage").textContent = iWon ? "You figured out your character!" : winnerData.name + " guessed their character first.";
-        [1, 2].forEach(n => { const c = pool[data.hb["p" + n]] || {}; applyImg($("resultImage" + n), c.i || FALLBACK_IMG); $("resultCap" + n).textContent = c.n || "???"; });
+        [1, 2].forEach(n => { const c = pool[data.hb["p" + n]] || {}; applyImg($("resultImage" + n), hbImg(c) || FALLBACK_IMG); $("resultCap" + n).textContent = c.n || "???"; });
         return;
     }
     // Each player reveals their own secret only after the match ends.
