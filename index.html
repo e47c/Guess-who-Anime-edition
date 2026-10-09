@@ -856,6 +856,17 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;bac
 .hb-loading { position: fixed; inset: 0; z-index: 90; background: rgba(8,5,18,.88); display: flex; align-items: center; justify-content: center; }
 .hb-loading div { font-family: var(--font-display); font-size: clamp(24px, 6vw, 38px); color: var(--gold); animation: pulse 1s ease-in-out infinite alternate; }
 @keyframes pulse { to { opacity: .45; transform: scale(.97); } }
+
+/* ===== disconnect overlay: covers the whole screen, above the guess buttons ===== */
+.opp-banner { position: fixed; inset: 0; z-index: 200; flex-direction: column; gap: 22px; padding: 30px; background: rgba(10,6,6,.94); border: 0;
+    font-family: var(--font-display); font-weight: 400; font-size: clamp(26px, 6vw, 44px); line-height: 1.15; text-align: center; color: var(--gold); }
+.opp-banner span { max-width: 760px; text-shadow: 3px 3px 0 var(--luffy-red); }
+.opp-banner button { padding: 14px 26px; font-size: 20px; min-width: 220px; }
+#home .main-buttons { display: block; }
+#home .main-buttons button { width: 100%; }
+#home .join-area { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+#home .join-area input { flex: 1 1 160px; min-width: 0; }
+#home .join-area button { flex: 1 1 140px; margin-top: 0 !important; width: auto !important; }
 </style>
 
 </head>
@@ -995,18 +1006,13 @@ Characters are drawn at random from every series you tick.
 🏠 CREATE ROOM
 </button>
 
-<button
-    class="secondary"
-    onclick="showJoin()">
-🔗 JOIN ROOM
-</button>
+
 
 </div>
 
 
 <div
-    id="joinArea"
-    class="join-area hidden">
+    id="joinArea" class="join-area">
 
 <input
     id="joinCode"
@@ -1210,7 +1216,7 @@ Loading...
 </div>
 </div>
 
-<div id="oppBanner" class="opp-banner hidden"><span id="oppBannerText">Opponent disconnected. They may be reconnecting.</span><button class="pop secondary" onclick="exitGame()">Exit game</button></div>
+<div id="oppBanner" class="opp-banner hidden"><span id="oppBannerText">Opponent disconnected. They may be reconnecting.</span><button class="pop" onclick="dismissOpp()">Keep playing</button><button class="pop secondary" onclick="exitGame()">Exit game</button></div>
 <div id="toast"></div>
 <button id="muteBtn" class="mute-btn" onclick="toggleMute()" aria-label="Toggle sound">🔊</button>
 
@@ -1334,7 +1340,7 @@ catch(error) {
 
     console.error(error);
 
-    alert(
+    toast(
         "Firebase authentication failed:\n\n"
         + error.message
     );
@@ -1913,18 +1919,21 @@ function startPresence() {
         }
     });
 }
+let oppDismissKey = "";
+window.dismissOpp = function () { oppDismissKey = $("oppBanner").dataset.key || ""; $("oppBanner").classList.add("hidden"); };
 function updatePresenceBanner(data) {
-    if (data.gameType === "headbanz") {
-        const pres = data.presence || {}, gone = [1, 2, 3, 4].filter(i => data["player" + i] && i !== Number(myPlayer) && pres["p" + i] === false);
-        $("oppBannerText").textContent = gone.map(i => data["player" + i].name).join(", ") + (gone.length > 1 ? " are" : " is") + " disconnected. The round continues without them.";
-        $("oppBanner").classList.toggle("hidden", !gone.length);
-        return;
-    }
-    $("oppBannerText").textContent = "Opponent disconnected. They may be reconnecting.";
-    const opp = myPlayer === 1 ? "p2" : "p1";
-    const oppExists = myPlayer === 1 ? !!data.player2 : !!data.player1;
-    const gone = oppExists && data.presence && data.presence[opp] === false;
-    $("oppBanner").classList.toggle("hidden", !gone);
+    const pres = data.presence || {}, box = $("oppBanner"), me = Number(myPlayer);
+    const gone = [1, 2, 3, 4].filter(i => data["player" + i] && i !== me && pres["p" + i] === false);
+    const key = gone.join(",");
+    const hb = data.gameType === "headbanz";
+    const names = gone.map(i => data["player" + i].name).join(", ");
+    $("oppBannerText").textContent = hb
+        ? names + (gone.length > 1 ? " have" : " has") + " left the game. The round continues without them."
+        : "Your opponent left the game.";
+    box.dataset.key = key;
+    box.querySelector("button.pop:not(.secondary)").style.display = "";
+    box.classList.toggle("hidden", !gone.length || key === oppDismissKey);
+    if (!gone.length) oppDismissKey = "";
 }
 
 /* ---------- confetti ---------- */
@@ -2241,6 +2250,16 @@ const hbImg = c => !c || !c.i ? "" : (/^http/.test(c.i) ? c.i : HB_IMG + c.i);
 const nz = s => String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 const arr = x => Array.isArray(x) ? x : (x ? Object.values(x) : []);
 const hbEl = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+const hbBad = c => /narrat/i.test([c.n].concat(c.a || []).join(" "));
+const hbTapTimers = new WeakMap();
+function hbTapTwice(btnOrId, armedText) {
+    const b = typeof btnOrId === "string" ? $(btnOrId) : btnOrId;
+    if (!b) return true;
+    if (b.dataset.armed === "1") { clearTimeout(hbTapTimers.get(b)); b.dataset.armed = ""; b.textContent = b.dataset.label; return true; }
+    b.dataset.armed = "1"; b.dataset.label = b.textContent; b.textContent = armedText;
+    hbTapTimers.set(b, setTimeout(() => { b.dataset.armed = ""; b.textContent = b.dataset.label; }, 3000));
+    return false;
+}
 const hbSlim = c => ({ id: c.id, n: c.n, a: (c.a || []).slice(0, 3), i: c.i || "", s: c.s });
 let hbPool = null, hbRoundKey = "", hbSig = "", hbSeen = { wrong: 0, order: 0, done: false, phase: "" };
 
@@ -2254,7 +2273,7 @@ async function hbBuildPool(keys, diff) {
     const pages = HB_PAGES[diff] || 3, ck = "gw_hbpool_" + pages + "_" + [...keys].sort().join(",");
     try {
         const c = JSON.parse(localStorage.getItem(ck) || "null");
-        if (c && Date.now() - c.t < 12 * 3600e3 && c.pool && c.pool.length) return c.pool;
+        if (c && Date.now() - c.t < 12 * 3600e3 && c.pool && c.pool.length) return c.pool.filter(x => !hbBad(x));
     } catch (e) {}
     const all = []; let offline = false;
     for (const key of keys) {
@@ -2265,8 +2284,7 @@ async function hbBuildPool(keys, diff) {
         all.push(...list);
     }
     const seenN = new Set(), seenId = new Set(), pool = [];
-    all.forEach(c => {
-        const nn = nz(c.n);
+    all.forEach(c => { if (hbBad(c)) return; const nn = nz(c.n);
         if (seenId.has(String(c.id)) || seenN.has(nn)) return;
         if ((c.a || []).some(x => nz(x).length >= 6 && seenN.has(nz(x)))) return;
         seenId.add(String(c.id)); seenN.add(nn); pool.push(c);
@@ -2305,7 +2323,7 @@ async function createHB(name, keys) {
             status: "waiting", turn: 1, winner: null, result: null
         });
         saveSession(); openLobby();
-    } catch (e) { console.error(e); alert("Could not create the room: " + (e.message || e)); }
+    } catch (e) { console.error(e); toast("Could not create the room: " + (e.message || e)); }
     finally { hbBusy = false; }
 }
 function updateLobbyHB(d) {
@@ -2352,7 +2370,7 @@ async function hbBegin(kind) {
             if (kind === "sudden") upd["hb/rounds"] = (Number(d.hb.rounds) || 5) + 1;
         }
         await update(ref(db, "rooms/" + room), upd);
-    } catch (e) { console.error(e); alert("Could not start: " + (e.message || e)); }
+    } catch (e) { console.error(e); toast("Could not start: " + (e.message || e)); }
     $("hbLoading").classList.add("hidden");
 }
 function hbStandings(hb) {
@@ -2400,7 +2418,7 @@ async function hbAct(fn) {
 }
 const hbResolved = (hb, p) => arr(hb.order).map(Number).includes(p) || arr(hb.out).map(Number).includes(p);
 async function hbSubmit(c) {
-    if (!confirm('Guess "' + c.n + '" as YOUR character?')) return;
+    
     sfx("guess"); hbCloseGuess();
     const me = Number(myPlayer);
     await hbAct(hb => {
@@ -2412,7 +2430,7 @@ async function hbSubmit(c) {
     });
 }
 window.hbGiveUp = async function () {
-    if (!confirm("Give up this round? You get 0 points and your card is revealed.")) return;
+    if (!hbTapTwice("hbGiveBtn", "Tap again to give up")) return;
     const me = Number(myPlayer);
     await hbAct(hb => { if (hb.order.includes(me) || hb.out.includes(me)) return false; hb.out.push(me); });
 };
@@ -2573,7 +2591,7 @@ async function() {
 
     if (!name) {
 
-        alert(
+        toast(
             "Enter your name first."
         );
 
@@ -2592,7 +2610,7 @@ async function() {
         );
 
     if (selectedAnimes.length === 0) {
-        alert("Pick at least one anime series.");
+        toast("Pick at least one anime series.");
         return;
     }
     if (homeMode === "hb") return createHB(name, selectedAnimes);
@@ -2603,7 +2621,7 @@ async function() {
         );
 
     if (sourcePool.length < boardSize) {
-        alert(
+        toast(
             "You need at least "
             + boardSize
             + " images across the series you selected."
@@ -2714,19 +2732,19 @@ window.joinRoom =
 async function() {
     const name = $("name").value.trim();
     const code = $("joinCode").value.trim().toUpperCase();
-    if (!name) { alert("Enter your name first."); return; }
-    if (code.length !== 6) { alert("Enter a 6-character room code."); return; }
+    if (!name) { toast("Enter your name first."); return; }
+    if (code.length !== 6) { toast("Enter a 6-character room code."); return; }
 
     const roomRef = ref(db, "rooms/" + code);
     const snapshot = await get(roomRef);
-    if (!snapshot.exists()) { alert("Room not found."); return; }
+    if (!snapshot.exists()) { toast("Room not found."); return; }
     const data = snapshot.val();
 
     // Coming back to a room you're already in = rejoin.
     for (let i = 1; i <= 4; i++) {
         if (data["player" + i] && data["player" + i].uid === user.uid) { room = code; myPlayer = i; saveSession(); openLobby(); return; }
     }
-    if (data.status && data.status !== "waiting") { alert("That match has already started."); return; }
+    if (data.status && data.status !== "waiting") { toast("That match has already started."); return; }
 
     const maxPlayers = data.gameType === "headbanz" ? 4 : 2;
     for (let slot = 2; slot <= maxPlayers; slot++) {
@@ -2734,7 +2752,7 @@ async function() {
         const res = await runTransaction(ref(db, "rooms/" + code + "/player" + slot), cur => cur ? undefined : { uid: user.uid, name: name, ready: false });
         if (res.committed) { room = code; myPlayer = slot; saveSession(); openLobby(); return; }
     }
-    alert("This room is already full.");
+    toast("This room is already full.");
 };
 
 
@@ -2762,7 +2780,7 @@ function listenToRoom() {
     onValue(roomRef, snapshot => {
 
         if (!snapshot.exists()) {
-            clearSession(); if (!exiting) alert("The game was ended. Returning to the menu."); location.href = location.pathname;
+            clearSession(); if (!exiting) { try { sessionStorage.setItem("gw_notice", "The game was ended. Returning to the menu."); } catch (e) {} } location.href = location.pathname;
             return;
         }
 
@@ -3531,7 +3549,7 @@ async function makeGuess(index) {
     if (Number(currentRoomData.turn) !== Number(myPlayer)) return;
 
     const character = board[index];
-    if (!character) return; if (!confirm("Guess " + (nameOf(character.image) || "this character") + "?")) return; sfx("guess");
+    if (!character) return;  sfx("guess");
 
     guessMode = false;
     awaitingGuess = true;
@@ -3692,7 +3710,7 @@ window.copyInviteLink = async function () {
         try { await navigator.share({ title: "Guess Who: Anime Edition", text: "Join my game!", url }); return; } catch (e) {}
     }
     try { await navigator.clipboard.writeText(url); toast("Invite link copied"); }
-    catch (e) { prompt("Copy this invite link:", url); }
+    catch (e) { toast("Invite link: " + url); }
 };
 
 window.leaveRoom = async function () {
@@ -3704,7 +3722,7 @@ window.leaveRoom = async function () {
 };
 
 window.exitGame = async function () {
-    if (!confirm("Exit the game? This deletes the room for both players.")) return;
+    if (!hbTapTwice(window.event && window.event.currentTarget, "Tap again to exit")) return;
     exiting = true;
     try { await remove(ref(db, "rooms/" + room)); }
     catch (e) { console.error("Could not delete room:", e); }
@@ -3736,6 +3754,7 @@ function() {
    START UP: rejoin or open invite link
 ========================================= */
 async function initApp() {
+    try { const n = sessionStorage.getItem("gw_notice"); if (n) { sessionStorage.removeItem("gw_notice"); setTimeout(() => toast(n), 400); } } catch (e) {}
     try { $("name").value = localStorage.getItem("gw_name") || ""; } catch (e) {}
     $("muteBtn").textContent = muted ? "🔇" : "🔊";
     if (!user) return;
