@@ -897,6 +897,13 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;bac
 .pack-fill { height: 100%; width: 0; background: repeating-linear-gradient(45deg, var(--gold) 0 10px, var(--gold-bright) 10px 20px); transition: width .3s ease; }
 .pack-bar.err .pack-fill { background: var(--luffy-red); }
 #startButton:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ===== IMPOSTER ===== */
+.im-main { max-width: 380px; margin: 14px auto 0; }
+.im-forbid { margin-top: 10px; font-weight: 800; font-size: 14px; color: #ffb4b4; }
+.im-votes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 8px; }
+.im-vote { padding: 16px 10px; font-size: 20px; background: rgba(246,239,227,.06); color: var(--pc); border: 3px solid var(--pc); word-break: break-word; }
+.im-vote.picked { background: var(--pc); color: var(--ink); }
 </style>
 
 </head>
@@ -933,7 +940,7 @@ Pick your series. Hide a character. Guess theirs first.
 </div>
 
 
-<div class="field"><label>Game mode</label><div class="sizes"><button id="modeGW" class="modebtn selected" onclick="setGameType('gw')">Guess Who</button><button id="modeHB" class="modebtn" onclick="setGameType('hb')">Headbanz</button></div>
+<div class="field"><label>Game mode</label><div class="sizes"><button id="modeGW" class="modebtn selected" onclick="setGameType('gw')">Guess Who</button><button id="modeHB" class="modebtn" onclick="setGameType('hb')">Headbanz</button><button id="modeIM" class="modebtn" onclick="setGameType('im')">Imposter</button></div>
 <p class="anime-hint" id="modeHint">Classic board. Pick a secret, flip cards, guess theirs.</p></div>
 <div
     id="animePoll" class="field series-pick">
@@ -995,8 +1002,10 @@ Characters are drawn at random from every series you tick.
 
 <div class="field hidden" id="diffField"><label>Difficulty</label><div class="sizes"><button class="modebtn dbtn" data-d="easy" onclick="setDiff('easy')">Easy</button><button class="modebtn dbtn selected" data-d="normal" onclick="setDiff('normal')">Normal</button><button class="modebtn dbtn" data-d="hard" onclick="setDiff('hard')">Hard</button></div>
 <p class="anime-hint">Easy = famous characters to guess. Hard = lesser-known ones. You can search any character when guessing, on every difficulty.</p>
-<label style="margin-top:14px">Rounds (trio / squad)</label><div class="sizes"><button class="modebtn rbtn" data-r="3" onclick="setRounds(3)">3</button><button class="modebtn rbtn selected" data-r="5" onclick="setRounds(5)">5</button><button class="modebtn rbtn" data-r="7" onclick="setRounds(7)">7</button><button class="modebtn rbtn" data-r="10" onclick="setRounds(10)">10</button></div>
-<p class="anime-hint">2 players = duo, best of 3. 3 or 4 players = points per round (first to guess gets the most), highest total after the rounds wins.</p></div>
+<div id="hbRoundsBox"><label style="margin-top:14px">Rounds (trio / squad)</label><div class="sizes"><button class="modebtn rbtn" data-r="3" onclick="setRounds(3)">3</button><button class="modebtn rbtn selected" data-r="5" onclick="setRounds(5)">5</button><button class="modebtn rbtn" data-r="7" onclick="setRounds(7)">7</button><button class="modebtn rbtn" data-r="10" onclick="setRounds(10)">10</button></div>
+<p class="anime-hint">2 players = duo, best of 3. 3 or 4 players = points per round (first to guess gets the most), highest total after the rounds wins.</p></div></div>
+<div id="imBox" class="hidden"><label style="margin-top:14px">Laps</label><div class="sizes"><button class="modebtn lapbtn selected" data-l="1" onclick="setLaps(1)">1 lap</button><button class="modebtn lapbtn" data-l="2" onclick="setLaps(2)">2 laps</button></div>
+<p class="anime-hint">3 to 6 players. In one lap everyone is the imposter once, so 5 players on 1 lap = 5 rounds.</p></div>
 <div class="field" id="sizeField"><label>Board size</label>
 
 <div class="sizes">
@@ -1081,6 +1090,8 @@ JOIN ROOM
 <div class="player"><span id="p2Name">Waiting...</span><span id="p2Status">○ Waiting</span></div>
 <div class="player hidden"><span id="p3Name">Waiting...</span><span id="p3Status">○ Waiting</span></div>
 <div class="player hidden"><span id="p4Name">Waiting...</span><span id="p4Status">○ Waiting</span></div>
+<div class="player hidden"><span id="p5Name">Waiting...</span><span id="p5Status">○ Waiting</span></div>
+<div class="player hidden"><span id="p6Name">Waiting...</span><span id="p6Status">○ Waiting</span></div>
 </div>
 <p id="lobbyStatus" style="text-align:center;color:rgba(246,239,227,.65)">Waiting for opponent...</p>
 <button id="startButton" class="pop hidden" style="width:100%;margin-top:15px" onclick="startGame()">START GAME</button>
@@ -1204,6 +1215,17 @@ Loading...
 <button class="pop ghost" style="width:100%;margin-top:14px" onclick="hbCloseGuess()">Cancel</button></div></div>
 </div>
 <div id="packBar" class="pack-bar hidden"><div id="packText"></div><div class="pack-track"><div id="packFill" class="pack-fill"></div></div></div>
+<div id="im" class="hidden">
+<canvas id="fx3" class="fx"></canvas>
+<div class="game-header"><div class="game-header-inner"><div><div class="turn" id="imTurn">Imposter</div><div class="status" id="imStatus"></div></div>
+<div class="hb-hdr-actions"><button class="pop ghost" onclick="exitGame()">EXIT</button></div></div></div>
+<div class="hb-wrap2">
+<div id="imCard"></div>
+<div id="imPanel" class="hb-panel"></div>
+</div>
+<div id="imPicker" class="hb-picker hidden"><div><input id="imSearch" placeholder="Type the character's name..." autocomplete="off"><div id="imList"></div>
+<button class="pop ghost" style="width:100%;margin-top:14px" onclick="imCloseGuess()">Cancel</button></div></div>
+</div>
 <div id="hbLoading" class="hb-loading hidden"><div>Summoning characters...</div></div>
 <div id="result" class="screen hidden">
 <canvas id="fx" class="fx"></canvas>
@@ -2028,6 +2050,7 @@ function musicApply() {
 function musicWanted(d) {
     if (!d) return null;
     const ks = arr(d.animes); if (ks.length !== 1) return null;
+    if (d.gameType === "imposter") return d.status === "playing" && d.im && ["clues", "vote", "guess"].includes(d.im.phase) ? ks[0] : null;
     if (d.gameType === "headbanz") return d.status === "playing" && d.hb && d.hb.phase === "play" ? ks[0] : null;
     return d.status === "selecting" || d.status === "playing" ? ks[0] : null;
 }
@@ -2196,9 +2219,9 @@ let oppDismissKey = "";
 window.dismissOpp = function () { oppDismissKey = $("oppBanner").dataset.key || ""; $("oppBanner").classList.add("hidden"); };
 function updatePresenceBanner(data) {
     const pres = data.presence || {}, box = $("oppBanner"), me = Number(myPlayer);
-    const gone = [1, 2, 3, 4].filter(i => data["player" + i] && i !== me && pres["p" + i] === false);
+    const gone = [1, 2, 3, 4, 5, 6].filter(i => data["player" + i] && i !== me && pres["p" + i] === false);
     const key = gone.join(",");
-    const hb = data.gameType === "headbanz";
+    const hb = data.gameType === "headbanz" || data.gameType === "imposter";
     const names = gone.map(i => data["player" + i].name).join(", ");
     $("oppBannerText").textContent = hb
         ? names + (gone.length > 1 ? " have" : " has") + " left the game. The round continues without them."
@@ -2248,7 +2271,7 @@ function showOnly(id) {
 
     document
         .querySelectorAll(
-            "#home,#lobby,#secret,#game,#hb,#result"
+            "#home,#lobby,#secret,#game,#hb,#im,#result"
         )
         .forEach(
             el =>
@@ -2473,16 +2496,23 @@ const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$searc
 
 window.setGameType = function (t) {
     homeMode = t;
-    document.body.classList.toggle("hb-mode", t === "hb");
+    const multi = t === "hb" || t === "im";
+    document.body.classList.toggle("hb-mode", multi);
     $("modeGW").classList.toggle("selected", t === "gw");
     $("modeHB").classList.toggle("selected", t === "hb");
-    $("sizeField").classList.toggle("hidden", t === "hb");
-    $("diffField").classList.toggle("hidden", t !== "hb");
-    if (t !== "hb") document.querySelectorAll(".hb-only input").forEach(c => { c.checked = false; });
-    $("modeHint").textContent = t === "hb"
-        ? "2 to 4 players. You see everyone else's character but not your own. Ask on your call, then guess yours first!"
-        : "Classic board. Pick a secret, flip cards, guess theirs.";
+    $("modeIM").classList.toggle("selected", t === "im");
+    $("sizeField").classList.toggle("hidden", multi);
+    $("diffField").classList.toggle("hidden", !multi);
+    $("hbRoundsBox").classList.toggle("hidden", t !== "hb");
+    $("imBox").classList.toggle("hidden", t !== "im");
+    if (!multi) document.querySelectorAll(".hb-only input").forEach(c => { c.checked = false; });
+    $("modeHint").textContent = {
+        gw: "Classic board. Pick a secret, flip cards, guess theirs.",
+        hb: "2 to 4 players. You see everyone else's character but not your own. Ask on your call, then guess yours first!",
+        im: "3 to 6 players. Everyone sees the same character except the imposter. Give clues, vote, and catch them!"
+    }[t];
 };
+
 window.setDiff = function (d) {
     homeDiff = d;
     document.querySelectorAll(".dbtn").forEach(b => b.classList.toggle("selected", b.dataset.d === d));
@@ -2535,7 +2565,7 @@ async function hbSeriesChars(key, maxPages, onPage) {
     return out;
 }
 
-const HB_COLORS = ["#ff4d6d", "#3ea6ff", "#ffd23f", "#2ec4a6"];
+const HB_COLORS = ["#ff4d6d", "#3ea6ff", "#ffd23f", "#2ec4a6", "#b388ff", "#ff9f1c"];
 const HB_IMG = "https://s4.anilist.co/file/anilistcdn/character/large/";
 const hbImg = c => !c || !c.i ? "" : (/^http/.test(c.i) ? c.i : HB_IMG + c.i);
 const nz = s => String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
@@ -2818,9 +2848,9 @@ function hbList() {
     if (!res.length) box.textContent = "No match. Try another spelling or nickname.";
 }
 $("hbSearch").addEventListener("input", hbList);
-function hbConfetti() {
+function hbConfetti(cid) {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const c = $("fx2"), ctx = c.getContext("2d"); c.width = innerWidth; c.height = innerHeight;
+    const c = $(cid || "fx2"), ctx = c.getContext("2d"); c.width = innerWidth; c.height = innerHeight;
     const cols = ["#ffce54", "#e63e6d", "#57e0d0", "#f1ecff", "#3ea6ff"];
     const ps = Array.from({ length: 150 }, () => ({ x: innerWidth / 2, y: innerHeight * .35, vx: (Math.random() - .5) * 18, vy: -Math.random() * 14 - 4, s: 6 + Math.random() * 7, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: cols[Math.random() * cols.length | 0] }));
     let t = 0;
@@ -2936,6 +2966,329 @@ function hbRenderRound(data) {
     const ex = hbEl("button", "pop ghost", "EXIT GAME"); ex.style.cssText = "width:100%;margin-top:10px"; ex.onclick = () => exitGame(); box.appendChild(ex);
 }
 
+/* =========================================================
+   IMPOSTER MODE (3 to 6 players)
+   Everyone sees the same character except the imposter.
+   Clues (2 rounds, spoken on your call) -> vote -> result.
+========================================================= */
+let homeLaps = 1, imSig = "", imSeen = { phase: "", round: 0 }, imSkipKey = "";
+window.setLaps = function (n) { homeLaps = n; document.querySelectorAll(".lapbtn").forEach(b => b.classList.toggle("selected", Number(b.dataset.l) === n)); };
+
+async function createIM(name, keys) {
+    if (hbBusy) return; hbBusy = true;
+    try {
+        room = generateCode(); myPlayer = 1;
+        await set(ref(db, "rooms/" + room), {
+            gameType: "imposter", mode: mode, animes: keys, difficulty: homeDiff, laps: homeLaps,
+            player1: { uid: user.uid, name: name, ready: false }, player2: null, player3: null, player4: null, player5: null, player6: null,
+            status: "waiting", turn: 1, winner: null, result: null
+        });
+        saveSession(); openLobby();
+    } catch (e) { console.error(e); toast("Could not create the room: " + (e.message || e)); }
+    finally { hbBusy = false; }
+}
+function updateLobbyIM(d) {
+    const ps = [1, 2, 3, 4, 5, 6].filter(i => d["player" + i]), shown = Math.min(6, Math.max(3, ps.length + 1));
+    const packs = d.packs || {}, pct = i => Number(packs["p" + i]) || 0, allReady = ps.every(i => pct(i) >= 100);
+    [1, 2, 3, 4, 5, 6].forEach(i => {
+        const nm = $("p" + i + "Name"), p = d["player" + i];
+        nm.parentElement.classList.toggle("hidden", i > shown);
+        nm.textContent = p ? p.name : "Waiting..."; nm.style.color = p ? HB_COLORS[i - 1] : "";
+        const st = $("p" + i + "Status"); if (st) { st.textContent = !p ? "○ Waiting" : (pct(i) >= 100 ? "✔ Ready" : "⬇ " + pct(i) + "%"); st.className = p && pct(i) >= 100 ? "ready" : ""; }
+    });
+    hbPrefetch(d.animes || []);
+    const host = Number(myPlayer) === 1, laps = Number(d.laps) || 1, enough = ps.length >= 3;
+    $("lobbyStatus").textContent = !enough ? "Imposter needs 3 to 6 players (" + ps.length + " so far)..."
+        : !allReady ? "Waiting for everyone to finish downloading the characters..."
+        : ps.length + " players · " + ps.length * laps + " rounds. " + (host ? "Everyone is ready. Start when you like." : "Waiting for the host to start.");
+    $("startButton").classList.toggle("hidden", !(host && enough));
+    $("startButton").disabled = !allReady;
+    if (enough) $("startButton").textContent = allReady ? "START IMPOSTER" : "DOWNLOADING CHARACTERS...";
+}
+
+/* ---------- rounds (host only) ---------- */
+function imDeal(pool, depth, used) {
+    const by = {}; pool.forEach(c => { const l = (by[c.s] = by[c.s] || []); if (l.length < depth) l.push(c); });
+    const series = Object.keys(by);
+    for (let t = 0; t < 80; t++) {
+        const l = by[series[Math.random() * series.length | 0]], li = l.filter(x => x.i), src = li.length ? li : l;
+        const c = src[Math.random() * src.length | 0];
+        if (!used.includes(String(c.id))) return hbSlim(c);
+    }
+    return hbSlim(pool[Math.random() * pool.length | 0]);
+}
+async function imBegin(kind) {
+    const d = currentRoomData; if (!d || Number(myPlayer) !== 1) return;
+    let keys = d.animes || [];
+    if (kind !== "first") {
+        const box = document.querySelector("#imPanel .anime-poll");
+        if (box) keys = [...box.querySelectorAll("input:checked")].map(c => c.value);
+        if (!keys.length) { toast("Pick at least one series."); return; }
+    }
+    $("hbLoading").classList.remove("hidden"); { const lt = document.querySelector("#hbLoading div"); if (lt) lt.textContent = "Summoning characters..."; }
+    try {
+        const players = kind === "next" ? arr(d.im.players).map(Number) : [1, 2, 3, 4, 5, 6].filter(i => d["player" + i]);
+        if (players.length < 3) throw new Error("Imposter needs at least 3 players.");
+        if (kind === "first" && !players.every(i => Number((d.packs || {})["p" + i]) >= 100)) throw new Error("Some players are still downloading the characters.");
+        const pool = await hbBuildPool(keys, "hard", (pct, msg) => { const t = document.querySelector("#hbLoading div"); if (t) t.textContent = msg; });
+        const used = kind === "next" ? arr(d.im.used).map(String) : [];
+        const char = imDeal(pool, (HB_PAGES[d.difficulty] || 3) * 25, used);
+        const zeros = () => Object.fromEntries(players.map(p => ["p" + p, 0]));
+        const base = (round, impOrder) => ({ phase: "clues", char, imposter: impOrder[round - 1], order: shuffle(players), step: 0, votes: null, result: null, guess: null, accused: null, tally: null, matchDone: false, winner: null, winners: null, used: used.concat(String(char.id)) });
+        const upd = { animes: keys, status: "playing" };
+        if (kind === "first" || kind === "new") {
+            const laps = Number(d.laps) || 1, impOrder = [];
+            for (let l = 0; l < laps; l++) impOrder.push(...shuffle(players));
+            upd.im = Object.assign(base(1, impOrder), { players, n: players.length, round: 1, rounds: players.length * laps, impOrder, scores: zeros(), impWins: zeros() });
+        } else {
+            const round = (Number(d.im.round) || 0) + 1;
+            Object.entries(base(round, arr(d.im.impOrder).map(Number))).forEach(([k, v]) => { upd["im/" + k] = v; });
+            upd["im/round"] = round;
+        }
+        await update(ref(db, "rooms/" + room), upd);
+    } catch (e) { console.error(e); toast("Could not start: " + (e.message || e)); }
+    $("hbLoading").classList.add("hidden");
+}
+
+/* ---------- atomic actions ---------- */
+function imFinish(im, outcome) {
+    const players = arr(im.players).map(Number), imp = Number(im.imposter), pts = {};
+    players.forEach(p => { pts["p" + p] = p === imp ? (outcome === "escaped" ? 3 : outcome === "stolen" ? 2 : 0) : (outcome === "busted" ? 2 : outcome === "stolen" ? 1 : 0); });
+    im.scores = im.scores || {}; im.impWins = im.impWins || {};
+    players.forEach(p => { im.scores["p" + p] = (Number(im.scores["p" + p]) || 0) + pts["p" + p]; });
+    if (outcome === "escaped" || outcome === "stolen") im.impWins["p" + imp] = (Number(im.impWins["p" + imp]) || 0) + 1;
+    im.result = { outcome, pts }; im.phase = "result";
+    im.matchDone = Number(im.round) >= Number(im.rounds);
+}
+function imTally(im) {
+    const players = arr(im.players).map(Number), counts = {};
+    players.forEach(p => { counts[p] = 0; });
+    Object.values(im.votes || {}).forEach(t => { if (counts[t] != null) counts[t]++; });
+    const max = Math.max(...Object.values(counts)), tops = players.filter(p => counts[p] === max);
+    im.accused = tops.length === 1 && max > 0 ? tops[0] : 0;
+    im.tally = Object.fromEntries(players.map(p => ["p" + p, counts[p]]));
+    if (im.accused === Number(im.imposter)) im.phase = "guess"; else imFinish(im, "escaped");
+}
+function imVoteCheck(im, absent) {
+    const need = arr(im.players).map(Number).filter(p => !absent.includes(p));
+    if (need.length && need.every(p => (im.votes || {})["p" + p] != null)) imTally(im);
+}
+const imAbsent = () => { const d = currentRoomData, pres = (d && d.presence) || {}; return arr(d.im.players).map(Number).filter(p => pres["p" + p] === false); };
+async function imAct(fn) {
+    try {
+        await runTransaction(ref(db, "rooms/" + room + "/im"), cur => {
+            if (!cur) return;
+            const im = JSON.parse(JSON.stringify(cur));
+            im.order = arr(im.order).map(Number); im.players = arr(im.players).map(Number); im.votes = im.votes || {};
+            if (fn(im) === false) return;
+            return im;
+        });
+    } catch (e) { console.error(e); toast("Could not send that. Try again."); }
+}
+const imAdvance = im => { im.step = (Number(im.step) || 0) + 1; if (im.step >= im.order.length * 2) im.phase = "vote"; };
+window.imDone = function (step) {
+    const me = Number(myPlayer);
+    sfx("pick");
+    return imAct(im => { if (im.phase !== "clues" || Number(im.step) !== step) return false; if (im.order[step % im.order.length] !== me && me !== 1) return false; imAdvance(im); });
+};
+window.imVote = function (target) {
+    const me = Number(myPlayer), absent = imAbsent(); sfx("pick");
+    return imAct(im => { if (im.phase !== "vote" || target === me) return false; im.votes["p" + me] = target; imVoteCheck(im, absent); });
+};
+const imCancel = () => imAct(im => { if (im.phase === "result" || im.phase === "match") return false; imFinish(im, "cancelled"); });
+async function imSubmitGuess(c) {
+    imCloseGuess(); sfx("guess");
+    await imAct(im => {
+        if (im.phase !== "guess" || Number(im.imposter) !== Number(myPlayer)) return false;
+        const ok = sameCharHB(c, im.char); im.guess = { g: c.n, ok }; imFinish(im, ok ? "stolen" : "busted");
+    });
+}
+function imStandings(im) {
+    const sc = im.scores || {}, iw = im.impWins || {};
+    return arr(im.players).map(Number).map(p => ({ p, score: Number(sc["p" + p]) || 0, imp: Number(iw["p" + p]) || 0 })).sort((a, b) => b.score - a.score || b.imp - a.imp || a.p - b.p);
+}
+window.imShowFinal = async function () {
+    const rows = imStandings(currentRoomData.im), top = rows[0];
+    const winners = rows.filter(r => r.score === top.score && r.imp === top.imp).map(r => r.p);
+    await update(ref(db, "rooms/" + room), { "im/phase": "match", "im/winners": winners, "im/winner": winners[0] });
+};
+
+/* ---------- guess picker (caught imposter) ---------- */
+window.imOpenGuess = function () { $("imPicker").classList.remove("hidden"); $("imSearch").value = ""; imList(); $("imSearch").focus(); };
+function imCloseGuess() { $("imPicker").classList.add("hidden"); }
+window.imCloseGuess = imCloseGuess;
+function imList() {
+    const d = currentRoomData; if (!d || !d.im) return;
+    const box = $("imList"); box.innerHTML = "";
+    if (!hbPool) { box.textContent = "Loading characters..."; return; }
+    const base = hbPool.slice(); if (!base.some(x => sameCharHB(x, d.im.char))) base.push(d.im.char);
+    const q = nz($("imSearch").value), toks = q.split(" ").filter(Boolean), res = [];
+    base.forEach(c => {
+        const hay = nz([c.n, ...(c.a || [])].join(" "));
+        if (toks.every(t => hay.includes(t))) res.push({ c, s: nz(c.n).startsWith(q) ? 0 : 1 });
+    });
+    res.sort((x, y) => x.s - y.s || x.c.n.localeCompare(y.c.n));
+    res.slice(0, 10).forEach(r => {
+        const b = hbEl("button", "hb-opt");
+        if (r.c.i) b.appendChild(makeImg(hbImg(r.c)));
+        b.appendChild(hbEl("span", "", r.c.n + " (" + r.c.s + ")"));
+        b.onclick = () => imSubmitGuess(r.c); box.appendChild(b);
+    });
+    if (!res.length) box.textContent = "No match. Try another spelling or nickname.";
+}
+$("imSearch").addEventListener("input", imList);
+
+/* ---------- screen ---------- */
+function imCardEl(im, reveal) {
+    const isImp = Number(im.imposter) === Number(myPlayer), c = im.char;
+    const card = hbEl("div", "hb-pcard im-main" + (isImp && !reveal ? " hq" : ""));
+    card.style.setProperty("--pc", isImp && !reveal ? "#ff4d6d" : "#ffd23f");
+    if (isImp && !reveal) {
+        card.appendChild(hbEl("div", "hb-pname", "YOU ARE THE IMPOSTER"));
+        card.appendChild(hbEl("div", "hb-q", "?"));
+        card.appendChild(hbEl("div", "hb-series", "Everyone else can see the character. Blend in with your clues."));
+        return card;
+    }
+    card.appendChild(hbEl("div", "hb-pname", reveal ? "THE CHARACTER WAS" : "THE SECRET CHARACTER"));
+    if (c.i) { const w = hbEl("div", "hb-pic"); w.appendChild(makeImg(hbImg(c))); card.appendChild(w); }
+    card.appendChild(hbEl("div", "hb-name" + (c.i ? "" : " big"), c.n));
+    card.appendChild(hbEl("div", "hb-series", c.s));
+    if (!reveal) card.appendChild(hbEl("div", "im-forbid", "🚫 Don't say: " + [c.n].concat(arr(c.a)).filter(Boolean).join(" · ")));
+    return card;
+}
+function imSeriesPicker(box, data) {
+    box.appendChild(hbEl("label", "", "Series for the next " + (data.im.phase === "match" ? "match" : "round")));
+    const wrap = hbEl("div", "series-pick"), poll = hbEl("div", "anime-poll series-pick");
+    document.querySelectorAll("#animePoll .anime-poll > label").forEach(l => {
+        const c = l.cloneNode(true), inp = c.querySelector("input");
+        inp.removeAttribute("checked"); inp.checked = arr(data.animes).includes(inp.value); poll.appendChild(c);
+    });
+    wrap.appendChild(poll); box.appendChild(wrap);
+}
+function showIM(data) {
+    document.body.classList.add("hb-mode");
+    showOnly("im"); resultShown = false; awaitingGuess = false;
+    const im = data.im; if (!im || !im.char) return;
+    const me = Number(myPlayer), players = arr(im.players).map(Number), order = arr(im.order).map(Number);
+    const nm = n => (data["player" + n] || {}).name || "Player " + n;
+    const key = im.round + ":" + im.char.id;
+    if (key !== hbRoundKey) { hbRoundKey = key; imSig = ""; imCloseGuess(); imSeen = { phase: "", round: 0 }; hbPool = null; hbLoadPool(data.animes || [], key); }
+
+    $("imTurn").textContent = "Round " + im.round + " of " + im.rounds;
+    $("imStatus").textContent = "Points: " + imStandings(im).map(r => nm(r.p) + " " + r.score).join("  ·  ");
+
+    const sig = key + "|" + im.phase + "|" + (im.step || 0) + "|" + JSON.stringify(im.votes || {}) + "|" + (im.result ? im.result.outcome : "");
+    if (sig !== imSig) {
+        imSig = sig;
+        const cardBox = $("imCard"); cardBox.textContent = "";
+        cardBox.appendChild(imCardEl(im, im.phase === "result" || im.phase === "match"));
+        imRenderPanel(data);
+    }
+    // sounds + celebration on phase changes
+    if (im.phase !== imSeen.phase && imSeen.phase) {
+        const imp = Number(im.imposter), oc = (im.result || {}).outcome, impWon = oc === "escaped" || oc === "stolen";
+        if (im.phase === "vote") sfx("turn");
+        else if (im.phase === "guess") sfx("guess");
+        else if (im.phase === "result") {
+            const iWon = oc !== "cancelled" && (me === imp ? impWon : !impWon);
+            sfx(iWon ? "win" : "lose");
+            const sk = Object.keys(HB_SERIES).find(k => HB_SERIES[k].label === im.char.s);
+            if (oc !== "cancelled") winCelebrate(sk, iWon);
+        } else if (im.phase === "match") {
+            if (arr(im.winners).map(Number).includes(me)) { sfx("win"); hbConfetti("fx3"); } else sfx("lose");
+        }
+    }
+    imSeen.phase = im.phase;
+
+    // host keeps the round moving when someone is offline
+    if (me === 1 && ["clues", "vote", "guess"].includes(im.phase)) {
+        const pres = data.presence || {}, absent = players.filter(p => pres["p" + p] === false);
+        if (absent.includes(Number(im.imposter))) { if (imSkipKey !== "c" + key) { imSkipKey = "c" + key; imCancel(); } }
+        else if (im.phase === "clues" && absent.includes(order[(Number(im.step) || 0) % order.length])) {
+            const k = "s" + key + im.step, st = Number(im.step);
+            if (imSkipKey !== k) { imSkipKey = k; imAct(x => { if (x.phase !== "clues" || Number(x.step) !== st) return false; imAdvance(x); }); }
+        } else if (im.phase === "vote" && players.filter(p => !absent.includes(p)).every(p => (im.votes || {})["p" + p] != null)) {
+            if (imSkipKey !== "v" + key) { imSkipKey = "v" + key; imAct(x => { if (x.phase !== "vote") return false; imVoteCheck(x, absent); }); }
+        }
+    }
+}
+function imRenderPanel(data) {
+    const im = data.im, box = $("imPanel"); box.textContent = "";
+    const me = Number(myPlayer), players = arr(im.players).map(Number), order = arr(im.order).map(Number), host = me === 1, imp = Number(im.imposter);
+    const nm = n => (data["player" + n] || {}).name || "Player " + n;
+    const colored = (p, tag) => { const e = hbEl(tag || "span", "", nm(p)); e.style.color = HB_COLORS[p - 1]; e.style.fontWeight = 800; return e; };
+
+    if (im.phase === "clues") {
+        const n = order.length, step = Number(im.step) || 0, speaker = order[step % n], lap = Math.floor(step / n) + 1;
+        box.appendChild(hbEl("h2", "hb-ptitle", "CLUE ROUND " + lap + " OF 2"));
+        box.appendChild(hbEl("p", "hb-wait", me === imp ? "Say a clue that sounds like you know the character." : "Say one clue about the character on your call. Never say the name."));
+        const t = hbEl("table", "hb-table");
+        order.forEach((p, i) => {
+            const tr = hbEl("tr"), a = hbEl("td"); a.appendChild(colored(p));
+            const b = hbEl("td", "hb-pts", i < step % n ? "✔ done" : i === step % n ? "🎤 speaking" : "waiting");
+            tr.append(a, b); t.appendChild(tr);
+        });
+        box.appendChild(t);
+        if (me === speaker) { const b = hbEl("button", "pop", "✅ I GAVE MY CLUE"); b.style.cssText = "width:100%;margin-top:14px"; b.onclick = () => imDone(step); box.appendChild(b); }
+        else if (host) { const b = hbEl("button", "pop ghost", "Skip " + nm(speaker)); b.style.cssText = "width:100%;margin-top:14px"; b.onclick = () => imDone(step); box.appendChild(b); }
+        else box.appendChild(hbEl("p", "hb-wait", "Waiting for " + nm(speaker) + "..."));
+    } else if (im.phase === "vote") {
+        const votes = im.votes || {}, mine = votes["p" + me];
+        box.appendChild(hbEl("h2", "hb-ptitle", "WHO IS THE IMPOSTER?"));
+        const grid = hbEl("div", "im-votes");
+        players.filter(p => p !== me).forEach(p => {
+            const b = hbEl("button", "pop im-vote" + (mine === p ? " picked" : ""), nm(p));
+            b.style.setProperty("--pc", HB_COLORS[p - 1]); b.onclick = () => imVote(p); grid.appendChild(b);
+        });
+        box.appendChild(grid);
+        box.appendChild(hbEl("p", "hb-wait", Object.keys(votes).length + " of " + players.length + " have voted" + (mine ? ". You can still change yours." : ".")));
+    } else if (im.phase === "guess") {
+        box.appendChild(hbEl("h2", "hb-ptitle", "CAUGHT!"));
+        const p = hbEl("p", "hb-champ"); p.appendChild(colored(imp)); p.appendChild(document.createTextNode(" was the imposter."));
+        box.appendChild(p);
+        if (me === imp) {
+            box.appendChild(hbEl("p", "hb-wait", "One last chance: name the character to steal points."));
+            const b = hbEl("button", "pop", "🎯 GUESS THE CHARACTER"); b.style.cssText = "width:100%;margin-top:10px"; b.onclick = imOpenGuess; box.appendChild(b);
+        } else box.appendChild(hbEl("p", "hb-wait", "Waiting for " + nm(imp) + " to guess the character..."));
+    } else {
+        const final = im.phase === "match", res = im.result || {}, pts = res.pts || {};
+        box.appendChild(hbEl("h2", "hb-ptitle", final ? "FINAL RESULT" : "ROUND " + im.round + " RESULT"));
+        if (final) {
+            const w = arr(im.winners).map(Number), c = hbEl("div", "hb-champ");
+            c.textContent = (w.length > 1 ? "🏆 It's a tie: " + w.map(nm).join(" & ") : "🏆 " + nm(w[0]) + " wins the match!");
+            box.appendChild(c);
+        } else {
+            const p = hbEl("p", "hb-champ"); p.appendChild(document.createTextNode("The imposter was ")); p.appendChild(colored(imp)); box.appendChild(p);
+            const g = im.guess ? '"' + im.guess.g + '"' : "";
+            const text = {
+                escaped: (im.accused ? nm(im.accused) + " was accused, but it wasn't the imposter." : "The vote was tied.") + " " + nm(imp) + " fooled everyone! +3",
+                stolen: "Caught, but " + nm(imp) + " guessed " + g + " correctly! Imposter +2, crew +1 each.",
+                busted: "Caught! " + nm(imp) + " guessed " + g + " (wrong). Crew +2 each.",
+                cancelled: "The round was cancelled because the imposter left. No points."
+            }[res.outcome] || "";
+            box.appendChild(hbEl("p", "hb-wait", text));
+            if (res.outcome !== "cancelled" && im.votes) {
+                const vt = hbEl("table", "hb-table");
+                players.forEach(p => { const t = (im.votes || {})["p" + p]; if (t == null) return; const tr = hbEl("tr"), a = hbEl("td"); a.appendChild(colored(p)); const b = hbEl("td"); b.appendChild(document.createTextNode("voted ")); b.appendChild(colored(t)); tr.append(a, b, hbEl("td", "hb-pts", t === imp ? "✔" : "✘")); vt.appendChild(tr); });
+                box.appendChild(vt);
+            }
+        }
+        box.appendChild(hbEl("h3", "hb-ptitle small", "Total points"));
+        const st = hbEl("table", "hb-table");
+        imStandings(im).forEach((r, i) => { const tr = hbEl("tr"), a = hbEl("td", "", (i + 1) + ". "); a.appendChild(colored(r.p)); tr.append(a, hbEl("td", "hb-pts", r.score + " pts" + (!final && pts["p" + r.p] ? "  (+" + pts["p" + r.p] + ")" : "")), hbEl("td", "", r.imp + " imposter win" + (r.imp === 1 ? "" : "s"))); st.appendChild(tr); });
+        box.appendChild(st);
+        if (!host) box.appendChild(hbEl("p", "hb-wait", "Waiting for " + nm(1) + " to continue..."));
+        else {
+            if (!(im.phase === "result" && im.matchDone)) imSeriesPicker(box, data);
+            const go = hbEl("button", "pop", final ? "🔄 NEW MATCH" : (im.matchDone ? "🏁 SEE FINAL RESULT" : "▶ NEXT ROUND"));
+            go.style.cssText = "width:100%;margin-top:14px";
+            go.onclick = () => final ? imBegin("new") : (im.matchDone ? imShowFinal() : imBegin("next"));
+            box.appendChild(go);
+        }
+        const ex = hbEl("button", "pop ghost", "EXIT GAME"); ex.style.cssText = "width:100%;margin-top:10px"; ex.onclick = () => exitGame(); box.appendChild(ex);
+    }
+}
+
 window.createRoom =
 async function() {
 
@@ -2971,6 +3324,7 @@ async function() {
         return;
     }
     if (homeMode === "hb") return createHB(name, selectedAnimes);
+    if (homeMode === "im") return createIM(name, selectedAnimes);
 
     const sourcePool =
         selectedAnimes.flatMap(
@@ -3098,12 +3452,11 @@ async function() {
     const data = snapshot.val();
 
     // Coming back to a room you're already in = rejoin.
-    for (let i = 1; i <= 4; i++) {
-        if (data["player" + i] && data["player" + i].uid === user.uid) { room = code; myPlayer = i; saveSession(); openLobby(); return; }
+    for (let i = 1; i <= 6; i++) { if (data["player" + i] && data["player" + i].uid === user.uid) { room = code; myPlayer = i; saveSession(); openLobby(); return; }
     }
     if (data.status && data.status !== "waiting") { toast("That match has already started."); return; }
 
-    const maxPlayers = data.gameType === "headbanz" ? 4 : 2;
+    const maxPlayers = data.gameType === "headbanz" ? 4 : data.gameType === "imposter" ? 6 : 2;
     for (let slot = 2; slot <= maxPlayers; slot++) {
         if (data["player" + slot]) continue;
         const res = await runTransaction(ref(db, "rooms/" + code + "/player" + slot), cur => cur ? undefined : { uid: user.uid, name: name, ready: false });
@@ -3155,8 +3508,10 @@ function listenToRoom() {
         }
 
         updateLobby(currentRoomData); if (currentRoomData.gameType === "headbanz") updateLobbyHB(currentRoomData);
+        if (currentRoomData.gameType === "imposter") updateLobbyIM(currentRoomData);
 
         if (currentRoomData.gameType === "headbanz" && currentRoomData.status === "playing") { showHB(currentRoomData); return; }
+        if (currentRoomData.gameType === "imposter" && currentRoomData.status === "playing") { showIM(currentRoomData); return; }
         if (currentRoomData.status === "selecting") {
             if (document.getElementById("secret").classList.contains("hidden")) {
                 showSecretScreen();
@@ -3342,6 +3697,7 @@ function updateLobby(data) {
 window.startGame =
 async function() {
     if (currentRoomData && currentRoomData.gameType === "headbanz") return hbStart();
+    if (currentRoomData && currentRoomData.gameType === "imposter") return imBegin("first");
 
     if (
         !currentRoomData
@@ -4077,7 +4433,7 @@ window.copyInviteLink = async function () {
 
 window.leaveRoom = async function () {
     try {
-        if (myPlayer === 1 && currentRoomData && !currentRoomData.player2 && !currentRoomData.player3 && !currentRoomData.player4) await remove(ref(db, "rooms/" + room));
+        if (myPlayer === 1 && currentRoomData && !currentRoomData.player2 && !currentRoomData.player3 && !currentRoomData.player4 && !currentRoomData.player5 && !currentRoomData.player6) await remove(ref(db, "rooms/" + room));
     } catch (e) {}
     clearSession();
     location.href = location.pathname;
@@ -4130,7 +4486,7 @@ async function initApp() {
             const snap = await get(ref(db, "rooms/" + saved.room));
             if (snap.exists()) {
                 const d = snap.val();
-                let p = 0; for (let i = 1; i <= 4; i++) if (d["player" + i] && d["player" + i].uid === user.uid) p = i;
+                let p = 0; for (let i = 1; i <= 6; i++) if (d["player" + i] && d["player" + i].uid === user.uid) p = i;
                 if (p) { room = saved.room; myPlayer = p; saveSession(); openLobby(); toast("Rejoined room " + room); return; }
             }
             clearSession();
