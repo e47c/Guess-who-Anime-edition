@@ -2224,7 +2224,7 @@ const HB_SERIES = {
     windbreaker: { id: 163270, re: /wind breaker/i, label: "Wind Breaker", names: "Haruka Sakura|Hajime Umemiya|Akihiko Nirei|Kotoha Tachibana|Jo Togame|Toma Hiragi|Kyotaro Sugishita|Mitsuki Kiryu" }
 };
 const HB_PAGES = { easy: 1, normal: 3, hard: 6 };   // 25 characters per page, most popular first
-const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$search,type:ANIME,sort:POPULARITY_DESC){title{romaji english} characters(page:$page,perPage:50,sort:[FAVOURITES_DESC]){pageInfo{hasNextPage lastPage} nodes{id name{full native alternative} image{large}}}}}";
+const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$search,type:ANIME,sort:POPULARITY_DESC){title{romaji english} characters(page:$page,perPage:25,sort:[FAVOURITES_DESC]){pageInfo{hasNextPage lastPage} nodes{id name{full native alternative} image{large}}}}}";
 
 window.setGameType = function (t) {
     homeMode = t;
@@ -2285,7 +2285,7 @@ async function hbSeriesChars(key, maxPages, onPage) {
             out.push({ id: "a" + n.id, n: n.name.full, a: [...(n.name.alternative || []), n.name.native].filter(Boolean).slice(0, 3), i: img.replace(HB_IMG, ""), s: s.label, r: out.length });
         });
         if (onPage) onPage(p, Number(pi.lastPage) || 0);
-        if (pi.hasNextPage === false || nodes.length < 50) break;
+        if (!nodes.length || pi.hasNextPage === false || (pi.hasNextPage == null && nodes.length < 25)) break;
     }
     return out;
 }
@@ -2316,9 +2316,10 @@ window.setRounds = function (n) {
 
 /* ---------- pool (AniList, cached, fallback names) ---------- */
 const hbMem = {};
+const HB_MAX_CHARS = 300;   // per series: everything if the series is smaller, otherwise the 300 most popular
 async function hbBuildPool(keys, diff, progress) {
     const todo = keys.filter(k => HB_SERIES[k]), lists = {};
-    const ck = k => "gw_hbfull_" + k;
+    const ck = k => "gw_hbfull2_" + k;
     todo.forEach(k => {
         if (hbMem[k]) { lists[k] = hbMem[k]; return; }
         try {
@@ -2338,7 +2339,7 @@ async function hbBuildPool(keys, diff, progress) {
             const label = "Downloading " + HB_SERIES[k].label + " (" + (done + 1) + "/" + todo.length + ")";
             if (progress) progress(done / todo.length * 100, label + "...");
             try {
-                const list = await hbSeriesChars(k, 80, (p, last) => { if (progress) progress((done + Math.min(0.97, p / (last || p + 1))) / todo.length * 100, label + "  " + (last ? p + "/" + last : "") ); });
+                const list = await hbSeriesChars(k, Math.ceil(HB_MAX_CHARS / 25), (p, last) => { const tot = Math.min(last || p + 1, Math.ceil(HB_MAX_CHARS / 25)); if (progress) progress((done + Math.min(0.97, p / tot)) / todo.length * 100, label + "  " + p + "/" + tot); });
                 if (list.length) {
                     lists[k] = list; hbMem[k] = list;
                     try { localStorage.setItem(ck(k), JSON.stringify({ t: Date.now(), l: list.map(c => [c.id, c.n, c.a, c.i]) })); } catch (e) {}
