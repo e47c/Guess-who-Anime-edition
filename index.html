@@ -827,6 +827,35 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;bac
 #home .size,#home .modebtn{background:rgba(0,0,0,.3);border:1px solid rgba(246,239,227,.35)}
 #home .size.selected,#home .modebtn.selected{background:var(--gold);box-shadow:0 0 16px rgba(201,165,106,.55)}
 #toast,.mute-btn{background:rgba(10,4,4,.8);backdrop-filter:blur(8px);border:1px solid var(--gold)}
+
+/* ===== HEADBANZ 2-4 PLAYERS ===== */
+.hb-wrap2 { max-width: 1040px; margin: 18px auto; padding: 0 14px 90px; }
+.hb-hdr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.hb-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 22px 16px; padding-top: 12px; }
+.hb-pcard { position: relative; text-align: center; padding: 12px; border: 4px solid var(--pc); background: rgba(246,239,227,.06); box-shadow: 7px 7px 0 var(--ink); border-radius: 3px; }
+.hb-pname { font-family: var(--font-display); font-size: clamp(26px, 5vw, 38px); line-height: 1; margin-bottom: 10px; color: var(--pc); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 3px 3px 0 var(--ink); word-break: break-word; }
+.hb-pcard .hb-pic { aspect-ratio: 3/4; max-height: 34vh; }
+.hb-pcard .hb-name { font-size: 24px; }
+.hb-pcard .hb-name.big { font-size: clamp(30px, 7vw, 46px); padding: 26px 0; }
+.hb-pcard.hq { background: repeating-linear-gradient(45deg, rgba(246,239,227,.05) 0 14px, rgba(246,239,227,.1) 14px 28px); }
+.hb-q { font-family: var(--font-display); font-size: clamp(100px, 20vw, 170px); line-height: 1; color: var(--pc); -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; text-shadow: 6px 6px 0 var(--ink); transform: rotate(-8deg); padding: 10px 0; }
+.hb-badge { position: absolute; top: -16px; right: -8px; z-index: 3; padding: 4px 12px; background: var(--pc); color: var(--ink); border: 3px solid var(--ink); font-family: var(--font-display); font-size: 16px; transform: rotate(4deg); white-space: pre; }
+.hb-badge.out { background: #555; color: #fff; }
+.hb-mine2 { margin-top: 20px; padding: 12px 14px; border: 2px solid rgba(246,239,227,.2); background: rgba(10,6,6,.5); border-radius: 3px; font-weight: 700; display: grid; gap: 6px; }
+.hb-mine2:empty { display: none; }
+.hb-miss { font-weight: 500; font-size: 14px; color: var(--parchment-dim); }
+.hb-panel { margin-top: 22px; padding: 18px; border: 4px solid var(--gold); background: rgba(10,6,6,.82); box-shadow: 8px 8px 0 var(--luffy-red); border-radius: 3px; }
+.hb-ptitle { font-family: var(--font-display); font-weight: 400; font-size: clamp(26px, 5vw, 38px); color: var(--gold); margin: 0 0 12px; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 3px 3px 0 var(--luffy-red); transform: skewX(-6deg); }
+.hb-ptitle.small { font-size: 22px; margin-top: 18px; }
+.hb-champ { font-family: var(--font-display); font-size: clamp(24px, 5vw, 34px); color: var(--gold-bright); margin-bottom: 12px; }
+.hb-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+.hb-table td { padding: 8px 6px; border-bottom: 1px solid rgba(246,239,227,.15); }
+.hb-pts { font-family: var(--font-display); color: var(--gold-bright); text-align: right; white-space: nowrap; }
+.hb-wait { text-align: center; margin: 16px 0 0; color: var(--parchment-dim); font-weight: 700; }
+.hb-panel label { display: block; margin: 16px 0 6px; }
+.hb-loading { position: fixed; inset: 0; z-index: 90; background: rgba(8,5,18,.88); display: flex; align-items: center; justify-content: center; }
+.hb-loading div { font-family: var(--font-display); font-size: clamp(24px, 6vw, 38px); color: var(--gold); animation: pulse 1s ease-in-out infinite alternate; }
+@keyframes pulse { to { opacity: .45; transform: scale(.97); } }
 </style>
 
 </head>
@@ -927,7 +956,9 @@ Characters are drawn at random from every series you tick.
 
 
 <div class="field hidden" id="diffField"><label>Difficulty</label><div class="sizes"><button class="modebtn dbtn" data-d="easy" onclick="setDiff('easy')">Easy</button><button class="modebtn dbtn selected" data-d="normal" onclick="setDiff('normal')">Normal</button><button class="modebtn dbtn" data-d="hard" onclick="setDiff('hard')">Hard</button></div>
-<p class="anime-hint">Easy = famous characters to guess. Hard = lesser-known ones. You can search any character when guessing, on every difficulty.</p></div>
+<p class="anime-hint">Easy = famous characters to guess. Hard = lesser-known ones. You can search any character when guessing, on every difficulty.</p>
+<label style="margin-top:14px">Rounds (trio / squad)</label><div class="sizes"><button class="modebtn rbtn" data-r="3" onclick="setRounds(3)">3</button><button class="modebtn rbtn selected" data-r="5" onclick="setRounds(5)">5</button><button class="modebtn rbtn" data-r="7" onclick="setRounds(7)">7</button><button class="modebtn rbtn" data-r="10" onclick="setRounds(10)">10</button></div>
+<p class="anime-hint">2 players = duo, best of 3. 3 or 4 players = points per round (first to guess gets the most), highest total after the rounds wins.</p></div>
 <div class="field" id="sizeField"><label>Board size</label>
 
 <div class="sizes">
@@ -1015,6 +1046,8 @@ JOIN ROOM
 <div style="margin-top:25px">
 <div class="player"><span id="p1Name">Player 1</span><span class="ready">● Ready</span></div>
 <div class="player"><span id="p2Name">Waiting...</span><span id="p2Status">○ Waiting</span></div>
+<div class="player hidden"><span id="p3Name">Waiting...</span><span id="p3Status">○ Waiting</span></div>
+<div class="player hidden"><span id="p4Name">Waiting...</span><span id="p4Status">○ Waiting</span></div>
 </div>
 <p id="lobbyStatus" style="text-align:center;color:rgba(246,239,227,.65)">Waiting for opponent...</p>
 <button id="startButton" class="pop hidden" style="width:100%;margin-top:15px" onclick="startGame()">START GAME</button>
@@ -1126,15 +1159,18 @@ Loading...
 ========================================= -->
 
 <div id="hb" class="hidden">
+<canvas id="fx2" class="fx"></canvas>
 <div class="game-header"><div class="game-header-inner"><div><div class="turn" id="hbTurn">Headbanz</div><div class="status" id="hbStatus"></div></div>
-<button class="pop" onclick="hbOpenGuess()">🎯 GUESS MINE</button><button class="pop ghost" onclick="exitGame()">EXIT</button></div></div>
-<div class="hb-wrap"><div class="hb-label" id="hbOppLabel"></div><div class="hb-card" id="hbCard"></div>
-<div id="hbAnswer" class="hb-answer hidden"><div id="hbAskText"></div><div class="hb-btns"><button class="pop hb-y" onclick="hbAnswer('y')">✅ YES</button><button class="pop hb-n" onclick="hbAnswer('n')">❌ NO</button><button class="pop secondary" onclick="hbAnswer('s')">🤷 SOMETIMES</button></div></div>
-<div class="hb-last" id="hbLast"></div>
-<div class="hb-me"><div class="hb-q">?</div>Your card (hidden until the round ends)<div id="hbTally" class="hb-tally"></div><div id="hbWrong"></div></div></div>
+<div class="hb-hdr-actions"><button id="hbGuessBtn" class="pop" onclick="hbOpenGuess()">🎯 GUESS MINE</button><button id="hbGiveBtn" class="pop secondary" onclick="hbGiveUp()">🏳️ GIVE UP</button><button class="pop ghost" onclick="exitGame()">EXIT</button></div></div></div>
+<div class="hb-wrap2">
+<div id="hbCards" class="hb-cards"></div>
+<div id="hbMine" class="hb-mine2"></div>
+<div id="hbRound" class="hb-panel hidden"></div>
+</div>
 <div id="hbPicker" class="hb-picker hidden"><div><input id="hbSearch" placeholder="Type a name or nickname..." autocomplete="off"><div id="hbList"></div>
 <button class="pop ghost" style="width:100%;margin-top:14px" onclick="hbCloseGuess()">Cancel</button></div></div>
 </div>
+<div id="hbLoading" class="hb-loading hidden"><div>Summoning characters...</div></div>
 <div id="result" class="screen hidden">
 <canvas id="fx" class="fx"></canvas>
 <div class="panel result" id="resultPanel">
@@ -1174,7 +1210,7 @@ Loading...
 </div>
 </div>
 
-<div id="oppBanner" class="opp-banner hidden"><span>Opponent disconnected. They may be reconnecting.</span><button class="pop secondary" onclick="exitGame()">Exit game</button></div>
+<div id="oppBanner" class="opp-banner hidden"><span id="oppBannerText">Opponent disconnected. They may be reconnecting.</span><button class="pop secondary" onclick="exitGame()">Exit game</button></div>
 <div id="toast"></div>
 <button id="muteBtn" class="mute-btn" onclick="toggleMute()" aria-label="Toggle sound">🔊</button>
 
@@ -1196,8 +1232,7 @@ import {
     update,
     onValue,
     remove,
-    onDisconnect
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+    onDisconnect, runTransaction } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
 import {
     getAuth,
@@ -1879,6 +1914,13 @@ function startPresence() {
     });
 }
 function updatePresenceBanner(data) {
+    if (data.gameType === "headbanz") {
+        const pres = data.presence || {}, gone = [1, 2, 3, 4].filter(i => data["player" + i] && i !== Number(myPlayer) && pres["p" + i] === false);
+        $("oppBannerText").textContent = gone.map(i => data["player" + i].name).join(", ") + (gone.length > 1 ? " are" : " is") + " disconnected. The round continues without them.";
+        $("oppBanner").classList.toggle("hidden", !gone.length);
+        return;
+    }
+    $("oppBannerText").textContent = "Opponent disconnected. They may be reconnecting.";
     const opp = myPlayer === 1 ? "p2" : "p1";
     const oppExists = myPlayer === 1 ? !!data.player2 : !!data.player1;
     const gone = oppExists && data.presence && data.presence[opp] === false;
@@ -2123,7 +2165,7 @@ function pickBalanced(keys, size) {
    with images. If it can't be reached, the built-in
    names below keep the mode working (name-only cards).
 ========================================= */
-let homeMode = "gw", homeDiff = "normal", hbKey = "", hbWrongSeen = 0, hbBusy = false;
+let homeMode = "gw", homeDiff = "normal", hbKey = "", hbWrongSeen = 0, hbBusy = false, homeRounds = 5;
 const HB_SERIES = {
     onepiece: { id: 21, re: /one piece/i, label: "One Piece", names: "Monkey D. Luffy|Roronoa Zoro|Nami|Usopp|Sanji|Tony Tony Chopper|Nico Robin|Franky|Brook|Portgas D. Ace|Trafalgar Law|Shanks|Dracule Mihawk|Boa Hancock|Kaido|Sabo" },
     naruto: { id: 1735, re: /naruto/i, label: "Naruto", names: "Naruto Uzumaki|Sasuke Uchiha|Sakura Haruno|Kakashi Hatake|Itachi Uchiha|Gaara|Rock Lee|Hinata Hyuga|Shikamaru Nara|Jiraiya|Tsunade|Orochimaru|Minato Namikaze|Madara Uchiha|Obito Uchiha|Might Guy" },
@@ -2159,7 +2201,7 @@ window.setGameType = function (t) {
     $("diffField").classList.toggle("hidden", t !== "hb");
     if (t !== "hb") document.querySelectorAll(".hb-only input").forEach(c => { c.checked = false; });
     $("modeHint").textContent = t === "hb"
-        ? "You see your opponent's character, they see yours. Ask yes/no questions on your call, then guess your own."
+        ? "2 to 4 players. You see everyone else's character but not your own. Ask on your call, then guess yours first!"
         : "Classic board. Pick a secret, flip cards, guess theirs.";
 };
 window.setDiff = function (d) {
@@ -2193,140 +2235,330 @@ async function hbSeriesChars(key, pages) {
     return out;
 }
 
+const HB_COLORS = ["#ff4d6d", "#3ea6ff", "#ffd23f", "#2ec4a6"];
+const HB_IMG = "https://s4.anilist.co/file/anilistcdn/character/large/";
+const hbImg = c => !c || !c.i ? "" : (/^http/.test(c.i) ? c.i : HB_IMG + c.i);
+const nz = s => String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+const arr = x => Array.isArray(x) ? x : (x ? Object.values(x) : []);
+const hbEl = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+const hbSlim = c => ({ id: c.id, n: c.n, a: (c.a || []).slice(0, 3), i: c.i || "", s: c.s });
+let hbPool = null, hbRoundKey = "", hbSig = "", hbSeen = { wrong: 0, order: 0, done: false, phase: "" };
+
+window.setRounds = function (n) {
+    homeRounds = n;
+    document.querySelectorAll(".rbtn").forEach(b => b.classList.toggle("selected", Number(b.dataset.r) === n));
+};
+
+/* ---------- pool (AniList, cached, fallback names) ---------- */
 async function hbBuildPool(keys, diff) {
+    const pages = HB_PAGES[diff] || 3, ck = "gw_hbpool_" + pages + "_" + [...keys].sort().join(",");
+    try {
+        const c = JSON.parse(localStorage.getItem(ck) || "null");
+        if (c && Date.now() - c.t < 12 * 3600e3 && c.pool && c.pool.length) return c.pool;
+    } catch (e) {}
     const all = []; let offline = false;
     for (const key of keys) {
+        const s0 = HB_SERIES[key]; if (!s0) continue;
         let list = [];
-        try { list = await hbSeriesChars(key, 5); } catch (e) { console.warn("AniList failed for", key, e); }
-        if (!list.length) {
-            offline = true;
-            const s = HB_SERIES[key];
-            list = s.names.split("|").map((n, i) => ({ id: "f" + key + i, n: n, i: "", s: s.label, r: i }));
-        }
+        try { list = await hbSeriesChars(key, pages); } catch (e) { console.warn("AniList failed for", key, e); }
+        if (!list.length) { offline = true; list = s0.names.split("|").map((n, i) => ({ id: "f" + key + i, n: n, a: [], i: "", s: s0.label, r: i })); }
         all.push(...list);
     }
+    const seenN = new Set(), seenId = new Set(), pool = [];
+    all.forEach(c => {
+        const nn = nz(c.n);
+        if (seenId.has(String(c.id)) || seenN.has(nn)) return;
+        if ((c.a || []).some(x => nz(x).length >= 6 && seenN.has(nz(x)))) return;
+        seenId.add(String(c.id)); seenN.add(nn); pool.push(c);
+    });
     if (offline) toast("Couldn't reach AniList for some series. Using built-in names (no pictures).");
-    const seen = new Set();
-    return all.filter(c => { const k = c.n.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
+    else try { localStorage.setItem(ck, JSON.stringify({ t: Date.now(), pool })); } catch (e) {}
+    return pool;
+}
+function sameCharHB(a, b) {
+    if (!a || !b) return false;
+    if (String(a.id) === String(b.id)) return true;
+    const A = [a.n].concat(a.a || []).map(nz).filter(x => x.length >= 3), B = [b.n].concat(b.a || []).map(nz);
+    return A.some(x => B.includes(x));
+}
+function hbAssign(pool, players) {
+    const by = {}; pool.forEach(c => (by[c.s] = by[c.s] || []).push(c));
+    const series = shuffle(Object.keys(by)), picked = [], out = {};
+    players.forEach((p, i) => {
+        let c, t = 0;
+        do { const l = by[series[(i + t) % series.length]]; c = l[Math.random() * l.length | 0]; t++; }
+        while (picked.some(x => sameCharHB(x, c)) && t < 60);
+        if (picked.some(x => sameCharHB(x, c))) c = pool.find(x => !picked.some(y => sameCharHB(x, y)));
+        picked.push(c); out["p" + p] = hbSlim(c);
+    });
+    return out;
 }
 
+/* ---------- room creation + lobby ---------- */
 async function createHB(name, keys) {
     if (hbBusy) return; hbBusy = true;
-    toast("Loading characters (a few seconds)...");
     try {
-        const pool = await hbBuildPool(keys, homeDiff);
-        if (pool.length < 2) { alert("Not enough characters found."); return; }
         room = generateCode(); myPlayer = 1;
         await set(ref(db, "rooms/" + room), {
-            gameType: "headbanz", mode: mode, animes: keys, difficulty: homeDiff, hb: { pool: pool },
-            player1: { uid: user.uid, name: name, ready: false }, player2: null,
+            gameType: "headbanz", mode: mode, animes: keys, difficulty: homeDiff, rounds: homeRounds,
+            player1: { uid: user.uid, name: name, ready: false }, player2: null, player3: null, player4: null,
             status: "waiting", turn: 1, winner: null, result: null
         });
         saveSession(); openLobby();
     } catch (e) { console.error(e); alert("Could not create the room: " + (e.message || e)); }
     finally { hbBusy = false; }
 }
+function updateLobbyHB(d) {
+    const ps = [1, 2, 3, 4].filter(i => d["player" + i]);
+    [1, 2, 3, 4].forEach(i => {
+        const nm = $("p" + i + "Name"), row = nm.parentElement, p = d["player" + i];
+        row.classList.remove("hidden");
+        nm.textContent = p ? p.name : "Waiting...";
+        nm.style.color = p ? HB_COLORS[i - 1] : "";
+        const st = $("p" + i + "Status"); if (st) { st.textContent = p ? "● Connected" : "○ Waiting"; st.className = p ? "ready" : ""; }
+    });
+    const modeName = { 2: "Duo (best of 3)", 3: "Trio (" + (d.rounds || 5) + " rounds)", 4: "Squad (" + (d.rounds || 5) + " rounds)" }[ps.length];
+    const host = Number(myPlayer) === 1;
+    $("lobbyStatus").textContent = ps.length < 2 ? "Waiting for players (2 to 4 can join)..." : modeName + ". " + (host ? "Start whenever everyone is in." : "Waiting for the host to start.");
+    $("startButton").classList.toggle("hidden", !(host && ps.length >= 2));
+    if (ps.length >= 2) $("startButton").textContent = "START " + modeName.split(" ")[0].toUpperCase();
+}
+function hbRematch() {}
+async function hbStart() { return hbBegin("first"); }
 
-function hbRound(extra) {
-    const d = currentRoomData, pool = d.hb.pool;
-    const R = { easy: [0, 20], normal: [20, 60], hard: [60, 125] }[d.difficulty] || [20, 60];   // rank by popularity inside each series
-    let el = []; pool.forEach((c, i) => { if (c.r >= R[0] && c.r < R[1]) el.push(i); });
-    if (el.length < 2) el = pool.map((c, i) => i);
-    const a = el[Math.floor(Math.random() * el.length)];
-    let b; do { b = el[Math.floor(Math.random() * el.length)]; } while (b === a);
-    return Object.assign({ status: "playing", turn: 1, guess: null, winner: null, result: null, finishedAt: null, revealed: null,
-        "hb/p1": a, "hb/p2": b, "hb/wrong": null, "hb/tally": null, "hb/last": null, "hb/round": (Number(d.hb.round) || 0) + 1 }, extra || {});
-}
-async function hbStart() {
-    resultShown = false; awaitingGuess = false;
-    try { await update(ref(db, "rooms/" + room), hbRound()); } catch (e) { toast("Could not start."); }
-}
-async function hbRematch() {
-    resultShown = false; awaitingGuess = false;
-    try { await update(ref(db, "rooms/" + room), hbRound()); } catch (e) { toast("Could not start the rematch."); }
-}
-
-let hbLastSeen = 0;
-const HB_IMG = "https://s4.anilist.co/file/anilistcdn/character/large/";
-const hbImg = c => !c || !c.i ? "" : (/^http/.test(c.i) ? c.i : HB_IMG + c.i);
-let hbLock = false;
-window.hbAnswer = async function (a) {
-    const d = currentRoomData, asker = Number(d.turn);
-    if (hbLock || !d || d.status !== "playing" || asker === Number(myPlayer)) return;
-    hbLock = true; setTimeout(() => { hbLock = false; }, 500);
-    const t = ((d.hb.tally || {})["p" + asker]) || {};
-    const up = { ["hb/tally/p" + asker + "/" + a]: (Number(t[a]) || 0) + 1, "hb/last": { p: asker, a: a, t: Date.now() } };
-    if (a !== "y") up.turn = Number(myPlayer);   // Yes keeps the turn; No / Sometimes passes it
-    try { await update(ref(db, "rooms/" + room), up); } catch (e) { toast("Could not send the answer."); }
-};
-function showHB(data) {
-    showOnly("hb"); resultShown = false; awaitingGuess = false;
-    const hb = data.hb, pool = hb.pool, me = Number(myPlayer), opp = me === 1 ? 2 : 1, c = pool[hb["p" + opp]];
-    if (!c) return;
-    const turn = Number(data.turn), mine = turn === me, nm = n => (data["player" + n] || {}).name || "Player " + n;
-    const wrong = Object.values(hb.wrong || {}), myMiss = wrong.filter(w => w.p === me || Number(w.p) === me);
-    const key = (hb.round || 0) + ":" + hb.p1 + ":" + hb.p2;
-    if (key !== hbKey) {
-        hbKey = key; hbWrongSeen = myMiss.length; hbCloseGuess();
-        $("hbOppLabel").textContent = nm(opp) + "'s character (only you can see this)";
-        const card = $("hbCard"); card.innerHTML = "";
-        if (c.i) { const w = document.createElement("div"); w.className = "hb-pic"; w.appendChild(makeImg(hbImg(c))); card.appendChild(w); }
-        const n1 = document.createElement("div"); n1.className = "hb-name" + (c.i ? "" : " big"); n1.textContent = c.n; card.appendChild(n1);
-        const sr = document.createElement("div"); sr.className = "hb-series"; sr.textContent = c.s; card.appendChild(sr);
-    } else if (myMiss.length > hbWrongSeen) {
-        hbWrongSeen = myMiss.length; sfx("lose"); toast("Not that one. Keep asking!");
+/* ---------- rounds (host only) ---------- */
+async function hbBegin(kind) {
+    const d = currentRoomData; if (!d || Number(myPlayer) !== 1) return;
+    let keys = d.animes || [];
+    if (kind !== "first") {
+        const box = document.querySelector("#hbRound .anime-poll");
+        if (box) keys = [...box.querySelectorAll("input:checked")].map(c => c.value);
+        if (!keys.length) { toast("Pick at least one series."); return; }
     }
-    if (mine && lastSfxTurn !== turn) sfx("turn"); lastSfxTurn = turn;
-    $("hbTurn").textContent = mine ? "Your turn" : nm(turn) + "'s turn";
-    $("hbStatus").textContent = mine ? "Ask a yes/no question out loud. You keep the turn while the answer is Yes." : nm(turn) + " is asking. Tap the answer (or just say it).";
-    $("hbAnswer").classList.toggle("hidden", mine);
-    $("hbAskText").textContent = "Answer " + nm(turn) + "'s question:";
-    const L = hb.last;
-    if (L) {
-        $("hbLast").textContent = nm(L.p) + " asked: " + ({ y: "YES (keeps the turn)", n: "NO (turn passes)", s: "SOMETIMES (turn passes)" }[L.a] || "");
-        if (hbLastSeen && L.t !== hbLastSeen) sfx("pick"); hbLastSeen = L.t;
-    } else { $("hbLast").textContent = ""; hbLastSeen = 0; }
-    const tl = n => { const x = (hb.tally || {})["p" + n] || {}; return nm(n) + ": ✅" + (x.y || 0) + " ❌" + (x.n || 0) + " 🤷" + (x.s || 0); };
-    $("hbTally").textContent = tl(1) + "  |  " + tl(2);
-    const nmI = w => (pool[w.c] || {}).n || "?";
-    const theirs = wrong.filter(w => Number(w.p) === opp);
-    $("hbWrong").textContent = (myMiss.length ? "Your misses: " + myMiss.map(nmI).join(", ") : "")
-        + (theirs.length ? (myMiss.length ? " | " : "") + nm(opp) + "'s misses: " + theirs.map(nmI).join(", ") : "");
+    $("hbLoading").classList.remove("hidden");
+    try {
+        const players = [1, 2, 3, 4].filter(i => d["player" + i]);
+        if (players.length < 2) throw new Error("Need at least 2 players.");
+        const pool = await hbBuildPool(keys, d.difficulty || "normal");
+        if (pool.length < players.length) throw new Error("Not enough characters in those series.");
+        const chars = hbAssign(pool, players), zeros = () => Object.fromEntries(players.map(p => ["p" + p, 0]));
+        const base = { phase: "play", chars, order: null, out: null, strikes: null, wrong: null, lastPts: null, matchDone: false, winner: null, tie: false };
+        const upd = { animes: keys, status: "playing" };
+        if (kind === "first" || kind === "new") {
+            upd.hb = Object.assign(base, { players, n: players.length, round: 1, rounds: Number(d.rounds) || 5, scores: zeros(), firsts: zeros(), wins: zeros() });
+        } else {
+            Object.entries(base).forEach(([k, v]) => { upd["hb/" + k] = v; });
+            upd["hb/round"] = (Number(d.hb.round) || 0) + 1;
+            if (kind === "sudden") upd["hb/rounds"] = (Number(d.hb.rounds) || 5) + 1;
+        }
+        await update(ref(db, "rooms/" + room), upd);
+    } catch (e) { console.error(e); alert("Could not start: " + (e.message || e)); }
+    $("hbLoading").classList.add("hidden");
 }
-
-const nz = s => String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
-window.hbOpenGuess = function () {
-    $("hbPicker").classList.remove("hidden"); $("hbSearch").value = ""; hbList(); $("hbSearch").focus();
+function hbStandings(hb) {
+    const players = arr(hb.players).map(Number), duo = players.length === 2;
+    const sc = hb.scores || {}, fi = hb.firsts || {}, wi = hb.wins || {};
+    return players.map(p => ({ p, score: Number((duo ? wi : sc)["p" + p]) || 0, firsts: Number(fi["p" + p]) || 0 }))
+        .sort((a, b) => b.score - a.score || b.firsts - a.firsts || a.p - b.p);
+}
+const hbTie = r => r.length > 1 && r[0].score === r[1].score && r[0].firsts === r[1].firsts;
+window.hbShowFinal = async function () {
+    const rows = hbStandings(currentRoomData.hb), tie = hbTie(rows);
+    await update(ref(db, "rooms/" + room), { "hb/phase": "match", "hb/tie": tie, "hb/winner": tie ? null : rows[0].p });
 };
+
+/* ---------- player actions (atomic) ---------- */
+function hbCheckEnd(hb) {
+    const players = arr(hb.players).map(Number), N = players.length;
+    const end = N === 2 ? (hb.order.length >= 1 || hb.out.length >= 1) : (hb.order.length + hb.out.length >= N);
+    if (!end) return;
+    hb.phase = "round";
+    const pts = {}; players.forEach(p => { pts["p" + p] = 0; });
+    hb.scores = hb.scores || {}; hb.firsts = hb.firsts || {}; hb.wins = hb.wins || {};
+    if (N === 2) {
+        const w = hb.order.length ? hb.order[0] : players.find(p => !hb.out.includes(p));
+        pts["p" + w] = 1; hb.wins["p" + w] = (Number(hb.wins["p" + w]) || 0) + 1; hb.firsts["p" + w] = (Number(hb.firsts["p" + w]) || 0) + 1;
+        hb.matchDone = hb.wins["p" + w] >= 2;
+    } else {
+        hb.order.forEach((p, i) => { pts["p" + p] = N - i; hb.scores["p" + p] = (Number(hb.scores["p" + p]) || 0) + N - i; });
+        if (hb.order.length) hb.firsts["p" + hb.order[0]] = (Number(hb.firsts["p" + hb.order[0]]) || 0) + 1;
+        hb.matchDone = Number(hb.round) >= Number(hb.rounds);
+    }
+    hb.lastPts = pts;
+}
+async function hbAct(fn) {
+    try {
+        await runTransaction(ref(db, "rooms/" + room + "/hb"), cur => {
+            if (!cur || cur.phase !== "play") return;
+            const hb = JSON.parse(JSON.stringify(cur));
+            hb.order = arr(hb.order).map(Number); hb.out = arr(hb.out).map(Number); hb.wrong = arr(hb.wrong); hb.strikes = hb.strikes || {};
+            if (fn(hb) === false) return;
+            hbCheckEnd(hb);
+            return hb;
+        });
+    } catch (e) { console.error(e); toast("Could not send that. Try again."); }
+}
+const hbResolved = (hb, p) => arr(hb.order).map(Number).includes(p) || arr(hb.out).map(Number).includes(p);
+async function hbSubmit(c) {
+    if (!confirm('Guess "' + c.n + '" as YOUR character?')) return;
+    sfx("guess"); hbCloseGuess();
+    const me = Number(myPlayer);
+    await hbAct(hb => {
+        if (hb.order.includes(me) || hb.out.includes(me)) return false;
+        if (sameCharHB(c, hb.chars["p" + me])) { hb.order.push(me); return; }
+        hb.wrong.push({ p: me, g: c.n });
+        hb.strikes["p" + me] = (Number(hb.strikes["p" + me]) || 0) + 1;
+        if (hb.strikes["p" + me] >= 3) hb.out.push(me);
+    });
+}
+window.hbGiveUp = async function () {
+    if (!confirm("Give up this round? You get 0 points and your card is revealed.")) return;
+    const me = Number(myPlayer);
+    await hbAct(hb => { if (hb.order.includes(me) || hb.out.includes(me)) return false; hb.out.push(me); });
+};
+
+/* ---------- guess picker ---------- */
+window.hbOpenGuess = function () { $("hbPicker").classList.remove("hidden"); $("hbSearch").value = ""; hbList(); $("hbSearch").focus(); };
 function hbCloseGuess() { $("hbPicker").classList.add("hidden"); }
 window.hbCloseGuess = hbCloseGuess;
 function hbList() {
-    if (!currentRoomData || !currentRoomData.hb) return;
-    const pool = currentRoomData.hb.pool, q = nz($("hbSearch").value), toks = q.split(" ").filter(Boolean);
-    const bad = new Set(Object.values(currentRoomData.hb.wrong || {}).filter(w => Number(w.p) === Number(myPlayer)).map(w => String(w.c)));
+    const d = currentRoomData; if (!d || !d.hb) return;
+    const base = (hbPool || []).slice();
+    Object.values(d.hb.chars || {}).forEach(c => { if (!base.some(x => sameCharHB(x, c))) base.push(c); });
+    const q = nz($("hbSearch").value), toks = q.split(" ").filter(Boolean);
+    const bad = new Set(arr(d.hb.wrong).filter(w => Number(w.p) === Number(myPlayer)).map(w => nz(w.g)));
     const res = [];
-    pool.forEach((c, i) => {
-        if (bad.has(String(i))) return;
-        const hay = nz([c.n, ...(c.a || [])].join(" "));   // matches any alternate name too
-        if (toks.every(t => hay.includes(t))) res.push({ c: c, i: i, s: nz(c.n).startsWith(q) ? 0 : 1 });
+    base.forEach(c => {
+        if (bad.has(nz(c.n))) return;
+        const hay = nz([c.n, ...(c.a || [])].join(" "));
+        if (toks.every(t => hay.includes(t))) res.push({ c, s: nz(c.n).startsWith(q) ? 0 : 1 });
     });
     res.sort((x, y) => x.s - y.s || x.c.n.localeCompare(y.c.n));
     const box = $("hbList"); box.innerHTML = "";
     res.slice(0, 8).forEach(r => {
-        const b = document.createElement("button"); b.className = "hb-opt";
+        const b = hbEl("button", "hb-opt");
         if (r.c.i) b.appendChild(makeImg(hbImg(r.c)));
-        const sp = document.createElement("span"); sp.textContent = r.c.n + " (" + r.c.s + ")"; b.appendChild(sp);
-        b.onclick = () => hbSubmit(r.i); box.appendChild(b);
+        b.appendChild(hbEl("span", "", r.c.n + " (" + r.c.s + ")"));
+        b.onclick = () => hbSubmit(r.c); box.appendChild(b);
     });
     if (!res.length) box.textContent = "No match. Try another spelling or nickname.";
 }
 $("hbSearch").addEventListener("input", hbList);
-async function hbSubmit(i) {
-    const c = currentRoomData.hb.pool[i];
-    if (!confirm('Guess "' + c.n + '" as YOUR character?')) return;
-    sfx("guess"); hbCloseGuess();
-    try { await set(ref(db, "rooms/" + room + "/guess"), { player: Number(myPlayer), characterId: i, timestamp: Date.now() }); }
-    catch (e) { toast("Could not send the guess."); }
+function hbConfetti() {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const c = $("fx2"), ctx = c.getContext("2d"); c.width = innerWidth; c.height = innerHeight;
+    const cols = ["#ffce54", "#e63e6d", "#57e0d0", "#f1ecff", "#3ea6ff"];
+    const ps = Array.from({ length: 150 }, () => ({ x: innerWidth / 2, y: innerHeight * .35, vx: (Math.random() - .5) * 18, vy: -Math.random() * 14 - 4, s: 6 + Math.random() * 7, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: cols[Math.random() * cols.length | 0] }));
+    let t = 0;
+    (function f() { ctx.clearRect(0, 0, c.width, c.height); ps.forEach(p => { p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s / 3, p.s, p.s * .6); ctx.restore(); }); if (++t < 230) requestAnimationFrame(f); else ctx.clearRect(0, 0, c.width, c.height); })();
+}
+
+/* ---------- screen ---------- */
+function hbCard(data, p, hb, opts) {
+    const c = hb.chars["p" + p], nm = (data["player" + p] || {}).name || "Player " + p;
+    const order = arr(hb.order).map(Number), out = arr(hb.out).map(Number);
+    const card = hbEl("div", "hb-pcard" + (opts.hidden ? " hq" : ""));
+    card.style.setProperty("--pc", HB_COLORS[p - 1]);
+    card.appendChild(hbEl("div", "hb-pname", nm + (p === Number(myPlayer) ? " (you)" : "")));
+    if (order.includes(p)) card.appendChild(hbEl("div", "hb-badge", "#" + (order.indexOf(p) + 1) + (arr(hb.players).length > 2 ? "  +" + (arr(hb.players).length - order.indexOf(p)) : "  ✔")));
+    else if (out.includes(p)) card.appendChild(hbEl("div", "hb-badge out", "OUT"));
+    if (opts.hidden) { card.appendChild(hbEl("div", "hb-q", "?")); card.appendChild(hbEl("div", "hb-series", "Only you can't see this card")); return card; }
+    if (c.i) { const w = hbEl("div", "hb-pic"); w.appendChild(makeImg(hbImg(c))); card.appendChild(w); }
+    card.appendChild(hbEl("div", "hb-name" + (c.i ? "" : " big"), c.n));
+    card.appendChild(hbEl("div", "hb-series", c.s));
+    return card;
+}
+function showHB(data) {
+    document.body.classList.add("hb-mode");
+    showOnly("hb"); resultShown = false; awaitingGuess = false;
+    const hb = data.hb; if (!hb || !hb.chars) return;
+    const me = Number(myPlayer), players = arr(hb.players).map(Number), duo = players.length === 2;
+    const order = arr(hb.order).map(Number), out = arr(hb.out).map(Number), wrong = arr(hb.wrong);
+    const nm = n => (data["player" + n] || {}).name || "Player " + n;
+    const key = hb.round + ":" + Object.values(hb.chars).map(c => c.id).join(",");
+    if (key !== hbRoundKey) { hbRoundKey = key; hbSig = ""; hbCloseGuess(); hbSeen = { wrong: 0, order: 0, done: false, phase: "" }; hbPool = null; hbBuildPool(data.animes || [], data.difficulty || "normal").then(p => { hbPool = p; if (!$("hbPicker").classList.contains("hidden")) hbList(); }); }
+
+    const mineDone = order.includes(me) || out.includes(me), playing = hb.phase === "play";
+    const sc = hbStandings(hb).map(r => nm(r.p) + " " + r.score).join("  ·  ");
+    $("hbTurn").textContent = "Round " + hb.round + (duo ? " · Best of 3" : " of " + hb.rounds);
+    $("hbStatus").textContent = (duo ? "Wins: " : "Points: ") + sc;
+    $("hbGuessBtn").disabled = !playing || mineDone; $("hbGiveBtn").disabled = !playing || mineDone;
+
+    const sig = key + "|" + order.join() + "|" + out.join() + "|" + hb.phase;
+    if (sig !== hbSig) {
+        hbSig = sig;
+        const box = $("hbCards"); box.innerHTML = "";
+        players.filter(p => p !== me).forEach(p => box.appendChild(hbCard(data, p, hb, {})));
+        box.appendChild(hbCard(data, me, hb, { hidden: !(mineDone || hb.phase !== "play") }));
+        if (hb.phase === "play") { $("hbRound").classList.add("hidden"); } else hbRenderRound(data);
+    }
+
+    const strikes = Number((hb.strikes || {})["p" + me]) || 0, mine = $("hbMine"); mine.textContent = "";
+    if (playing) {
+        mine.appendChild(hbEl("div", "", mineDone ? (out.includes(me) ? "You're out this round. Watch the others." : "You got it! Keep watching the others.") : "Your guesses: " + "❤️".repeat(3 - strikes) + "🖤".repeat(strikes)));
+        players.forEach(p => { const ws = wrong.filter(w => Number(w.p) === p).map(w => w.g); if (ws.length) mine.appendChild(hbEl("div", "hb-miss", (p === me ? "Your" : nm(p) + "'s") + " misses: " + ws.join(", "))); });
+    }
+    // feedback sounds
+    const myWrong = wrong.filter(w => Number(w.p) === me).length;
+    if (key === hbRoundKey && playing) {
+        if (myWrong > hbSeen.wrong && hbSeen.phase) { sfx("lose"); toast(strikes >= 3 ? "Three strikes. You're out this round." : "Not that one. " + (3 - strikes) + " guess" + (3 - strikes === 1 ? "" : "es") + " left."); }
+        if (order.length > hbSeen.order && hbSeen.phase) sfx(order[order.length - 1] === me ? "win" : "pick");
+    }
+    if (hb.phase !== hbSeen.phase && hbSeen.phase) {
+        if (hb.phase === "match") { if (Number(hb.winner) === me) { sfx("win"); hbConfetti(); } else sfx("lose"); }
+        else if (hb.phase === "round") sfx(order.includes(me) ? "win" : "lose");
+    }
+    hbSeen.wrong = myWrong; hbSeen.order = order.length; hbSeen.phase = hb.phase;
+
+    // everyone left unfinished is offline? the host closes the round
+    if (playing && me === 1) {
+        const pres = data.presence || {}, left = players.filter(p => !order.includes(p) && !out.includes(p));
+        if (left.length && left.every(p => pres["p" + p] === false)) hbAct(h => { left.forEach(p => { if (!h.order.includes(p) && !h.out.includes(p)) h.out.push(p); }); });
+    }
+}
+function hbRenderRound(data) {
+    const hb = data.hb, box = $("hbRound"); box.textContent = ""; box.classList.remove("hidden");
+    const players = arr(hb.players).map(Number), duo = players.length === 2, host = Number(myPlayer) === 1;
+    const order = arr(hb.order).map(Number), pts = hb.lastPts || {};
+    const nm = n => (data["player" + n] || {}).name || "Player " + n;
+    const final = hb.phase === "match";
+    box.appendChild(hbEl("h2", "hb-ptitle", final ? "FINAL RESULT" : "ROUND " + hb.round + " RESULT"));
+    if (final) box.appendChild(hbEl("div", "hb-champ", hb.tie ? "It's a tie!" : "🏆 " + nm(hb.winner) + " wins the match!"));
+    if (!final) {
+        const t = hbEl("table", "hb-table");
+        const rows = order.concat(players.filter(p => !order.includes(p)));
+        rows.forEach((p, i) => {
+            const tr = hbEl("tr"), pl = hbEl("td", "", ""); pl.textContent = (order.includes(p) ? "#" + (i + 1) : "—") + "  " + nm(p); pl.style.color = HB_COLORS[p - 1]; pl.style.fontWeight = 800;
+            const ch = hbEl("td", "", (hb.chars["p" + p] || {}).n || "");
+            const pt = hbEl("td", "hb-pts", duo ? (order.includes(p) || (pts["p" + p] > 0) ? "WINS ROUND" : "") : "+" + (pts["p" + p] || 0));
+            tr.append(pl, ch, pt); t.appendChild(tr);
+        });
+        box.appendChild(t);
+    }
+    box.appendChild(hbEl("h3", "hb-ptitle small", duo ? "Match score (first to 2)" : "Total points"));
+    const st = hbEl("table", "hb-table");
+    hbStandings(hb).forEach((r, i) => { const tr = hbEl("tr"), a = hbEl("td", "", (i + 1) + ". " + nm(r.p)); a.style.color = HB_COLORS[r.p - 1]; a.style.fontWeight = 800; tr.append(a, hbEl("td", "hb-pts", String(r.score) + (duo ? " win" + (r.score === 1 ? "" : "s") : " pts")), hbEl("td", "", r.firsts + " first" + (r.firsts === 1 ? "" : "s"))); st.appendChild(tr); });
+    box.appendChild(st);
+
+    if (!host) { box.appendChild(hbEl("p", "hb-wait", "Waiting for " + nm(1) + " to continue...")); }
+    else {
+        const needPicker = !(hb.phase === "round" && hb.matchDone);
+        if (needPicker) {
+            box.appendChild(hbEl("label", "", final ? "Series for the next match" : (hb.tie ? "Series for sudden death" : "Series for the next round")));
+            const wrap = hbEl("div", "series-pick"), poll = hbEl("div", "anime-poll series-pick");
+            document.querySelectorAll("#animePoll .anime-poll > label").forEach(l => {
+                const c = l.cloneNode(true), inp = c.querySelector("input");
+                inp.checked = arr(data.animes).includes(inp.value); inp.removeAttribute("checked"); inp.checked = arr(data.animes).includes(inp.value);
+                poll.appendChild(c);
+            });
+            wrap.appendChild(poll); box.appendChild(wrap);
+        }
+        const go = hbEl("button", "pop", final ? (hb.tie ? "⚡ SUDDEN DEATH ROUND" : "🔄 NEW MATCH") : (hb.matchDone ? "🏁 SEE FINAL RESULT" : "▶ NEXT ROUND"));
+        go.style.cssText = "width:100%;margin-top:14px";
+        go.onclick = () => final ? hbBegin(hb.tie ? "sudden" : "new") : (hb.matchDone ? hbShowFinal() : hbBegin("next"));
+        box.appendChild(go);
+    }
+    const ex = hbEl("button", "pop ghost", "EXIT GAME"); ex.style.cssText = "width:100%;margin-top:10px"; ex.onclick = () => exitGame(); box.appendChild(ex);
 }
 
 window.createRoom =
@@ -2491,15 +2723,18 @@ async function() {
     const data = snapshot.val();
 
     // Coming back to a room you're already in = rejoin.
-    if (data.player1 && data.player1.uid === user.uid) { room = code; myPlayer = 1; saveSession(); openLobby(); return; }
-    if (data.player2 && data.player2.uid === user.uid) { room = code; myPlayer = 2; saveSession(); openLobby(); return; }
-    if (data.player2) { alert("This room is already full."); return; }
+    for (let i = 1; i <= 4; i++) {
+        if (data["player" + i] && data["player" + i].uid === user.uid) { room = code; myPlayer = i; saveSession(); openLobby(); return; }
+    }
+    if (data.status && data.status !== "waiting") { alert("That match has already started."); return; }
 
-    room = code;
-    myPlayer = 2;
-    await update(roomRef, { player2: { uid: user.uid, name: name, ready: false } });
-    saveSession();
-    openLobby();
+    const maxPlayers = data.gameType === "headbanz" ? 4 : 2;
+    for (let slot = 2; slot <= maxPlayers; slot++) {
+        if (data["player" + slot]) continue;
+        const res = await runTransaction(ref(db, "rooms/" + code + "/player" + slot), cur => cur ? undefined : { uid: user.uid, name: name, ready: false });
+        if (res.committed) { room = code; myPlayer = slot; saveSession(); openLobby(); return; }
+    }
+    alert("This room is already full.");
 };
 
 
@@ -2544,7 +2779,7 @@ function listenToRoom() {
             boardSize = Number(currentRoomData.boardSize);
         }
 
-        updateLobby(currentRoomData);
+        updateLobby(currentRoomData); if (currentRoomData.gameType === "headbanz") updateLobbyHB(currentRoomData);
 
         if (currentRoomData.gameType === "headbanz" && currentRoomData.status === "playing") { showHB(currentRoomData); return; }
         if (currentRoomData.status === "selecting") {
@@ -3462,7 +3697,7 @@ window.copyInviteLink = async function () {
 
 window.leaveRoom = async function () {
     try {
-        if (myPlayer === 1 && currentRoomData && !currentRoomData.player2) await remove(ref(db, "rooms/" + room));
+        if (myPlayer === 1 && currentRoomData && !currentRoomData.player2 && !currentRoomData.player3 && !currentRoomData.player4) await remove(ref(db, "rooms/" + room));
     } catch (e) {}
     clearSession();
     location.href = location.pathname;
@@ -3514,7 +3749,7 @@ async function initApp() {
             const snap = await get(ref(db, "rooms/" + saved.room));
             if (snap.exists()) {
                 const d = snap.val();
-                const p = d.player1 && d.player1.uid === user.uid ? 1 : (d.player2 && d.player2.uid === user.uid ? 2 : 0);
+                let p = 0; for (let i = 1; i <= 4; i++) if (d["player" + i] && d["player" + i].uid === user.uid) p = i;
                 if (p) { room = saved.room; myPlayer = p; saveSession(); openLobby(); toast("Rejoined room " + room); return; }
             }
             clearSession();
