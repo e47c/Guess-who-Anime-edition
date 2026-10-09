@@ -84,9 +84,7 @@ body {
     min-height: 100vh;
     font-family: var(--font-body);
     color: var(--parchment);
-    background:
-        linear-gradient(180deg, var(--bg-tint-1) 0%, var(--bg-tint-2) 45%, var(--bg-tint-3) 100%),
-        var(--bg-image) center 30% / cover no-repeat fixed;
+    background: #0a0606;
     transition: background-color .3s ease;
 }
 
@@ -798,6 +796,37 @@ body.hb-mode .series-pick .anime-option.hb-only{display:flex!important}
 .hb-tally{margin-top:8px;font-weight:700;color:var(--parchment)}
 .hbflip .portrait{animation:hbrev .9s ease both}
 @keyframes hbrev{from{transform:perspective(600px) rotateY(90deg);opacity:0}to{transform:perspective(600px) rotateY(0);opacity:1}}
+
+/* ===== CLEAR BACKGROUND + GLASS UI (fonts untouched) ===== */
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:var(--bg-image) center center / cover no-repeat}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 62%,rgba(0,0,0,.38) 100%)}
+@media (orientation:portrait){body::before{background-size:auto 58vh;background-position:top center;-webkit-mask-image:linear-gradient(#000 65%,transparent);mask-image:linear-gradient(#000 65%,transparent)}}
+#home::before,#home::after{content:none;display:none}
+/* panels: see-through glass, red slash corner, thin gold edge */
+#home .panel,#lobby .panel,#result .panel{background:linear-gradient(135deg,rgba(16,6,6,.58),rgba(6,2,2,.46));backdrop-filter:blur(12px) saturate(1.25);-webkit-backdrop-filter:blur(12px) saturate(1.25);border:1px solid rgba(232,204,148,.45);border-top:4px solid var(--luffy-red);border-radius:2px;box-shadow:0 24px 70px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.04);overflow:hidden}
+#home .panel::after,#lobby .panel::after,#result .panel::after{content:"";position:absolute;right:0;top:0;width:110px;height:110px;background:linear-gradient(225deg,var(--luffy-red) 0 34%,transparent 34%);opacity:.85;pointer-events:none}
+.game-header{background:linear-gradient(180deg,rgba(10,4,4,.72),rgba(10,4,4,.38));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:2px solid rgba(232,204,148,.5);box-shadow:0 3px 0 var(--luffy-red)}
+/* boards + cards */
+.card,.secret-card{border:2px solid rgba(232,204,148,.5);border-radius:5px;box-shadow:0 6px 16px rgba(0,0,0,.55)}
+.card:hover,.secret-card:hover{border-color:var(--gold-bright);box-shadow:0 0 0 2px rgba(232,204,148,.35),0 8px 22px rgba(0,0,0,.6);transform:translateY(-2px)}
+.secret-card.selected{border-color:var(--luffy-red);outline:3px solid var(--gold-bright);box-shadow:0 0 22px rgba(225,27,27,.7)}
+.guess-mode .card{border-color:var(--luffy-red);box-shadow:0 0 14px rgba(225,27,27,.55)}
+/* tiles, inputs, boxes */
+.series-pick .anime-option{background:rgba(10,4,4,.4);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(246,239,227,.28);border-radius:3px}
+.series-pick .anime-option:has(input:checked){box-shadow:0 0 18px color-mix(in srgb,var(--c) 60%,transparent);transform:translateY(-2px)}
+#home input#name,#home #joinArea input,#hbSearch{background:rgba(0,0,0,.35);border:1px solid rgba(232,204,148,.4);border-bottom:3px solid var(--gold);color:#fff}
+.player,.stat,.fighter,.hb-card,.hb-me,.hb-answer,.rematch{background:rgba(10,4,4,.42);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(232,204,148,.3);border-radius:3px}
+.player{border-left:5px solid var(--luffy-red)}
+.fighter.champ,.hb-card{border-color:var(--gold-bright);box-shadow:0 0 28px rgba(225,27,27,.45)}
+.hb-picker{background:rgba(6,2,2,.86);backdrop-filter:blur(10px)}
+/* buttons: glow instead of hard black blocks */
+.pop,#home .main-buttons button{border:1px solid rgba(255,255,255,.35);box-shadow:0 0 0 2px rgba(0,0,0,.55),0 6px 18px rgba(225,27,27,.4)}
+.pop:hover:not(:disabled),#home .main-buttons button:hover:not(:disabled){box-shadow:0 0 0 2px rgba(0,0,0,.55),0 8px 26px rgba(225,27,27,.65)}
+.pop.secondary,#home .main-buttons .secondary{box-shadow:0 0 0 2px rgba(0,0,0,.5),0 6px 18px rgba(0,0,0,.45)}
+.pop.ghost{background:rgba(0,0,0,.3);box-shadow:none}
+#home .size,#home .modebtn{background:rgba(0,0,0,.3);border:1px solid rgba(246,239,227,.35)}
+#home .size.selected,#home .modebtn.selected{background:var(--gold);box-shadow:0 0 16px rgba(201,165,106,.55)}
+#toast,.mute-btn{background:rgba(10,4,4,.8);backdrop-filter:blur(8px);border:1px solid var(--gold)}
 </style>
 
 </head>
