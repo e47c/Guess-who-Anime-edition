@@ -2114,9 +2114,9 @@ const HB_SERIES = {
     rezero: { id: 21355, re: /re:?zero/i, label: "Re:Zero", names: "Subaru Natsuki|Emilia|Rem|Ram|Beatrice|Puck|Roswaal L Mathers|Felt|Reinhard van Astrea|Echidna|Otto Suwen|Garfiel Tinsel|Wilhelm van Astrea" },
     fireforce: { id: 105310, re: /fire force|enen/i, label: "Fire Force", names: "Shinra Kusakabe|Arthur Boyle|Maki Oze|Tamaki Kotatsu|Iris|Sho Kusakabe|Takehisa Hinawa|Akitaru Obi|Benimaru Shinmon|Princess Hibana|Vulcan Joseph|Rekka Hoshimiya" },
     frieren: { id: 154587, re: /frieren|sousou/i, label: "Frieren", names: "Frieren|Fern|Stark|Himmel|Heiter|Eisen|Flamme|Serie|Sein|Ubel|Land|Denken|Methode|Aura" },
-    gachiakuta: { id: null, re: /gachiakuta/i, label: "Gachiakuta", names: "Rudo|Enjin|Riyo|Zanka|Jabber" },
+    gachiakuta: { id: 178025, re: /gachiakuta/i, label: "Gachiakuta", names: "Rudo|Enjin|Riyo|Zanka|Jabber" },
     tokyoghoul: { id: 22319, re: /tokyo ghoul/i, label: "Tokyo Ghoul", names: "Ken Kaneki|Touka Kirishima|Rize Kamishiro|Juuzou Suzuya|Koutarou Amon|Hideyoshi Nagachika|Ayato Kirishima|Kishou Arima|Shuu Tsukiyama|Hinami Fueguchi|Uta|Nishiki Nishio|Renji Yomo" },
-    windbreaker: { id: null, re: /wind breaker/i, label: "Wind Breaker", names: "Haruka Sakura|Hajime Umemiya|Akihiko Nirei|Kotoha Tachibana|Jo Togame|Toma Hiragi|Kyotaro Sugishita|Mitsuki Kiryu" }
+    windbreaker: { id: 163270, re: /wind breaker/i, label: "Wind Breaker", names: "Haruka Sakura|Hajime Umemiya|Akihiko Nirei|Kotoha Tachibana|Jo Togame|Toma Hiragi|Kyotaro Sugishita|Mitsuki Kiryu" }
 };
 const HB_PAGES = { easy: 1, normal: 3, hard: 6 };   // 25 characters per page, most popular first
 const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$search,type:ANIME,sort:POPULARITY_DESC){title{romaji english} characters(page:$page,perPage:25,sort:[FAVOURITES_DESC]){nodes{id name{full native alternative} image{large}}}}}";
