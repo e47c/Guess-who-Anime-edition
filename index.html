@@ -1247,6 +1247,7 @@ Loading...
 <div id="oppBanner" class="opp-banner hidden"><span id="oppBannerText">Opponent disconnected. They may be reconnecting.</span><button class="pop" onclick="dismissOpp()">Keep playing</button><button class="pop secondary" onclick="exitGame()">Exit game</button></div>
 <div id="toast"></div>
 <button id="muteBtn" class="mute-btn" onclick="toggleMute()" aria-label="Toggle sound">🔊</button>
+<button id="musicBtn" class="mute-btn" style="right:66px" onclick="toggleMusic()" aria-label="Toggle background music">🎵</button>
 
 <!-- =========================================
      FIREBASE
@@ -1915,6 +1916,7 @@ window.toggleMute = function () {
     muted = !muted;
     try { localStorage.setItem("gw_muted", muted ? "1" : "0"); } catch (e) {}
     $("muteBtn").textContent = muted ? "🔇" : "🔊";
+    musicApply();
 };
 
 /* ---------- per-series win sounds ----------
@@ -1977,6 +1979,68 @@ function hbWinSound(hb) {
 document.addEventListener("pointerdown", () => {
     Object.values(winAudio).forEach(en => { if (en.el && en.el.paused) { en.el.muted = true; const p = en.el.play(); if (p && p.then) p.then(() => { en.el.pause(); en.el.currentTime = 0; en.el.muted = false; }).catch(() => { en.el.muted = false; }); } });
 }, { once: true });
+
+/* ---------- background music (one looping track per series) ----------
+   Drop your tracks in:  sounds/music/<series-key>.mp3   (.ogg / .wav / .m4a also work)
+   Plays only during gameplay (picking your secret character + the game / Headbanz rounds),
+   only when exactly ONE series is ticked. Mixed series = no music. Fades out on results. */
+const MUSIC_DIR = "sounds/music/";
+const MUSIC_EXTS = ["mp3", "ogg", "wav", "m4a"];
+const MUSIC_VOLUME = 0.22;     // 0 to 1 (keep it low so sound effects stand out)
+const MUSIC_FADE_MS = 800;
+let musicOn = true;
+try { musicOn = localStorage.getItem("gw_music") !== "0"; } catch (e) {}
+let musicWantKey = null, musicCur = null, musicEl = null, musicToken = 0;
+function musicFade(el, target, ms, done) {
+    if (!el) return;
+    clearInterval(el._fade);
+    const from = el.volume, steps = Math.max(1, Math.round(ms / 50)); let n = 0;
+    el._fade = setInterval(() => {
+        n++; el.volume = Math.min(1, Math.max(0, from + (target - from) * n / steps));
+        if (n >= steps) { clearInterval(el._fade); if (done) done(); }
+    }, 50);
+}
+function musicPlay() { try { const p = musicEl.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+function musicStart(key) {
+    const token = ++musicToken; let i = 0;
+    const next = () => {
+        if (token !== musicToken || i >= MUSIC_EXTS.length) return;
+        const a = new Audio(); a.loop = true; a.volume = 0; a.preload = "auto";
+        a.addEventListener("error", next, { once: true });
+        a.addEventListener("canplaythrough", () => {
+            if (token !== musicToken) return;
+            musicEl = a; musicPlay(); musicFade(a, MUSIC_VOLUME, MUSIC_FADE_MS);
+        }, { once: true });
+        a.src = MUSIC_DIR + key + "." + MUSIC_EXTS[i++]; a.load();
+    };
+    next();
+}
+function musicStop() {
+    musicToken++;
+    const el = musicEl; musicEl = null;
+    if (el) musicFade(el, 0, MUSIC_FADE_MS, () => { try { el.pause(); } catch (e) {} });
+}
+function musicApply() {
+    const want = musicOn && !muted ? musicWantKey : null;
+    if (want === musicCur) { if (want && musicEl && musicEl.paused) musicPlay(); return; }
+    musicStop(); musicCur = want; if (want) musicStart(want);
+}
+function musicWanted(d) {
+    if (!d) return null;
+    const ks = arr(d.animes); if (ks.length !== 1) return null;
+    if (d.gameType === "headbanz") return d.status === "playing" && d.hb && d.hb.phase === "play" ? ks[0] : null;
+    return d.status === "selecting" || d.status === "playing" ? ks[0] : null;
+}
+function musicSync(d) { musicWantKey = musicWanted(d); musicApply(); }
+window.toggleMusic = function () {
+    musicOn = !musicOn;
+    try { localStorage.setItem("gw_music", musicOn ? "1" : "0"); } catch (e) {}
+    $("musicBtn").style.opacity = musicOn ? "1" : ".45";
+    musicApply();
+};
+$("musicBtn").style.opacity = musicOn ? "1" : ".45";
+// if the browser blocked autoplay (e.g. after a page refresh), start on the next tap
+document.addEventListener("pointerdown", () => { if (musicWantKey && musicEl && musicEl.paused && musicOn && !muted) musicPlay(); });
 
 /* ---------- images: fallback + fade-in ---------- */
 const FALLBACK_IMG = "data:image/svg+xml;utf8," + encodeURIComponent(
@@ -2963,7 +3027,7 @@ function listenToRoom() {
         // (matters most for the joining player, whose local button
         // clicks on the home screen shouldn't be the source of truth
         // once a real room with real data exists).
-        applyTheme(); updatePresenceBanner(currentRoomData); winSoundPreload(currentRoomData.animes);
+        applyTheme(); updatePresenceBanner(currentRoomData); winSoundPreload(currentRoomData.animes); musicSync(currentRoomData);
 
         // Keep the local board size synchronized with the room.
         if (currentRoomData.boardSize) {
