@@ -2215,7 +2215,7 @@ const HB_SERIES = {
     windbreaker: { id: 163270, re: /wind breaker/i, label: "Wind Breaker", names: "Haruka Sakura|Hajime Umemiya|Akihiko Nirei|Kotoha Tachibana|Jo Togame|Toma Hiragi|Kyotaro Sugishita|Mitsuki Kiryu" }
 };
 const HB_PAGES = { easy: 1, normal: 3, hard: 6 };   // 25 characters per page, most popular first
-const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$search,type:ANIME,sort:POPULARITY_DESC){title{romaji english} characters(page:$page,perPage:25,sort:[FAVOURITES_DESC]){nodes{id name{full native alternative} image{large}}}}}";
+const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$search,type:ANIME,sort:POPULARITY_DESC){title{romaji english} characters(page:$page,perPage:50,sort:[FAVOURITES_DESC]){nodes{id name{full native alternative} image{large}}}}}";
 
 window.setGameType = function (t) {
     homeMode = t;
@@ -2234,13 +2234,33 @@ window.setDiff = function (d) {
     document.querySelectorAll(".dbtn").forEach(b => b.classList.toggle("selected", b.dataset.d === d));
 };
 
-async function aniFetch(vars, retry) {
-    const r = await fetch("https://graphql.anilist.co", { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ query: HB_Q, variables: vars }) });
-    if (r.status === 429 && !retry) { await new Promise(z => setTimeout(z, 2500)); return aniFetch(vars, true); }
-    if (!r.ok) throw new Error("AniList " + r.status);
-    const j = await r.json();
-    if (j.errors || !j.data || !j.data.Media) throw new Error("AniList error");
-    return j.data.Media;
+const aniSleep = ms => new Promise(z => setTimeout(z, ms));
+let aniLast = 0;
+async function aniFetch(vars) {
+    let lastErr;
+    for (let attempt = 0; attempt < 6; attempt++) {
+        // stay under AniList's request limit
+        const wait = Math.max(0, aniLast + 750 - Date.now()); aniLast = Date.now() + wait; if (wait) await aniSleep(wait);
+        const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 20000);
+        try {
+            const r = await fetch("https://graphql.anilist.co", { method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ query: HB_Q, variables: vars }) });
+            clearTimeout(timer);
+            if (r.status === 429 || r.status >= 500) {
+                const ra = Number(r.headers.get("Retry-After")) || 0;
+                lastErr = new Error("AniList " + r.status);
+                await aniSleep(Math.max(ra * 1000, 1500 * Math.pow(2, attempt))); continue;
+            }
+            if (!r.ok) throw Object.assign(new Error("AniList " + r.status), { fatal: true });
+            const j = await r.json();
+            if (j.errors || !j.data || !j.data.Media) throw Object.assign(new Error("AniList error"), { fatal: true });
+            return j.data.Media;
+        } catch (e) {
+            clearTimeout(timer);
+            if (e.fatal) throw e;
+            lastErr = e; await aniSleep(1500 * Math.pow(2, attempt));   // network hiccup or timeout: try again
+        }
+    }
+    throw lastErr || new Error("AniList unreachable");
 }
 
 async function hbSeriesChars(key, pages) {
@@ -2255,7 +2275,7 @@ async function hbSeriesChars(key, pages) {
             const img = n.image && n.image.large && !/default/i.test(n.image.large) ? n.image.large : "";
             out.push({ id: "a" + n.id, n: n.name.full, a: [...(n.name.alternative || []), n.name.native].filter(Boolean).slice(0, 4), i: img.replace(HB_IMG, ""), s: s.label, r: out.length });
         });
-        if (nodes.length < 25) break;
+        if (nodes.length < 50) break;
     }
     return out;
 }
@@ -2285,28 +2305,37 @@ window.setRounds = function (n) {
 };
 
 /* ---------- pool (AniList, cached, fallback names) ---------- */
-async function hbBuildPool(keys, diff) {
-    const pages = HB_PAGES[diff] || 3, ck = "gw_hbpool_" + pages + "_" + [...keys].sort().join(",");
-    try {
-        const c = JSON.parse(localStorage.getItem(ck) || "null");
-        if (c && Date.now() - c.t < 12 * 3600e3 && c.pool && c.pool.length) return c.pool.filter(x => !hbBad(x));
-    } catch (e) {}
-    const all = []; let offline = false;
-    for (const key of keys) {
-        const s0 = HB_SERIES[key]; if (!s0) continue;
-        let list = [];
-        try { list = await hbSeriesChars(key, pages); } catch (e) { console.warn("AniList failed for", key, e); }
-        if (!list.length) { offline = true; list = s0.names.split("|").map((n, i) => ({ id: "f" + key + i, n: n, a: [], i: "", s: s0.label, r: i })); }
-        all.push(...list);
+async function hbBuildPool(keys, diff, progress) {
+    const pages = Math.ceil((HB_PAGES[diff] || 3) * 25 / 50);   // 50 characters per request
+    const lists = {}, todo = keys.filter(k => HB_SERIES[k]);
+    const cacheKey = k => "gw_hbser_" + k + "_" + pages;
+    todo.slice().forEach(k => {
+        try {
+            const c = JSON.parse(localStorage.getItem(cacheKey(k)) || "null");
+            if (c && Date.now() - c.t < 24 * 3600e3 && c.list && c.list.length) { lists[k] = c.list.filter(x => !hbBad(x)); }
+        } catch (e) {}
+    });
+    for (let pass = 0; pass < 4; pass++) {
+        const missing = todo.filter(k => !lists[k]);
+        if (!missing.length) break;
+        if (pass) await aniSleep(3000);
+        for (const k of missing) {
+            if (progress) progress("Loading " + HB_SERIES[k].label + " (" + (todo.length - missing.length + missing.indexOf(k) + 1) + "/" + todo.length + ")...");
+            try {
+                const list = await hbSeriesChars(k, pages);
+                if (list.length) { lists[k] = list; try { localStorage.setItem(cacheKey(k), JSON.stringify({ t: Date.now(), list })); } catch (e) {} }
+            } catch (e) { console.warn("AniList failed for", k, e); }
+        }
     }
+    const failed = todo.filter(k => !lists[k]);
+    if (failed.length) throw new Error("Couldn't load " + failed.map(k => HB_SERIES[k].label).join(", ") + " from AniList. Check your connection and try again.");
     const seenN = new Set(), seenId = new Set(), pool = [];
-    all.forEach(c => { if (hbBad(c)) return; const nn = nz(c.n);
+    todo.forEach(k => lists[k].forEach(c => {
+        if (hbBad(c)) return; const nn = nz(c.n);
         if (seenId.has(String(c.id)) || seenN.has(nn)) return;
         if ((c.a || []).some(x => nz(x).length >= 6 && seenN.has(nz(x)))) return;
         seenId.add(String(c.id)); seenN.add(nn); pool.push(c);
-    });
-    if (offline) toast("Couldn't reach AniList for some series. Using built-in names (no pictures).");
-    else try { localStorage.setItem(ck, JSON.stringify({ t: Date.now(), pool })); } catch (e) {}
+    }));
     return pool;
 }
 function sameCharHB(a, b) {
@@ -2315,8 +2344,8 @@ function sameCharHB(a, b) {
     const A = [a.n].concat(a.a || []).map(nz).filter(x => x.length >= 3), B = [b.n].concat(b.a || []).map(nz);
     return A.some(x => B.includes(x));
 }
-function hbAssign(pool, players) {
-    const by = {}; pool.forEach(c => (by[c.s] = by[c.s] || []).push(c));
+function hbAssign(pool, players, depth) {
+    const by = {}; pool.forEach(c => { const l = (by[c.s] = by[c.s] || []); if (l.length < depth) l.push(c); });   // difficulty only limits who can be DEALT
     const series = shuffle(Object.keys(by)), picked = [], out = {};
     players.forEach((p, i) => {
         let c, t = 0;
@@ -2357,6 +2386,17 @@ function updateLobbyHB(d) {
     $("startButton").classList.toggle("hidden", !(host && ps.length >= 2));
     if (ps.length >= 2) $("startButton").textContent = "START " + modeName.split(" ")[0].toUpperCase();
 }
+async function hbLoadPool(keys, roundKey) {
+    for (let t = 0; t < 6; t++) {
+        try {
+            const p = await hbBuildPool(keys, "hard");
+            if (roundKey !== hbRoundKey) return;
+            hbPool = p; if (!$("hbPicker").classList.contains("hidden")) hbList();
+            return;
+        } catch (e) { console.warn(e); await aniSleep(4000); if (roundKey !== hbRoundKey) return; }
+    }
+    toast("Couldn't load the character list. Reload the page to try again.");
+}
 function hbRematch() {}
 async function hbStart() { return hbBegin("first"); }
 
@@ -2369,13 +2409,13 @@ async function hbBegin(kind) {
         if (box) keys = [...box.querySelectorAll("input:checked")].map(c => c.value);
         if (!keys.length) { toast("Pick at least one series."); return; }
     }
-    $("hbLoading").classList.remove("hidden");
+    $("hbLoading").classList.remove("hidden"); { const lt = document.querySelector("#hbLoading div"); if (lt) lt.textContent = "Summoning characters..."; }
     try {
         const players = [1, 2, 3, 4].filter(i => d["player" + i]);
         if (players.length < 2) throw new Error("Need at least 2 players.");
-        const pool = await hbBuildPool(keys, d.difficulty || "normal");
+        const pool = await hbBuildPool(keys, "hard", msg => { const t = document.querySelector("#hbLoading div"); if (t) t.textContent = msg; });   // always the full list; difficulty is applied when dealing
         if (pool.length < players.length) throw new Error("Not enough characters in those series.");
-        const chars = hbAssign(pool, players), zeros = () => Object.fromEntries(players.map(p => ["p" + p, 0]));
+        const chars = hbAssign(pool, players, (HB_PAGES[d.difficulty] || 3) * 25), zeros = () => Object.fromEntries(players.map(p => ["p" + p, 0]));
         const base = { phase: "play", chars, order: null, out: null, strikes: null, wrong: null, lastPts: null, matchDone: false, winner: null, tie: false };
         const upd = { animes: keys, status: "playing" };
         if (kind === "first" || kind === "new") {
@@ -2469,6 +2509,7 @@ function hbList() {
     });
     res.sort((x, y) => x.s - y.s || x.c.n.localeCompare(y.c.n));
     const box = $("hbList"); box.innerHTML = "";
+    if (!hbPool) { box.textContent = "Loading characters..."; return; }
     res.slice(0, 8).forEach(r => {
         const b = hbEl("button", "hb-opt");
         if (r.c.i) b.appendChild(makeImg(hbImg(r.c)));
@@ -2510,7 +2551,7 @@ function showHB(data) {
     const order = arr(hb.order).map(Number), out = arr(hb.out).map(Number), wrong = arr(hb.wrong);
     const nm = n => (data["player" + n] || {}).name || "Player " + n;
     const key = hb.round + ":" + Object.values(hb.chars).map(c => c.id).join(",");
-    if (key !== hbRoundKey) { hbRoundKey = key; hbSig = ""; hbCloseGuess(); hbSeen = { wrong: 0, order: 0, done: false, phase: "" }; hbPool = null; hbBuildPool(data.animes || [], data.difficulty || "normal").then(p => { hbPool = p; if (!$("hbPicker").classList.contains("hidden")) hbList(); }); }
+    if (key !== hbRoundKey) { hbRoundKey = key; hbSig = ""; hbCloseGuess(); hbSeen = { wrong: 0, order: 0, done: false, phase: "" }; hbPool = null; hbLoadPool(data.animes || [], key); }
 
     const mineDone = order.includes(me) || out.includes(me), playing = hb.phase === "play";
     const sc = hbStandings(hb).map(r => nm(r.p) + " " + r.score).join("  ·  ");
