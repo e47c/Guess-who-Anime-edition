@@ -889,6 +889,14 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;bac
 .series-pick .anime-option.has-logo:hover:not(:has(input:checked)) .logo{opacity:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.65))}
 .series-pick .anime-option input:checked ~ .logo{opacity:1;transform:scale(1.04)}
 .series-pick .anime-option input:checked ~ .name{color:var(--ink)}
+
+/* ===== character pack download bar ===== */
+.pack-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 150; padding: 10px 16px 14px; background: rgba(10,6,6,.96); border-top: 3px solid var(--gold); text-align: center; font-weight: 800; color: var(--parchment); }
+.pack-bar.err { border-top-color: var(--luffy-red); color: #ffb4b4; }
+.pack-track { max-width: 640px; height: 12px; margin: 8px auto 0; background: rgba(246,239,227,.15); border: 2px solid var(--ink); border-radius: 99px; overflow: hidden; }
+.pack-fill { height: 100%; width: 0; background: repeating-linear-gradient(45deg, var(--gold) 0 10px, var(--gold-bright) 10px 20px); transition: width .3s ease; }
+.pack-bar.err .pack-fill { background: var(--luffy-red); }
+#startButton:disabled { opacity: .55; cursor: not-allowed; }
 </style>
 
 </head>
@@ -1195,6 +1203,7 @@ Loading...
 <div id="hbPicker" class="hb-picker hidden"><div><input id="hbSearch" placeholder="Type a name or nickname..." autocomplete="off"><div id="hbList"></div>
 <button class="pop ghost" style="width:100%;margin-top:14px" onclick="hbCloseGuess()">Cancel</button></div></div>
 </div>
+<div id="packBar" class="pack-bar hidden"><div id="packText"></div><div class="pack-track"><div id="packFill" class="pack-fill"></div></div></div>
 <div id="hbLoading" class="hb-loading hidden"><div>Summoning characters...</div></div>
 <div id="result" class="screen hidden">
 <canvas id="fx" class="fx"></canvas>
@@ -2215,7 +2224,7 @@ const HB_SERIES = {
     windbreaker: { id: 163270, re: /wind breaker/i, label: "Wind Breaker", names: "Haruka Sakura|Hajime Umemiya|Akihiko Nirei|Kotoha Tachibana|Jo Togame|Toma Hiragi|Kyotaro Sugishita|Mitsuki Kiryu" }
 };
 const HB_PAGES = { easy: 1, normal: 3, hard: 6 };   // 25 characters per page, most popular first
-const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$search,type:ANIME,sort:POPULARITY_DESC){title{romaji english} characters(page:$page,perPage:50,sort:[FAVOURITES_DESC]){nodes{id name{full native alternative} image{large}}}}}";
+const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$search,type:ANIME,sort:POPULARITY_DESC){title{romaji english} characters(page:$page,perPage:50,sort:[FAVOURITES_DESC]){pageInfo{hasNextPage lastPage} nodes{id name{full native alternative} image{large}}}}}";
 
 window.setGameType = function (t) {
     homeMode = t;
@@ -2263,19 +2272,20 @@ async function aniFetch(vars) {
     throw lastErr || new Error("AniList unreachable");
 }
 
-async function hbSeriesChars(key, pages) {
+async function hbSeriesChars(key, maxPages, onPage) {
     const s = HB_SERIES[key]; let id = s.id; const out = [];
-    for (let p = 1; p <= pages; p++) {
+    for (let p = 1; p <= maxPages; p++) {
         let m;
         try { m = await aniFetch({ id: id, search: id ? null : s.label, page: p }); }
-        catch (e) { if (p === 1 && id) { id = null; p = 0; continue; } if (p === 1) throw e; break; }
+        catch (e) { if (p === 1 && id) { id = null; p = 0; continue; } if (p === 1) throw e; throw e; }
         if (p === 1 && id && !s.re.test((m.title.romaji || "") + " " + (m.title.english || ""))) { id = null; p = 0; continue; }  // wrong show: retry by title search
-        const nodes = (m.characters && m.characters.nodes) || [];
+        const ch = m.characters || {}, nodes = ch.nodes || [], pi = ch.pageInfo || {};
         nodes.forEach(n => {
             const img = n.image && n.image.large && !/default/i.test(n.image.large) ? n.image.large : "";
-            out.push({ id: "a" + n.id, n: n.name.full, a: [...(n.name.alternative || []), n.name.native].filter(Boolean).slice(0, 4), i: img.replace(HB_IMG, ""), s: s.label, r: out.length });
+            out.push({ id: "a" + n.id, n: n.name.full, a: [...(n.name.alternative || []), n.name.native].filter(Boolean).slice(0, 3), i: img.replace(HB_IMG, ""), s: s.label, r: out.length });
         });
-        if (nodes.length < 50) break;
+        if (onPage) onPage(p, Number(pi.lastPage) || 0);
+        if (pi.hasNextPage === false || nodes.length < 50) break;
     }
     return out;
 }
@@ -2305,14 +2315,18 @@ window.setRounds = function (n) {
 };
 
 /* ---------- pool (AniList, cached, fallback names) ---------- */
+const hbMem = {};
 async function hbBuildPool(keys, diff, progress) {
-    const pages = Math.ceil((HB_PAGES[diff] || 3) * 25 / 50);   // 50 characters per request
-    const lists = {}, todo = keys.filter(k => HB_SERIES[k]);
-    const cacheKey = k => "gw_hbser_" + k + "_" + pages;
-    todo.slice().forEach(k => {
+    const todo = keys.filter(k => HB_SERIES[k]), lists = {};
+    const ck = k => "gw_hbfull_" + k;
+    todo.forEach(k => {
+        if (hbMem[k]) { lists[k] = hbMem[k]; return; }
         try {
-            const c = JSON.parse(localStorage.getItem(cacheKey(k)) || "null");
-            if (c && Date.now() - c.t < 24 * 3600e3 && c.list && c.list.length) { lists[k] = c.list.filter(x => !hbBad(x)); }
+            const c = JSON.parse(localStorage.getItem(ck(k)) || "null");
+            if (c && Date.now() - c.t < 24 * 3600e3 && c.l && c.l.length) {
+                lists[k] = c.l.map(r => ({ id: r[0], n: r[1], a: r[2], i: r[3], s: HB_SERIES[k].label })).filter(x => !hbBad(x));
+                hbMem[k] = lists[k];
+            }
         } catch (e) {}
     });
     for (let pass = 0; pass < 4; pass++) {
@@ -2320,10 +2334,15 @@ async function hbBuildPool(keys, diff, progress) {
         if (!missing.length) break;
         if (pass) await aniSleep(3000);
         for (const k of missing) {
-            if (progress) progress("Loading " + HB_SERIES[k].label + " (" + (todo.length - missing.length + missing.indexOf(k) + 1) + "/" + todo.length + ")...");
+            const done = todo.filter(x => lists[x]).length;
+            const label = "Downloading " + HB_SERIES[k].label + " (" + (done + 1) + "/" + todo.length + ")";
+            if (progress) progress(done / todo.length * 100, label + "...");
             try {
-                const list = await hbSeriesChars(k, pages);
-                if (list.length) { lists[k] = list; try { localStorage.setItem(cacheKey(k), JSON.stringify({ t: Date.now(), list })); } catch (e) {} }
+                const list = await hbSeriesChars(k, 80, (p, last) => { if (progress) progress((done + Math.min(0.97, p / (last || p + 1))) / todo.length * 100, label + "  " + (last ? p + "/" + last : "") ); });
+                if (list.length) {
+                    lists[k] = list; hbMem[k] = list;
+                    try { localStorage.setItem(ck(k), JSON.stringify({ t: Date.now(), l: list.map(c => [c.id, c.n, c.a, c.i]) })); } catch (e) {}
+                }
             } catch (e) { console.warn("AniList failed for", k, e); }
         }
     }
@@ -2336,6 +2355,7 @@ async function hbBuildPool(keys, diff, progress) {
         if ((c.a || []).some(x => nz(x).length >= 6 && seenN.has(nz(x)))) return;
         seenId.add(String(c.id)); seenN.add(nn); pool.push(c);
     }));
+    if (progress) progress(100, "Characters ready");
     return pool;
 }
 function sameCharHB(a, b) {
@@ -2349,7 +2369,7 @@ function hbAssign(pool, players, depth) {
     const series = shuffle(Object.keys(by)), picked = [], out = {};
     players.forEach((p, i) => {
         let c, t = 0;
-        do { const l = by[series[(i + t) % series.length]]; c = l[Math.random() * l.length | 0]; t++; }
+        do { const l = by[series[(i + t) % series.length]]; const li = l.filter(x => x.i); const src = li.length ? li : l; c = src[Math.random() * src.length | 0]; t++; }
         while (picked.some(x => sameCharHB(x, c)) && t < 60);
         if (picked.some(x => sameCharHB(x, c))) c = pool.find(x => !picked.some(y => sameCharHB(x, y)));
         picked.push(c); out["p" + p] = hbSlim(c);
@@ -2382,20 +2402,52 @@ function updateLobbyHB(d) {
     });
     const modeName = { 2: "Duo (best of 3)", 3: "Trio (" + (d.rounds || 5) + " rounds)", 4: "Squad (" + (d.rounds || 5) + " rounds)" }[ps.length];
     const host = Number(myPlayer) === 1;
-    $("lobbyStatus").textContent = ps.length < 2 ? "Waiting for players (2 to 4 can join)..." : modeName + ". " + (host ? "Start whenever everyone is in." : "Waiting for the host to start.");
+    hbPrefetch(d.animes || []);
+    const packs = d.packs || {}, pct = i => Number(packs["p" + i]) || 0, allReady = ps.every(i => pct(i) >= 100);
+    ps.forEach(i => { const st = $("p" + i + "Status"); if (st) { st.textContent = pct(i) >= 100 ? "✔ Ready" : "⬇ " + pct(i) + "%"; st.className = pct(i) >= 100 ? "ready" : ""; } });
+    $("lobbyStatus").textContent = ps.length < 2 ? "Waiting for players (2 to 4 can join)..." : (!allReady ? "Waiting for everyone to finish downloading the characters..." : modeName + ". " + (host ? "Everyone is ready. Start when you like." : "Waiting for the host to start."));
     $("startButton").classList.toggle("hidden", !(host && ps.length >= 2));
-    if (ps.length >= 2) $("startButton").textContent = "START " + modeName.split(" ")[0].toUpperCase();
+    $("startButton").disabled = !allReady;
+    if (ps.length >= 2) $("startButton").textContent = allReady ? "START " + modeName.split(" ")[0].toUpperCase() : "DOWNLOADING CHARACTERS...";
 }
 async function hbLoadPool(keys, roundKey) {
     for (let t = 0; t < 6; t++) {
         try {
-            const p = await hbBuildPool(keys, "hard");
+            const p = await hbBuildPool(keys, "hard", (pct, label) => { if (roundKey === hbRoundKey) hbPackShow(pct, label); });
             if (roundKey !== hbRoundKey) return;
-            hbPool = p; if (!$("hbPicker").classList.contains("hidden")) hbList();
+            hbPool = p; hbPackHide(600); if (!$("hbPicker").classList.contains("hidden")) hbList();
             return;
-        } catch (e) { console.warn(e); await aniSleep(4000); if (roundKey !== hbRoundKey) return; }
+        } catch (e) { console.warn(e); hbPackShow(0, "Download interrupted. Retrying...", true); await aniSleep(4000); if (roundKey !== hbRoundKey) return; }
     }
-    toast("Couldn't load the character list. Reload the page to try again.");
+    hbPackShow(0, "Couldn't load the character list. Reload the page to try again.", true);
+}
+let hbPackKey = "", hbPackLast = -1, hbPackWriteAt = 0;
+function hbPackShow(pct, text, err) { const b = $("packBar"); b.classList.remove("hidden"); b.classList.toggle("err", !!err); $("packText").textContent = text; $("packFill").style.width = Math.max(2, Math.min(100, pct)) + "%"; }
+function hbPackHide(ms) { setTimeout(() => $("packBar").classList.add("hidden"), ms || 0); }
+function hbPackWrite(pct, force) {
+    if (!room || !myPlayer) return;
+    pct = Math.min(100, Math.round(pct));
+    if (!force && (pct - hbPackLast < 4 || Date.now() - hbPackWriteAt < 1200)) return;
+    hbPackLast = pct; hbPackWriteAt = Date.now();
+    update(ref(db, "rooms/" + room + "/packs"), { ["p" + myPlayer]: pct }).catch(() => {});
+}
+async function hbPrefetch(keys) {
+    const k = [...keys].sort().join(",");
+    if (!keys.length || k === hbPackKey) return;
+    hbPackKey = k; hbPackLast = -1; hbPackWrite(0, true);
+    for (let t = 0; t < 4; t++) {
+        try {
+            const pool = await hbBuildPool(keys, "hard", (pct, label) => { hbPackShow(pct, label); hbPackWrite(pct); });
+            if (hbPackKey !== k) return;
+            hbPool = pool; hbPackWrite(100, true);
+            if (!$("packBar").classList.contains("hidden")) { hbPackShow(100, "All characters downloaded ✔"); hbPackHide(2200); }
+            return;
+        } catch (e) {
+            console.warn(e); hbPackShow(0, "Download interrupted. Retrying...", true);
+            await aniSleep(5000); if (hbPackKey !== k) return;
+        }
+    }
+    hbPackKey = ""; hbPackShow(0, "Couldn't download the characters. Check your connection and reload the page.", true);
 }
 function hbRematch() {}
 async function hbStart() { return hbBegin("first"); }
@@ -2413,7 +2465,8 @@ async function hbBegin(kind) {
     try {
         const players = [1, 2, 3, 4].filter(i => d["player" + i]);
         if (players.length < 2) throw new Error("Need at least 2 players.");
-        const pool = await hbBuildPool(keys, "hard", msg => { const t = document.querySelector("#hbLoading div"); if (t) t.textContent = msg; });   // always the full list; difficulty is applied when dealing
+        if (kind === "first" && !players.every(i => Number((d.packs || {})["p" + i]) >= 100)) throw new Error("Some players are still downloading the characters.");
+        const pool = await hbBuildPool(keys, "hard", (pct, msg) => { const t = document.querySelector("#hbLoading div"); if (t) t.textContent = msg; });   // always the full list; difficulty is applied when dealing
         if (pool.length < players.length) throw new Error("Not enough characters in those series.");
         const chars = hbAssign(pool, players, (HB_PAGES[d.difficulty] || 3) * 25), zeros = () => Object.fromEntries(players.map(p => ["p" + p, 0]));
         const base = { phase: "play", chars, order: null, out: null, strikes: null, wrong: null, lastPts: null, matchDone: false, winner: null, tie: false };
@@ -2510,7 +2563,7 @@ function hbList() {
     res.sort((x, y) => x.s - y.s || x.c.n.localeCompare(y.c.n));
     const box = $("hbList"); box.innerHTML = "";
     if (!hbPool) { box.textContent = "Loading characters..."; return; }
-    res.slice(0, 8).forEach(r => {
+    res.slice(0, 10).forEach(r => {
         const b = hbEl("button", "hb-opt");
         if (r.c.i) b.appendChild(makeImg(hbImg(r.c)));
         b.appendChild(hbEl("span", "", r.c.n + " (" + r.c.s + ")"));
