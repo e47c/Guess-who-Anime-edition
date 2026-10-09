@@ -40,7 +40,7 @@
     --gold: #d9a441;
     --gold-bright: #f0c168;
     --sakura: #f0a9bf;
-    --bg-image: url('images/bg-hero.jpg');
+    --bg-image: url('images/bg-jump.jpg');
     --bg-tint-1: rgba(8,32,42,.60);
     --bg-tint-2: rgba(8,32,42,.72);
     --bg-tint-3: rgba(6,20,26,.92);
@@ -69,9 +69,9 @@ body.anime-theme {
     --gold-bright: #e8cc94;
     --sakura: #e9d8b4;
     --bg-image: url('images/bg-jump.jpg');
-    --bg-tint-1: rgba(10,5,5,.22);
-    --bg-tint-2: rgba(10,5,5,.42);
-    --bg-tint-3: rgba(6,3,3,.82);
+    --bg-tint-1: rgba(10,5,5,.08);
+    --bg-tint-2: rgba(10,5,5,.2);
+    --bg-tint-3: rgba(6,3,3,.55);
     --badge-symbol: "⚡";
 }
 
@@ -588,7 +588,7 @@ label {
    HOME MENU — manga cover treatment (scoped to #home)
 ========================================================= */
 #home { position: relative; overflow: hidden; }
-#home::before, #home::after { content:""; position:absolute; inset:-10%; pointer-events:none; }
+#home::before, #home::after { content:none; display:none; position:absolute; inset:-10%; pointer-events:none; }
 #home::before { /* halftone dots fading toward the middle */
     background: radial-gradient(circle, rgba(201,165,106,.22) 1.4px, transparent 1.8px) 0 0/16px 16px;
     -webkit-mask-image: radial-gradient(ellipse at center, transparent 25%, #000 85%);
@@ -803,7 +803,7 @@ body.hb-mode .series-pick .anime-option.hb-only{display:flex!important}
 </head>
 
 
-<body>
+<body class="anime-theme">
 
 
 <!-- =========================================
