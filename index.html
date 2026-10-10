@@ -2474,7 +2474,7 @@ let homeMode = "gw", homeDiff = "normal", hbKey = "", hbWrongSeen = 0, hbBusy = 
 const HB_SERIES = {
     onepiece: { id: 21, re: /one piece/i, label: "One Piece", names: "Monkey D. Luffy|Roronoa Zoro|Nami|Usopp|Sanji|Tony Tony Chopper|Nico Robin|Franky|Brook|Portgas D. Ace|Trafalgar Law|Shanks|Dracule Mihawk|Boa Hancock|Kaido|Sabo" },
     naruto: { id: 1735, re: /naruto/i, label: "Naruto", names: "Naruto Uzumaki|Sasuke Uchiha|Sakura Haruno|Kakashi Hatake|Itachi Uchiha|Gaara|Rock Lee|Hinata Hyuga|Shikamaru Nara|Jiraiya|Tsunade|Orochimaru|Minato Namikaze|Madara Uchiha|Obito Uchiha|Might Guy" },
-    dragonball: { id: 813, re: /dragon ball/i, label: "Dragon Ball", names: "Goku|Vegeta|Gohan|Piccolo|Krillin|Trunks|Frieza|Cell|Majin Buu|Bulma|Master Roshi|Android 18|Beerus|Whis|Broly|Jiren" },
+    dragonball: { id: 813, re: /dragon ball/i, skip: /\bGT\b/i, label: "Dragon Ball", names: "Goku|Vegeta|Gohan|Piccolo|Krillin|Trunks|Frieza|Cell|Majin Buu|Bulma|Master Roshi|Android 18|Beerus|Whis|Broly|Jiren" },
     jjk: { id: 113415, re: /jujutsu/i, label: "Jujutsu Kaisen", names: "Yuji Itadori|Megumi Fushiguro|Nobara Kugisaki|Satoru Gojo|Ryomen Sukuna|Maki Zenin|Toge Inumaki|Panda|Kento Nanami|Suguru Geto|Mahito|Yuta Okkotsu|Toji Fushiguro|Aoi Todo|Choso|Kenjaku" },
     demonslayer: { id: 101922, re: /kimetsu|demon slayer/i, label: "Demon Slayer", names: "Tanjiro Kamado|Nezuko Kamado|Zenitsu Agatsuma|Inosuke Hashibira|Giyu Tomioka|Shinobu Kocho|Kyojuro Rengoku|Tengen Uzui|Mitsuri Kanroji|Muichiro Tokito|Muzan Kibutsuji|Akaza|Doma|Kokushibo|Daki|Kanao Tsuyuri" },
     bleach: { id: 269, re: /bleach/i, label: "Bleach", names: "Ichigo Kurosaki|Rukia Kuchiki|Orihime Inoue|Uryu Ishida|Renji Abarai|Byakuya Kuchiki|Kisuke Urahara|Toshiro Hitsugaya|Kenpachi Zaraki|Sosuke Aizen|Gin Ichimaru|Ulquiorra Cifer|Grimmjow Jaegerjaquez|Yoruichi Shihoin|Yhwach|Yasutora Sado" },
@@ -2492,7 +2492,7 @@ const HB_SERIES = {
     windbreaker: { id: 163270, re: /wind breaker/i, label: "Wind Breaker", names: "Haruka Sakura|Hajime Umemiya|Akihiko Nirei|Kotoha Tachibana|Jo Togame|Toma Hiragi|Kyotaro Sugishita|Mitsuki Kiryu" }
 };
 const HB_PAGES = { easy: 1, normal: 3, hard: 6 };   // 25 characters per page, most popular first
-const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$search,type:ANIME,sort:POPULARITY_DESC){title{romaji english} characters(page:$page,perPage:25,sort:[FAVOURITES_DESC]){pageInfo{hasNextPage lastPage} nodes{id name{full native alternative} image{large}}}}}";
+const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$search,type:ANIME,sort:POPULARITY_DESC){title{romaji english} characters(page:$page,perPage:25,sort:[FAVOURITES_DESC]){pageInfo{hasNextPage lastPage} nodes{id name{full native alternative} image{large} favourites}}}}";
 
 window.setGameType = function (t) {
     homeMode = t;
@@ -2520,14 +2520,14 @@ window.setDiff = function (d) {
 
 const aniSleep = ms => new Promise(z => setTimeout(z, ms));
 let aniLast = 0;
-async function aniFetch(vars) {
+async function aniFetch(vars, query) {
     let lastErr;
     for (let attempt = 0; attempt < 6; attempt++) {
         // stay under AniList's request limit
         const wait = Math.max(0, aniLast + 750 - Date.now()); aniLast = Date.now() + wait; if (wait) await aniSleep(wait);
         const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 20000);
         try {
-            const r = await fetch("https://graphql.anilist.co", { method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ query: HB_Q, variables: vars }) });
+            const r = await fetch("https://graphql.anilist.co", { method: "POST", signal: ctl.signal, headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ query: query || HB_Q, variables: vars }) });
             clearTimeout(timer);
             if (r.status === 429 || r.status >= 500) {
                 const ra = Number(r.headers.get("Retry-After")) || 0;
@@ -2547,22 +2547,55 @@ async function aniFetch(vars) {
     throw lastErr || new Error("AniList unreachable");
 }
 
-async function hbSeriesChars(key, maxPages, onPage) {
-    const s = HB_SERIES[key]; let id = s.id; const out = [];
-    for (let p = 1; p <= maxPages; p++) {
-        let m;
-        try { m = await aniFetch({ id: id, search: id ? null : s.label, page: p }); }
-        catch (e) { if (p === 1 && id) { id = null; p = 0; continue; } if (p === 1) throw e; throw e; }
-        if (p === 1 && id && !s.re.test((m.title.romaji || "") + " " + (m.title.english || ""))) { id = null; p = 0; continue; }  // wrong show: retry by title search
-        const ch = m.characters || {}, nodes = ch.nodes || [], pi = ch.pageInfo || {};
-        nodes.forEach(n => {
-            const img = n.image && n.image.large && !/default/i.test(n.image.large) ? n.image.large : "";
-            out.push({ id: "a" + n.id, n: n.name.full, a: [...(n.name.alternative || []), n.name.native].filter(Boolean).slice(0, 3), i: img.replace(HB_IMG, ""), s: s.label, r: out.length });
-        });
-        if (onPage) onPage(p, Number(pi.lastPage) || 0);
-        if (!nodes.length || pi.hasNextPage === false || (pi.hasNextPage == null && nodes.length < 25)) break;
+/* ---------- every canon season / sequel of a series ----------
+   AniList has one entry per season, so a series is the first entry plus everything linked to it as
+   SEQUEL / PREQUEL (TV seasons, canon movies, ONAs). Spin-offs, recaps, alternate versions and
+   anime-original sequels listed in `skip` (e.g. Dragon Ball GT) are left out. */
+const HB_REL = "query($id:Int,$search:String){Media(id:$id,search:$search,type:ANIME,sort:POPULARITY_DESC){id type format title{romaji english} relations{edges{relationType node{id type format title{romaji english}}}}}}";
+const HB_FORMATS = ["TV", "MOVIE", "ONA"], HB_MAX_ENTRIES = 14, hbFamMem = {};
+const hbTitle = t => ((t && (t.romaji || "")) + " " + (t && (t.english || ""))).trim();
+async function hbFranchise(key) {
+    if (hbFamMem[key]) return hbFamMem[key];
+    const fk = "gw_hbfam_" + key;
+    try { const c = JSON.parse(localStorage.getItem(fk) || "null"); if (c && Date.now() - c.t < 7 * 24 * 3600e3 && c.ids && c.ids.length) return (hbFamMem[key] = c.ids); } catch (e) {}
+    const s0 = HB_SERIES[key], seen = new Set(), keep = [], queue = [];
+    let first = await aniFetch({ id: s0.id, search: null }, HB_REL);
+    if (!s0.re.test(hbTitle(first.title))) first = await aniFetch({ id: null, search: s0.label }, HB_REL);   // wrong id: find it by title
+    seen.add(first.id); queue.push(first);
+    while (queue.length && seen.size < 40 && keep.length < HB_MAX_ENTRIES) {
+        const m = queue.shift();
+        if (HB_FORMATS.includes(m.format) && !(s0.skip && s0.skip.test(hbTitle(m.title)))) keep.push(m.id);
+        for (const e of ((m.relations && m.relations.edges) || [])) {
+            const n = e.node;
+            if (!n || (e.relationType !== "SEQUEL" && e.relationType !== "PREQUEL") || n.type !== "ANIME" || seen.has(n.id)) continue;
+            seen.add(n.id);
+            if (s0.skip && s0.skip.test(hbTitle(n.title))) continue;
+            queue.push(await aniFetch({ id: n.id, search: null }, HB_REL));
+        }
     }
-    return out;
+    keep.sort((x, y) => x - y);
+    hbFamMem[key] = keep;
+    try { localStorage.setItem(fk, JSON.stringify({ t: Date.now(), ids: keep })); } catch (e) {}
+    return keep;
+}
+async function hbSeriesChars(key, maxPages, onPage) {
+    const s = HB_SERIES[key], ids = await hbFranchise(key), merged = new Map();
+    const per = ids.length <= 2 ? 12 : ids.length <= 4 ? 8 : 5;     // pages of 25 per season: the popular ones are always on the first pages
+    for (let k = 0; k < ids.length; k++) {
+        for (let p = 1; p <= per; p++) {
+            const m = await aniFetch({ id: ids[k], search: null, page: p });
+            const ch = m.characters || {}, nodes = ch.nodes || [], pi = ch.pageInfo || {};
+            nodes.forEach(n => {
+                const img = n.image && n.image.large && !/default/i.test(n.image.large) ? n.image.large : "";
+                const old = merged.get(n.id), f = Number(n.favourites) || 0;
+                if (old) { old.f = Math.max(old.f, f); if (!old.i && img) old.i = img.replace(HB_IMG, ""); return; }
+                merged.set(n.id, { id: "a" + n.id, n: n.name.full, a: [...(n.name.alternative || []), n.name.native].filter(Boolean).slice(0, 3), i: img.replace(HB_IMG, ""), s: s.label, f });
+            });
+            if (onPage) onPage(k + p / per, ids.length);
+            if (!nodes.length || pi.hasNextPage === false || (pi.hasNextPage == null && nodes.length < 25)) break;
+        }
+    }
+    return [...merged.values()].sort((x, y) => y.f - x.f).slice(0, HB_MAX_CHARS).map((c, i) => Object.assign(c, { r: i }));
 }
 
 const HB_COLORS = ["#ff4d6d", "#3ea6ff", "#ffd23f", "#2ec4a6", "#b388ff", "#ff9f1c"];
@@ -2594,13 +2627,13 @@ const hbMem = {};
 const HB_MAX_CHARS = 300;   // per series: everything if the series is smaller, otherwise the 300 most popular
 async function hbBuildPool(keys, diff, progress) {
     const todo = keys.filter(k => HB_SERIES[k]), lists = {};
-    const ck = k => "gw_hbfull2_" + k;
+    const ck = k => "gw_hbfull3_" + k;
     todo.forEach(k => {
         if (hbMem[k]) { lists[k] = hbMem[k]; return; }
         try {
             const c = JSON.parse(localStorage.getItem(ck(k)) || "null");
             if (c && Date.now() - c.t < 24 * 3600e3 && c.l && c.l.length) {
-                lists[k] = c.l.map(r => ({ id: r[0], n: r[1], a: r[2], i: r[3], s: HB_SERIES[k].label })).filter(x => !hbBad(x));
+                lists[k] = c.l.map(r => ({ id: r[0], n: r[1], a: r[2], i: r[3], f: r[4] || 0, s: HB_SERIES[k].label })).filter(x => !hbBad(x));
                 hbMem[k] = lists[k];
             }
         } catch (e) {}
@@ -2614,10 +2647,10 @@ async function hbBuildPool(keys, diff, progress) {
             const label = "Downloading " + HB_SERIES[k].label + " (" + (done + 1) + "/" + todo.length + ")";
             if (progress) progress(done / todo.length * 100, label + "...");
             try {
-                const list = await hbSeriesChars(k, Math.ceil(HB_MAX_CHARS / 25), (p, last) => { const tot = Math.min(last || p + 1, Math.ceil(HB_MAX_CHARS / 25)); if (progress) progress((done + Math.min(0.97, p / tot)) / todo.length * 100, label + "  " + p + "/" + tot); });
+                const list = await hbSeriesChars(k, Math.ceil(HB_MAX_CHARS / 25), (p, last) => { const tot = last || Math.floor(p) + 1; if (progress) progress((done + Math.min(0.97, p / tot)) / todo.length * 100, label + "  season " + Math.min(tot, Math.floor(p) + 1) + "/" + tot); });
                 if (list.length) {
                     lists[k] = list; hbMem[k] = list;
-                    try { localStorage.setItem(ck(k), JSON.stringify({ t: Date.now(), l: list.map(c => [c.id, c.n, c.a, c.i]) })); } catch (e) {}
+                    try { localStorage.setItem(ck(k), JSON.stringify({ t: Date.now(), l: list.map(c => [c.id, c.n, c.a, c.i, c.f || 0]) })); } catch (e) {}
                 }
             } catch (e) { console.warn("AniList failed for", k, e); }
         }
