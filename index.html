@@ -2624,11 +2624,21 @@ window.setRounds = function (n) {
 
 /* ---------- pool (AniList, cached, fallback names) ---------- */
 const hbMem = {};
-const HB_MAX_CHARS = 300;   // per series: everything if the series is smaller, otherwise the 300 most popular
+// packs.json (made once with build-packs.html) holds every series ready to use, so no AniList wait
+let hbPacksP = null;
+function hbLoadPacks() {
+    if (!hbPacksP) hbPacksP = fetch("packs.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).then(j => j && j.series ? j : null).catch(() => null);
+    return hbPacksP;
+}
+const HB_MAX_CHARS = 400;   // per series: everything if the series is smaller, otherwise the 300 most popular
 async function hbBuildPool(keys, diff, progress) {
-    const todo = keys.filter(k => HB_SERIES[k]), lists = {};
+    const todo = keys.filter(k => HB_SERIES[k]), lists = {}, packs = await hbLoadPacks();
     const ck = k => "gw_hbfull3_" + k;
     todo.forEach(k => {
+        if (packs && packs.series[k] && packs.series[k].chars && packs.series[k].chars.length) {
+            lists[k] = hbMem[k] = packs.series[k].chars.map(r => ({ id: r[0], n: r[1], a: r[2], i: r[3], f: r[4] || 0, s: HB_SERIES[k].label })).filter(x => !hbBad(x)).slice(0, HB_MAX_CHARS);
+            return;
+        }
         if (hbMem[k]) { lists[k] = hbMem[k]; return; }
         try {
             const c = JSON.parse(localStorage.getItem(ck(k)) || "null");
