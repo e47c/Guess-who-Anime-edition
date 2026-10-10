@@ -2604,7 +2604,7 @@ const hbImg = c => !c || !c.i ? "" : (/^http/.test(c.i) ? c.i : HB_IMG + c.i);
 const nz = s => String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 const arr = x => Array.isArray(x) ? x : (x ? Object.values(x) : []);
 const hbEl = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
-const hbBad = c => /narrat/i.test([c.n].concat(c.a || []).join(" "));
+const hbBad = c => /narrat|announc|commentat|newscast|news ?anchor|broadcaster|reporter|presenter|referee|emcee/i.test([c.n].concat(c.a || []).join(" "));
 const hbTapTimers = new WeakMap();
 function hbTapTwice(btnOrId, armedText) {
     const b = typeof btnOrId === "string" ? $(btnOrId) : btnOrId;
