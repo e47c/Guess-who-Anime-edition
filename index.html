@@ -931,6 +931,68 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 .uno-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;min-height:46px}
 .uno-hand{display:flex;gap:8px;overflow-x:auto;padding:22px 8px 14px;justify-content:safe center;-webkit-overflow-scrolling:touch}
 .uno-colors{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.uno-colors button{min-width:130px;color:#fff;text-shadow:1px 1px 0 #000}
+
+/* ===== ANIME UNO: collectible-card redesign ===== */
+#uno { min-height:100vh; padding-bottom:28px; background:radial-gradient(ellipse at 50% 38%,rgba(123,22,28,.2),transparent 62%); }
+#uno .game-header-inner { max-width:1280px; }
+#uno .turn { font-size:clamp(25px,4vw,38px); }
+#uno .status { max-width:70ch; line-height:1.45; color:rgba(246,239,227,.82); }
+.uno-wrap { max-width:1320px; padding:0 clamp(10px,2vw,28px); margin:22px auto; }
+.uno-opps { gap:12px; }
+.u-opp { min-width:clamp(110px,13vw,175px); padding:12px 16px; border-radius:8px; background:linear-gradient(145deg,rgba(28,15,18,.88),rgba(7,7,12,.8)); border:1px solid rgba(232,204,148,.32); box-shadow:0 8px 24px #0005; transition:transform .25s,border-color .25s,box-shadow .25s; }
+.u-opp.turn { border-color:var(--gold-bright); transform:translateY(-4px); box-shadow:0 0 0 1px #e8cc9444,0 0 24px #e11b1b55; }
+.u-oname { font-size:clamp(17px,2vw,22px); }
+.u-ocount { margin-top:4px; font-size:14px; color:var(--parchment-dim); }
+.uno-table { gap:clamp(12px,3vw,36px); margin:clamp(22px,4vh,42px) 0 28px; }
+.uno-info { min-width:170px; padding:14px 16px; border:1px solid #e8cc9444; border-radius:12px; background:rgba(10,4,8,.64); box-shadow:0 12px 30px #0004; }
+.u-chip { border-radius:999px; padding:8px 16px; font-family:var(--font-body); font-weight:900; text-transform:uppercase; letter-spacing:.08em; box-shadow:0 4px 16px #0005; }
+.u-dir { margin-top:8px; line-height:1.6; font-size:13px; }
+.ucard { --c:#444; flex:0 0 auto; width:clamp(96px,9vw,130px); height:clamp(146px,13.5vw,190px); border-radius:12px; border:2px solid rgba(255,255,255,.85); background:linear-gradient(155deg,color-mix(in srgb,var(--c) 86%,white),var(--c) 43%,#090910 100%); box-shadow:0 8px 18px #0008,inset 0 0 0 3px #ffffff20; isolation:isolate; transform:translateZ(0); }
+.ucard::before { content:""; position:absolute; inset:5px; border:1px solid #ffffff70; border-radius:8px; pointer-events:none; z-index:3; }
+.ucard::after { content:""; position:absolute; width:160%; height:35%; top:25%; left:-30%; transform:rotate(-35deg); background:linear-gradient(transparent,rgba(255,255,255,.13),transparent); pointer-events:none; z-index:2; }
+.ucard.attribute-card .u-sym { top:8px; left:9px; width:29px; height:29px; display:grid; place-items:center; border-radius:50%; background:#090910d9; border:1px solid #fff9; font-size:18px; color:#fff; box-shadow:0 2px 8px #0008; }
+.ucard .u-pic { inset:0 0 57px; background:linear-gradient(180deg,#0002 55%,#0008); }
+.ucard .u-pic img { object-fit:cover; object-position:center 22%; transition:transform .35s ease,filter .35s ease; }
+.ucard.ok .u-pic img { filter:saturate(1.12); }
+.ucard.ok:hover .u-pic img { transform:scale(1.07); }
+.ucard .u-name { bottom:43px; padding:5px 4px 4px; min-height:27px; display:flex; align-items:center; justify-content:center; background:linear-gradient(transparent,rgba(0,0,0,.92) 28%); font-size:clamp(10px,1vw,12px); text-shadow:0 2px 4px #000; }
+.ucard .u-sub { bottom:17px; min-height:25px; display:flex; align-items:center; justify-content:center; padding:3px 2px; font-size:clamp(9px,.9vw,12px); font-weight:1000; letter-spacing:.035em; text-transform:uppercase; text-shadow:0 2px 3px #000; background:linear-gradient(90deg,transparent,rgba(0,0,0,.68) 14%,rgba(0,0,0,.68) 86%,transparent); filter:none; }
+.ucard.attribute-card .u-sub { font-size:clamp(10px,1.05vw,13px); letter-spacing:.045em; color:#fff; }
+.ucard .u-anime { min-height:16px; font-size:9px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; background:rgba(0,0,0,.88); color:#fff; padding:2px 3px; }
+.ucard.big { width:clamp(150px,17vw,220px); height:clamp(222px,25vw,320px); border-width:3px; border-radius:16px; box-shadow:0 18px 42px #0009,0 0 0 5px #ffffff12,0 0 32px color-mix(in srgb,var(--c) 40%,transparent); animation:unoReveal .45s cubic-bezier(.2,1.25,.35,1) both; }
+.ucard.big .u-pic { inset:0 0 74px; }
+.ucard.big .u-name { bottom:53px; font-size:clamp(13px,1.3vw,17px); min-height:35px; }
+.ucard.big .u-sub { bottom:22px; font-size:clamp(13px,1.3vw,17px); min-height:31px; }
+.ucard.big .u-anime { font-size:11px; min-height:22px; }
+.ucard.big .u-sym { top:10px; left:10px; width:36px; height:36px; font-size:24px; }
+.ucard.wild { border:3px solid transparent; background:linear-gradient(#111,#111) padding-box,conic-gradient(#e11b1b,#f2c200,#2e9e5b,#2f6fe4,#e11b1b) border-box; }
+.ucard.ok { box-shadow:0 0 0 2px var(--gold-bright),0 0 22px #e8cc9488,0 10px 24px #0009; animation:unoIdle 2.8s ease-in-out infinite; }
+.ucard.ok:hover { transform:translateY(-13px) rotate(-1deg) scale(1.035); z-index:5; box-shadow:0 0 0 3px var(--gold-bright),0 0 32px #e8cc94bb,0 20px 35px #0009; }
+.uno-hand { gap:clamp(5px,.8vw,12px); padding:26px 12px 22px; align-items:flex-end; justify-content:center; }
+.uno-actions { gap:12px; margin:10px auto 4px; }
+.uno-actions .pop { min-height:46px; padding:12px 18px; }
+#unoDraw.ucard { width:clamp(92px,8vw,116px); height:clamp(140px,12vw,172px); border-radius:12px; border:2px solid #e8cc94; box-shadow:0 0 0 4px #0005,0 12px 26px #0008; }
+#unoDraw span { display:block; padding-top:85px; font-size:15px; letter-spacing:.12em; }
+#unoDraw::before { content:"✦"; position:absolute; top:25px; left:0; right:0; font-size:48px; color:#f2c66d; text-shadow:0 0 22px #f2c66d; }
+#unoDraw:disabled { filter:grayscale(.6); }
+#unoColor>div,#unoOver>div { max-width:620px; margin:10vh auto; padding:clamp(22px,5vw,44px); border:1px solid #e8cc9488; border-top:4px solid var(--luffy-red); border-radius:18px; background:linear-gradient(145deg,rgba(30,9,13,.97),rgba(5,5,12,.98)); box-shadow:0 25px 100px #000b; }
+.uno-colors button { min-height:52px; border-radius:10px; transition:transform .2s,filter .2s; }
+.uno-colors button:hover { transform:translateY(-3px) scale(1.025); filter:brightness(1.15); }
+@keyframes unoReveal { from { opacity:0; transform:perspective(800px) rotateY(24deg) scale(.88); } to { opacity:1; transform:perspective(800px) rotateY(0) scale(1); } }
+@keyframes unoIdle { 0%,100% { box-shadow:0 0 0 2px var(--gold-bright),0 0 18px #e8cc9470,0 8px 18px #0008; } 50% { box-shadow:0 0 0 2px var(--gold-bright),0 0 26px #e8cc94aa,0 8px 22px #0008; } }
+@media(max-width:700px) {
+ .uno-table { gap:10px; }
+ .uno-info { min-width:130px; padding:10px; }
+ .uno-hand { justify-content:flex-start; }
+ .ucard { width:96px; height:145px; }
+ .ucard.big { width:148px; height:220px; }
+ .ucard.big .u-pic { inset:0 0 62px; }
+ .ucard.big .u-name { bottom:46px; }
+ .ucard.big .u-sub { bottom:19px; }
+ .ucard.big .u-anime { min-height:19px; }
+}
+@media(prefers-reduced-motion:reduce) { .ucard,.u-opp,.uno-colors button { animation:none!important; transition:none!important; } }
+
 </style>
 
 </head>
@@ -3541,12 +3603,16 @@ let unoSeen = { n: -1, over: "" }, unoPick = null;
 function unoCardEl(u, ci, cls) {
     const c = u.cards[ci], wild = c.k === "w" || c.k === "x", el = hbEl("div", "ucard " + (wild ? "wild " : "") + (cls || ""));
     el.style.setProperty("--c", wild ? "#1b1b22" : UNO_SUIT[c.s]);
-    el.appendChild(hbEl("div", "u-sym", c.k === "a" ? String(c.v) : unoSym[c.k]));
+    const attr = c.k === "a" ? UNO_ATTR[c.v] : "";
+    const attrIcons = { Luck: "✦", Defense: "⬟", Accuracy: "◎", Stamina: "♥", Intellect: "✧", Technique: "⚔", Speed: "➤", Spirit: "☯", Strength: "✊", Power: "ϟ" };
+    el.classList.toggle("attribute-card", c.k === "a");
+    el.classList.toggle("action-card", c.k !== "a");
+    el.appendChild(hbEl("div", "u-sym", c.k === "a" ? (attrIcons[attr] || "✦") : unoSym[c.k]));
     const pic = hbEl("div", "u-pic"); if (c.i) pic.appendChild(makeImg(HB_IMG + c.i)); else pic.textContent = c.n.split(" ").map(w => w[0]).join("").slice(0, 2);
     el.appendChild(pic);
     el.appendChild(hbEl("div", "u-name", c.n));
-    el.appendChild(hbEl("div", "u-sub", c.k === "a" ? UNO_ATTR[c.v] : unoKind[c.k]));
-    el.appendChild(hbEl("div", "u-anime", u.anime[c.s] || ""));
+    el.appendChild(hbEl("div", "u-sub", c.k === "a" ? attr : unoKind[c.k]));
+    el.appendChild(hbEl("div", "u-anime", u.anime[c.s] || (wild ? "WILD CARD" : "")));
     return el;
 }
 function showUNO(data) {
