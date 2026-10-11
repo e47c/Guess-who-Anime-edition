@@ -1079,6 +1079,28 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 .ucard.sp.k-e::after{background:linear-gradient(74deg,transparent 49.4%,rgba(245,248,255,.75) 50%,transparent 50.6%) 10% 8%/36% 30% no-repeat,linear-gradient(-32deg,transparent 49.4%,rgba(210,216,230,.65) 50%,transparent 50.6%) 58% 44%/32% 26% no-repeat,linear-gradient(108deg,transparent 49.5%,rgba(235,240,252,.6) 50%,transparent 50.5%) 14% 66%/30% 18% no-repeat,linear-gradient(12deg,transparent 49.5%,rgba(200,208,224,.55) 50%,transparent 50.5%) 66% 8%/22% 20% no-repeat,linear-gradient(-70deg,transparent 49.5%,rgba(240,244,255,.5) 50%,transparent 50.5%) 40% 78%/18% 16% no-repeat;animation:uCrack 5s ease-in-out infinite}
 @keyframes uCrack{0%,100%{opacity:.4}45%{opacity:1}55%{opacity:.65}}
 @media(prefers-reduced-motion:reduce){.ucard.sp *,.ucard.sp::after{animation:none!important}}
+
+/* ===== SPECIAL CARD CINEMATIC ===== */
+.u-fx.cine{pointer-events:auto;cursor:pointer;overflow:hidden;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--c) 38%,#05030a),#000 78%);animation:uFxIn .3s ease-out backwards}
+.u-fx.cine::before{display:none}
+.u-fx.cine>*{position:absolute}
+.fx-cv{inset:0;width:100%;height:100%;z-index:1}
+.fx-stage{left:0;right:0;top:14vh;height:52vh;z-index:2;display:flex;align-items:center;justify-content:center}
+.fx-cardwrap{position:relative;flex:0 0 auto}
+.fx-cardin{position:absolute;inset:0}
+.fx-cardin .ucard{position:absolute;left:0;top:0;width:220px;height:330px;transform-origin:0 0}
+.fx-title{left:0;right:0;bottom:14vh;z-index:4;display:flex;justify-content:center;pointer-events:none}
+.fx-band{padding:10px clamp(28px,6vw,90px) 12px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--c) 70%,#000) 14%,color-mix(in srgb,var(--c) 70%,#000) 86%,transparent);border-top:3px solid #fff;border-bottom:3px solid #fff;box-shadow:0 0 40px color-mix(in srgb,var(--c) 70%,transparent);text-align:center;max-width:100vw}
+.fx-name{display:flex;flex-wrap:wrap;justify-content:center;font-family:var(--font-display);font-weight:400;font-size:clamp(28px,7vw,80px);line-height:1.05;color:#fff;-webkit-text-stroke:2px #000;text-shadow:4px 4px 0 #000,0 0 22px var(--c);letter-spacing:.04em;transform:skewX(8deg)}
+.fx-name .ch{display:inline-block;animation:fxCh .6s cubic-bezier(.2,1.6,.4,1) backwards}
+@keyframes fxCh{from{opacity:0;transform:translateY(46px) scale(2.4) rotate(10deg)}}
+.fx-cap{margin-top:2px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-bright);font-size:clamp(11px,1.8vw,17px);transform:skewX(8deg);text-shadow:0 2px 0 #000}
+.fx-bar{left:0;right:0;height:11vh;background:#000;z-index:5}
+.fx-bar.t{top:0}.fx-bar.b{bottom:0}
+.fx-flash{inset:0;z-index:6;background:#fff;opacity:0;pointer-events:none}
+.fx-prog{left:0;right:0;bottom:0;height:5px;z-index:7;background:#fff2}
+.fx-prog i{display:block;height:100%;width:100%;background:var(--c);box-shadow:0 0 12px var(--c)}
+.fx-skip{right:14px;bottom:calc(11vh + 10px);z-index:7;font-size:10px;font-weight:800;letter-spacing:.18em;color:#fff;opacity:.5}
 </style>
 
 </head>
@@ -3580,29 +3602,35 @@ const UNO_SPECIAL = {
 /* =====================================================================
    SPECIAL CARD FX ENGINE  (voice line + canvas animation, 36 cards)
    ---------------------------------------------------------------------
-   1) VOICE:  put a short clip at  audio/special/<series>_<kind>.mp3
+   1) VOICE:  put a clip (any length, up to ~19s) at  audio/special/<series>_<kind>.mp3
               e.g. audio/special/jojo_u.mp3   (kinds: f=freeze t=swap u=ultimate e=vision)
               .ogg .wav .m4a also work. No file = animation plays silently with the old beep.
    2) LOOK:   each card picks ONE animation template in UNO_FX_CFG below.
               Change the template / colour / title / caption per card, no other code needed.
-   Templates: ice warp blast slash beam orb lightning eye rush time
+   The animation lasts as long as the clip. Templates: ice warp blast slash beam orb lightning eye rush time
    ===================================================================== */
-const UNO_VOICE_DIR = "audio/special/", UNO_VOICE_EXT = ["mp3", "ogg", "wav", "m4a"], UNO_FX_MS = 4200, unoVoiceSrc = {};
-function unoVoice(key, ms) {
-    if (muted || unoVoiceSrc[key] === "") return;
-    const play = a => {
-        a.currentTime = 0; a.volume = 1; a.play().catch(() => {});
-        setTimeout(() => { const f = setInterval(() => { if (a.volume > .12) a.volume -= .1; else { a.pause(); clearInterval(f); } }, 40); }, Math.max(0, ms - 450));
-    };
-    const tryExt = i => {
-        if (i >= UNO_VOICE_EXT.length) { unoVoiceSrc[key] = ""; return; }
-        const a = new Audio(); a.preload = "auto";
-        a.oncanplaythrough = () => { a.oncanplaythrough = null; unoVoiceSrc[key] = a.src; play(a); };
-        a.onerror = () => tryExt(i + 1);
-        a.src = UNO_VOICE_DIR + key + "." + UNO_VOICE_EXT[i];
-    };
-    if (unoVoiceSrc[key]) { const a = new Audio(unoVoiceSrc[key]); play(a); } else tryExt(0);
+const UNO_VOICE_DIR = "audio/special/", UNO_VOICE_EXT = ["mp3", "ogg", "wav", "m4a"], unoVoiceInfo = {};
+/* The animation lasts as long as the voice line (+ a short outro), but never less than MIN or more than MAX.
+   With no audio file it lasts UNO_FX_MS. All in milliseconds. */
+const UNO_FX_MS = 8000, UNO_FX_MIN = 5000, UNO_FX_MAX = 20000;
+function unoVoiceLoad(key, wait) {                       // -> Promise of {src, dur} or null when there is no audio file
+    return new Promise(res => {
+        if (muted || unoVoiceInfo[key] === null) return res(null);
+        if (unoVoiceInfo[key]) return res(unoVoiceInfo[key]);
+        let i = 0, fin = false; const end = v => { if (!fin) { fin = true; res(v); } };
+        setTimeout(() => end(null), wait);
+        const tryExt = () => {
+            if (i >= UNO_VOICE_EXT.length) { unoVoiceInfo[key] = null; return end(null); }
+            const a = new Audio(); a.preload = "auto";
+            a.onloadedmetadata = () => { if (!isFinite(a.duration)) return; unoVoiceInfo[key] = { src: a.src, dur: a.duration }; end(unoVoiceInfo[key]); };
+            a.onerror = () => { i++; tryExt(); };
+            a.src = UNO_VOICE_DIR + key + "." + UNO_VOICE_EXT[i];
+        };
+        tryExt();
+    });
 }
+function unoVoicePlay(info) { const a = new Audio(info.src); a.volume = 1; a.play().catch(() => {}); return a; }
+function unoVoiceStop(a) { const f = setInterval(() => { if (a.volume > .15) a.volume -= .15; else { a.pause(); clearInterval(f); } }, 30); }
 /* [template, ability title, caption under it, colour] */
 const UNO_FX_CFG = {
     onepiece_f: ["ice", "Ice Age", "Aokiji", "#bfeaff"],           onepiece_t: ["warp", "Room · Shambles", "Trafalgar Law", "#4cc9f0"],
@@ -3624,7 +3652,8 @@ const UNO_FX_CFG = {
     jojo_f: ["time", "The World", "DIO", "#ffe44d"],               jojo_t: ["warp", "Sticky Fingers", "Bruno", "#7df3ff"],
     jojo_u: ["rush", "Star Platinum", "Jotaro", "#7a7cff"],        jojo_e: ["time", "King Crimson", "Diavolo", "#ff2b4d"]
 };
-const fxR = i => Math.abs((Math.sin(i * 127.1 + 311.7) * 43758.5453) % 1);
+let fxOff = 0;
+const fxR = i => Math.abs((Math.sin((i + fxOff) * 127.1 + 311.7) * 43758.5453) % 1);
 const fxE = x => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
 function fxBolt(g, x0, y0, x1, y1, seed, col) {
     const n = 9; g.beginPath(); g.moveTo(x0, y0);
@@ -3711,35 +3740,74 @@ const UNO_FX_DRAW = {
     }
 };
 function unoFxHook(key) {
-    const cfg = UNO_FX_CFG[key], draw = UNO_FX_DRAW[cfg[0]];
+    const cfg = UNO_FX_CFG[key], draw = UNO_FX_DRAW[cfg[0]], col = cfg[3], heavy = /blast|rush|slash|lightning/.test(cfg[0]), soft = /time|eye|warp|ice/.test(cfg[0]);
     return (box, done, c, u) => {
-        const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches, ms = reduce ? 1800 : UNO_FX_MS;
-        const h2 = box.querySelector("h2"), pp = box.querySelector("p"), em = box.querySelector(".u-fx-em");
-        if (h2) h2.textContent = c.ab || cfg[1];
-        if (pp) pp.textContent = (u.names["p" + u.fx.p] || "?") + " · " + cfg[2];
-        if (em) em.style.display = "none";
-        box.style.setProperty("--c", cfg[3]);
-        const art = unoSpCache[UNO_SP_DIR + c.sk + "_" + UNO_SP[c.k].file];
-        if (art) { const im = new Image(); im.src = art; im.alt = ""; im.style.cssText = "position:absolute;left:50%;bottom:0;height:78vh;max-width:90vw;object-fit:contain;transform:translateX(-50%);filter:drop-shadow(0 0 30px " + cfg[3] + ");z-index:0"; box.insertBefore(im, box.firstChild);
-            im.animate([{ opacity: 0, transform: "translateX(-90%)" }, { opacity: 1, transform: "translateX(-50%)" }, { opacity: 1, transform: "translateX(-50%) scale(1.04)" }], { duration: ms, easing: "ease-out", fill: "forwards" }); }
-        let cv = null, g = null, W = 0, H = 0;
-        if (!reduce) { cv = document.createElement("canvas"); cv.style.cssText = "position:absolute;inset:0;width:100%;height:100%;z-index:1;mix-blend-mode:screen"; box.insertBefore(cv, h2 || null);
-            const dpr = Math.min(2, window.devicePixelRatio || 1); W = cv.width = innerWidth * dpr; H = cv.height = innerHeight * dpr; g = cv.getContext("2d"); }
-        if (h2) { h2.style.zIndex = 2; h2.animate([{ transform: "skewX(-8deg) scale(2.4)", opacity: 0 }, { transform: "skewX(-8deg) scale(1)", opacity: 1, offset: .12 }, { transform: "skewX(-8deg) scale(1.06)" }], { duration: ms, easing: "ease-out", fill: "forwards" }); }
-        if (pp) pp.style.zIndex = 2;
-        unoVoice(key, ms);
-        const t0 = performance.now(); let ended = false;
-        const finish = () => { if (ended) return; ended = true; done(); };
-        const frame = now => {
-            if (ended || !box.isConnected) return;
-            const t = Math.min(1, (now - t0) / ms);
-            if (g) { g.clearRect(0, 0, W, H); g.save(); g.globalAlpha = t > .88 ? (1 - t) / .12 : 1; const k = W / innerWidth; g.scale(k, k);
-                try { draw(g, innerWidth, innerHeight, t, cfg[3]); } catch (e) { console.warn(e); } g.restore();
-                if ((cfg[0] === "blast" || cfg[0] === "rush") && t < .6) box.style.transform = "translate(" + (fxR(now | 0) - .5) * 14 + "px," + (fxR((now | 0) + 5) - .5) * 14 + "px)"; else box.style.transform = ""; }
-            if (t < 1) requestAnimationFrame(frame); else finish();
-        };
-        requestAnimationFrame(frame);
-        setTimeout(finish, ms + 300);   // safety net so the game can never get stuck on an animation
+        const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+        box.textContent = ""; box.classList.add("cine"); box.style.setProperty("--c", col);
+        let ended = false, voice = null;
+        const finish = () => { if (ended) return; ended = true; if (voice) unoVoiceStop(voice); done(); };
+        box.addEventListener("click", finish);                                    // tap anywhere = skip
+        unoVoiceLoad(key, 900).then(info => {
+            if (ended) return;
+            run(info, reduce ? 2500 : info ? Math.min(UNO_FX_MAX, Math.max(UNO_FX_MIN, info.dur * 1000 + 900)) : UNO_FX_MS);
+        }).catch(e => { console.warn(e); finish(); });
+
+        function run(info, ms) {
+            const who = u.names["p" + u.fx.p] || "?", div = (cls, txt) => { const d = hbEl("div", cls, txt); box.appendChild(d); return d; };
+            let cv = null, g = null, W = 0, H = 0;
+            if (!reduce) { cv = hbEl("canvas", "fx-cv"); box.appendChild(cv); const dpr = Math.min(2, window.devicePixelRatio || 1); W = cv.width = innerWidth * dpr; H = cv.height = innerHeight * dpr; g = cv.getContext("2d"); }
+            // --- the character card, big, in the middle (native 220x330 scaled to fit, so every picture keeps its card frame) ---
+            const stage = div("fx-stage"), wrap = hbEl("div", "fx-cardwrap"), inner = hbEl("div", "fx-cardin"), card = unoCardEl(u, u.fx.ci, "big");
+            const k = Math.min(innerHeight * .46 / 330, innerWidth * .74 / 220, 1.8);
+            wrap.style.width = 220 * k + "px"; wrap.style.height = 330 * k + "px"; card.style.transform = "scale(" + k + ")";
+            inner.appendChild(card); wrap.appendChild(inner); stage.appendChild(wrap);
+            wrap.animate([{ transform: "translateY(90vh) rotate(-16deg) scale(.55)", opacity: 0 }, { transform: "translateY(0) rotate(2deg) scale(1.06)", opacity: 1, offset: .75 }, { transform: "none", opacity: 1 }], { duration: Math.min(900, ms * .12), easing: "cubic-bezier(.2,.9,.3,1)", fill: "backwards" });
+            // --- title band: ability name letter by letter, caption underneath ---
+            const tt = div("fx-title"), band = hbEl("div", "fx-band"), nm = hbEl("div", "fx-name");
+            [...(c.ab || cfg[1])].forEach((ch, i) => { const sp = hbEl("span", "ch", ch === " " ? "\u00a0" : ch); sp.style.animationDelay = (ms * .09 + i * 55) + "ms"; nm.appendChild(sp); });
+            band.appendChild(nm); band.appendChild(hbEl("div", "fx-cap", who + " · " + cfg[2])); tt.appendChild(band);
+            band.animate([{ transform: "skewX(-10deg) translateX(-110vw)" }, { transform: "skewX(-10deg) translateX(0)" }], { duration: 520, delay: ms * .07, easing: "cubic-bezier(.2,.9,.2,1)", fill: "backwards" });
+            const top = div("fx-bar t"), bot = div("fx-bar b"), flash = div("fx-flash"), prog = div("fx-prog"), pin = hbEl("i"); prog.appendChild(pin); div("fx-skip", "TAP TO SKIP");
+            top.animate([{ transform: "translateY(-100%)" }, { transform: "none" }], { duration: 420, easing: "ease-out", fill: "backwards" });
+            bot.animate([{ transform: "translateY(100%)" }, { transform: "none" }], { duration: 420, easing: "ease-out", fill: "backwards" });
+            if (info) voice = unoVoicePlay(info);
+            if (reduce) { setTimeout(finish, ms); return; }
+
+            const SS = .28, SE = .84, cyc = Math.max(2, Math.round((SE - SS) * ms / 1900)), t0 = performance.now();
+            const frame = now => {
+                if (ended) return;
+                if (!box.isConnected) { finish(); return; }
+                const t = Math.min(1, (now - t0) / ms), s = t * ms / 1000, w = innerWidth, h = innerHeight, R = Math.hypot(w, h) / 2, cy = h * .14 + h * .26;
+                const amp = Math.min(1, t / .07) * (t > .9 ? (1 - t) / .1 : 1);
+                g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H); const kk = W / w; g.scale(kk, kk);
+                // sunburst behind the card
+                g.save(); g.translate(w / 2, cy); g.rotate(s * .18); g.fillStyle = col; g.globalAlpha = .13 * amp;
+                for (let i = 0; i < 18; i++) { const a = i / 18 * 6.283; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a - .07) * R, Math.sin(a - .07) * R); g.lineTo(Math.cos(a + .07) * R, Math.sin(a + .07) * R); g.fill(); } g.restore();
+                // energy gathering into the card (charge-up), keeps simmering through the strikes
+                const ch = t < SS ? Math.min(1, t / SS) : 1, simmer = t < SE ? 1 : Math.max(0, (1 - t) / (1 - SE));
+                g.save(); g.translate(w / 2, cy); g.globalAlpha = .9 * amp * simmer;
+                for (let i = 0; i < 70; i++) { const an = fxR(i) * 6.283, ph = (s * (.5 + ch) * .8 + fxR(i + 9)) % 1, d = (1 - ph) * R * (.35 + fxR(i + 4) * .6) + 70 * k, L = 14 + 40 * (1 - ph);
+                    g.beginPath(); g.moveTo(Math.cos(an) * d, Math.sin(an) * d); g.lineTo(Math.cos(an) * (d + L), Math.sin(an) * (d + L)); g.strokeStyle = i % 4 ? col : "#fff"; g.lineWidth = 1 + fxR(i + 2) * 3; g.stroke(); }
+                const ring = 110 * k * (1 + .08 * Math.sin(s * 6)); g.beginPath(); g.arc(0, 0, ring, 0, 6.283); g.strokeStyle = col; g.lineWidth = 3 + ch * 5; g.shadowColor = col; g.shadowBlur = 30; g.stroke(); g.restore();
+                // the technique itself, repeated as a few strikes
+                let local = 1, ci = 0;
+                if (t >= SS && t < SE) {
+                    const cp = (t - SS) / (SE - SS) * cyc; ci = Math.floor(cp); local = cp - ci; fxOff = ci * 17;
+                    g.save(); g.translate(0, cy - h / 2); g.globalAlpha = amp * Math.min(1, (1 - local) * 5 + .15);
+                    try { draw(g, w, h, local, col); } catch (e) { console.warn(e); } g.restore(); fxOff = 0;
+                }
+                // card reacts, screen shakes, flashes
+                const hit = t >= SS && t < SE ? Math.max(0, 1 - local * 3.2) : 0;
+                inner.style.transform = "translateY(" + (Math.sin(s * 2.2) * -7) + "px) rotate(" + ((fxR((now / 45) | 0) - .5) * hit * 6) + "deg) scale(" + (1 + hit * .06) + ")";
+                stage.style.transform = heavy && hit ? "translate(" + ((fxR((now | 0)) - .5) * 18 * hit) + "px," + ((fxR((now | 0) + 5) - .5) * 18 * hit) + "px)" : "";
+                const fl = Math.max(hit > .7 ? (hit - .7) * (soft ? 1 : 2.2) : 0, t > SE && t < SE + .05 ? 1 - (t - SE) / .05 : 0);
+                flash.style.opacity = Math.min(.9, fl);
+                pin.style.width = (1 - t) * 100 + "%";
+                if (t < 1) requestAnimationFrame(frame); else finish();
+            };
+            requestAnimationFrame(frame);
+            setTimeout(finish, ms + 500);                      // safety net: an animation can never freeze the game
+        }
     };
 }
 const UNO_FX_HOOKS = {};
