@@ -904,6 +904,33 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;bac
 .im-votes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 8px; }
 .im-vote { padding: 16px 10px; font-size: 20px; background: rgba(246,239,227,.06); color: var(--pc); border: 3px solid var(--pc); word-break: break-word; }
 .im-vote.picked { background: var(--pc); color: var(--ink); }
+
+/* ===== ANIME UNO ===== */
+body.uno-mode .series-pick .anime-option:not(.uno-ok){display:none!important}
+body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
+.uno-wrap{max-width:980px;margin:14px auto;padding:0 10px;text-align:center}
+.uno-opps{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.u-opp{min-width:110px;padding:8px 12px;background:rgba(10,4,4,.5);backdrop-filter:blur(8px);border:1px solid rgba(232,204,148,.3);border-radius:3px}
+.u-opp.turn{border-color:var(--gold-bright);box-shadow:0 0 18px rgba(225,27,27,.6)}.u-opp.gone{opacity:.45}
+.u-oname{font-family:var(--font-display);font-size:18px}.u-ocount{font-weight:700;color:var(--parchment)}
+.uno-table{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;margin:18px 0}
+.uno-info{min-width:150px;text-align:left}.u-chip{display:inline-block;padding:6px 14px;border-radius:3px;font-family:var(--font-display);color:#fff;text-shadow:1px 1px 0 #000;margin-bottom:6px}
+.u-dir{font-weight:700;color:var(--parchment-dim)}
+.ucard{--c:#444;position:relative;flex:0 0 auto;width:116px;height:172px;border-radius:9px;background:linear-gradient(160deg,var(--c),#0c0606 135%);border:3px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.6);overflow:hidden;color:#fff;text-align:center;cursor:default;padding:0;transition:transform .15s,box-shadow .15s}
+.ucard.wild{border-image:linear-gradient(135deg,#e11b1b,#f2c200,#2e9e5b,#2f6fe4) 1}
+.ucard.big{width:140px;height:208px}.ucard.big .u-name{font-size:14px}
+.ucard.ok{cursor:pointer;box-shadow:0 0 0 3px var(--gold-bright),0 0 18px rgba(232,204,148,.8)}.ucard.ok:hover{transform:translateY(-12px)}
+.ucard.back{background:radial-gradient(circle at 50% 40%,#e11b1b,#4a0707);font-family:var(--font-display);font-size:22px;cursor:pointer}
+.ucard.back:disabled{opacity:.55;cursor:default}
+.u-sym{position:absolute;left:6px;top:2px;z-index:2;font-family:var(--font-display);font-size:24px;text-shadow:2px 2px 0 #000}
+.u-pic{position:absolute;inset:0 0 54px 0;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:40px;background:rgba(0,0,0,.25)}
+.u-pic img{width:100%;height:100%;object-fit:cover;object-position:top}
+.u-name{position:absolute;left:0;right:0;bottom:30px;padding:2px 3px;background:rgba(0,0,0,.72);font-weight:800;font-size:12px;line-height:1.1}
+.u-sub{position:absolute;left:0;right:0;bottom:15px;font-size:10px;font-weight:800;letter-spacing:.08em;background:var(--c);filter:brightness(1.1)}
+.u-anime{position:absolute;left:0;right:0;bottom:0;font-size:9px;background:rgba(0,0,0,.85);color:var(--parchment-dim);padding:1px 0}
+.uno-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;min-height:46px}
+.uno-hand{display:flex;gap:8px;overflow-x:auto;padding:22px 8px 14px;justify-content:safe center;-webkit-overflow-scrolling:touch}
+.uno-colors{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.uno-colors button{min-width:130px;color:#fff;text-shadow:1px 1px 0 #000}
 </style>
 
 </head>
@@ -940,7 +967,7 @@ Pick your series. Hide a character. Guess theirs first.
 </div>
 
 
-<div class="field"><label>Game mode</label><div class="sizes"><button id="modeGW" class="modebtn selected" onclick="setGameType('gw')">Guess Who</button><button id="modeHB" class="modebtn" onclick="setGameType('hb')">Headbanz</button><button id="modeIM" class="modebtn" onclick="setGameType('im')">Imposter</button></div>
+<div class="field"><label>Game mode</label><div class="sizes"><button id="modeGW" class="modebtn selected" onclick="setGameType('gw')">Guess Who</button><button id="modeHB" class="modebtn" onclick="setGameType('hb')">Headbanz</button><button id="modeIM" class="modebtn" onclick="setGameType('im')">Imposter</button><button id="modeUNO" class="modebtn" onclick="setGameType('uno')">Anime UNO</button></div>
 <p class="anime-hint" id="modeHint">Classic board. Pick a secret, flip cards, guess theirs.</p></div>
 <div
     id="animePoll" class="field series-pick">
@@ -1227,6 +1254,17 @@ Loading...
 <button class="pop ghost" style="width:100%;margin-top:14px" onclick="imCloseGuess()">Cancel</button></div></div>
 </div>
 <div id="hbLoading" class="hb-loading hidden"><div>Summoning characters...</div></div>
+<div id="uno" class="hidden">
+<div class="game-header"><div class="game-header-inner"><div><div class="turn" id="unoTurn"></div><div class="status" id="unoStatus"></div></div><button class="pop ghost" onclick="exitGame()">EXIT</button></div></div>
+<div class="uno-wrap">
+<div class="uno-opps" id="unoOpps"></div>
+<div class="uno-table"><button id="unoDraw" class="ucard back" onclick="unoDrawClick()"><span>DRAW</span></button><div id="unoTop"></div><div class="uno-info" id="unoInfo"></div></div>
+<div class="uno-actions"><button id="unoBtnUno" class="pop hidden" onclick="unoCall()">UNO!</button><button id="unoBtnCatch" class="pop hidden" onclick="unoCatch()">CATCH THEM!</button><button id="unoBtnPass" class="pop secondary hidden" onclick="unoPass()">PASS</button><button id="unoBtnSkip" class="pop secondary hidden" onclick="unoSkipAbsent()">SKIP AWAY PLAYER</button></div>
+<div class="uno-hand" id="unoHand"></div>
+</div>
+<div id="unoColor" class="hb-picker hidden"><div style="text-align:center"><h1>Choose the anime</h1><div class="uno-colors" id="unoColorBtns"></div><button class="pop ghost" style="margin-top:14px" onclick="unoColorCancel()">Cancel</button></div></div>
+<div id="unoOver" class="hb-picker hidden"><div style="text-align:center;padding-top:20vh"><h1 id="unoOverTitle"></h1><p id="unoOverSub"></p><button class="pop" onclick="unoRematch()">PLAY AGAIN</button> <button class="pop ghost" onclick="exitGame()">EXIT</button></div></div>
+</div>
 <div id="result" class="screen hidden">
 <canvas id="fx" class="fx"></canvas>
 <div class="panel result" id="resultPanel">
@@ -2221,7 +2259,7 @@ function updatePresenceBanner(data) {
     const pres = data.presence || {}, box = $("oppBanner"), me = Number(myPlayer);
     const gone = [1, 2, 3, 4, 5, 6].filter(i => data["player" + i] && i !== me && pres["p" + i] === false);
     const key = gone.join(",");
-    const hb = data.gameType === "headbanz" || data.gameType === "imposter";
+    const hb = data.gameType === "headbanz" || data.gameType === "imposter" || data.gameType === "uno";
     const names = gone.map(i => data["player" + i].name).join(", ");
     $("oppBannerText").textContent = hb
         ? names + (gone.length > 1 ? " have" : " has") + " left the game. The round continues without them."
@@ -2271,7 +2309,7 @@ function showOnly(id) {
 
     document
         .querySelectorAll(
-            "#home,#lobby,#secret,#game,#hb,#im,#result"
+            "#home,#lobby,#secret,#game,#hb,#im,#uno,#result"
         )
         .forEach(
             el =>
@@ -2498,18 +2536,19 @@ window.setGameType = function (t) {
     homeMode = t;
     const multi = t === "hb" || t === "im";
     document.body.classList.toggle("hb-mode", multi);
-    $("modeGW").classList.toggle("selected", t === "gw");
-    $("modeHB").classList.toggle("selected", t === "hb");
-    $("modeIM").classList.toggle("selected", t === "im");
-    $("sizeField").classList.toggle("hidden", multi);
+    document.body.classList.toggle("uno-mode", t === "uno");
+    Object.entries({ GW: "gw", HB: "hb", IM: "im", UNO: "uno" }).forEach(([k, v]) => $("mode" + k).classList.toggle("selected", t === v));
+    $("sizeField").classList.toggle("hidden", t !== "gw");
     $("diffField").classList.toggle("hidden", !multi);
     $("hbRoundsBox").classList.toggle("hidden", t !== "hb");
     $("imBox").classList.toggle("hidden", t !== "im");
-    if (!multi) document.querySelectorAll(".hb-only input").forEach(c => { c.checked = false; });
+    if (t === "gw") document.querySelectorAll(".hb-only input").forEach(c => { c.checked = false; });
+    if (t === "uno") document.querySelectorAll("#animePoll input").forEach(c => { if (!UNO_DECKS[c.value]) c.checked = false; });
     $("modeHint").textContent = {
         gw: "Classic board. Pick a secret, flip cards, guess theirs.",
         hb: "2 to 4 players. You see everyone else's character but not your own. Ask on your call, then guess yours first!",
-        im: "3 to 6 players. Everyone sees the same character except the imposter. Give clues, vote, and catch them!"
+        im: "3 to 6 players. Everyone sees the same character except the imposter. Give clues, vote, and catch them!",
+        uno: "2 to 6 players. Pick exactly 4 series (" + document.querySelectorAll("#animePoll input:checked").length + "/4 picked): they become the 4 colours."
     }[t];
 };
 
@@ -3332,6 +3371,233 @@ function imRenderPanel(data) {
     }
 }
 
+/* =========================================================
+   ANIME UNO (2 to 6 players)
+   4 anime = the 4 colours. 108 cards: 76 attribute cards (0-9), 8 Skip, 8 Reverse,
+   8 Draw Two, 4 Wild (main characters), 4 Wild Draw Four (villains).
+   Each deck string: attributes 0..9 (| between values, a comma between the two characters)
+   ; skip ; reverse ; draw two ; wild (hero) ; wild +4 (villain)
+========================================================= */
+const UNO_ATTR = ["Luck", "Defense", "Accuracy", "Stamina", "Intellect", "Technique", "Speed", "Spirit", "Strength", "Power"];
+const UNO_SUIT = ["#e11b1b", "#2f6fe4", "#f2c200", "#2e9e5b"];
+const UNO_DECKS = {
+    onepiece: "Buggy|Franky,Jinbe|Usopp,Brook|Tony Tony Chopper,Rob Lucci|Nico Robin,Crocodile|Sabo,Portgas D. Ace|Sanji,Donquixote Doflamingo|Dracule Mihawk,Shanks|Roronoa Zoro,Kaido|Edward Newgate,Gol D. Roger;Aokiji,Boa Hancock;Trafalgar Law,Bartholomew Kuma;Nami,Charlotte Linlin;Monkey D. Luffy;Marshall D. Teach",
+    naruto: "Konohamaru Sarutobi|Choji Akimichi,Hinata Hyuga|Tenten,Sakura Haruno|Kiba Inuzuka,Temari|Jiraiya,Orochimaru|Neji Hyuga,Gaara|Rock Lee,Might Guy|Tsunade,Kakashi Hatake|Sasuke Uchiha,Obito Uchiha|Pain,Tobirama Senju;Shikamaru Nara,Hashirama Senju;Minato Namikaze,Itachi Uchiha;Kakuzu,Hidan;Naruto Uzumaki;Madara Uchiha",
+    bleach: "Kon|Yasutora Sado,Rangiku Matsumoto|Uryu Ishida,Soi Fon|Renji Abarai,Ikkaku Madarame|Kisuke Urahara,Ulquiorra Cifer|Byakuya Kuchiki,Grimmjow Jaegerjaquez|Yoruichi Shihoin,Tier Harribel|Shunsui Kyoraku,Coyote Starrk|Kenpachi Zaraki,Genryusai Yamamoto|Yhwach,Isshin Kurosaki;Toshiro Hitsugaya,Rukia Kuchiki;Orihime Inoue,Shinji Hirako;Mayuri Kurotsuchi,Gin Ichimaru;Ichigo Kurosaki;Sosuke Aizen",
+    jjk: "Junpei Yoshino|Panda,Kiyotaka Ijichi|Nobara Kugisaki,Mai Zenin|Megumi Fushiguro,Noritoshi Kamo|Kento Nanami,Suguru Geto|Aoi Todo,Choso|Maki Zenin,Naoya Zenin|Hanami,Jogo|Toji Fushiguro,Kinji Hakari|Yuki Tsukumo,Hajime Kashimo;Toge Inumaki,Satoru Gojo;Shoko Ieiri,Yuta Okkotsu;Mahito,Kenjaku;Yuji Itadori;Ryomen Sukuna",
+    dragonball: "Yamcha|Krillin,Master Roshi|Android 18,Android 17|Piccolo,Gohan|Bulma,Dr. Gero|Raditz,Nappa|Vegeta,Cooler|Beerus,Zamasu|Broly,Jiren|Gogeta,Vegito;Hit,Tien Shinhan;Trunks,Whis;Cell,Majin Buu;Goku;Frieza",
+    demonslayer: "Genya Shinazugawa|Kanao Tsuyuri,Nezuko Kamado|Zenitsu Agatsuma,Inosuke Hashibira|Obanai Iguro,Mitsuri Kanroji|Tamayo,Kagaya Ubuyashiki|Tengen Uzui,Muichiro Tokito|Giyu Tomioka,Sanemi Shinazugawa|Kyojuro Rengoku,Akaza|Gyomei Himejima,Hantengu|Yoriichi Tsugikuni,Kokushibo;Rui,Shinobu Kocho;Daki,Gyutaro;Enmu,Doma;Tanjiro Kamado;Muzan Kibutsuji",
+    aot: "Connie Springer|Sasha Blouse,Marco Bott|Jean Kirstein,Historia Reiss|Petra Ral,Floch Forster|Hange Zoe,Erwin Smith|Falco Grice,Gabi Braun|Pieck Finger,Porco Galliard|Dot Pixis,Keith Shadis|Mikasa Ackerman,Mike Zacharias|Levi Ackerman,Kenny Ackerman;Annie Leonhart,Armin Arlert;Grisha Yeager,Ymir;Reiner Braun,Bertholdt Hoover;Eren Yeager;Zeke Yeager",
+    mha: "Minoru Mineta|Tsuyu Asui,Mina Ashido|Kyoka Jiro,Mashirao Ojiro|Ochaco Uraraka,Fumikage Tokoyami|Momo Yaoyorozu,Nezu|Denki Kaminari,Eijiro Kirishima|Tenya Iida,Hawks|Katsuki Bakugo,Shoto Todoroki|Endeavor,Mirio Togata|All Might,Dabi;Eraser Head,Stain;Kurogiri,Twice;All For One,Himiko Toga;Izuku Midoriya;Tomura Shigaraki"
+};
+const unoSym = { s: "⊘", r: "⟲", d: "+2", w: "★", x: "+4" };
+const unoKind = { s: "SKIP", r: "REVERSE", d: "DRAW TWO", w: "WILD", x: "WILD +4" };
+document.querySelectorAll("#animePoll input").forEach(i => { if (UNO_DECKS[i.value]) i.closest("label").classList.add("uno-ok"); });
+$("animePoll").addEventListener("change", () => {
+    if (homeMode !== "uno") return;
+    $("modeHint").textContent = "Anime UNO: pick exactly 4 series (" + document.querySelectorAll("#animePoll input:checked").length + "/4 picked).";
+});
+
+function unoFindImg(pool, label, name) {
+    const nn = nz(name), toks = nn.split(" ");
+    const hit = list => list.find(c => nz(c.n) === nn || (c.a || []).some(x => nz(x) === nn))
+        || list.find(c => { const h = " " + nz([c.n].concat(c.a || []).join(" ")) + " "; return toks.every(t => h.includes(" " + t + " ")); });
+    const c = hit(pool.filter(x => x.s === label)) || hit(pool);
+    return c && c.i ? c.i : "";
+}
+function unoBuildCards(keys, pool) {
+    const out = [];
+    keys.forEach((k, s) => {
+        const lab = HB_SERIES[k].label, p = UNO_DECKS[k].split(";");
+        const add = (kind, names, v) => names.split(",").forEach(n => out.push({ k: kind, s: s, v: v == null ? -1 : v, n: n, i: unoFindImg(pool, lab, n) }));
+        p[0].split("|").forEach((g, v) => add("a", g, v));
+        add("s", p[1]); add("r", p[2]); add("d", p[3]); add("w", p[4]); add("x", p[5]);
+    });
+    return out;   // 4 x 27 = 108
+}
+async function createUNO(name, keys) {
+    if (hbBusy) return;
+    if (keys.length !== 4) { alert("Anime UNO needs exactly 4 series. You picked " + keys.length + "."); return; }
+    hbBusy = true;
+    try {
+        toast("Loading characters...");
+        let pool = [];
+        try { pool = await hbBuildPool(keys, "normal"); } catch (e) { console.warn(e); toast("Couldn't load pictures. Cards will show names only."); }
+        const cards = unoBuildCards(keys, pool);
+        room = generateCode(); myPlayer = 1;
+        await set(ref(db, "rooms/" + room), {
+            gameType: "uno", mode: mode, animes: keys, uno: { cards: cards, anime: keys.map(k => HB_SERIES[k].label), phase: "lobby", n: 0 },
+            player1: { uid: user.uid, name: name, ready: false }, player2: null, player3: null, player4: null, player5: null, player6: null,
+            status: "waiting", turn: 1, winner: null, result: null
+        });
+        saveSession(); openLobby();
+    } catch (e) { console.error(e); toast("Could not create the room: " + (e.message || e)); }
+    finally { hbBusy = false; }
+}
+function updateLobbyUNO(d) {
+    const ps = [1, 2, 3, 4, 5, 6].filter(i => d["player" + i]), shown = Math.min(6, Math.max(2, ps.length + 1));
+    [1, 2, 3, 4, 5, 6].forEach(i => {
+        const nm = $("p" + i + "Name"), p = d["player" + i];
+        nm.parentElement.classList.toggle("hidden", i > shown);
+        nm.textContent = p ? p.name : "Waiting..."; nm.style.color = p ? HB_COLORS[i - 1] : "";
+        const st = $("p" + i + "Status"); if (st) { st.textContent = p ? "● Connected" : "○ Waiting"; st.className = p ? "ready" : ""; }
+    });
+    const host = Number(myPlayer) === 1, enough = ps.length >= 2, an = arr(d.uno && d.uno.anime).join(" · ");
+    $("lobbyStatus").textContent = (!enough ? "Anime UNO needs 2 to 6 players (" + ps.length + " so far)..." : ps.length + " players. " + (host ? "Start when everyone is in." : "Waiting for the host to start.")) + "  Colours: " + an;
+    $("startButton").classList.toggle("hidden", !(host && enough));
+    $("startButton").disabled = false; $("startButton").textContent = "START ANIME UNO";
+}
+
+/* ---------- rules (all moves run inside a transaction so two taps can never clash) ---------- */
+const unoShuf = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function unoNorm(u) {
+    u.cards = arr(u.cards); u.seats = arr(u.seats); u.draw = arr(u.draw); u.disc = arr(u.disc); u.anime = arr(u.anime);
+    u.hands = u.hands || {}; u.names = u.names || {}; u.seats.forEach(p => { u.hands["p" + p] = arr(u.hands["p" + p]); });
+    return u;
+}
+function unoDealState(cards, anime, seats, names, round) {
+    const draw = unoShuf(cards.map((c, i) => i)), hands = {};
+    seats.forEach(p => { hands["p" + p] = draw.splice(0, 7); });
+    const first = draw.splice(draw.findIndex(i => cards[i].k === "a"), 1)[0];   // the opening card is always an attribute card
+    return { cards: cards, anime: anime, seats: seats, names: names, hands: hands, draw: draw, disc: [first], turn: seats[0], dir: 1,
+        color: cards[first].s, drew: null, call: null, winner: null, phase: "play", round: round, n: 1, msg: "Game on! " + names["p" + seats[0]] + " starts." };
+}
+const unoTop = u => u.cards[u.disc[u.disc.length - 1]];
+const unoNext = (u, p, k) => { const n = u.seats.length, i = u.seats.indexOf(p); return u.seats[(((i + u.dir * k) % n) + n) % n]; };
+function unoCan(u, hand, ci) {
+    const c = u.cards[ci], t = unoTop(u);
+    if (c.k === "w") return true;
+    if (c.k === "x") return !hand.some(h => { const o = u.cards[h]; return o.k !== "w" && o.k !== "x" && o.s === u.color; });   // +4 only when you hold no card of the active colour
+    return c.s === u.color || (t.k === c.k && (c.k !== "a" || t.v === c.v));
+}
+function unoDraw(u, p, n) {
+    const h = u.hands["p" + p];
+    for (let i = 0; i < n; i++) {
+        if (!u.draw.length) { const keep = u.disc.pop(); u.draw = unoShuf(u.disc); u.disc = [keep]; }
+        if (!u.draw.length) break;
+        h.push(u.draw.pop());
+    }
+}
+async function unoTx(fn) {
+    try { await runTransaction(ref(db, "rooms/" + room + "/uno"), cur => { if (!cur) return cur; const u = unoNorm(cur); if (fn(u) === false) return; return u; }); }
+    catch (e) { console.error(e); toast("That move didn't go through. Try again."); }
+}
+async function unoStart() {
+    const d = currentRoomData, seats = [1, 2, 3, 4, 5, 6].filter(i => d["player" + i]);
+    if (seats.length < 2) { toast("Need at least 2 players."); return; }
+    const names = {}; seats.forEach(i => { names["p" + i] = d["player" + i].name; });
+    try { await update(ref(db, "rooms/" + room), { status: "playing", uno: unoDealState(arr(d.uno.cards), arr(d.uno.anime), seats, names, 1) }); }
+    catch (e) { toast("Could not start the game."); }
+}
+window.unoPlay = (ci, col) => unoTx(u => {
+    const p = Number(myPlayer), h = u.hands["p" + p] || [];
+    if (u.phase !== "play" || u.turn !== p || !h.includes(ci) || (u.drew != null && u.drew !== ci) || !unoCan(u, h, ci)) return false;
+    const c = u.cards[ci], wild = c.k === "w" || c.k === "x", nm = u.names["p" + p], nx = unoNext(u, p, 1);
+    h.splice(h.indexOf(ci), 1); u.disc.push(ci); u.drew = null;
+    u.color = wild ? (Number(col) || 0) : c.s;
+    let msg = nm + " played " + c.n;
+    if (c.k === "s") { msg += ". " + u.names["p" + nx] + " is skipped!"; u.turn = unoNext(u, p, 2); }
+    else if (c.k === "r") { u.dir *= -1; msg += ". Direction reversed!"; u.turn = u.seats.length === 2 ? p : unoNext(u, p, 1); }
+    else if (c.k === "d") { unoDraw(u, nx, 2); msg += ". " + u.names["p" + nx] + " draws 2!"; u.turn = unoNext(u, p, 2); }
+    else if (c.k === "x") { unoDraw(u, nx, 4); msg += ". " + u.names["p" + nx] + " draws 4!"; u.turn = unoNext(u, p, 2); }
+    else u.turn = nx;
+    if (wild) msg += " Colour: " + u.anime[u.color] + ".";
+    u.call = h.length === 1 ? { p: p, safe: false, t: Date.now() } : null;
+    if (!h.length) { u.phase = "over"; u.winner = p; msg = nm + " wins the round!"; }
+    u.n++; u.msg = msg;
+});
+window.unoDrawClick = () => unoTx(u => {
+    const p = Number(myPlayer), h = u.hands["p" + p];
+    if (u.phase !== "play" || u.turn !== p || u.drew != null) return false;
+    if (u.call && u.call.p !== p) u.call = null;
+    const before = h.length; unoDraw(u, p, 1);
+    u.msg = u.names["p" + p] + " drew a card."; u.n++;
+    if (h.length === before || !unoCan(u, h, h[h.length - 1])) u.turn = unoNext(u, p, 1); else u.drew = h[h.length - 1];
+});
+window.unoPass = () => unoTx(u => {
+    const p = Number(myPlayer); if (u.phase !== "play" || u.turn !== p || u.drew == null) return false;
+    u.drew = null; u.turn = unoNext(u, p, 1); u.msg = u.names["p" + p] + " passed."; u.n++;
+});
+window.unoCall = () => unoTx(u => {
+    const p = Number(myPlayer); if (!u.call || u.call.p !== p || u.call.safe) return false;
+    u.call.safe = true; u.msg = u.names["p" + p] + " shouts UNO!"; u.n++;
+});
+window.unoCatch = () => unoTx(u => {
+    const p = Number(myPlayer); if (!u.call || u.call.safe || u.call.p === p || Date.now() - u.call.t < 2500) return false;
+    unoDraw(u, u.call.p, 2); u.msg = u.names["p" + p] + " caught " + u.names["p" + u.call.p] + " forgetting UNO! +2 cards."; u.call = null; u.n++;
+});
+window.unoSkipAbsent = () => unoTx(u => {
+    if (u.phase !== "play") return false;
+    const p = u.turn; u.drew = null; u.turn = unoNext(u, p, 1); u.msg = u.names["p" + p] + " is away, turn skipped."; u.n++;
+});
+window.unoRematch = () => {
+    const d = currentRoomData, seats = [1, 2, 3, 4, 5, 6].filter(i => d["player" + i]), names = {};
+    seats.forEach(i => { names["p" + i] = d["player" + i].name; });
+    unoTx(u => { if (u.phase !== "over") return false; Object.assign(u, unoDealState(u.cards, u.anime, seats, names, (u.round || 1) + 1)); });
+};
+
+/* ---------- screen ---------- */
+let unoSeen = { n: -1, over: "" }, unoPick = null;
+function unoCardEl(u, ci, cls) {
+    const c = u.cards[ci], wild = c.k === "w" || c.k === "x", el = hbEl("div", "ucard " + (wild ? "wild " : "") + (cls || ""));
+    el.style.setProperty("--c", wild ? "#1b1b22" : UNO_SUIT[c.s]);
+    el.appendChild(hbEl("div", "u-sym", c.k === "a" ? String(c.v) : unoSym[c.k]));
+    const pic = hbEl("div", "u-pic"); if (c.i) pic.appendChild(makeImg(HB_IMG + c.i)); else pic.textContent = c.n.split(" ").map(w => w[0]).join("").slice(0, 2);
+    el.appendChild(pic);
+    el.appendChild(hbEl("div", "u-name", c.n));
+    el.appendChild(hbEl("div", "u-sub", c.k === "a" ? UNO_ATTR[c.v] : unoKind[c.k]));
+    el.appendChild(hbEl("div", "u-anime", u.anime[c.s] || ""));
+    return el;
+}
+function showUNO(data) {
+    showOnly("uno");
+    const u = unoNorm(JSON.parse(JSON.stringify(data.uno))), me = Number(myPlayer), pres = data.presence || {};
+    if (!u.disc.length) return;
+    const play = u.phase === "play", myTurn = play && u.turn === me, hand = u.hands["p" + me] || [];
+    if (u.n !== unoSeen.n) { if (unoSeen.n >= 0 && play) sfx(myTurn ? "turn" : "flip"); unoSeen.n = u.n; }
+    $("unoTurn").textContent = !play ? "Round over" : myTurn ? "Your turn" : (u.names["p" + u.turn] || "?") + "'s turn";
+    $("unoStatus").textContent = u.msg || "";
+    const op = $("unoOpps"); op.innerHTML = "";
+    u.seats.filter(p => p !== me).forEach(p => {
+        const n = (u.hands["p" + p] || []).length, box = hbEl("div", "u-opp" + (play && u.turn === p ? " turn" : "") + (pres["p" + p] === false ? " gone" : ""));
+        const nm = hbEl("div", "u-oname", u.names["p" + p]); nm.style.color = HB_COLORS[p - 1]; box.appendChild(nm);
+        box.appendChild(hbEl("div", "u-ocount", "🂠 " + n + (n === 1 ? "  UNO!" : ""))); op.appendChild(box);
+    });
+    const tp = $("unoTop"); tp.innerHTML = ""; tp.appendChild(unoCardEl(u, u.disc[u.disc.length - 1], "big"));
+    const info = $("unoInfo"); info.innerHTML = "";
+    const chip = hbEl("span", "u-chip", u.anime[u.color]); chip.style.background = UNO_SUIT[u.color]; info.appendChild(chip);
+    info.appendChild(hbEl("div", "u-dir", (u.dir > 0 ? "↻ clockwise" : "↺ counter-clockwise") + " · draw pile " + u.draw.length));
+    $("unoDraw").disabled = !(myTurn && u.drew == null);
+    $("unoBtnPass").classList.toggle("hidden", !(myTurn && u.drew != null));
+    $("unoBtnUno").classList.toggle("hidden", !(u.call && u.call.p === me && !u.call.safe));
+    const canCatch = u.call && !u.call.safe && u.call.p !== me, wait = canCatch ? 2500 - (Date.now() - u.call.t) : 0;
+    $("unoBtnCatch").classList.toggle("hidden", !canCatch); $("unoBtnCatch").disabled = wait > 0;
+    if (wait > 0) setTimeout(() => { if (currentRoomData && currentRoomData.gameType === "uno") showUNO(currentRoomData); }, wait + 60);
+    $("unoBtnSkip").classList.toggle("hidden", !(play && !myTurn && pres["p" + u.turn] === false));
+    const hd = $("unoHand"); hd.innerHTML = "";
+    const key = ci => { const c = u.cards[ci]; return (c.k === "w" || c.k === "x" ? 9 : c.s) * 1000 + (c.k === "a" ? c.v : 20 + c.k.charCodeAt(0) % 20); };
+    hand.slice().sort((a, b) => key(a) - key(b)).forEach(ci => {
+        const ok = myTurn && (u.drew == null || u.drew === ci) && unoCan(u, hand, ci), el = unoCardEl(u, ci, ok ? "ok" : "");
+        el.onclick = () => {
+            if (!ok) return;
+            const c = u.cards[ci];
+            if (c.k === "w" || c.k === "x") { unoPick = ci; unoBuildColors(u); $("unoColor").classList.remove("hidden"); } else unoPlay(ci);
+        };
+        hd.appendChild(el);
+    });
+    const ov = $("unoOver"), ok2 = !play && u.winner;
+    ov.classList.toggle("hidden", !ok2);
+    if (ok2) {
+        const win = u.winner === me, k = u.round + ":" + u.winner;
+        $("unoOverTitle").textContent = win ? "YOU WIN!" : (u.names["p" + u.winner] || "?") + " WINS!";
+        $("unoOverSub").textContent = win ? "You got rid of every card." : "Better luck next round.";
+        if (unoSeen.over !== k) { unoSeen.over = k; if (win) { sfx("win"); confetti(); } else sfx("lose"); }
+    }
+}
+function unoBuildColors(u) { const b = $("unoColorBtns"); b.innerHTML = ""; u.anime.forEach((a, s) => { const x = hbEl("button", "pop", a); x.style.background = UNO_SUIT[s]; x.onclick = () => unoColorPick(s); b.appendChild(x); }); }
+window.unoColorPick = s => { $("unoColor").classList.add("hidden"); if (unoPick != null) unoPlay(unoPick, s); unoPick = null; };
+window.unoColorCancel = () => { $("unoColor").classList.add("hidden"); unoPick = null; };
+
 window.createRoom =
 async function() {
 
@@ -3367,6 +3633,7 @@ async function() {
         return;
     }
     if (homeMode === "hb") return createHB(name, selectedAnimes);
+    if (homeMode === "uno") return createUNO(name, selectedAnimes);
     if (homeMode === "im") return createIM(name, selectedAnimes);
 
     const sourcePool =
@@ -3499,7 +3766,7 @@ async function() {
     }
     if (data.status && data.status !== "waiting") { toast("That match has already started."); return; }
 
-    const maxPlayers = data.gameType === "headbanz" ? 4 : data.gameType === "imposter" ? 6 : 2;
+    const maxPlayers = data.gameType === "uno" ? 6 : data.gameType === "headbanz" ? 4 : data.gameType === "imposter" ? 6 : 2;
     for (let slot = 2; slot <= maxPlayers; slot++) {
         if (data["player" + slot]) continue;
         const res = await runTransaction(ref(db, "rooms/" + code + "/player" + slot), cur => cur ? undefined : { uid: user.uid, name: name, ready: false });
@@ -3552,7 +3819,9 @@ function listenToRoom() {
 
         updateLobby(currentRoomData); if (currentRoomData.gameType === "headbanz") updateLobbyHB(currentRoomData);
         if (currentRoomData.gameType === "imposter") updateLobbyIM(currentRoomData);
+        if (currentRoomData.gameType === "uno") updateLobbyUNO(currentRoomData);
 
+        if (currentRoomData.gameType === "uno" && currentRoomData.status === "playing") { showUNO(currentRoomData); return; }
         if (currentRoomData.gameType === "headbanz" && currentRoomData.status === "playing") { showHB(currentRoomData); return; }
         if (currentRoomData.gameType === "imposter" && currentRoomData.status === "playing") { showIM(currentRoomData); return; }
         if (currentRoomData.status === "selecting") {
@@ -3741,6 +4010,7 @@ window.startGame =
 async function() {
     if (currentRoomData && currentRoomData.gameType === "headbanz") return hbStart();
     if (currentRoomData && currentRoomData.gameType === "imposter") return imBegin("first");
+    if (currentRoomData && currentRoomData.gameType === "uno") return unoStart();
 
     if (
         !currentRoomData
