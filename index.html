@@ -993,6 +993,123 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 }
 @media(prefers-reduced-motion:reduce) { .ucard,.u-opp,.uno-colors button { animation:none!important; transition:none!important; } }
 
+
+/* ===== ANIME UNO: arena table + fan-shaped hand (scoped to this mode only) ===== */
+#uno {
+  position:relative; isolation:isolate; overflow:hidden;
+  background:
+    radial-gradient(ellipse at 50% 42%,rgba(255,119,35,.26),transparent 32%),
+    radial-gradient(ellipse at 50% 48%,rgba(225,27,27,.24),transparent 66%),
+    linear-gradient(145deg,rgba(20,3,5,.22),rgba(5,3,8,.72));
+}
+#uno::before {
+  content:""; position:absolute; z-index:-1; pointer-events:none;
+  width:min(88vw,1120px); height:min(88vw,1120px); left:50%; top:48%;
+  transform:translate(-50%,-50%); border-radius:50%;
+  border:2px solid rgba(255,191,93,.22);
+  box-shadow:0 0 0 18px rgba(255,191,93,.025),0 0 0 42px rgba(255,191,93,.025),
+    inset 0 0 90px rgba(255,108,31,.12),0 0 90px rgba(225,27,27,.15);
+}
+#uno .game-header { position:relative; }
+#uno .game-header-inner { padding:4px 8px; }
+#uno .uno-wrap { max-width:1500px; margin:clamp(12px,2vh,24px) auto; }
+#uno .uno-opps {
+  display:flex; justify-content:space-around; align-items:stretch; gap:clamp(8px,2vw,22px);
+  max-width:1120px; margin:0 auto; padding:4px 8px 0;
+}
+#uno .u-opp {
+  position:relative; min-width:clamp(100px,12vw,165px); max-width:210px; flex:1 1 0;
+  text-align:center; border-radius:10px; padding:10px 12px;
+  background:linear-gradient(155deg,rgba(37,17,19,.88),rgba(8,5,10,.84));
+  border:1px solid rgba(255,211,135,.36);
+  box-shadow:0 10px 26px #0007,inset 0 1px #ffffff12;
+}
+#uno .u-opp::after {
+  content:""; position:absolute; inset:4px; border:1px solid #ffffff0c; border-radius:6px; pointer-events:none;
+}
+#uno .u-opp.turn {
+  border-color:#ffe19a; transform:translateY(-4px) scale(1.025);
+  box-shadow:0 0 0 1px #ffe19a55,0 0 26px #ffad3d55,0 12px 28px #0008;
+}
+#uno .u-oname { color:#fff0d2; }
+#uno .u-ocount { font-size:12px; letter-spacing:.04em; }
+#uno .uno-table {
+  position:relative; display:grid; grid-template-columns:minmax(85px,130px) minmax(150px,220px) minmax(150px,230px);
+  align-items:center; justify-content:center; gap:clamp(16px,3vw,44px);
+  min-height:clamp(250px,35vh,370px); margin:clamp(16px,3vh,30px) auto 12px;
+  padding:22px clamp(12px,3vw,34px); border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(255,175,65,.12),rgba(28,4,8,.08) 48%,transparent 72%);
+}
+#uno .uno-table::before {
+  content:""; position:absolute; inset:5% 8%; border-radius:50%; pointer-events:none;
+  border:1px solid rgba(255,199,110,.14);
+  box-shadow:inset 0 0 50px rgba(255,118,32,.06),0 0 45px rgba(0,0,0,.12);
+}
+#uno #unoDraw { justify-self:center; transform:rotate(-7deg); transition:transform .22s,box-shadow .22s; }
+#uno #unoDraw:hover:not(:disabled) { transform:translateY(-7px) rotate(-3deg); box-shadow:0 0 0 4px #0005,0 0 28px #f3bd5d66,0 18px 30px #0009; }
+#uno #unoTop { justify-self:center; z-index:1; filter:drop-shadow(0 14px 20px #0008); }
+#uno .uno-info { min-width:0; width:100%; max-width:230px; justify-self:center; z-index:1; }
+#uno .uno-hand {
+  position:relative; display:flex; align-items:flex-end; justify-content:center; gap:0;
+  overflow-x:auto; overflow-y:visible; min-height:clamp(190px,25vh,250px);
+  padding:28px 24px 18px; margin:0 auto; max-width:1200px;
+  mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent);
+  scrollbar-width:thin; scrollbar-color:#c9a56a #1b090b;
+}
+#uno .uno-hand > .ucard {
+  margin-left:clamp(-30px,-2vw,-14px); transform-origin:50% 115%;
+  transition:transform .2s ease,filter .2s ease,margin .2s ease;
+}
+#uno .uno-hand > .ucard:first-child { margin-left:0; }
+#uno .uno-hand > .ucard:nth-child(6n+1) { transform:rotate(-5deg) translateY(8px); }
+#uno .uno-hand > .ucard:nth-child(6n+2) { transform:rotate(-3deg) translateY(3px); }
+#uno .uno-hand > .ucard:nth-child(6n+3) { transform:rotate(-1deg); }
+#uno .uno-hand > .ucard:nth-child(6n+4) { transform:rotate(1deg); }
+#uno .uno-hand > .ucard:nth-child(6n+5) { transform:rotate(3deg) translateY(3px); }
+#uno .uno-hand > .ucard:nth-child(6n) { transform:rotate(5deg) translateY(8px); }
+#uno .uno-hand > .ucard.ok { z-index:2; }
+#uno .uno-hand > .ucard.ok:hover {
+  z-index:10; transform:translateY(-18px) rotate(0) scale(1.07);
+  margin-left:clamp(-18px,-1vw,-6px); margin-right:8px;
+}
+#uno .uno-hand > .ucard:not(.ok) { filter:saturate(.88) brightness(.9); }
+#uno .ucard { border-radius:10px; box-shadow:0 9px 20px #0009,inset 0 0 0 3px #ffffff20; }
+#uno .ucard.big { animation:unoTableDrop .55s cubic-bezier(.2,1.25,.35,1) both; }
+#uno .ucard.ok { animation:unoGlow 2.6s ease-in-out infinite; }
+#uno .uno-actions { position:relative; z-index:2; margin:4px auto 8px; }
+#uno .uno-actions .pop { border-radius:999px; min-width:112px; }
+#uno .uno-colors button { border-radius:999px; }
+@keyframes unoTableDrop {
+  0% { opacity:0; transform:translateY(-26px) rotate(-10deg) scale(.82); }
+  70% { transform:translateY(3px) rotate(2deg) scale(1.025); }
+  100% { opacity:1; transform:translateY(0) rotate(0) scale(1); }
+}
+@keyframes unoGlow {
+  0%,100% { box-shadow:0 0 0 2px #ffe19a,0 0 16px #e8cc9470,0 9px 20px #0009; }
+  50% { box-shadow:0 0 0 2px #ffe19a,0 0 26px #ffca6aaa,0 9px 24px #0009; }
+}
+@media(max-width:760px) {
+  #uno .uno-opps { gap:7px; padding-inline:2px; }
+  #uno .u-opp { min-width:0; padding:9px 6px; }
+  #uno .u-oname { font-size:15px; }
+  #uno .uno-table { grid-template-columns:78px minmax(120px,160px); gap:12px; min-height:235px; margin:14px auto 8px; padding:14px 4px; }
+  #uno .uno-info { grid-column:1 / -1; max-width:440px; text-align:center; padding:8px 12px; }
+  #uno .ucard.big { width:clamp(128px,30vw,160px); height:clamp(190px,44vw,235px); }
+  #uno .uno-hand { justify-content:flex-start; min-height:174px; padding:22px 18px 16px; }
+  #uno .uno-hand > .ucard { margin-left:-28px; }
+  #uno .uno-hand > .ucard:first-child { margin-left:0; }
+}
+@media(max-width:420px) {
+  #uno .uno-table { grid-template-columns:64px minmax(110px,140px); gap:8px; }
+  #uno #unoDraw.ucard { width:64px; height:100px; }
+  #uno #unoDraw span { padding-top:48px; font-size:11px; }
+  #uno #unoDraw::before { top:12px; font-size:32px; }
+  #uno .uno-info { font-size:12px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  #uno .ucard, #uno .u-opp, #uno .uno-hand > .ucard { animation:none!important; transition:none!important; }
+}
+
 </style>
 
 </head>
@@ -3449,8 +3566,6 @@ const UNO_DECKS = {
     jjk: "Junpei Yoshino|Panda,Kiyotaka Ijichi|Nobara Kugisaki,Mai Zenin|Megumi Fushiguro,Noritoshi Kamo|Kento Nanami,Suguru Geto|Aoi Todo,Choso|Maki Zenin,Naoya Zenin|Hanami,Jogo|Toji Fushiguro,Kinji Hakari|Yuki Tsukumo,Hajime Kashimo;Toge Inumaki,Satoru Gojo;Shoko Ieiri,Yuta Okkotsu;Mahito,Kenjaku;Yuji Itadori;Ryomen Sukuna",
     dragonball: "Yamcha|Krillin,Master Roshi|Android 18,Android 17|Piccolo,Gohan|Bulma,Dr. Gero|Raditz,Nappa|Vegeta,Cooler|Beerus,Zamasu|Broly,Jiren|Gogeta,Vegito;Hit,Tien Shinhan;Trunks,Whis;Cell,Majin Buu;Goku;Frieza",
     demonslayer: "Genya Shinazugawa|Kanao Tsuyuri,Nezuko Kamado|Zenitsu Agatsuma,Inosuke Hashibira|Obanai Iguro,Mitsuri Kanroji|Tamayo,Kagaya Ubuyashiki|Tengen Uzui,Muichiro Tokito|Giyu Tomioka,Sanemi Shinazugawa|Kyojuro Rengoku,Akaza|Gyomei Himejima,Hantengu|Yoriichi Tsugikuni,Kokushibo;Rui,Shinobu Kocho;Daki,Gyutaro;Enmu,Doma;Tanjiro Kamado;Muzan Kibutsuji",
-    aot: "Connie Springer|Sasha Blouse,Marco Bott|Jean Kirstein,Historia Reiss|Petra Ral,Floch Forster|Hange Zoe,Erwin Smith|Falco Grice,Gabi Braun|Pieck Finger,Porco Galliard|Dot Pixis,Keith Shadis|Mikasa Ackerman,Mike Zacharias|Levi Ackerman,Kenny Ackerman;Annie Leonhart,Armin Arlert;Grisha Yeager,Ymir;Reiner Braun,Bertholdt Hoover;Eren Yeager;Zeke Yeager",
-    mha: "Minoru Mineta|Tsuyu Asui,Mina Ashido|Kyoka Jiro,Mashirao Ojiro|Ochaco Uraraka,Fumikage Tokoyami|Momo Yaoyorozu,Nezu|Denki Kaminari,Eijiro Kirishima|Tenya Iida,Hawks|Katsuki Bakugo,Shoto Todoroki|Endeavor,Mirio Togata|All Might,Dabi;Eraser Head,Stain;Kurogiri,Twice;All For One,Himiko Toga;Izuku Midoriya;Tomura Shigaraki"
 };
 const unoSym = { s: "⊘", r: "⟲", d: "+2", w: "★", x: "+4" };
 const unoKind = { s: "SKIP", r: "REVERSE", d: "DRAW TWO", w: "WILD", x: "WILD +4" };
