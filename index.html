@@ -3462,7 +3462,7 @@ const UNO_ATTR = ["Luck", "Defense", "Accuracy", "Stamina", "Intellect", "Techni
 const UNO_SUIT = ["#e11b1b", "#2f6fe4", "#f2c200", "#2e9e5b"];
 const UNO_DECKS = {
     onepiece: "Buggy|Franky,Jinbe|Usopp,Brook|Tony Tony Chopper,Rob Lucci|Nico Robin,Crocodile|Sabo,Portgas D. Ace|Sanji,Donquixote Doflamingo|Dracule Mihawk,Shanks|Roronoa Zoro,Kaido|Edward Newgate,Gol D. Roger;Aokiji,Boa Hancock;Trafalgar Law,Bartholomew Kuma;Nami,Charlotte Linlin;Monkey D. Luffy;Marshall D. Teach",
-    naruto: "Konohamaru Sarutobi|Choji Akimichi,Hinata Hyuga|Tenten,Sakura Haruno|Kiba Inuzuka,Temari|Jiraiya,Orochimaru|Neji Hyuga,Gaara|Rock Lee,Might Guy|Tsunade,Kakashi Hatake|Sasuke Uchiha,Obito Uchiha|Pain,Tobirama Senju;Shikamaru Nara,Hashirama Senju;Minato Namikaze,Itachi Uchiha;Kakuzu,Hidan;Naruto Uzumaki;Madara Uchiha",
+    naruto: "Konohamaru Sarutobi|Choji Akimichi,Hinata Hyuga|Tenten,Sakura Haruno|Kiba Inuzuka,Temari|Jiraiya,Orochimaru|Neji Hyuga,Gaara|Rock Lee,Might Guy|Tsunade,Kakashi Hatake|Sasuke Uchiha,Tobi|Pain,Tobirama Senju;Shikamaru Nara,Hashirama Senju;Minato Namikaze,Itachi Uchiha;Kakuzu,Hidan;Naruto Uzumaki;Madara Uchiha",
     bleach: "Kon|Yasutora Sado,Rangiku Matsumoto|Uryu Ishida,Soi Fon|Renji Abarai,Ikkaku Madarame|Kisuke Urahara,Ulquiorra Cifer|Byakuya Kuchiki,Grimmjow Jaegerjaquez|Yoruichi Shihoin,Tier Harribel|Shunsui Kyoraku,Coyote Starrk|Kenpachi Zaraki,Genryusai Yamamoto|Yhwach,Isshin Kurosaki;Toshiro Hitsugaya,Rukia Kuchiki;Orihime Inoue,Shinji Hirako;Mayuri Kurotsuchi,Gin Ichimaru;Ichigo Kurosaki;Sosuke Aizen",
     jjk: "Junpei Yoshino|Panda,Kiyotaka Ijichi|Nobara Kugisaki,Mai Zenin|Megumi Fushiguro,Noritoshi Kamo|Kento Nanami,Suguru Geto|Aoi Todo,Choso|Maki Zenin,Naoya Zenin|Hanami,Jogo|Toji Fushiguro,Kinji Hakari|Yuki Tsukumo,Hajime Kashimo;Toge Inumaki,Satoru Gojo;Shoko Ieiri,Yuta Okkotsu;Mahito,Kenjaku;Yuji Itadori;Ryomen Sukuna",
     dragonball: "Yamcha|Krillin,Master Roshi|Android 18,Android 17|Piccolo,Gohan|Bulma,Dr. Gero|Raditz,Nappa|Vegeta,Cooler|Beerus,Zamasu|Broly,Jiren|Gogeta,Vegito;Hit,Tien Shinhan;Trunks,Whis;Cell,Majin Buu;Goku;Frieza",
@@ -3499,7 +3499,7 @@ function unoFindImg(pool, label, name) {
     return best && best.i ? best.i : "";
 }
 /* AniList sometimes spells a name differently from the usual one. These are tried automatically. */
-const UNO_ALT = { "Vegito": ["Vegetto"], "Muhammad Avdol": ["Mohammed Avdol"], "Gol D. Roger": ["Gold Roger", "Roger"], "Obito Uchiha": ["Obito"], "Caesar Anthonio Zeppeli": ["Caesar Zeppeli"],
+const UNO_ALT = { "Vegito": ["Vegetto"], "Muhammad Avdol": ["Mohammed Avdol"], "Gol D. Roger": ["Gold Roger", "Roger"], "Tobi": ["Obito Uchiha", "Obito"], "Caesar Anthonio Zeppeli": ["Caesar Zeppeli"],
     "Secre Swallowtail": ["Secre"], "Fanzell Rogue": ["Fanzell"], "Gogeta": ["Gogeta"] };
 /* Several searches in ONE request (AniList limits requests per minute, so one-by-one searching got blocked and left cards empty). */
 async function unoAni(queries) {
