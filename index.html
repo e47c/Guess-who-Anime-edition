@@ -3498,36 +3498,55 @@ function unoFindImg(pool, label, name) {
     pool.filter(x => x.s === label).forEach(c => { const s = score(c); if (s > bs) { best = c; bs = s; } });
     return best && best.i ? best.i : "";
 }
-const UNO_CQ = "query($s:String){Page(perPage:10){characters(search:$s,sort:FAVOURITES_DESC){name{full alternative} image{large} favourites media(perPage:5,type:ANIME,sort:POPULARITY_DESC){nodes{title{romaji english}}}}}}";
+/* AniList sometimes spells a name differently from the usual one. These are tried automatically. */
+const UNO_ALT = { "Vegito": ["Vegetto"], "Muhammad Avdol": ["Mohammed Avdol"], "Gol D. Roger": ["Gold Roger", "Roger"], "Obito Uchiha": ["Obito"], "Caesar Anthonio Zeppeli": ["Caesar Zeppeli"],
+    "Secre Swallowtail": ["Secre"], "Fanzell Rogue": ["Fanzell"], "Gogeta": ["Gogeta"] };
+/* Several searches in ONE request (AniList limits requests per minute, so one-by-one searching got blocked and left cards empty). */
+async function unoAni(queries) {
+    const vars = {}, decl = [], body = [];
+    queries.forEach((q, i) => {
+        vars["s" + i] = q; decl.push("$s" + i + ":String");
+        body.push("q" + i + ":Page(perPage:8){characters(search:$s" + i + ",sort:FAVOURITES_DESC){name{full alternative} image{large} favourites media(perPage:4,type:ANIME,sort:POPULARITY_DESC){nodes{title{romaji english}}}}}");
+    });
+    const query = "query(" + decl.join(",") + "){" + body.join(" ") + "}";
+    for (let tries = 0; tries < 3; tries++) {
+        const r = await fetch("https://graphql.anilist.co", { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ query: query, variables: vars }) });
+        if (r.status === 429) { await aniSleep(5000 * (tries + 1)); continue; }       // blocked for a moment: wait, then try the same request again
+        const j = await r.json();
+        if (!j.data) throw new Error("AniList error");
+        return queries.map((q, i) => (j.data["q" + i] && j.data["q" + i].characters) || []);
+    }
+    throw new Error("AniList busy");
+}
 async function unoFetchMissing(cards, keys, onProg) {
     let cache = {}; try { cache = JSON.parse(localStorage.getItem("gw_unoimg2") || "{}"); } catch (e) {}
-    const need = cards.filter(c => !c.i); let done = 0, calls = 0;
-    for (const c of need) {
-        const ck = keys[c.s] + "|" + c.n;
-        if (cache[ck]) { c.i = cache[ck]; onProg && onProg(++done, need.length); continue; }
-        const re = HB_SERIES[keys[c.s]].re, nn = nzf(c.n), toks = nn.split(" ");
-        const queries = [c.n]; if (toks.length > 1) queries.push(c.n.split(" ").pop());   // 2nd try: just the last word
-        for (const q of queries) {
-            if (calls >= 70) break;
-            calls++;
+    cards.forEach(c => { if (!c.i && cache[keys[c.s] + "|" + c.n]) c.i = cache[keys[c.s] + "|" + c.n]; });
+    const qsOf = c => { const q = [c.n].concat(UNO_ALT[c.n] || []); const w = c.n.split(" "); if (w.length > 1) q.push(w[w.length - 1]); return q.filter((x, i) => q.indexOf(x) === i); };
+    const pick = (c, list) => {
+        const re = HB_SERIES[keys[c.s]].re, targets = [c.n].concat(UNO_ALT[c.n] || []).map(nzf);
+        const hit = x => targets.some(nn => nzf(x.name.full) === nn || (x.name.alternative || []).some(a => nzf(a) === nn)
+            || nn.split(" ").every(t => wordHit(nzf(x.name.full + " " + (x.name.alternative || []).join(" ")).split(" "), t)));
+        const good = list.filter(x => x.image && x.image.large && !/default/i.test(x.image.large)
+            && ((x.media && x.media.nodes) || []).some(m => re.test(hbTitle(m.title))) && hit(x))        // must belong to THIS series
+            .sort((a, b) => (targets.includes(nzf(b.name.full)) - targets.includes(nzf(a.name.full))) || b.favourites - a.favourites);
+        return good[0] ? good[0].image.large.replace(HB_IMG, "") : "";
+    };
+    for (let round = 0; round < 4; round++) {            // round 0: normal name, later rounds: other spellings / last word
+        const todo = cards.filter(c => !c.i && qsOf(c)[round] !== undefined);
+        if (!todo.length) continue;
+        for (let i = 0; i < todo.length; i += 4) {
+            const chunk = todo.slice(i, i + 4);
+            onProg && onProg(cards.filter(c => !c.i).length);
             try {
-                await aniSleep(650);
-                const r = await fetch("https://graphql.anilist.co", { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ query: UNO_CQ, variables: { s: q } }) });
-                if (r.status === 429) { await aniSleep(4000); continue; }
-                const list = ((await r.json()).data.Page.characters) || [];
-                const ok = x => x.image && x.image.large && !/default/i.test(x.image.large)
-                    && ((x.media && x.media.nodes) || []).some(m => re.test(hbTitle(m.title)))               // must belong to THIS series
-                    && (nzf(x.name.full) === nn || (x.name.alternative || []).some(a => nzf(a) === nn)
-                        || toks.every(t => wordHit(nzf(x.name.full + " " + (x.name.alternative || []).join(" ")).split(" "), t)));
-                const good = list.filter(ok).sort((a, b) => (nzf(b.name.full) === nn) - (nzf(a.name.full) === nn) || b.favourites - a.favourites);
-                if (good[0]) { c.i = good[0].image.large.replace(HB_IMG, ""); cache[ck] = c.i; break; }
-            } catch (e) {}
+                await aniSleep(1000);
+                const res = await unoAni(chunk.map(c => qsOf(c)[round]));
+                chunk.forEach((c, j) => { const s = pick(c, res[j]); if (s) { c.i = s; cache[keys[c.s] + "|" + c.n] = s; } });
+            } catch (e) { console.warn("Picture search failed:", e); }
         }
-        onProg && onProg(++done, need.length);
     }
     try { localStorage.setItem("gw_unoimg2", JSON.stringify(cache)); } catch (e) {}
-    const left = cards.filter(c => !c.i).length;
-    if (left) toast(left + " card(s) have no picture (AniList had no match). They show the name instead.");
+    const miss = cards.filter(c => !c.i).map(c => c.n);
+    if (miss.length) { console.warn("Anime UNO cards without a picture:", miss); toast(miss.length + " card(s) have no picture: " + miss.slice(0, 6).join(", ") + (miss.length > 6 ? "..." : "")); }
 }
 function unoBuildCards(keys, pool) {
     const out = [];
@@ -3548,10 +3567,10 @@ async function createUNO(name, keys) {
         let pool = [];
         try { pool = await hbBuildPool(keys, "normal"); } catch (e) { console.warn(e); toast("Couldn't load pictures. Cards will show names only."); }
         const cards = unoBuildCards(keys, pool);
-        if (pool.length) await unoFetchMissing(cards, keys, (d, n) => toast("Finding card pictures " + d + "/" + n + "..."));
+        if (pool.length) await unoFetchMissing(cards, keys, left => toast("Finding card pictures... " + left + " left"));
         room = generateCode(); myPlayer = 1;
         await set(ref(db, "rooms/" + room), {
-            gameType: "uno", mode: mode, animes: keys, uno: { cards: cards, anime: keys.map(k => HB_SERIES[k].label), phase: "lobby", n: 0 },
+            gameType: "uno", mode: mode, animes: keys, uno: { cards: cards, anime: keys.map(k => HB_SERIES[k].label), phase: "lobby", n: 0, missing: cards.filter(c => !c.i).map(c => c.n) },
             player1: { uid: user.uid, name: name, ready: false }, player2: null, player3: null, player4: null, player5: null, player6: null,
             status: "waiting", turn: 1, winner: null, result: null
         });
@@ -3568,7 +3587,7 @@ function updateLobbyUNO(d) {
         const st = $("p" + i + "Status"); if (st) { st.textContent = p ? "● Connected" : "○ Waiting"; st.className = p ? "ready" : ""; }
     });
     const host = Number(myPlayer) === 1, enough = ps.length >= 2, an = arr(d.uno && d.uno.anime).join(" · ");
-    $("lobbyStatus").textContent = (!enough ? "Anime UNO needs 2 to 6 players (" + ps.length + " so far)..." : ps.length + " players. " + (host ? "Start when everyone is in." : "Waiting for the host to start.")) + "  Colours: " + an;
+    $("lobbyStatus").textContent = (!enough ? "Anime UNO needs 2 to 6 players (" + ps.length + " so far)..." : ps.length + " players. " + (host ? "Start when everyone is in." : "Waiting for the host to start.")) + "  Colours: " + an + (arr(d.uno && d.uno.missing).length ? "  |  No picture found for: " + arr(d.uno.missing).join(", ") : "");
     $("startButton").classList.toggle("hidden", !(host && enough));
     $("startButton").disabled = false; $("startButton").textContent = "START ANIME UNO";
 }
