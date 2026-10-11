@@ -957,7 +957,7 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 .u-pic img{width:100%;height:100%;object-fit:cover;object-position:center 18%}
 .u-pic.noimg{background:repeating-linear-gradient(135deg,#0004 0 8px,#0000 8px 16px),radial-gradient(circle,var(--c),#000);text-shadow:3px 3px 0 #000}
 .u-num{position:absolute;left:-5px;top:7px;z-index:3;display:flex;align-items:center;gap:4px;padding:1px 12px 1px 11px;background:#fff;color:var(--c);transform:skewX(-10deg);border:2px solid #000;box-shadow:3px 3px 0 #000;font-family:var(--font-display)}
-.u-num b{font-size:26px;line-height:1.1;font-weight:400;-webkit-text-stroke:.5px #000}.u-num i{font-style:normal;font-size:13px;color:#000}
+.u-num b{font-size:20px;line-height:1.15;font-weight:400;letter-spacing:.06em;-webkit-text-stroke:.4px #000}.u-num i{font-style:normal;font-size:13px;color:#000}
 .k-s .u-num,.k-r .u-num,.k-d .u-num,.k-w .u-num,.k-x .u-num{background:#000;color:#fff;border-color:#fff}
 .u-name{position:absolute;left:-6px;right:-6px;bottom:30px;z-index:3;padding:2px 10px;background:#000;border-top:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-3deg);text-align:center;font-weight:900;font-size:clamp(10px,1vw,12.5px);line-height:1.15;font-style:italic;text-transform:uppercase}
 .u-sub{position:absolute;left:0;right:0;bottom:15px;z-index:3;font-size:9.5px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;text-shadow:0 1px 2px #000;text-align:center}
@@ -969,7 +969,7 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 .ucard.ok{cursor:pointer;box-shadow:0 0 0 3px var(--gold-bright),0 0 24px rgba(255,214,120,.8),0 10px 22px #000a}
 .ucard.big{width:clamp(150px,17vw,220px);height:clamp(224px,25.5vw,330px);border-radius:16px;box-shadow:0 20px 44px #000b,0 0 40px color-mix(in srgb,var(--c) 55%,transparent)}
 .ucard.big.drop{animation:uDrop .5s cubic-bezier(.2,1.25,.35,1) backwards}
-.ucard.big .u-num b{font-size:40px}.ucard.big .u-name{font-size:clamp(13px,1.4vw,18px);bottom:44px;padding:4px 12px}.ucard.big .u-sub{font-size:13px;bottom:22px}.ucard.big .u-anime{font-size:11px;padding:4px}.ucard.big .u-wm{font-size:150px;bottom:34px}.ucard.big .u-pic{bottom:62px}
+.ucard.big .u-num b{font-size:30px}.u-wm.abbr{font-size:58px;right:2px;bottom:34px;letter-spacing:.04em}.ucard.big .u-wm.abbr{font-size:92px;bottom:50px}.ucard.big .u-name{font-size:clamp(13px,1.4vw,18px);bottom:44px;padding:4px 12px}.ucard.big .u-sub{font-size:13px;bottom:22px}.ucard.big .u-anime{font-size:11px;padding:4px}.ucard.big .u-wm{font-size:150px;bottom:34px}.ucard.big .u-pic{bottom:62px}
 @keyframes uDrop{0%{opacity:0;transform:translateY(-40px) rotate(-14deg) scale(.8)}70%{transform:translateY(3px) rotate(2deg) scale(1.03)}100%{opacity:1;transform:none}}
 /* draw pile */
 #unoDraw.ucard{width:clamp(92px,9vw,130px);height:clamp(138px,13.5vw,192px);justify-self:center;border:3px solid #fff;background:radial-gradient(circle at 50% 38%,#ff3b3b 0,#c10f15 38%,#2a0508 100%);box-shadow:5px 5px 0 -1px #7a0b10,5px 5px 0 1px #fff,10px 10px 0 -1px #5a070b,10px 10px 0 1px #fff,0 18px 30px #000a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transform:rotate(-6deg);cursor:pointer}
@@ -3467,6 +3467,9 @@ const UNO_DECKS = {
     jjk: "Junpei Yoshino|Panda,Kiyotaka Ijichi|Nobara Kugisaki,Mai Zenin|Megumi Fushiguro,Noritoshi Kamo|Kento Nanami,Suguru Geto|Aoi Todo,Choso|Maki Zenin,Naoya Zenin|Hanami,Jogo|Toji Fushiguro,Kinji Hakari|Yuki Tsukumo,Hajime Kashimo;Toge Inumaki,Satoru Gojo;Shoko Ieiri,Yuta Okkotsu;Mahito,Kenjaku;Yuji Itadori;Ryomen Sukuna",
     dragonball: "Yamcha|Krillin,Master Roshi|Android 18,Android 17|Piccolo,Gohan|Bulma,Dr. Gero|Raditz,Nappa|Vegeta,Cooler|Beerus,Zamasu|Broly,Jiren|Gogeta,Vegito;Hit,Tien Shinhan;Trunks,Whis;Cell,Majin Buu;Goku;Frieza",
     demonslayer: "Genya Shinazugawa|Kanao Tsuyuri,Nezuko Kamado|Zenitsu Agatsuma,Inosuke Hashibira|Obanai Iguro,Mitsuri Kanroji|Tamayo,Kagaya Ubuyashiki|Tengen Uzui,Muichiro Tokito|Giyu Tomioka,Sanemi Shinazugawa|Kyojuro Rengoku,Akaza|Gyomei Himejima,Hantengu|Yoriichi Tsugikuni,Kokushibo;Rui,Shinobu Kocho;Daki,Gyutaro;Enmu,Doma;Tanjiro Kamado;Muzan Kibutsuji",
+    hxh: "Leorio Paradinight|Franklin Bordeau,Wing|Kite,Shalnark|Uvogin,Nobunaga Hazama|Pakunoda,Pariston Hill|Biscuit Krueger,Feitan|Killua Zoldyck,Phinks|Komugi,Shaiapouf|Silva Zoldyck,Menthuthuyoupi|Isaac Netero,Zeno Zoldyck;Kurapika,Illumi Zoldyck;Alluka Zoldyck,Neferpitou;Chrollo Lucilfer,Hisoka Morow;Gon Freecss;Meruem",
+    jojo: "Guido Mista|Iggy,Muhammad Avdol|Hol Horse,Narancia Ghirga|Noriaki Kakyoin,Okuyasu Nijimura|Rohan Kishibe,Johnny Joestar|Jean Pierre Polnareff,Bruno Bucciarati|Gyro Zeppeli,Caesar Anthonio Zeppeli|Joseph Joestar,Lisa Lisa|Jonathan Joestar,Wamuu|Kars,Funny Valentine;Diavolo,Jolyne Cujoh;Giorno Giovanna,Josuke Higashikata;Yoshikage Kira,Enrico Pucci;Jotaro Kujo;Dio Brando",
+    blackclover: "Luck Voltia|Mimosa Vermillion,Magna Swing|Klaus Lunettes,Finral Roulacase|Charmy Pappitson,Zora Ideale|Nozel Silva,Marx Francois|Noelle Silva,Charlotte Roselei|Yuno,Langris Vaude|Fanzell Rogue,Rill Boismortier|Fuegoleon Vermillion,Mereoleona Vermillion|Yami Sukehiro,William Vangeance;Secre Swallowtail,Vanessa Enoteca;Julius Novachrono,Gauche Adlai;Dante Zogratis,Zenon Zogratis;Asta;Lucifero"
 };
 const unoSym = { s: "⊘", r: "⟲", d: "+2", w: "★", x: "+4" };
 const unoKind = { s: "SKIP", r: "REVERSE", d: "DRAW TWO", w: "WILD", x: "WILD +4" };
@@ -3476,41 +3479,55 @@ $("animePoll").addEventListener("change", () => {
     $("modeHint").textContent = "Anime UNO: pick exactly 4 series (" + document.querySelectorAll("#animePoll input:checked").length + "/4 picked).";
 });
 
+/* AniList spells names its own way (Yuuji, Uryuu, Ryuu...). Fold doubled vowels / "ou" so spellings compare equal. */
+const nzf = s => nz(s).replace(/([aeiou])\1+/g, "$1").replace(/ou/g, "o");
+function ed1(a, b) {                                   // are two words at most one edit apart?
+    if (a === b) return true; if (Math.abs(a.length - b.length) > 1) return false;
+    let i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++;
+    return a.slice(i + 1) === b.slice(i) || a.slice(i) === b.slice(i + 1) || a.slice(i + 1) === b.slice(i + 1);
+}
+const wordHit = (ws, t) => ws.some(w => w === t || (t.length >= 5 && ed1(w, t)));
 function unoFindImg(pool, label, name) {
-    const nn = nz(name), toks = nn.split(" ");
+    const nn = nzf(name), toks = nn.split(" ");
     const score = c => {
-        if (nz(c.n) === nn) return 4;                                   // exact name first (so Yuji never gets his dad's picture)
-        if ((c.a || []).some(x => nz(x) === nn)) return 3;              // then an exact nickname
-        const h = " " + nz([c.n].concat(c.a || []).join(" ")) + " ";
-        return toks.every(t => h.includes(" " + t + " ")) ? 2 : 0;      // then all words present
+        if (nzf(c.n) === nn) return 4;                                     // exact name first, so Yuji can't get his dad's picture
+        if ((c.a || []).some(x => nzf(x) === nn)) return 3;                // then an exact nickname
+        return toks.every(t => wordHit(nzf([c.n].concat(c.a || []).join(" ")).split(" "), t)) ? 2 : 0;   // then all words
     };
     let best = null, bs = 0;
-    pool.filter(x => x.s === label).forEach(c => { const s = score(c); if (s > bs || (s && s === bs && (c.f || 0) > (best.f || 0))) { best = c; bs = s; } });
+    pool.filter(x => x.s === label).forEach(c => { const s = score(c); if (s > bs) { best = c; bs = s; } });
     return best && best.i ? best.i : "";
 }
-const UNO_CQ = "query($s:String){Page(perPage:6){characters(search:$s,sort:FAVOURITES_DESC){name{full alternative} image{large} favourites media(perPage:4,type:ANIME){nodes{title{romaji english}}}}}}";
+const UNO_CQ = "query($s:String){Page(perPage:10){characters(search:$s,sort:FAVOURITES_DESC){name{full alternative} image{large} favourites media(perPage:5,type:ANIME,sort:POPULARITY_DESC){nodes{title{romaji english}}}}}}";
 async function unoFetchMissing(cards, keys, onProg) {
-    let cache = {}; try { cache = JSON.parse(localStorage.getItem("gw_unoimg") || "{}"); } catch (e) {}
+    let cache = {}; try { cache = JSON.parse(localStorage.getItem("gw_unoimg2") || "{}"); } catch (e) {}
     const need = cards.filter(c => !c.i); let done = 0, calls = 0;
     for (const c of need) {
         const ck = keys[c.s] + "|" + c.n;
         if (cache[ck]) { c.i = cache[ck]; onProg && onProg(++done, need.length); continue; }
-        if (calls++ >= 45) break;
-        const re = HB_SERIES[keys[c.s]].re, nn = nz(c.n), toks = nn.split(" ");
-        try {
-            await aniSleep(700);
-            const r = await fetch("https://graphql.anilist.co", { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ query: UNO_CQ, variables: { s: c.n } }) });
-            if (r.status === 429) { await aniSleep(4000); continue; }
-            const list = ((await r.json()).data.Page.characters) || [];
-            const ok = x => x.image && x.image.large && !/default/i.test(x.image.large)
-                && ((x.media && x.media.nodes) || []).some(m => re.test(hbTitle(m.title)))          // must belong to THIS series
-                && (nz(x.name.full) === nn || (x.name.alternative || []).some(a => nz(a) === nn) || toks.every(t => (" " + nz(x.name.full + " " + (x.name.alternative || []).join(" ")) + " ").includes(" " + t + " ")));
-            const good = list.filter(ok).sort((a, b) => (nz(b.name.full) === nn) - (nz(a.name.full) === nn) || b.favourites - a.favourites);
-            if (good[0]) { c.i = good[0].image.large.replace(HB_IMG, ""); cache[ck] = c.i; }
-        } catch (e) {}
+        const re = HB_SERIES[keys[c.s]].re, nn = nzf(c.n), toks = nn.split(" ");
+        const queries = [c.n]; if (toks.length > 1) queries.push(c.n.split(" ").pop());   // 2nd try: just the last word
+        for (const q of queries) {
+            if (calls >= 70) break;
+            calls++;
+            try {
+                await aniSleep(650);
+                const r = await fetch("https://graphql.anilist.co", { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ query: UNO_CQ, variables: { s: q } }) });
+                if (r.status === 429) { await aniSleep(4000); continue; }
+                const list = ((await r.json()).data.Page.characters) || [];
+                const ok = x => x.image && x.image.large && !/default/i.test(x.image.large)
+                    && ((x.media && x.media.nodes) || []).some(m => re.test(hbTitle(m.title)))               // must belong to THIS series
+                    && (nzf(x.name.full) === nn || (x.name.alternative || []).some(a => nzf(a) === nn)
+                        || toks.every(t => wordHit(nzf(x.name.full + " " + (x.name.alternative || []).join(" ")).split(" "), t)));
+                const good = list.filter(ok).sort((a, b) => (nzf(b.name.full) === nn) - (nzf(a.name.full) === nn) || b.favourites - a.favourites);
+                if (good[0]) { c.i = good[0].image.large.replace(HB_IMG, ""); cache[ck] = c.i; break; }
+            } catch (e) {}
+        }
         onProg && onProg(++done, need.length);
     }
-    try { localStorage.setItem("gw_unoimg", JSON.stringify(cache)); } catch (e) {}
+    try { localStorage.setItem("gw_unoimg2", JSON.stringify(cache)); } catch (e) {}
+    const left = cards.filter(c => !c.i).length;
+    if (left) toast(left + " card(s) have no picture (AniList had no match). They show the name instead.");
 }
 function unoBuildCards(keys, pool) {
     const out = [];
@@ -3647,16 +3664,15 @@ window.unoRematch = () => {
 /* ---------- screen ---------- */
 let unoSeen = { n: -1, over: "", hl: -1, top: -1, round: -1 }, unoPick = null;
 const UNO_KANJI = { onepiece: "海賊", naruto: "忍", bleach: "死神", jjk: "呪", dragonball: "龍", demonslayer: "鬼", aot: "巨", mha: "英" };
-const UNO_ICON = ["✦", "⬟", "◎", "♥", "✧", "⚔", "➤", "☯", "✊", "ϟ"];
+const UNO_ABBR = ["LCK", "DEF", "ACC", "STA", "INT", "TEC", "SPD", "SPR", "STR", "PWR"];   // abbreviation shown on the card (matching still works by attribute)
 function unoCardEl(u, ci, cls) {
     const c = u.cards[ci], wild = c.k === "w" || c.k === "x", el = hbEl("div", "ucard k-" + c.k + " " + (wild ? "wild " : "") + (cls || ""));
     el.style.setProperty("--c", wild ? "#15151c" : UNO_SUIT[c.s]);
-    el.appendChild(hbEl("div", "u-wm", c.k === "a" ? String(c.v) : unoSym[c.k]));
+    el.appendChild(hbEl("div", "u-wm" + (c.k === "a" ? " abbr" : ""), c.k === "a" ? UNO_ABBR[c.v] : unoSym[c.k]));
     const pic = hbEl("div", "u-pic");
     if (c.i) pic.appendChild(makeImg(HB_IMG + c.i)); else { pic.classList.add("noimg"); pic.textContent = c.n.split(" ").map(w => w[0]).join("").slice(0, 2); }
     el.appendChild(pic);
-    const badge = hbEl("div", "u-num"); badge.appendChild(hbEl("b", null, c.k === "a" ? String(c.v) : unoSym[c.k]));
-    if (c.k === "a") badge.appendChild(hbEl("i", null, UNO_ICON[c.v])); el.appendChild(badge);
+    const badge = hbEl("div", "u-num"); badge.appendChild(hbEl("b", null, c.k === "a" ? UNO_ABBR[c.v] : unoSym[c.k])); el.appendChild(badge);
     el.appendChild(hbEl("div", "u-name", c.n));
     el.appendChild(hbEl("div", "u-sub", c.k === "a" ? UNO_ATTR[c.v] : unoKind[c.k]));
     el.appendChild(hbEl("div", "u-anime", wild ? "WILD · " + (u.anime[c.s] || "") : (u.anime[c.s] || "")));
