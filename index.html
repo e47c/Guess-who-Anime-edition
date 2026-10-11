@@ -3577,7 +3577,174 @@ const UNO_SPECIAL = {
 /* Later: your 10-second VFX + anime sound for a card plugs in here, one entry per card:
    UNO_FX_HOOKS["onepiece_u"] = (box, done, card, u) => { ...draw into box, play the sound, call done() when finished... };
    Cards without a hook get the short placeholder banner. */
+/* =====================================================================
+   SPECIAL CARD FX ENGINE  (voice line + canvas animation, 36 cards)
+   ---------------------------------------------------------------------
+   1) VOICE:  put a short clip at  audio/special/<series>_<kind>.mp3
+              e.g. audio/special/jojo_u.mp3   (kinds: f=freeze t=swap u=ultimate e=vision)
+              .ogg .wav .m4a also work. No file = animation plays silently with the old beep.
+   2) LOOK:   each card picks ONE animation template in UNO_FX_CFG below.
+              Change the template / colour / title / caption per card, no other code needed.
+   Templates: ice warp blast slash beam orb lightning eye rush time
+   ===================================================================== */
+const UNO_VOICE_DIR = "audio/special/", UNO_VOICE_EXT = ["mp3", "ogg", "wav", "m4a"], UNO_FX_MS = 4200, unoVoiceSrc = {};
+function unoVoice(key, ms) {
+    if (muted || unoVoiceSrc[key] === "") return;
+    const play = a => {
+        a.currentTime = 0; a.volume = 1; a.play().catch(() => {});
+        setTimeout(() => { const f = setInterval(() => { if (a.volume > .12) a.volume -= .1; else { a.pause(); clearInterval(f); } }, 40); }, Math.max(0, ms - 450));
+    };
+    const tryExt = i => {
+        if (i >= UNO_VOICE_EXT.length) { unoVoiceSrc[key] = ""; return; }
+        const a = new Audio(); a.preload = "auto";
+        a.oncanplaythrough = () => { a.oncanplaythrough = null; unoVoiceSrc[key] = a.src; play(a); };
+        a.onerror = () => tryExt(i + 1);
+        a.src = UNO_VOICE_DIR + key + "." + UNO_VOICE_EXT[i];
+    };
+    if (unoVoiceSrc[key]) { const a = new Audio(unoVoiceSrc[key]); play(a); } else tryExt(0);
+}
+/* [template, ability title, caption under it, colour] */
+const UNO_FX_CFG = {
+    onepiece_f: ["ice", "Ice Age", "Aokiji", "#bfeaff"],           onepiece_t: ["warp", "Room · Shambles", "Trafalgar Law", "#4cc9f0"],
+    onepiece_u: ["blast", "Gear 5", "Luffy", "#ffffff"],           onepiece_e: ["lightning", "Conqueror's Haki", "Shanks", "#ff4d4d"],
+    naruto_f: ["ice", "Crystal Ice Mirrors", "Haku", "#d8f6ff"],   naruto_t: ["warp", "Flying Raijin", "Minato", "#ffd23f"],
+    naruto_u: ["orb", "Rasengan", "Naruto", "#4cc9f0"],            naruto_e: ["eye", "Byakugan", "Neji", "#c8d6ff"],
+    dragonball_f: ["time", "Time Skip", "Hit", "#b388ff"],         dragonball_t: ["warp", "Instant Transmission", "Whis", "#8ecae6"],
+    dragonball_u: ["beam", "Kamehameha", "Goku", "#4cc9f0"],       dragonball_e: ["eye", "Power Gaze", "Jiren", "#ff6b6b"],
+    jjk_f: ["ice", "Frost Calm", "Uraume", "#cfeaff"],             jjk_t: ["warp", "Boogie Woogie", "Aoi Todo", "#c77dff"],
+    jjk_u: ["slash", "Dismantle", "Sukuna", "#ff3b3b"],            jjk_e: ["eye", "Six Eyes", "Gojo", "#7df3ff"],
+    demonslayer_f: ["ice", "Frozen Lotus", "Doma", "#e0f7ff"],     demonslayer_t: ["warp", "Infinity Castle", "Nakime", "#d9a05b"],
+    demonslayer_u: ["blast", "Hinokami Kagura", "Tanjiro", "#ff7b2e"], demonslayer_e: ["eye", "Transparent World", "Yoriichi", "#ff8a5c"],
+    bleach_f: ["ice", "Hyorinmaru", "Hitsugaya", "#bfeaff"],       bleach_t: ["warp", "Flash Step", "Yoruichi", "#ffb347"],
+    bleach_u: ["slash", "Getsuga Tensho", "Ichigo", "#ff2b2b"],    bleach_e: ["eye", "The Almighty", "Yhwach", "#ffffff"],
+    hxh_f: ["slash", "Judgment Chain", "Kurapika", "#ff4d6d"],     hxh_t: ["warp", "Portal Step", "Knov", "#6fd36f"],
+    hxh_u: ["rush", "100-Type Guanyin", "Netero", "#ffd23f"],      hxh_e: ["eye", "Lovely Ghostwriter", "Neon", "#ff9de2"],
+    blackclover_f: ["time", "Time Magic", "Julius", "#ffe27a"],    blackclover_t: ["warp", "Spatial Magic", "Finral", "#7ad7ff"],
+    blackclover_u: ["slash", "Black Slash", "Yami", "#a66bff"],    blackclover_e: ["eye", "Thread Fate", "Vanessa", "#ff6bd6"],
+    jojo_f: ["time", "The World", "DIO", "#ffe44d"],               jojo_t: ["warp", "Sticky Fingers", "Bruno", "#7df3ff"],
+    jojo_u: ["rush", "Star Platinum", "Jotaro", "#7a7cff"],        jojo_e: ["time", "King Crimson", "Diavolo", "#ff2b4d"]
+};
+const fxR = i => Math.abs((Math.sin(i * 127.1 + 311.7) * 43758.5453) % 1);
+const fxE = x => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+function fxBolt(g, x0, y0, x1, y1, seed, col) {
+    const n = 9; g.beginPath(); g.moveTo(x0, y0);
+    for (let i = 1; i < n; i++) { const k = i / n; g.lineTo(x0 + (x1 - x0) * k + (fxR(seed + i) - .5) * 90, y0 + (y1 - y0) * k + (fxR(seed + i + 50) - .5) * 40); }
+    g.lineTo(x1, y1); g.strokeStyle = col; g.lineWidth = 3; g.shadowColor = col; g.shadowBlur = 24; g.stroke(); g.shadowBlur = 0;
+}
+const UNO_FX_DRAW = {
+    ice(g, w, h, t, c) {
+        const cx = w / 2, cy = h / 2, R = Math.max(w, h) * .7, a = Math.min(1, t * 3), m = fxE(t * 2.2);
+        const gr = g.createRadialGradient(cx, cy, Math.min(w, h) * .25 * (1 - a) + 6, cx, cy, R);
+        gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(1, "rgba(190,235,255," + (.8 * a) + ")"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+        for (let i = 0; i < 30; i++) {
+            const an = i / 30 * 6.283 + fxR(i) * .3, d = R * (1 - m) * .9 + 60 + fxR(i + 9) * 140, L = 50 + fxR(i + 3) * 110, x = cx + Math.cos(an) * d, y = cy + Math.sin(an) * d;
+            g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(an + .12) * L, y + Math.sin(an + .12) * L); g.lineTo(x + Math.cos(an - .12) * L, y + Math.sin(an - .12) * L); g.closePath();
+            g.fillStyle = "rgba(235,250,255," + (.35 + fxR(i + 5) * .45) + ")"; g.fill(); g.strokeStyle = c; g.lineWidth = 1.5; g.stroke();
+        }
+        g.save(); g.translate(cx, cy); g.rotate(t * 1.2); g.strokeStyle = "#fff"; g.lineWidth = 3; g.shadowColor = c; g.shadowBlur = 18;
+        const s = Math.min(w, h) * .24 * fxE(t * 3);
+        for (let i = 0; i < 6; i++) { g.rotate(1.0472); g.beginPath(); g.moveTo(0, 0); g.lineTo(s, 0); g.moveTo(s * .6, 0); g.lineTo(s * .75, s * .12); g.moveTo(s * .6, 0); g.lineTo(s * .75, -s * .12); g.stroke(); }
+        g.restore();
+    },
+    warp(g, w, h, t, c) {
+        const cx = w / 2, cy = h / 2, R = Math.min(w, h) * .55;
+        for (let k = 0; k < 9; k++) { const p = (t * 1.3 + k / 9) % 1, r = R * (1 - p) + 8; g.save(); g.translate(cx, cy); g.rotate(t * 5 + k); g.scale(1, .55 + .4 * Math.sin(t * 6 + k));
+            g.beginPath(); g.arc(0, 0, r, 0, 6.283); g.strokeStyle = c; g.globalAlpha *= p < .85 ? .75 : (1 - p) * 5; g.lineWidth = 3 + p * 4; g.shadowColor = c; g.shadowBlur = 16; g.stroke(); g.restore(); }
+        for (let i = 0; i < 90; i++) { const f = i / 90, an = f * 25 + t * 9, r = R * f * (1 - t * .6); g.beginPath(); g.arc(cx + Math.cos(an) * r, cy + Math.sin(an) * r * .75, 2 + f * 3, 0, 6.283); g.fillStyle = c; g.fill(); }
+        g.beginPath(); g.arc(cx, cy, R * .16 * (1 + .1 * Math.sin(t * 30)), 0, 6.283); g.fillStyle = "#05000f"; g.fill();
+    },
+    blast(g, w, h, t, c) {
+        const cx = w / 2, cy = h / 2, R = Math.max(w, h);
+        for (let i = 0; i < 40; i++) { const an = i / 40 * 6.283, L = R * fxE(t * 1.6) * (.35 + fxR(i) * .65); g.beginPath(); g.moveTo(cx + Math.cos(an) * 40, cy + Math.sin(an) * 40); g.lineTo(cx + Math.cos(an) * L, cy + Math.sin(an) * L);
+            g.strokeStyle = i % 2 ? c : "#fff"; g.lineWidth = 2 + fxR(i + 2) * 6; g.globalAlpha *= .85; g.stroke(); g.globalAlpha /= .85; }
+        for (let k = 0; k < 3; k++) { const p = Math.max(0, t * 1.5 - k * .18); if (p <= 0 || p > 1) continue; g.beginPath(); g.arc(cx, cy, R * .6 * fxE(p), 0, 6.283); g.strokeStyle = k ? c : "#fff"; g.lineWidth = 22 * (1 - p) + 2; g.globalAlpha *= 1 - p * .6; g.stroke(); g.globalAlpha /= 1 - p * .6; }
+        if (t < .14) { g.fillStyle = "rgba(255,255,255," + (1 - t / .14) + ")"; g.fillRect(0, 0, w, h); }
+    },
+    slash(g, w, h, t, c) {
+        const S = [[.08, .05, .95, .8], [.28, .95, .1, .75], [.48, .1, .5, .95]];
+        S.forEach((s, i) => { const p = (t - s[0]) / .22; if (p < 0) return; const e = fxE(p), x0 = w * s[1], y0 = h * (i === 1 ? .2 : .1), x1 = w * s[2], y1 = h * s[3] ;
+            const xe = x0 + (x1 - x0) * e, ye = y0 + (y1 - y0) * e, nx = (y1 - y0), ny = -(x1 - x0), nl = Math.hypot(nx, ny) / 22 * (1 - p * .5);
+            g.beginPath(); g.moveTo(x0, y0); g.lineTo(xe + nx / nl * .5, ye + ny / nl * .5); g.lineTo(xe - nx / nl * .5, ye - ny / nl * .5); g.closePath();
+            g.globalAlpha *= Math.max(0, 1.2 - p * .6); g.fillStyle = "#fff"; g.shadowColor = c; g.shadowBlur = 40; g.fill(); g.shadowBlur = 0; g.globalAlpha /= Math.max(.01, 1.2 - p * .6);
+            if (p < .15) { g.fillStyle = c; g.globalAlpha *= .35; g.fillRect(0, 0, w, h); g.globalAlpha /= .35; } });
+    },
+    beam(g, w, h, t, c) {
+        const cx = w / 2, cy = h / 2, ch = .42;
+        if (t < ch + .08) { const r = (20 + 90 * fxE(t / ch)) * Math.min(1, w / 700 + .4); for (let i = 0; i < 40; i++) { const an = fxR(i) * 6.283, d = (1 - ((t * 2 + fxR(i + 4)) % 1)) * 260; g.beginPath(); g.arc(cx + Math.cos(an) * d, cy + Math.sin(an) * d, 3, 0, 6.283); g.fillStyle = "#fff"; g.fill(); }
+            g.beginPath(); g.arc(cx, cy, r, 0, 6.283); g.fillStyle = c; g.shadowColor = c; g.shadowBlur = 60; g.fill(); g.shadowBlur = 0; }
+        if (t > ch) { const p = fxE((t - ch) / .08), th = h * .26 * (1 + .08 * Math.sin(t * 90)), L = w * p; const gr = g.createLinearGradient(0, cy - th, 0, cy + th);
+            gr.addColorStop(0, "transparent"); gr.addColorStop(.3, c); gr.addColorStop(.5, "#fff"); gr.addColorStop(.7, c); gr.addColorStop(1, "transparent"); g.fillStyle = gr; g.fillRect(cx, cy - th, L, th * 2); g.fillRect(cx - L * .4, cy - th, L * .4, th * 2); }
+    },
+    orb(g, w, h, t, c) {
+        const cx = w / 2, cy = h / 2, B = .62;
+        if (t < B) { const r = Math.min(w, h) * .2 * fxE(t / B); g.save(); g.translate(cx, cy); g.beginPath(); g.arc(0, 0, r, 0, 6.283); g.fillStyle = c; g.shadowColor = c; g.shadowBlur = 50; g.fill(); g.shadowBlur = 0;
+            for (let k = 0; k < 7; k++) { g.rotate(t * 14 + k); g.beginPath(); g.arc(0, 0, r * (.3 + k * .1), 0, 2.2); g.strokeStyle = "#fff"; g.lineWidth = 3; g.stroke(); } g.restore(); }
+        else { const p = (t - B) / (1 - B); g.beginPath(); g.arc(cx, cy, Math.max(w, h) * .6 * fxE(p), 0, 6.283); g.strokeStyle = c; g.lineWidth = 40 * (1 - p) + 2; g.stroke(); if (p < .15) { g.fillStyle = "rgba(255,255,255," + (1 - p / .15) + ")"; g.fillRect(0, 0, w, h); } }
+    },
+    lightning(g, w, h, t, c) {
+        const f = Math.floor(t * 22);
+        if (fxR(f) > .35) for (let i = 0; i < 4; i++) fxBolt(g, w * (.15 + fxR(f + i) * .7), 0, w * (.3 + fxR(f + i + 7) * .4), h * (.55 + fxR(f + i + 3) * .3), f * 10 + i * 31, i % 2 ? "#fff" : c);
+        if (fxR(f + 99) > .8) { g.fillStyle = "rgba(255,255,255,.35)"; g.fillRect(0, 0, w, h); }
+    },
+    eye(g, w, h, t, c) {
+        const cx = w / 2, cy = h / 2, W = Math.min(w * .42, 420), o = t < .25 ? fxE(t / .25) : t > .88 ? Math.max(0, (1 - t) / .12) : 1, H = W * .42 * o;
+        g.beginPath(); g.moveTo(cx - W, cy); g.quadraticCurveTo(cx, cy - H * 2, cx + W, cy); g.quadraticCurveTo(cx, cy + H * 2, cx - W, cy); g.closePath();
+        g.fillStyle = "rgba(0,0,0,.65)"; g.fill(); g.save(); g.clip();
+        const ir = H * 1.15, gr = g.createRadialGradient(cx, cy, 2, cx, cy, ir); gr.addColorStop(0, "#fff"); gr.addColorStop(.35, c); gr.addColorStop(1, "#000");
+        g.beginPath(); g.arc(cx, cy, ir, 0, 6.283); g.fillStyle = gr; g.fill(); g.fillStyle = "#000"; g.fillRect(cx - ir * .1, cy - ir, ir * .2, ir * 2);
+        for (let y = 0; y < h; y += 8) { g.fillStyle = "rgba(255,255,255,.06)"; g.fillRect(0, y + ((t * 300) % 8), w, 2); } g.restore();
+        g.beginPath(); g.moveTo(cx - W, cy); g.quadraticCurveTo(cx, cy - H * 2, cx + W, cy); g.quadraticCurveTo(cx, cy + H * 2, cx - W, cy); g.closePath(); g.strokeStyle = c; g.lineWidth = 4; g.shadowColor = c; g.shadowBlur = 30; g.stroke();
+    },
+    rush(g, w, h, t, c) {
+        const cx = w / 2, cy = h / 2, R = Math.max(w, h);
+        for (let i = 0; i < 70; i++) { const an = fxR(i) * 6.283, d0 = 90 + ((t * 7 + fxR(i + 5)) % 1) * R * .7, L = 60 + fxR(i + 2) * 200; g.beginPath(); g.moveTo(cx + Math.cos(an) * d0, cy + Math.sin(an) * d0); g.lineTo(cx + Math.cos(an) * (d0 + L), cy + Math.sin(an) * (d0 + L)); g.strokeStyle = i % 3 ? c : "#fff"; g.lineWidth = 1 + fxR(i + 1) * 4; g.stroke(); }
+        const hit = Math.floor(t * 12), ph = (t * 12) % 1; if (t > .1 && t < .9 && ph < .35) { const jx = (fxR(hit) - .5) * w * .4, jy = (fxR(hit + 20) - .5) * h * .35; g.save(); g.translate(cx + jx, cy + jy); g.beginPath();
+            for (let k = 0; k < 16; k++) { const a = k / 16 * 6.283, r = k % 2 ? 40 : 120 * (1 - ph); g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath(); g.fillStyle = "#fff"; g.shadowColor = c; g.shadowBlur = 25; g.fill(); g.restore(); }
+    },
+    time(g, w, h, t, c) {
+        const cx = w / 2, cy = h / 2, R = Math.min(w, h) * .3, stop = .6;
+        g.fillStyle = "rgba(170,175,200," + (.28 * Math.min(1, t * 4)) + ")"; g.fillRect(0, 0, w, h);
+        g.beginPath(); g.arc(cx, cy, R, 0, 6.283); g.strokeStyle = c; g.lineWidth = 6; g.shadowColor = c; g.shadowBlur = 25; g.stroke();
+        for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283; g.beginPath(); g.moveTo(cx + Math.cos(a) * R * .85, cy + Math.sin(a) * R * .85); g.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); g.lineWidth = 4; g.stroke(); }
+        const ang = -1.57 + (t < stop ? fxE(t / stop) * 25 : 25); g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(ang) * R * .8, cy + Math.sin(ang) * R * .8); g.lineWidth = 6; g.strokeStyle = "#fff"; g.stroke();
+        if (t > stop) { const p = (t - stop) / (1 - stop); for (let k = 0; k < 3; k++) { const q = (p * 1.3 - k * .2); if (q <= 0 || q > 1) continue; g.beginPath(); g.arc(cx, cy, R + q * Math.max(w, h) * .6, 0, 6.283); g.globalAlpha *= 1 - q; g.strokeStyle = c; g.lineWidth = 8; g.stroke(); g.globalAlpha /= 1 - q; } }
+    }
+};
+function unoFxHook(key) {
+    const cfg = UNO_FX_CFG[key], draw = UNO_FX_DRAW[cfg[0]];
+    return (box, done, c, u) => {
+        const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches, ms = reduce ? 1800 : UNO_FX_MS;
+        const h2 = box.querySelector("h2"), pp = box.querySelector("p"), em = box.querySelector(".u-fx-em");
+        if (h2) h2.textContent = c.ab || cfg[1];
+        if (pp) pp.textContent = (u.names["p" + u.fx.p] || "?") + " · " + cfg[2];
+        if (em) em.style.display = "none";
+        box.style.setProperty("--c", cfg[3]);
+        const art = unoSpCache[UNO_SP_DIR + c.sk + "_" + UNO_SP[c.k].file];
+        if (art) { const im = new Image(); im.src = art; im.alt = ""; im.style.cssText = "position:absolute;left:50%;bottom:0;height:78vh;max-width:90vw;object-fit:contain;transform:translateX(-50%);filter:drop-shadow(0 0 30px " + cfg[3] + ");z-index:0"; box.insertBefore(im, box.firstChild);
+            im.animate([{ opacity: 0, transform: "translateX(-90%)" }, { opacity: 1, transform: "translateX(-50%)" }, { opacity: 1, transform: "translateX(-50%) scale(1.04)" }], { duration: ms, easing: "ease-out", fill: "forwards" }); }
+        let cv = null, g = null, W = 0, H = 0;
+        if (!reduce) { cv = document.createElement("canvas"); cv.style.cssText = "position:absolute;inset:0;width:100%;height:100%;z-index:1;mix-blend-mode:screen"; box.insertBefore(cv, h2 || null);
+            const dpr = Math.min(2, window.devicePixelRatio || 1); W = cv.width = innerWidth * dpr; H = cv.height = innerHeight * dpr; g = cv.getContext("2d"); }
+        if (h2) { h2.style.zIndex = 2; h2.animate([{ transform: "skewX(-8deg) scale(2.4)", opacity: 0 }, { transform: "skewX(-8deg) scale(1)", opacity: 1, offset: .12 }, { transform: "skewX(-8deg) scale(1.06)" }], { duration: ms, easing: "ease-out", fill: "forwards" }); }
+        if (pp) pp.style.zIndex = 2;
+        unoVoice(key, ms);
+        const t0 = performance.now(); let ended = false;
+        const finish = () => { if (ended) return; ended = true; done(); };
+        const frame = now => {
+            if (ended || !box.isConnected) return;
+            const t = Math.min(1, (now - t0) / ms);
+            if (g) { g.clearRect(0, 0, W, H); g.save(); g.globalAlpha = t > .88 ? (1 - t) / .12 : 1; const k = W / innerWidth; g.scale(k, k);
+                try { draw(g, innerWidth, innerHeight, t, cfg[3]); } catch (e) { console.warn(e); } g.restore();
+                if ((cfg[0] === "blast" || cfg[0] === "rush") && t < .6) box.style.transform = "translate(" + (fxR(now | 0) - .5) * 14 + "px," + (fxR((now | 0) + 5) - .5) * 14 + "px)"; else box.style.transform = ""; }
+            if (t < 1) requestAnimationFrame(frame); else finish();
+        };
+        requestAnimationFrame(frame);
+        setTimeout(finish, ms + 300);   // safety net so the game can never get stuck on an animation
+    };
+}
 const UNO_FX_HOOKS = {};
+Object.keys(UNO_FX_CFG).forEach(k => { UNO_FX_HOOKS[k] = unoFxHook(k); });
+
 const unoSpCache = {};
 function unoSpArt(pic, c) {
     const base = UNO_SP_DIR + c.sk + "_" + UNO_SP[c.k].file;
@@ -3971,7 +4138,7 @@ function unoPeekShow(u, me) {
         r.appendChild(hd); rows.appendChild(r);
     });
     box.appendChild(rows); box.appendChild(hbEl("div", "u-peek-bar"));
-    setTimeout(() => { $("uno").appendChild(box); setTimeout(() => box.remove(), 3000); }, 1100);   // after the banner, then exactly 3 seconds
+    const showPeek = () => { if ($("unoFx")) return setTimeout(showPeek, 200); setTimeout(() => { $("uno").appendChild(box); setTimeout(() => box.remove(), 3000); }, 600); }; setTimeout(showPeek, 300);   // after the banner, then exactly 3 seconds
 }
 
 window.createRoom =
