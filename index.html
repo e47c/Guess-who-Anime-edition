@@ -1044,9 +1044,9 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 @media(prefers-reduced-motion:reduce){#uno *{animation:none!important}}
 
 /* ===== SPECIAL CARDS: gleaming gold card, anime colour lives on the name ribbon (normal + wild cards untouched) ===== */
-.ucard.sp{border-color:#fff1b8;background:radial-gradient(#00000018 1.3px,transparent 1.6px) 0 0/8px 8px,linear-gradient(150deg,#fff4c0 0%,#f6c94e 26%,#b9811d 52%,#f8de80 76%,#8c5b12 100%)}
-.ucard.sp:not(.ok):not(.big){box-shadow:0 8px 18px #000a,0 0 0 1px #000,0 0 18px rgba(255,214,110,.6)}
-.ucard.sp.big{box-shadow:0 20px 44px #000b,0 0 46px rgba(255,214,110,.75)}
+.ucard.sp{border-color:#c99a3e;background:radial-gradient(#00000030 1.3px,transparent 1.6px) 0 0/8px 8px,linear-gradient(150deg,#2a1a04 0%,#7a5413 22%,#c38e2b 40%,#4b3008 58%,#a97a20 78%,#1e1203 100%)}
+.ucard.sp:not(.ok):not(.big){box-shadow:0 8px 18px #000a,0 0 0 1px #000,inset 0 0 0 2px #00000066,0 0 18px rgba(201,154,62,.65)}
+.ucard.sp.big{box-shadow:0 20px 44px #000b,0 0 46px rgba(201,154,62,.8)}
 /* twinkling sparkles instead of the coloured slash */
 .ucard.sp::after{left:0;width:100%;top:0;height:100%;transform:none;background:
  radial-gradient(circle,#fff 0 1.6px,transparent 2.4px) 18% 22%/46px 52px,
@@ -1056,14 +1056,14 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 /* a bright sweep that glides across the gold */
 .ucard.sp .u-foil{background:linear-gradient(112deg,transparent 34%,rgba(255,255,255,.8) 48%,rgba(255,246,196,.55) 53%,transparent 66%) 0 0/260% 100%;mix-blend-mode:soft-light;animation:uFoil 2.6s linear infinite}
 /* the art area stays dark gold so the placeholder / your image pops */
-.ucard.sp .u-pic.sp-ph{background:repeating-linear-gradient(135deg,#0003 0 8px,#0000 8px 16px),radial-gradient(circle at 50% 40%,#6a4509,#140b02 95%)}
+.ucard.sp .u-pic.sp-ph{background:repeating-linear-gradient(135deg,#0003 0 8px,#0000 8px 16px),radial-gradient(circle at 50% 40%,#4a3008,#0f0801 95%)}
 /* name ribbon: the anime colour (red / blue / yellow / green) + glowing white name */
-.ucard.sp .u-name{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 78%,#fff),var(--c) 48%,color-mix(in srgb,var(--c) 58%,#000));border-top:2px solid #fff4c4;border-bottom:2px solid #fff4c4;color:#fff;overflow:hidden;
+.ucard.sp .u-name{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 78%,#fff),var(--c) 48%,color-mix(in srgb,var(--c) 58%,#000));border-top:2px solid #e8c36a;border-bottom:2px solid #e8c36a;color:#fff;overflow:hidden;
  text-shadow:0 0 6px rgba(255,255,255,.95),0 0 14px rgba(255,255,255,.6),1px 1px 0 rgba(0,0,0,.65);animation:uNameGlow 2.4s ease-in-out infinite}
 .ucard.sp .u-name::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 36%,rgba(255,255,255,.75) 50%,transparent 64%);transform:translateX(-130%);animation:uNameShine 2.8s ease-in-out infinite;pointer-events:none}
 @keyframes uNameShine{55%,100%{transform:translateX(130%)}}
 @keyframes uNameGlow{50%{text-shadow:0 0 10px #fff,0 0 24px rgba(255,255,255,.85),1px 1px 0 rgba(0,0,0,.65)}}
-.ucard.sp .u-sub{color:#2b1700;text-shadow:0 1px 0 rgba(255,255,255,.55)}
+.ucard.sp .u-sub{color:#ffe7a6;text-shadow:0 1px 2px #000,0 0 6px rgba(255,214,110,.5)}
 @media(prefers-reduced-motion:reduce){.ucard.sp *,.ucard.sp::after{animation:none!important}}
 </style>
 
