@@ -3747,12 +3747,13 @@ function unoCan(u, hand, ci) {
     const c = u.cards[ci], t = unoTop(u);
     if (c.k === "w") return true;
     if (c.k === "x") return !hand.some(h => { const o = u.cards[h]; return o.k !== "w" && o.k !== "x" && o.s === u.color; });   // +4 only when you hold no card of the active colour
+    if (c.sp && t.k === c.k) return false;   // a special card can't be countered by the same kind of special (by anyone, even the same player)
     return c.s === u.color || (t.k === c.k && (c.k !== "a" || t.v === c.v));
 }
 function unoDraw(u, p, n) {
     const h = u.hands["p" + p];
     for (let i = 0; i < n; i++) {
-        if (!u.draw.length) { const keep = u.disc.pop(); u.draw = unoShuf(u.disc); u.disc = [keep]; }
+        if (!u.draw.length) { const keep = u.disc.pop(); u.draw = unoShuf(u.disc.filter(i => !u.cards[i].sp)); u.disc = [keep]; }   // used special cards never go back into the draw pile
         if (!u.draw.length) break;
         h.push(u.draw.pop());
     }
