@@ -1043,27 +1043,42 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 @keyframes uBar{from{width:100%}to{width:0}}
 @media(prefers-reduced-motion:reduce){#uno *{animation:none!important}}
 
-/* ===== SPECIAL CARDS: gleaming gold card, anime colour lives on the name ribbon (normal + wild cards untouched) ===== */
-.ucard.sp{border-color:#c99a3e;background:radial-gradient(#00000030 1.3px,transparent 1.6px) 0 0/8px 8px,linear-gradient(150deg,#2a1a04 0%,#7a5413 22%,#c38e2b 40%,#4b3008 58%,#a97a20 78%,#1e1203 100%)}
-.ucard.sp:not(.ok):not(.big){box-shadow:0 8px 18px #000a,0 0 0 1px #000,inset 0 0 0 2px #00000066,0 0 18px rgba(201,154,62,.65)}
-.ucard.sp.big{box-shadow:0 20px 44px #000b,0 0 46px rgba(201,154,62,.8)}
-/* twinkling sparkles instead of the coloured slash */
-.ucard.sp::after{left:0;width:100%;top:0;height:100%;transform:none;background:
- radial-gradient(circle,#fff 0 1.6px,transparent 2.4px) 18% 22%/46px 52px,
- radial-gradient(circle,#fff 0 1.2px,transparent 2px) 72% 64%/38px 44px,
- radial-gradient(circle,#fff8c8 0 1.4px,transparent 2.2px) 44% 84%/54px 40px;animation:uTwinkle 2.2s ease-in-out infinite}
-@keyframes uTwinkle{0%,100%{opacity:.25}50%{opacity:.95}}
-/* a bright sweep that glides across the gold */
-.ucard.sp .u-foil{background:linear-gradient(112deg,transparent 34%,rgba(255,255,255,.8) 48%,rgba(255,246,196,.55) 53%,transparent 66%) 0 0/260% 100%;mix-blend-mode:soft-light;animation:uFoil 2.6s linear infinite}
-/* the art area stays dark gold so the placeholder / your image pops */
-.ucard.sp .u-pic.sp-ph{background:repeating-linear-gradient(135deg,#0003 0 8px,#0000 8px 16px),radial-gradient(circle at 50% 40%,#4a3008,#0f0801 95%)}
-/* name ribbon: the anime colour (red / blue / yellow / green) + glowing white name */
-.ucard.sp .u-name{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 78%,#fff),var(--c) 48%,color-mix(in srgb,var(--c) 58%,#000));border-top:2px solid #e8c36a;border-bottom:2px solid #e8c36a;color:#fff;overflow:hidden;
+/* ===== SPECIAL CARDS: one visual theme per ability (the anime colour stays on the name ribbon) ===== */
+.ucard.sp{border-width:3px;border-color:var(--edge,#fff)}
+.ucard.sp:not(.ok):not(.big){box-shadow:0 8px 18px #000a,0 0 0 1px #000,var(--ins,inset 0 0 0 2px #00000055),0 0 20px color-mix(in srgb,var(--g,#fff) 70%,transparent)}
+.ucard.sp.big{box-shadow:0 20px 44px #000b,0 0 48px color-mix(in srgb,var(--g,#fff) 85%,transparent)}
+.ucard.sp::after{left:0;width:100%;top:0;height:100%;transform:none;z-index:1}
+.ucard.sp .u-foil{background:linear-gradient(112deg,transparent 36%,var(--sheen,rgba(255,255,255,.5)) 50%,transparent 64%) 0 0/260% 100%;mix-blend-mode:screen;animation:uFoil 3s linear infinite}
+.ucard.sp .u-pic.sp-ph{background:repeating-linear-gradient(135deg,#0002 0 8px,#0000 8px 16px),radial-gradient(circle at 50% 40%,var(--artA,#333),var(--artB,#000) 95%)}
+.ucard.sp .u-num{color:var(--edge);border-color:var(--edge);background:#000}
+.ucard.sp .u-sub{color:var(--edge);text-shadow:0 1px 2px #000,0 0 8px color-mix(in srgb,var(--g,#fff) 70%,transparent)}
+.ucard.sp .u-anime{color:var(--edge)}
+/* name ribbon: anime colour + glowing white name */
+.ucard.sp .u-name{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 78%,#fff),var(--c) 48%,color-mix(in srgb,var(--c) 58%,#000));border-top:2px solid var(--edge);border-bottom:2px solid var(--edge);color:#fff;overflow:hidden;
  text-shadow:0 0 6px rgba(255,255,255,.95),0 0 14px rgba(255,255,255,.6),1px 1px 0 rgba(0,0,0,.65);animation:uNameGlow 2.4s ease-in-out infinite}
 .ucard.sp .u-name::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 36%,rgba(255,255,255,.75) 50%,transparent 64%);transform:translateX(-130%);animation:uNameShine 2.8s ease-in-out infinite;pointer-events:none}
 @keyframes uNameShine{55%,100%{transform:translateX(130%)}}
 @keyframes uNameGlow{50%{text-shadow:0 0 10px #fff,0 0 24px rgba(255,255,255,.85),1px 1px 0 rgba(0,0,0,.65)}}
-.ucard.sp .u-sub{color:#ffe7a6;text-shadow:0 1px 2px #000,0 0 6px rgba(255,214,110,.5)}
+@keyframes uTwinkle{0%,100%{opacity:.3}50%{opacity:1}}
+/* 🧊 FREEZE: glacier ice, frosted glass facets */
+.ucard.sp.k-f{--g:#6fd8ff;--edge:#d8f6ff;--sheen:rgba(255,255,255,.6);--artA:#3b86c8;--artB:#06203f;--ins:inset 0 0 16px rgba(225,250,255,.7);border-color:#bfeaff;
+ background:linear-gradient(118deg,transparent 30%,rgba(255,255,255,.38) 30.6%,transparent 31.8%),linear-gradient(62deg,transparent 58%,rgba(255,255,255,.3) 58.5%,transparent 59.8%),linear-gradient(160deg,transparent 40%,rgba(8,60,140,.4) 40.5%,transparent 41.8%),radial-gradient(circle at 30% 16%,rgba(255,255,255,.55),transparent 38%),linear-gradient(158deg,#dff8ff 0%,#8de4ff 16%,#38a8e8 40%,#1260b8 66%,#071f52 100%)}
+.ucard.sp.k-f::after{background:radial-gradient(circle,#fff 0 1.4px,transparent 2.2px) 15% 20%/44px 50px,radial-gradient(circle,#e6fbff 0 1px,transparent 2px) 70% 55%/36px 42px;animation:uTwinkle 2.4s ease-in-out infinite}
+/* 🌀 SWAP: deep purple spatial warp */
+.ucard.sp.k-t{--g:#a66bff;--edge:#dcc8ff;--sheen:rgba(210,170,255,.45);--artA:#5a2da8;--artB:#12062e;--ins:inset 0 0 18px rgba(170,110,255,.5);border-color:#b79bf5;
+ background:radial-gradient(circle at 50% 52%,#0d0425 0 13%,transparent 14%),repeating-radial-gradient(circle at 50% 52%,transparent 0 13px,rgba(190,150,255,.17) 14px 15px),linear-gradient(150deg,#2b0a5c 0%,#5b21b6 30%,#8b5cf6 52%,#4c1d95 74%,#170536 100%)}
+.ucard.sp.k-t::after{left:-45%;top:-45%;width:190%;height:190%;background:conic-gradient(from 0deg at 50% 52%,transparent 0deg,rgba(217,70,239,.34) 40deg,transparent 90deg,rgba(167,139,250,.4) 180deg,transparent 240deg,rgba(217,70,239,.3) 300deg,transparent 360deg);mix-blend-mode:screen;opacity:.8;animation:uSpin 9s linear infinite}
+/* 💥 ULTIMATE: crimson base, erupting fire, white-hot core */
+.ucard.sp.k-u{--g:#ff6a1a;--edge:#ffd08a;--sheen:rgba(255,230,150,.5);--artA:#a3260c;--artB:#2a0300;--ins:inset 0 0 18px rgba(255,90,20,.55);border-color:#ff9a4a;
+ background:radial-gradient(ellipse at 50% 108%,#fff7c8 0 7%,#ffd24a 16%,#ff7a18 34%,rgba(255,60,10,.4) 52%,transparent 70%),radial-gradient(circle at 18% 88%,rgba(255,150,40,.7),transparent 30%),radial-gradient(circle at 84% 92%,rgba(255,120,30,.6),transparent 28%),linear-gradient(180deg,#220000 0%,#650505 34%,#a30e0e 62%,#c4200f 100%)}
+.ucard.sp.k-u::after{background:radial-gradient(circle,#fff3b0 0 1.5px,transparent 2.4px) 22% 82%/40px 56px,radial-gradient(circle,#ffb347 0 1.2px,transparent 2px) 66% 70%/34px 48px,radial-gradient(ellipse at 50% 112%,rgba(255,220,120,.55),transparent 55%);animation:uEmber 1.6s ease-in-out infinite}
+@keyframes uEmber{0%,100%{opacity:.55;transform:translateY(3px) scale(1)}50%{opacity:1;transform:translateY(-4px) scale(1.04)}}
+/* 👁️ FUTURE SIGHT: empty void with a few hair-thin cracks of light */
+.ucard.sp.k-e{--g:#5b4fd8;--edge:#c9cef0;--artA:#1a1445;--artB:#010008;--ins:inset 0 0 20px rgba(60,40,140,.45);border-color:#8a90c4;
+ background:radial-gradient(circle at 50% 38%,#0c0828 0%,#05030f 55%,#000 100%),linear-gradient(160deg,#070520,#000)}
+.ucard.sp.k-e .u-foil{display:none}
+.ucard.sp.k-e::after{background:linear-gradient(74deg,transparent 49.4%,rgba(205,215,255,.7) 50%,transparent 50.6%) 10% 8%/36% 30% no-repeat,linear-gradient(-32deg,transparent 49.4%,rgba(150,120,255,.6) 50%,transparent 50.6%) 58% 44%/32% 26% no-repeat,linear-gradient(108deg,transparent 49.5%,rgba(220,228,255,.55) 50%,transparent 50.5%) 14% 66%/30% 18% no-repeat,linear-gradient(12deg,transparent 49.5%,rgba(170,140,255,.5) 50%,transparent 50.5%) 66% 8%/22% 20% no-repeat,linear-gradient(-70deg,transparent 49.5%,rgba(230,236,255,.45) 50%,transparent 50.5%) 40% 78%/18% 16% no-repeat;animation:uCrack 5s ease-in-out infinite}
+@keyframes uCrack{0%,100%{opacity:.35}45%{opacity:1}55%{opacity:.6}}
 @media(prefers-reduced-motion:reduce){.ucard.sp *,.ucard.sp::after{animation:none!important}}
 </style>
 
