@@ -1112,6 +1112,10 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 .fx-void-hand{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .fx-void .ucard.mini{border-color:#fff;box-shadow:0 0 0 2px #000,0 0 18px #33ccff,0 8px 16px #000a;animation:fxFloat 3.2s ease-in-out infinite}
 @keyframes fxFloat{0%,100%{transform:translateY(0) rotate(var(--tilt,0deg))}50%{transform:translateY(-8px) rotate(calc(var(--tilt,0deg)*-1))}}
+.u-opp.frozen{border-color:#8fe8ff;box-shadow:0 0 0 2px #8fe8ff88,0 0 26px #5fd4ff99}
+.u-opp.frozen.fxk-jojo_f{border-color:#ffd84a;background:linear-gradient(120deg,rgba(70,48,0,.92),rgba(150,108,12,.62));box-shadow:0 0 0 2px #ffd84acc,0 0 38px #ffd84a;animation:uAura 1.6s ease-in-out infinite;filter:sepia(.35) saturate(1.5)}
+.u-opp.frozen.fxk-jojo_f::after{content:"🕒";position:absolute;right:6px;top:2px;font-size:20px;transform:skewX(8deg);filter:drop-shadow(0 0 6px #ffd84a)}
+@keyframes uAura{50%{box-shadow:0 0 0 3px #fff3a8,0 0 56px #ffd84a}}
 </style>
 
 </head>
@@ -4277,6 +4281,113 @@ UNO_FX_HOOKS.bleach_u = unoSceneHook("bleach_u", unoIchigo);
 UNO_FX_HOOKS.onepiece_u = unoSceneHook("onepiece_u", unoLuffy);
 UNO_FX_HOOKS.naruto_u = unoSceneHook("naruto_u", unoNaruto);
 
+/* =====================================================================
+   FIRST-PERSON SCENES, group 2:  jojo_f DIO (The World)  ·  naruto_e Neji (Byakugan)
+   Silent for now. Each is under 10 s. Both aim at the REAL opponent plates on screen (rects read from the page).
+   ===================================================================== */
+function fxHand(g, x, y, M, col, pt) {            // first-person raised hand, finger pointing at the screen
+    g.save(); g.translate(x, y); g.fillStyle = "#0a0710"; g.strokeStyle = col; g.lineWidth = 3; g.shadowColor = col; g.shadowBlur = 18;
+    g.beginPath(); g.moveTo(M * .30, M * .6); g.lineTo(-M * .16, M * .6); g.quadraticCurveTo(-M * .24, M * .22, -M * .1, M * .1); g.lineTo(-M * .06, -M * .26); g.quadraticCurveTo(-M * .03, -M * .31, M * .01, -M * .26);
+    g.lineTo(M * .03, M * .02); g.quadraticCurveTo(M * .17, M * .08, M * .22, M * .3); g.closePath(); g.fill(); g.stroke();
+    g.beginPath(); g.arc(-M * .045, -M * .1, M * .028 * (1 + .15 * Math.sin(pt)), 0, 6.283); g.stroke(); g.restore();
+}
+const unoDio = {
+    col: "#ffd84a", ms: 8000, tail: () => 1800,
+    begin(env, box, u) { env.to = u.fx.to; env.name = u.names["p" + u.fx.to] || "?"; const e = document.querySelector('.u-opp[data-p="' + u.fx.to + '"]'); env.r = e ? e.getBoundingClientRect() : null; },
+    draw(g, w, h, T, env, u) {
+        const cx = w / 2, cy = h / 2, M = Math.min(w, h), t = T.t, s = T.s, G = "#ffd84a", R = Math.hypot(w, h) / 2;
+        const r = env.r || { left: w * .3, top: h * .03, width: w * .4, height: h * .14 }, tx = r.left + r.width / 2, ty = r.top + r.height / 2;
+        if (T.ph === "tail") {                                       // time resumes for everyone else; the gold aura stays on the real plate
+            const q = T.tt, a = 1 - fxS(.55, 1, q), pu = .5 + .5 * Math.sin(s * 7);
+            g.globalAlpha = a; g.strokeStyle = G; g.lineWidth = 3 + 3 * pu; g.shadowColor = G; g.shadowBlur = 26; g.strokeRect(r.left - 8, r.top - 8, r.width + 16, r.height + 16); g.shadowBlur = 0;
+            const sl = fxSlam(Math.min(1, q / .4)); g.save(); g.translate(cx, h * .3); g.scale(.55 + .45 * sl.sc / 3.2, .55 + .45 * sl.sc / 3.2); g.globalAlpha = Math.min(sl.a, a);
+            fxText(g, env.name + " is frozen x2", 0, 0, M * .06, "#fff6c2", "#3a2600", G, "sans-serif"); g.restore(); g.globalAlpha = 1; return;
+        }
+        const stop = t >= .37, bgA = t < .84 ? 1 : 1 - fxS(.84, 1, t);
+        g.globalAlpha = bgA; g.fillStyle = stop ? "#efe6c4" : "#06040a"; g.fillRect(0, 0, w, h); g.globalAlpha = 1;
+        if (!stop) {                                                 // ACT 1: the clock rises, the hand lifts, time winds up
+            const a = t / .37, vg = g.createRadialGradient(cx, cy, M * .2, cx, cy, R); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(60,40,0," + (.5 + .3 * Math.sin(s * 9) * a) + ")"); g.fillStyle = vg; g.fillRect(0, 0, w, h);
+            "ゴゴゴゴゴ".split("").forEach((ch, i) => { g.globalAlpha = .35 * a; fxText(g, ch, w * (.12 + i * .19), h * (.18 + .05 * Math.sin(s * 3 + i)), M * .09, "#5a4300", "#000", G); }); g.globalAlpha = 1;
+            const rs = fxS(.05, .5, a), cr = M * .24 * rs; g.save(); g.translate(cx, cy * .8); g.strokeStyle = G; g.lineWidth = 4; g.shadowColor = G; g.shadowBlur = 22; g.beginPath(); g.arc(0, 0, cr, 0, 6.283); g.stroke();
+            for (let i = 0; i < 12; i++) { const an = i / 12 * 6.283; g.beginPath(); g.moveTo(Math.cos(an) * cr * .86, Math.sin(an) * cr * .86); g.lineTo(Math.cos(an) * cr * .98, Math.sin(an) * cr * .98); g.stroke(); }
+            const sa = -1.57 + s * s * 2.4; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(sa) * cr * .8, Math.sin(sa) * cr * .8); g.stroke(); g.restore();
+            fxHand(g, w * .74, h * (1.02 - .3 * fxS(.1, .6, a)), M, G, s * 5);
+            if (t > .33) { g.fillStyle = "rgba(255,255,255," + fxS(.33, .37, t) + ")"; g.fillRect(0, 0, w, h); }
+        } else {                                                     // ACT 2: TIME HAS STOPPED. everything hangs in the air, the target glows gold
+            const b = (t - .37) / .63, sw = fxS(0, .25, b);
+            g.fillStyle = "rgba(255,216,74,.18)"; g.beginPath(); g.arc(cx, cy, R * sw, 0, 6.283); g.fill();
+            for (let i = 0; i < 4; i++) { const q = (b * 1.6 - i * .12); if (q > 0 && q < 1) { g.strokeStyle = "rgba(180,130,0," + (1 - q) + ")"; g.lineWidth = 6 * (1 - q); g.beginPath(); g.arc(cx, cy, q * R, 0, 6.283); g.stroke(); } }
+            g.fillStyle = "#b08a1a"; for (let i = 0; i < 110; i++) { g.globalAlpha = .25 + .5 * fxR(i + 4); g.fillRect(fxR(i) * w, fxR(i + 3) * h, 2.5, 2.5 + fxR(i) * 3); } g.globalAlpha = 1;   // dust, motionless
+            for (let i = 0; i < 9; i++) {                           // knives frozen mid-flight, all pointing at the opponent
+                const sx = fxR(i + 20) * w, sy = h * (.55 + fxR(i + 30) * .5), p = .55 + fxR(i + 40) * .3, kx = sx + (tx - sx) * p, ky = sy + (ty - sy) * p, an = Math.atan2(ty - sy, tx - sx), L = M * (.07 + .05 * p);
+                g.save(); g.translate(kx, ky); g.rotate(an); g.globalAlpha = fxS(.1, .35, b); g.fillStyle = "#4a3c10"; g.strokeStyle = "#fff6c2"; g.lineWidth = 1.5;
+                g.beginPath(); g.moveTo(L, 0); g.lineTo(-L * .2, -L * .12); g.lineTo(-L, -L * .05); g.lineTo(-L, L * .05); g.lineTo(-L * .2, L * .12); g.closePath(); g.fill(); g.stroke(); g.restore();
+            }
+            const on = fxS(.15, .4, b), pu = .5 + .5 * Math.sin(s * 8);
+            g.globalAlpha = on; g.fillStyle = "rgba(255,216,74," + (.18 + .1 * pu) + ")"; g.fillRect(r.left - 10, r.top - 10, r.width + 20, r.height + 20);
+            g.strokeStyle = G; g.lineWidth = 4 + 3 * pu; g.shadowColor = G; g.shadowBlur = 34; g.strokeRect(r.left - 10, r.top - 10, r.width + 20, r.height + 20); g.shadowBlur = 0; g.globalAlpha = 1;
+            const ov = fxSlam(Math.min(1, b / .28)); if (b < .5) { g.save(); g.translate(cx, cy); g.scale(ov.sc, ov.sc); g.globalAlpha = ov.a; fxText(g, "THE WORLD", 0, 0, M * .15, "#fff", "#3a2600", G, "sans-serif"); g.restore(); }
+            g.globalAlpha = fxS(.3, .5, b) * (1 - fxS(.8, .95, b)); "時よ止まれ".split("").forEach((ch, i) => fxText(g, ch, w * .08, h * .2 + i * M * .1, M * .08, "#fff6c2", "#3a2600", G)); g.globalAlpha = 1;
+        }
+    }
+};
+UNO_FX_HOOKS.jojo_f = unoSceneHook("jojo_f", unoDio);
+
+function fxChakra(g, w, h, s, a, M) {       // layered, branching chakra pathways seen from inside the body
+    const cx = w / 2, cy = h / 2, R = Math.hypot(w, h) / 2, bg = g.createRadialGradient(cx, cy, 0, cx, cy, R); bg.addColorStop(0, "#0b1a4a"); bg.addColorStop(1, "#02040f"); g.fillStyle = bg; g.globalAlpha = a; g.fillRect(0, 0, w, h);
+    const br = (x, y, an, len, d, sd, ly) => {
+        if (d > 5) return; const x2 = x + Math.cos(an) * len, y2 = y + Math.sin(an) * len;
+        g.beginPath(); g.moveTo(x, y); g.lineTo(x2, y2); g.lineWidth = Math.max(.6, (6 - d) * (.6 + ly * .35)); g.stroke();
+        br(x2, y2, an + .5 * (fxR(sd) - .2) + .35, len * .72, d + 1, sd * 2 + 1, ly); br(x2, y2, an - .5 * (fxR(sd + 7) - .2) - .35, len * .72, d + 1, sd * 2 + 2, ly);
+    };
+    for (let ly = 0; ly < 3; ly++) {
+        const z = 1 + ((s * .12 * (ly + 1)) % 1) * 1.6; g.save(); g.translate(cx, cy); g.scale(z, z); g.rotate(ly * 1.1 + s * .03 * (ly - 1)); g.strokeStyle = ["rgba(90,140,255,.55)", "rgba(150,200,255,.7)", "rgba(230,245,255,.85)"][ly]; g.shadowColor = "#6aa8ff"; g.shadowBlur = 12;
+        for (let k = 0; k < 7; k++) br(0, 0, k / 7 * 6.283 + ly, M * .2, 0, k + ly * 9 + 1, ly); g.restore();
+    }
+    g.shadowBlur = 0; g.globalAlpha = 1;
+}
+const unoNeji = {
+    col: "#c9d6ff", ms: 6800, tail: env => env.owner ? 3000 : 1600,
+    begin(env, box, u) { env.me = Number(myPlayer); env.owner = env.me === u.fx.p; if (env.owner && u.peek) unoFxOwnsPeek = u.peek.id; env.rects = Array.from(document.querySelectorAll(".u-opp")).map(e => e.getBoundingClientRect()); },
+    end(env, u) { if (env.owner && !env.shown) { env.shown = 1; unoFxOwnsPeek = null; unoPeekShow(u, env.me); } },
+    draw(g, w, h, T, env, u) {
+        const cx = w / 2, cy = h / 2, M = Math.min(w, h), t = T.t, s = T.s, V = "#c9d6ff";
+        const trig = a => env.rects.forEach((r, i) => {                 // Eight Trigrams disc under every opponent plate
+            const x = r.left + r.width / 2, y = r.top + r.height / 2, rd = Math.max(r.width, r.height) * .75; g.save(); g.translate(x, y); g.globalAlpha = a;
+            g.strokeStyle = V; g.fillStyle = "rgba(120,150,255,.12)"; g.lineWidth = 2; g.shadowColor = "#7aa0ff"; g.shadowBlur = 20; g.beginPath(); g.arc(0, 0, rd, 0, 6.283); g.fill(); g.stroke(); g.beginPath(); g.arc(0, 0, rd * .62, 0, 6.283); g.stroke();
+            g.rotate(s * (i % 2 ? -.9 : .9)); for (let k = 0; k < 8; k++) { g.rotate(.7854); g.fillStyle = V; g.fillRect(rd * .7, -2, rd * .26, 4); g.fillRect(rd * .7, -9, rd * .26, 3); g.fillRect(rd * .7, 5, rd * .26, 3); } g.restore();
+        });
+        if (T.ph === "tail") { const q = T.tt; trig(1 - fxS(.5, 1, q)); return; }
+        g.fillStyle = "#000"; g.fillRect(0, 0, w, h);
+        const zk = 1 + Math.pow(fxS(.30, .58, t), 2.2) * 38;
+        if (t < .6) {                                                  // ACT 1+2: shadowed face, the eyes awake, then we fall INTO the eye
+            const open = fxS(.14, .30, t), vein = fxS(.16, .34, t), ex = M * .2, ey = cy;
+            g.save(); g.translate(cx, cy); g.scale(zk, zk); g.translate(-(cx + ex), -(cy + M * .02));   // the camera dives into the right eye
+            const fg = g.createRadialGradient(cx, cy, M * .1, cx, cy, M * .8); fg.addColorStop(0, "#2a2018"); fg.addColorStop(1, "#000"); g.fillStyle = fg; g.beginPath(); g.ellipse(cx, cy * 1.02, M * .5, M * .68, 0, 0, 6.283); g.fill();
+            const hb = g.createLinearGradient(0, cy - M * .36, 0, cy - M * .2); hb.addColorStop(0, "#5c6577"); hb.addColorStop(.5, "#c9d2e4"); hb.addColorStop(1, "#4b5365"); g.fillStyle = hb; g.fillRect(cx - M * .52, cy - M * .36, M * 1.04, M * .15);
+            g.strokeStyle = "#2b3140"; g.lineWidth = 3; g.beginPath(); g.arc(cx, cy - M * .285, M * .04, 0, 4.5); g.stroke();
+            [-1, 1].forEach(sd => {
+                const x = cx + sd * M * .2, y = cy + M * .02;
+                g.strokeStyle = "rgba(150,140,200," + vein * .8 + ")"; g.lineWidth = 2; for (let k = 0; k < 9; k++) { const an = (sd > 0 ? -.9 : 3.14 + .9) + (k / 9 - .5) * 2.2; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(an) * M * .2 * vein, y + Math.sin(an) * M * .2 * vein * .7); g.stroke(); }
+                const eh = M * .055 * Math.max(.06, open); g.beginPath(); g.moveTo(x - M * .11, y); g.quadraticCurveTo(x, y - eh * 2, x + M * .11, y); g.quadraticCurveTo(x, y + eh * 2, x - M * .11, y);
+                g.fillStyle = open > .1 ? "#e8e6ff" : "#0c0a08"; g.shadowColor = "#b9b3ff"; g.shadowBlur = 30 * open; g.fill(); g.shadowBlur = 0; g.strokeStyle = "rgba(120,110,190," + open + ")"; g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, eh * 1.05, 0, 6.283); g.stroke();
+            }); g.restore();
+            g.fillStyle = "#000"; g.globalAlpha = .55 * (1 - open); g.fillRect(0, 0, w, h); g.globalAlpha = 1;
+            if (t > .5) { g.fillStyle = "#e8e6ff"; g.globalAlpha = fxS(.5, .6, t); g.fillRect(0, 0, w, h); g.globalAlpha = 1; }
+            if (t > .2 && t < .42) { g.globalAlpha = fxS(.2, .26, t) * (1 - fxS(.34, .42, t)); fxText(g, "白眼", cx, h * .17, M * .12, "#fff", "#1a1d4a", "#8fa4ff"); g.globalAlpha = 1; }
+        }
+        if (t >= .5) {                                                 // ACT 2b: inside the eye, branching chakra routes and layers
+            const a = fxS(.5, .66, t); fxChakra(g, w, h, s, a, M);
+            const lk = fxS(.7, .92, t);                                // ACT 3: routes lock on the opponents' real cards
+            if (lk > 0) { env.rects.forEach((r, i) => { const x = r.left + r.width / 2, y = r.top + r.height / 2; g.strokeStyle = "rgba(220,235,255," + lk + ")"; g.lineWidth = 2.5; g.shadowColor = "#7aa0ff"; g.shadowBlur = 16; g.beginPath(); g.moveTo(cx, cy); g.quadraticCurveTo((cx + x) / 2 + 60, (cy + y) / 2, x, y); g.stroke(); g.shadowBlur = 0; });
+                trig(lk); g.globalAlpha = lk * (1 - fxS(.94, 1, t)); fxText(g, "八卦六十四掌", cx, h * .88, M * .07, "#fff", "#1a1d4a", "#8fa4ff"); g.globalAlpha = 1; }
+            if (t > .9) { g.globalAlpha = 0; }
+        }
+    }
+};
+UNO_FX_HOOKS.naruto_e = unoSceneHook("naruto_e", unoNeji);
+
+
 
 
 const unoSpCache = {};
@@ -4483,7 +4594,7 @@ window.unoPlay = (ci, col, tg) => unoTx(u => {
     else if (c.k === "r") { u.dir *= -1; msg += ". Direction reversed!"; u.turn = u.seats.length === 2 ? p : unoAdv(u, p, 1, notes); }
     else if (c.k === "d") { unoDraw(u, nx, 2); msg += ". " + u.names["p" + nx] + " draws 2!"; u.turn = unoAdv(u, p, 2, notes); }
     else if (c.k === "x") { unoDraw(u, nx, 4); msg += ". " + u.names["p" + nx] + " draws 4!"; u.turn = unoAdv(u, p, 2, notes); }
-    else if (c.k === "f") { u.frozen = u.frozen || {}; u.frozen["p" + nx] = (u.frozen["p" + nx] || 0) + 2; msg += (c.ab ? " (" + c.ab + ")" : "") + ". " + u.names["p" + nx] + " is FROZEN for 2 turns!"; u.turn = unoAdv(u, p, 1, notes); }
+    else if (c.k === "f") { u.frozen = u.frozen || {}; u.frozen["p" + nx] = (u.frozen["p" + nx] || 0) + 2; u.fzk = u.fzk || {}; u.fzk["p" + nx] = c.sk + "_" + c.k; msg += (c.ab ? " (" + c.ab + ")" : "") + ". " + u.names["p" + nx] + " is FROZEN for 2 turns!"; u.turn = unoAdv(u, p, 1, notes); }
     else if (c.k === "u") { unoDraw(u, nx, 5); msg += (c.ab ? " (" + c.ab + ")" : "") + ". " + u.names["p" + nx] + " draws 5!"; u.turn = unoAdv(u, p, 2, notes); }
     else if (c.k === "t") {
         if (h.length) { const mine = h; u.hands["p" + p] = u.hands["p" + tg]; u.hands["p" + tg] = mine; msg += (c.ab ? " (" + c.ab + ")" : "") + ". Hands swapped with " + u.names["p" + tg] + "!"; }
@@ -4581,11 +4692,11 @@ function showUNO(data) {
     $("unoStatus").textContent = u.msg || "";
     const op = $("unoOpps"); op.innerHTML = "";
     u.seats.filter(p => p !== me).forEach(p => {
-        const n = (u.hands["p" + p] || []).length, box = hbEl("div", "u-opp" + (play && u.turn === p ? " turn" : "") + (pres["p" + p] === false ? " gone" : ""));
-        box.style.setProperty("--pc", HB_COLORS[p - 1]);
+        const n = (u.hands["p" + p] || []).length, box = hbEl("div", "u-opp" + (play && u.turn === p ? " turn" : "") + (pres["p" + p] === false ? " gone" : "") + (u.frozen && u.frozen["p" + p] > 0 ? " frozen fxk-" + ((u.fzk || {})["p" + p] || "") : ""));
+        box.dataset.p = p; box.style.setProperty("--pc", HB_COLORS[p - 1]);
         const nm = hbEl("div", "u-oname", u.names["p" + p]); nm.style.color = HB_COLORS[p - 1]; box.appendChild(nm);
         const fan = hbEl("div", "u-fan"); for (let i = 0; i < Math.min(n, 7); i++) { const c = hbEl("i"); c.style.setProperty("--k", i * 6 / Math.max(1, Math.min(n, 7) - 1 || 1)); fan.appendChild(c); } box.appendChild(fan);
-        box.appendChild(hbEl("div", "u-ocount" + (n === 1 ? " uno" : ""), n === 1 ? "UNO! · 1 card" : n + " cards")); op.appendChild(box);
+        box.appendChild(hbEl("div", "u-ocount" + (n === 1 ? " uno" : ""), (n === 1 ? "UNO! · 1 card" : n + " cards") + (u.frozen && u.frozen["p" + p] > 0 ? "  ❄ frozen x" + u.frozen["p" + p] : ""))); op.appendChild(box);
     });
     const topIdx = u.disc[u.disc.length - 1], tp = $("unoTop"); tp.innerHTML = "";
     tp.appendChild(unoCardEl(u, topIdx, "big" + (unoSeen.top !== u.n ? " drop" : ""))); unoSeen.top = u.n;
