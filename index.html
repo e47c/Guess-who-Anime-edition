@@ -1101,6 +1101,17 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 .fx-prog{left:0;right:0;bottom:0;height:5px;z-index:7;background:#fff2}
 .fx-prog i{display:block;height:100%;width:100%;background:var(--c);box-shadow:0 0 12px var(--c)}
 .fx-skip{right:14px;bottom:calc(11vh + 10px);z-index:7;font-size:10px;font-weight:800;letter-spacing:.18em;color:#fff;opacity:.5}
+
+/* Gojo reveal inside the Infinite Void */
+.fx-void{inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 12px 12vh;pointer-events:none}
+.u-fx.cine>.fx-void{position:absolute}
+.fx-void-k{font-family:serif;font-size:clamp(20px,3vw,34px);font-weight:900;color:#bff4ff;letter-spacing:.3em;text-shadow:0 0 16px #33ccff}
+.fx-void h2{margin:0 0 6px;font-family:var(--font-display);font-weight:400;font-size:clamp(30px,6vw,64px);color:#fff;-webkit-text-stroke:2px #06304f;text-shadow:0 0 26px #33ccff,4px 4px 0 #06304f;letter-spacing:.06em;transform:skewX(-6deg)}
+.fx-void-rows{display:grid;gap:12px;max-height:56vh;overflow:auto;width:min(1100px,100%);pointer-events:auto}
+.fx-void-name{display:inline-block;font-family:var(--font-display);font-size:clamp(16px,2.4vw,24px);padding:2px 14px;margin-bottom:6px;background:#fff;color:#000!important;transform:skewX(-8deg);border-left:6px solid #33ccff}
+.fx-void-hand{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.fx-void .ucard.mini{border-color:#fff;box-shadow:0 0 0 2px #000,0 0 18px #33ccff,0 8px 16px #000a;animation:fxFloat 3.2s ease-in-out infinite}
+@keyframes fxFloat{0%,100%{transform:translateY(0) rotate(var(--tilt,0deg))}50%{transform:translateY(-8px) rotate(calc(var(--tilt,0deg)*-1))}}
 </style>
 
 </head>
@@ -3812,6 +3823,283 @@ function unoFxHook(key) {
 }
 const UNO_FX_HOOKS = {};
 Object.keys(UNO_FX_CFG).forEach(k => { UNO_FX_HOOKS[k] = unoFxHook(k); });
+/* =====================================================================
+   HAND-MADE SCENES  (each of these cards gets its own scripted cinematic)
+   Done so far:  jjk_e = Gojo (Infinite Void)   jjk_u = Sukuna (Malevolent Shrine)
+   The scene is as long as your voice line (+ a silent ending). If the scene doesn't line up with what
+   your voice says, change the fractions below: [when act 2 starts, when act 3 starts] as a share of the clip
+   (0.30 = 30% of the way through the audio).
+   ===================================================================== */
+let unoFxOwnsPeek = null;
+const UNO_SCENE_T = { jjk_e: [.17, .40], jjk_u: [.15, .45] };
+const FXJ = '"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP","MS Mincho","SimSun",serif';
+const fxS = (a, b, x) => { x = Math.min(1, Math.max(0, (x - a) / (b - a))); return x * x * (3 - 2 * x); };
+function fxText(g, txt, x, y, size, fill, stroke, glow, font) {
+    g.font = "900 " + size + "px " + (font || FXJ); g.textAlign = "center"; g.textBaseline = "middle"; g.lineJoin = "round";
+    g.shadowColor = glow || stroke; g.shadowBlur = size * .3; g.lineWidth = Math.max(2, size * .07); g.strokeStyle = stroke; g.strokeText(txt, x, y);
+    g.shadowBlur = 0; g.fillStyle = fill; g.fillText(txt, x, y);
+}
+function fxEye(g, cx, cy, W, open, o) {
+    if (open < .03) return;
+    const H = W * .36 * open;
+    g.save(); g.translate(cx, cy); g.rotate(o.tilt || 0);
+    const path = () => { g.beginPath(); g.moveTo(-W / 2, 0); g.quadraticCurveTo(0, -H * 2, W / 2, 0); g.quadraticCurveTo(0, H * 2, -W / 2, 0); g.closePath(); };
+    g.shadowColor = o.glow; g.shadowBlur = W * .45; path(); g.fillStyle = "#04020a"; g.fill(); g.shadowBlur = 0;
+    g.save(); path(); g.clip();
+    const ir = Math.max(2, H * 1.05), gr = g.createRadialGradient(0, 0, ir * .08, 0, 0, ir);
+    o.stops.forEach(s => gr.addColorStop(s[0], s[1])); g.fillStyle = gr; g.beginPath(); g.arc(0, 0, ir, 0, 6.283); g.fill();
+    if (o.slit) { g.fillStyle = "#000"; g.beginPath(); g.ellipse(0, 0, ir * .11, ir * .96, 0, 0, 6.283); g.fill(); }
+    else {
+        g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = 1.5; for (let k = 1; k < 4; k++) { g.beginPath(); g.arc(0, 0, ir * k * .25, 0, 6.283); g.stroke(); }
+        g.fillStyle = "#001a33"; g.beginPath(); g.arc(0, 0, ir * .26, 0, 6.283); g.fill(); g.fillStyle = "rgba(255,255,255,.95)"; g.beginPath(); g.arc(-ir * .3, -ir * .3, ir * .12, 0, 6.283); g.fill();
+    }
+    g.restore();
+    path(); g.strokeStyle = o.rim; g.lineWidth = Math.max(2, W * .022); g.shadowColor = o.glow; g.shadowBlur = W * .2; g.stroke(); g.shadowBlur = 0;
+    if (o.lash) { g.strokeStyle = "#eaffff"; g.lineWidth = Math.max(1.5, W * .012); for (let i = 1; i < 16; i++) { const t = i / 16, x = -W / 2 + W * t, y = -4 * H * t * (1 - t); g.beginPath(); g.moveTo(x, y); g.lineTo(x + (t - .5) * W * .12, y - W * .07 * open); g.stroke(); } }
+    g.restore();
+}
+const FX_GOJO_EYE = { stops: [[0, "#ffffff"], [.25, "#c4f8ff"], [.6, "#2ec8ff"], [1, "#0a3a8a"]], rim: "#d9f8ff", glow: "#33ccff", lash: true };
+const FX_SUK_EYE = { stops: [[0, "#ff9a8a"], [.3, "#ff2b2b"], [.7, "#a30000"], [1, "#2a0000"]], rim: "#ff3b3b", glow: "#ff1010", slit: true };
+const FXG = "無量空処0123456789∞呪術廻戦";
+function fxVoid(g, w, h, s, speed, glyph) {
+    const cx = w / 2, cy = h / 2, R = Math.hypot(w, h) / 2, gr = g.createRadialGradient(cx, cy, 0, cx, cy, R);
+    gr.addColorStop(0, "#0b1f5c"); gr.addColorStop(.45, "#050b2e"); gr.addColorStop(1, "#000007"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 5; i++) { const x = w * (.2 + .6 * fxR(i + 40) + .08 * Math.sin(s * .3 + i)), y = h * (.2 + .6 * fxR(i + 50) + .08 * Math.cos(s * .25 + i)), r = R * (.35 + .2 * fxR(i + 60)), n = g.createRadialGradient(x, y, 0, x, y, r);
+        n.addColorStop(0, i % 2 ? "rgba(130,90,255,.22)" : "rgba(40,200,255,.2)"); n.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = n; g.fillRect(0, 0, w, h); }
+    g.lineCap = "round";
+    for (let i = 0; i < 150; i++) { const a = fxR(i) * 6.283, z = (fxR(i + 7) + s * .1 * speed) % 1, r = Math.pow(z, 2.2) * R * 1.05, len = Math.min(r, 3 + speed * r * .045);
+        g.beginPath(); g.moveTo(cx + Math.cos(a) * (r - len), cy + Math.sin(a) * (r - len)); g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+        g.globalAlpha = Math.min(1, z * 1.4); g.strokeStyle = i % 5 === 0 ? "#b9a6ff" : i % 2 ? "#ffffff" : "#7fe9ff"; g.lineWidth = .6 + z * 2.4; g.stroke(); }
+    g.globalAlpha = 1;
+    if (glyph > 0) { g.font = "700 22px monospace"; g.textAlign = "center"; g.textBaseline = "middle"; const cols = Math.ceil(w / 34);
+        for (let c = 0; c < cols; c++) { const head = ((s * (.12 + fxR(c + 70) * .22) * (.6 + speed * .35) + fxR(c + 80)) % 1) * (h + 260) - 130;
+            for (let j = 0; j < 9; j++) { g.globalAlpha = glyph * (1 - j / 9); g.fillStyle = j ? "#6fe3ff" : "#ffffff"; g.fillText(FXG[(Math.floor(s * 5 * (.5 + fxR(c + j))) + c * 3 + j) % FXG.length], c * 34 + 17, head - j * 26); } }
+        g.globalAlpha = 1; }
+}
+function fxSlam(p) { return { sc: 1 + (1 - fxS(0, .2, p)) * 2.2, a: fxS(0, .08, p) * (1 - fxS(.86, 1, p)) }; }
+
+/* ---------- GOJO · Infinite Void ---------- */
+const unoGojo = {
+    col: "#33ccff", ms: 12000,
+    begin(env, box, u) { env.me = Number(myPlayer); env.owner = env.me === u.fx.p; env.who = u.names["p" + u.fx.p] || "?"; if (env.owner && u.peek) unoFxOwnsPeek = u.peek.id; },
+    tail: env => env.owner ? 4200 : 2400,
+    end(env, u) { if (env.owner && !env.shown) { unoFxOwnsPeek = null; unoPeekShow(u, env.me); } },
+    draw(g, w, h, T, env, u) {
+        const cx = w / 2, cy = h / 2, R = Math.hypot(w, h) / 2, B = UNO_SCENE_T.jjk_e, M = Math.min(w, h);
+        if (T.ph === "main") {
+            const t = T.t, s = T.s; g.fillStyle = "#000"; g.fillRect(0, 0, w, h);
+            if (t < B[1]) {                                                        // ACT 1: the Six Eyes open in the dark
+                const a = Math.min(1, t / B[0]), fade = t < B[0] ? 1 : 1 - fxS(B[0], B[1], t);
+                const mg = g.createRadialGradient(cx, cy, 0, cx, cy, R * .8); mg.addColorStop(0, "rgba(30,140,255," + (.3 * fade) + ")"); mg.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = mg; g.fillRect(0, 0, w, h);
+                g.fillStyle = "#7fe9ff"; for (let i = 0; i < 50; i++) { g.globalAlpha = .55 * fade * fxR(i + 2); g.fillRect(fxR(i) * w, h - ((fxR(i + 3) * .5 + s * .08 * (.4 + fxR(i + 8))) % 1) * h, 2, 2 + fxR(i) * 6); } g.globalAlpha = 1;
+                const zoom = 1 + fxS(B[0], B[1], t) * 3, EW = Math.min(w * .24, 300);
+                g.save(); g.translate(cx, cy); g.scale(zoom, zoom); g.globalAlpha = fade;
+                const mo = fxS(.10, .38, a), p1 = fxS(.42, .64, a), p2 = fxS(.56, .78, a);
+                fxEye(g, -EW * .62, 0, EW, mo, Object.assign({ tilt: -.05 }, FX_GOJO_EYE)); fxEye(g, EW * .62, 0, EW, mo, Object.assign({ tilt: .05 }, FX_GOJO_EYE));
+                fxEye(g, -EW * 1.5, -EW * .6, EW * .5, p1, Object.assign({ tilt: -.3 }, FX_GOJO_EYE)); fxEye(g, EW * 1.5, -EW * .6, EW * .5, p1, Object.assign({ tilt: .3 }, FX_GOJO_EYE));
+                fxEye(g, -EW * 1.5, EW * .6, EW * .5, p2, Object.assign({ tilt: .3 }, FX_GOJO_EYE)); fxEye(g, EW * 1.5, EW * .6, EW * .5, p2, Object.assign({ tilt: -.3 }, FX_GOJO_EYE));
+                g.restore(); g.globalAlpha = 1;
+                if (t < B[0]) fxText(g, "六眼 · SIX EYES", cx, h * .86, M * .05, "#e8fbff", "#0a6ea8", "#33ccff", FXJ + "," + "sans-serif");
+            }
+            if (t >= B[0] && t < B[1]) {                                           // ACT 2: Domain Expansion, a dome of void grows out of the centre
+                const b = (t - B[0]) / (B[1] - B[0]), r = fxS(0, .75, b) * R * 1.05;
+                g.save(); g.beginPath(); g.arc(cx, cy, r, 0, 6.283); g.clip(); fxVoid(g, w, h, s, 1.4, 0); g.restore();
+                g.beginPath(); g.arc(cx, cy, r, 0, 6.283); g.strokeStyle = "#e8fbff"; g.lineWidth = 6 + 10 * (1 - b); g.shadowColor = "#33ccff"; g.shadowBlur = 40; g.stroke(); g.shadowBlur = 0;
+                const first = b < .5, sl = fxSlam(first ? b / .5 : (b - .5) / .5), jx = (fxR((T.now / 40) | 0) - .5) * 10 * (1 - fxS(0, .3, first ? b / .5 : (b - .5) / .5));
+                g.save(); g.translate(cx + jx, cy - M * .04); g.scale(sl.sc, sl.sc); g.globalAlpha = sl.a;
+                fxText(g, first ? "領域展開" : "無量空処", 0, 0, M * .24, "#ffffff", "#0b6fb8", "#33ccff"); g.restore(); g.globalAlpha = 1;
+                g.globalAlpha = fxS(.1, .3, b) * (1 - fxS(.9, 1, b)); fxText(g, first ? "D O M A I N   E X P A N S I O N" : "I N F I N I T E   V O I D", cx, cy + M * .2, M * .045, "#dff8ff", "#06304f", "#33ccff", "sans-serif"); g.globalAlpha = 1;
+            }
+            if (t >= B[1]) {                                                       // ACT 3: we fall into the void
+                const c = (t - B[1]) / (1 - B[1]);
+                fxVoid(g, w, h, s, 1 + c * 16, .55 * fxS(0, .3, c));
+                const z = 1 + c * c * 22; g.save(); g.translate(cx, cy); g.scale(z, z); g.globalAlpha = 1 - fxS(.15, .75, c);
+                fxText(g, "無量空処", 0, 0, M * .22, "#ffffff", "#2ec8ff", "#7fe9ff"); g.restore(); g.globalAlpha = 1;
+                for (let k = 0; k < 3; k++) { const q = (c * 1.6 - k * .22); if (q <= 0 || q > 1) continue; g.beginPath(); g.arc(cx, cy, R * q, 0, 6.283); g.strokeStyle = "rgba(180,240,255," + (1 - q) + ")"; g.lineWidth = 3; g.stroke(); }
+                const wo = fxS(.84, 1, c); if (wo > 0) { g.fillStyle = "rgba(255,255,255," + wo + ")"; g.fillRect(0, 0, w, h); }
+            }
+            const fl = Math.max(0, 1 - Math.abs(t - B[0]) / .035) * .85; if (fl > 0) { g.fillStyle = "rgba(210,248,255," + fl + ")"; g.fillRect(0, 0, w, h); }
+        } else {                                                                   // ENDING: calm void, the opponents' hands float in it
+            const tt = T.tt; fxVoid(g, w, h, T.el / 1000, .25, .22);
+            const wo = 1 - fxS(0, .18, tt); if (wo > 0) { g.fillStyle = "rgba(255,255,255," + wo + ")"; g.fillRect(0, 0, w, h); }
+            if (!env.shown) { env.shown = true; if (env.owner) unoGojoReveal(env.box, env, u); }
+            if (!env.owner) { g.globalAlpha = fxS(.1, .3, tt); fxText(g, "無量空処", cx, cy - M * .08, M * .16, "#ffffff", "#2ec8ff", "#7fe9ff"); fxText(g, env.who + " is reading your hand...", cx, cy + M * .1, M * .045, "#dff8ff", "#06304f", "#33ccff", "sans-serif"); g.globalAlpha = 1; }
+        }
+    }
+};
+function unoGojoReveal(box, env, u) {
+    const v = hbEl("div", "fx-void"); box.appendChild(v);
+    v.appendChild(hbEl("div", "fx-void-k", "無量空処")); v.appendChild(hbEl("h2", null, "INFINITE VOID"));
+    const rows = hbEl("div", "fx-void-rows"); let n = 0;
+    const others = u.seats.filter(p => p !== env.me), total = others.reduce((a, p) => a + (u.hands["p" + p] || []).length, 0), step = Math.min(60, 1500 / Math.max(1, total));
+    others.forEach(p => {
+        const r = hbEl("div", "fx-void-row"), nm = hbEl("div", "fx-void-name", u.names["p" + p] + " · " + (u.hands["p" + p] || []).length + " cards"); r.appendChild(nm);
+        const hd = hbEl("div", "fx-void-hand");
+        (u.hands["p" + p] || []).slice().sort((a, b) => (u.cards[a].s - u.cards[b].s) || (u.cards[a].v - u.cards[b].v)).forEach(ci => {
+            const el = unoCardEl(u, ci, "mini"); el.style.setProperty("--tilt", ((fxR(n * 3 + 1) - .5) * 8) + "deg"); el.style.animationDelay = (n * 90) + "ms";
+            el.animate([{ opacity: 0, transform: "translateY(50px) scale(.4) rotate(-10deg)" }, { opacity: 1, transform: "none" }], { duration: 520, delay: 500 + n * step, easing: "cubic-bezier(.2,1.4,.4,1)", fill: "backwards" });
+            hd.appendChild(el); n++;
+        });
+        r.appendChild(hd); rows.appendChild(r);
+    });
+    v.appendChild(rows);
+}
+
+/* ---------- SUKUNA · Malevolent Shrine ---------- */
+function fxSplit(poly, L) {
+    const ax = L[0], ay = L[1], bx = L[2], by = L[3], side = p => (bx - ax) * (p[1] - ay) - (by - ay) * (p[0] - ax), A = [], B = [];
+    for (let i = 0; i < poly.length; i++) { const p = poly[i], q = poly[(i + 1) % poly.length], sp = side(p), sq = side(q);
+        if (sp >= 0) A.push(p); if (sp <= 0) B.push(p);
+        if ((sp > 0 && sq < 0) || (sp < 0 && sq > 0)) { const t = sp / (sp - sq), m = [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]; A.push(m); B.push(m); } }
+    return [A, B].filter(x => x.length >= 3);
+}
+function fxSlashGeom(k, w, h) {
+    const an = (fxR(k * 3.1 + 100) - .5) * Math.PI * 1.7, px = fxR(k * 5.7 + 200) * w, py = fxR(k * 2.3 + 300) * h, L = Math.hypot(w, h), dx = Math.cos(an), dy = Math.sin(an);
+    return [px - dx * L, py - dy * L, px + dx * L, py + dy * L];
+}
+function fxRR(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function fxCardBack(g, x, y, sc, rotY, ang) {
+    g.save(); g.translate(x, y); g.rotate(ang); g.scale(Math.max(.14, Math.abs(Math.cos(rotY))) * sc, sc);
+    fxRR(g, -30, -45, 60, 90, 8); const gr = g.createLinearGradient(-30, -45, 30, 45); gr.addColorStop(0, "#ff4040"); gr.addColorStop(1, "#7a0508"); g.fillStyle = gr; g.fill(); g.lineWidth = 4; g.strokeStyle = "#fff"; g.stroke();
+    g.fillStyle = "#12020a"; g.beginPath(); g.ellipse(0, 0, 20, 30, -.5, 0, 6.283); g.fill(); g.fillStyle = "#ffd75a"; g.font = "900 22px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", 0, 1); g.restore();
+}
+function fxShrine(g, gx, gy, sc, glow) {
+    g.save(); g.translate(gx, gy); g.scale(sc, sc); g.lineJoin = "round";
+    const rim = () => { g.strokeStyle = "rgba(255,70,55,.9)"; g.lineWidth = 3; g.shadowColor = "#ff2a1a"; g.shadowBlur = 22 * glow; g.stroke(); g.shadowBlur = 0; };
+    const fillDark = () => { g.fillStyle = "#07000a"; g.fill(); };
+    g.beginPath(); g.rect(-340, -34, 680, 34); fillDark(); rim(); g.beginPath(); g.rect(-290, -66, 580, 34); fillDark(); rim();
+    g.beginPath(); g.rect(-240, -250, 480, 184); fillDark();
+    const dg = g.createRadialGradient(0, -150, 4, 0, -150, 110); dg.addColorStop(0, "rgba(255,200,120," + (.9 * glow) + ")"); dg.addColorStop(.4, "rgba(255,50,30," + (.8 * glow) + ")"); dg.addColorStop(1, "rgba(80,0,0,0)"); g.fillStyle = dg; g.fillRect(-64, -240, 128, 174);
+    [-230, -110, 90, 210].forEach(x => { g.beginPath(); g.rect(x, -250, 24, 190); fillDark(); rim(); });
+    g.beginPath(); g.moveTo(-410, -232); g.bezierCurveTo(-330, -250, -270, -292, -210, -340); g.lineTo(210, -340); g.bezierCurveTo(270, -292, 330, -250, 410, -232); g.closePath(); fillDark(); rim();
+    g.beginPath(); g.rect(-170, -420, 340, 80); fillDark(); rim();
+    g.beginPath(); g.moveTo(-270, -408); g.bezierCurveTo(-210, -420, -180, -452, -120, -500); g.lineTo(120, -500); g.bezierCurveTo(180, -452, 210, -420, 270, -408); g.closePath(); fillDark(); rim();
+    g.fillStyle = "#e9ddc6"; g.beginPath(); g.arc(0, -380, 30, 0, 6.283); g.fill(); g.beginPath(); g.rect(-16, -360, 32, 22); g.fill();
+    g.fillStyle = "#12020a"; g.beginPath(); g.arc(-11, -383, 7, 0, 6.283); g.arc(11, -383, 7, 0, 6.283); g.fill();
+    g.strokeStyle = "#e9ddc6"; g.lineWidth = 8; g.lineCap = "round"; g.beginPath(); g.moveTo(-26, -396); g.quadraticCurveTo(-70, -400, -78, -440); g.moveTo(26, -396); g.quadraticCurveTo(70, -400, 78, -440); g.stroke();
+    g.lineWidth = 6; for (let i = 0; i < 5; i++) { g.beginPath(); g.arc(-300, -180 + i * 6, 30 + i * 18, 4.2, 5.6); g.stroke(); g.beginPath(); g.arc(300, -180 + i * 6, 30 + i * 18, 3.8, 5.2); g.stroke(); }
+    g.restore();
+}
+const unoSukuna = {
+    col: "#e0182a", ms: 12000,
+    begin(env, box, u) { env.who = u.names["p" + u.fx.p] || "?"; env.to = u.names["p" + (u.fx.to || unoNext(u, u.fx.p, 1))] || "?"; },
+    tail: () => 3800,
+    tailStart(env, cv, u, W, H) {
+        const w = innerWidth, h = innerHeight, snap = document.createElement("canvas"); snap.width = W; snap.height = H; snap.getContext("2d").drawImage(cv, 0, 0);
+        env.snap = snap; let polys = [[[0, 0], [w, 0], [w, h], [0, h]]];
+        const lines = []; for (let k = 40; k < 48; k++) lines.push(fxSlashGeom(k, w, h));
+        lines.forEach(L => { const nx = []; polys.forEach(p => fxSplit(p, L).forEach(q => nx.push(q))); polys = nx; });
+        env.shards = polys.map((p, i) => { let sx = 0, sy = 0; p.forEach(q => { sx += q[0]; sy += q[1]; }); sx /= p.length; sy /= p.length; const dx = sx - w / 2, dy = sy - h / 2, d = Math.hypot(dx, dy) || 1; return { p: p, cx: sx, cy: sy, dx: dx / d + (fxR(i) - .5) * .8, dy: dy / d + (fxR(i + 9) - .5) * .8, r: (fxR(i + 4) - .5) * 1.6, d: .6 + fxR(i + 6) }; });
+        env.box.style.background = "transparent";                                   // the real game shows through the broken pieces
+    },
+    draw(g, w, h, T, env, u) {
+        const cx = w / 2, cy = h / 2, R = Math.hypot(w, h) / 2, B = UNO_SCENE_T.jjk_u, M = Math.min(w, h);
+        if (T.ph === "main") {
+            const t = T.t, s = T.s; g.save();
+            const sk = t < B[0] ? 2 + 3 * Math.abs(Math.sin(s * 5)) * fxS(.3, .8, t / B[0]) : t < B[1] ? 3 + 5 * Math.max(0, Math.sin(s * 3)) : 6; let act3 = 0;
+            if (t >= B[1]) { const c = (t - B[1]) / (1 - B[1]); act3 = c; }
+            g.translate((fxR((T.now / 33) | 0) - .5) * sk * (t < B[1] ? 1 : 1 + act3 * 2), (fxR(((T.now / 33) | 0) + 5) - .5) * sk * (t < B[1] ? 1 : 1 + act3 * 2));
+            g.fillStyle = "#000"; g.fillRect(-20, -20, w + 40, h + 40);
+            if (t < B[0]) {                                                         // ACT 1: four red eyes open
+                const a = t / B[0], fog = g.createRadialGradient(cx, cy, 0, cx, cy, R * .8); fog.addColorStop(0, "rgba(200,10,20," + (.35 + .1 * Math.sin(s * 6)) + ")"); fog.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = fog; g.fillRect(0, 0, w, h);
+                g.fillStyle = "#ff5a3a"; for (let i = 0; i < 50; i++) { g.globalAlpha = .6 * fxR(i + 2); g.fillRect(fxR(i) * w, h - ((fxR(i + 3) * .5 + s * .1 * (.4 + fxR(i + 8))) % 1) * h, 2, 2 + fxR(i) * 5); } g.globalAlpha = 1;
+                const EW = Math.min(w * .22, 280), mo = fxS(.10, .38, a), lo = fxS(.40, .68, a), z = 1 + a * a * .25;
+                g.save(); g.translate(cx, cy); g.scale(z, z);
+                fxEye(g, -EW * .78, -EW * .30, EW, mo, Object.assign({ tilt: .14 }, FX_SUK_EYE)); fxEye(g, EW * .78, -EW * .30, EW, mo, Object.assign({ tilt: -.14 }, FX_SUK_EYE));
+                fxEye(g, -EW * .78, EW * .40, EW * .62, lo, Object.assign({ tilt: .12 }, FX_SUK_EYE)); fxEye(g, EW * .78, EW * .40, EW * .62, lo, Object.assign({ tilt: -.12 }, FX_SUK_EYE));
+                g.restore();
+            } else {                                                                // ACT 2 + 3: the shrine
+                const b = Math.min(1, (t - B[0]) / (B[1] - B[0])), rise = fxS(.05, .55, b), dim = t >= B[1] ? 1 - act3 * .35 : 1;
+                const sky = g.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, "#000"); sky.addColorStop(.55, "#4a070b"); sky.addColorStop(.85, "#a8141a"); sky.addColorStop(1, "#2a0306"); g.fillStyle = sky; g.fillRect(0, 0, w, h);
+                const my = h * .36, mr = M * .27, mg = g.createRadialGradient(cx, my, mr * .1, cx, my, mr); mg.addColorStop(0, "#ff7a60"); mg.addColorStop(.7, "#b01a1f"); mg.addColorStop(1, "#40050a"); g.fillStyle = mg; g.beginPath(); g.arc(cx, my, mr, 0, 6.283); g.fill();
+                g.save(); g.translate(cx, my); g.rotate(s * .08); g.fillStyle = "rgba(255,60,40,.1)"; for (let i = 0; i < 16; i++) { const an = i / 16 * 6.283; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(an - .05) * R * 1.3, Math.sin(an - .05) * R * 1.3); g.lineTo(Math.cos(an + .05) * R * 1.3, Math.sin(an + .05) * R * 1.3); g.fill(); } g.restore();
+                const gy = h * .86; g.fillStyle = "#1a0205"; g.fillRect(0, gy, w, h - gy);
+                g.strokeStyle = "rgba(255,70,55,.35)"; g.lineWidth = 2; for (let i = 0; i < 26; i++) { const yy = gy + 6 + fxR(i) * (h - gy), xx = fxR(i + 3) * w; g.beginPath(); g.moveTo(xx, yy); g.lineTo(xx + 40 + fxR(i + 5) * 120, yy); g.stroke(); }
+                const sc = Math.min(w / 900, h / 760);
+                fxShrine(g, cx, gy + (1 - rise) * h * .6, sc, 1 + .25 * Math.sin(s * 5));
+                g.globalAlpha = .9 * dim; g.strokeStyle = "#e9ddc6"; g.lineWidth = M * .012; g.lineCap = "round"; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(w * .06, h + M * .02, M * (.12 + i * .045), 3.9, 5.2); g.stroke(); g.beginPath(); g.arc(w * .94, h + M * .02, M * (.12 + i * .045), 4.2, 5.5); g.stroke(); } g.globalAlpha = 1;
+                for (let k = 0; k < 3; k++) { const q = ((s * .7 - k * .33) % 1 + 1) % 1; g.beginPath(); g.arc(cx, gy - 100 * sc, q * R, 0, 6.283); g.strokeStyle = "rgba(255,70,50," + (.55 * (1 - q)) + ")"; g.lineWidth = 6 * (1 - q) + 1; g.stroke(); }
+                if (t < B[1]) {
+                    "領域展開".split("").forEach((ch, i) => { const p = fxS(.05 + i * .06, .2 + i * .06, b); g.globalAlpha = p; fxText(g, ch, w * .09, h * .17 + i * M * .115 - (1 - p) * 40, M * .1, "#fff", "#b10e18", "#ff2a1a"); });
+                    "伏魔御廚子".split("").forEach((ch, i) => { const p = fxS(.30 + i * .06, .45 + i * .06, b); g.globalAlpha = p; fxText(g, ch, w * .91, h * .12 + i * M * .115 - (1 - p) * 40, M * .1, "#fff", "#b10e18", "#ff2a1a"); }); g.globalAlpha = 1;
+                    g.globalAlpha = fxS(.45, .65, b); fxText(g, "D O M A I N   E X P A N S I O N", cx, h * .09, M * .04, "#ffe3dc", "#4a0508", "#ff2a1a", "sans-serif"); fxText(g, "MALEVOLENT SHRINE", cx, h * .945, M * .075, "#fff", "#c5121e", "#ff2a1a", "sans-serif"); g.globalAlpha = 1;
+                } else {                                                            // ACT 3: Dismantle / Cleave, the whole screen gets cut
+                    const c = act3, N = 48; let live = 0; g.lineCap = "round";
+                    for (let k = 0; k < N; k++) {
+                        const tk = .10 + .78 * Math.pow(k / N, 1.35), lt = (c - tk) / .10; if (lt < 0) continue;
+                        const L = fxSlashGeom(k, w, h), e = Math.min(1, lt * 3), hx = L[0] + (L[2] - L[0]) * (1 - Math.pow(1 - e, 3)), hy = L[1] + (L[3] - L[1]) * (1 - Math.pow(1 - e, 3));
+                        g.globalAlpha = Math.max(.12, .5 - (c - tk) * .5); g.strokeStyle = "#ff2a2a"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(L[0], L[1]); g.lineTo(hx, hy); g.stroke();
+                        if (lt < 1) { live++; g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 3 + (1 - lt) * 12; g.shadowColor = "#ff1a1a"; g.shadowBlur = 28; g.beginPath(); g.moveTo(L[0], L[1]); g.lineTo(hx, hy); g.stroke(); g.shadowBlur = 0; }
+                    }
+                    g.globalAlpha = 1; if (live) { g.fillStyle = "rgba(255,40,30," + Math.min(.28, live * .06) + ")"; g.fillRect(0, 0, w, h); }
+                    const sl = fxSlam(Math.min(1, c / .30)); if (c < .30) { g.save(); g.translate(cx, cy); g.rotate(-.12); g.scale(sl.sc, sl.sc); g.globalAlpha = sl.a; fxText(g, "解", -M * .22, 0, M * .3, "#fff", "#c5121e", "#ff2a1a"); fxText(g, "DISMANTLE", M * .1, M * .02, M * .12, "#fff", "#c5121e", "#ff2a1a", "sans-serif"); g.restore(); g.globalAlpha = 1; }
+                    const s2 = fxSlam(Math.min(1, Math.max(0, (c - .46) / .2))); if (c > .46 && c < .66) { g.save(); g.translate(w * .72, h * .26); g.rotate(.1); g.scale(s2.sc, s2.sc); g.globalAlpha = s2.a; fxText(g, "捌  CLEAVE", 0, 0, M * .1, "#fff", "#c5121e", "#ff2a1a"); g.restore(); g.globalAlpha = 1; }
+                    const wo = fxS(.9, 1, c); if (wo > 0) { g.fillStyle = "rgba(255,255,255," + wo * .8 + ")"; g.fillRect(0, 0, w, h); }
+                }
+                const fl = Math.max(0, 1 - (t - B[0]) / .03) * .9; if (fl > 0) { g.fillStyle = "rgba(255,230,220," + fl + ")"; g.fillRect(0, 0, w, h); }
+            }
+            if (t < B[0]) { const fl = fxS(.9, 1, t / B[0]); if (fl > 0) { g.fillStyle = "rgba(255,60,40," + fl + ")"; g.fillRect(0, 0, w, h); } }
+            g.restore();
+        } else {                                                                    // ENDING: the screen falls apart, 5 cards are thrown at the opponent
+            const tt = T.tt, e = Math.max(0, (tt - .04) / .40);
+            if (env.snap && e < 1) {
+                env.shards.forEach(sh => {
+                    const o = e * e; g.save(); g.globalAlpha = 1 - fxS(.75, 1, e);
+                    g.translate(sh.cx + sh.dx * o * R * sh.d, sh.cy + sh.dy * o * R * sh.d + o * o * h * .5); g.rotate(sh.r * o); g.translate(-sh.cx, -sh.cy);
+                    g.beginPath(); sh.p.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.closePath(); g.save(); g.clip(); g.drawImage(env.snap, 0, 0, w, h); g.restore();
+                    g.strokeStyle = "#ff2a2a"; g.lineWidth = 2; g.stroke(); g.restore();
+                });
+            }
+            const tx = cx, ty = h * .16;
+            for (let i = 0; i < 5; i++) {
+                const st = .22 + i * .085, p = (tt - st) / .26; if (p < 0) continue;
+                const x0 = cx + (i - 2) * w * .05, y0 = h * 1.08, x1 = cx + (i - 2) * w * .16, y1 = h * .55, x2 = tx + (i - 2) * w * .03, y2 = ty;
+                const q = Math.min(1, p);
+                for (let tr = 5; tr >= 0; tr--) { const r = Math.max(0, q - tr * .035), u1 = 1 - r, px = u1 * u1 * x0 + 2 * u1 * r * x1 + r * r * x2, py = u1 * u1 * y0 + 2 * u1 * r * y1 + r * r * y2;
+                    if (tr) { g.globalAlpha = .12 * (6 - tr) * (q < 1 ? 1 : 0); g.fillStyle = "#ff2a2a"; g.beginPath(); g.arc(px, py, M * .02, 0, 6.283); g.fill(); } else { g.globalAlpha = 1; fxCardBack(g, px, py, M * (.0028 + .0024 * (1 - q)), q * 14 + i, (i - 2) * .25 + q * 5); } }
+                if (p >= 1 && p < 1.5) { const r = (p - 1) / .5; g.globalAlpha = 1 - r; g.beginPath(); g.arc(x2, y2, M * .02 + r * M * .1, 0, 6.283); g.strokeStyle = "#ff3a2a"; g.lineWidth = 6 * (1 - r); g.stroke(); g.globalAlpha = 1; }
+            }
+            const lp = fxS(.62, .76, tt); if (lp > 0) { const sl = fxSlam(Math.min(1, (tt - .62) / .3)); g.save(); g.translate(cx, h * .42); g.scale(.7 + .3 * sl.sc / 3.2, .7 + .3 * sl.sc / 3.2); g.globalAlpha = lp * (1 - fxS(.93, 1, tt));
+                fxText(g, "+5", 0, 0, M * .26, "#fff", "#c5121e", "#ff2a1a", "sans-serif"); fxText(g, env.to + " draws 5 cards", 0, M * .2, M * .06, "#ffe3dc", "#4a0508", "#ff2a1a", "sans-serif"); g.restore(); g.globalAlpha = 1; }
+        }
+    }
+};
+
+function unoSceneHook(key, S) {
+    const gen = UNO_FX_HOOKS[key];
+    return (box, done, c, u) => {
+        const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (reduce) return gen(box, done, c, u);
+        box.textContent = ""; box.classList.add("cine"); box.style.setProperty("--c", S.col);
+        let ended = false, voice = null; const env = { box: box };
+        const finish = () => { if (ended) return; ended = true; if (voice) unoVoiceStop(voice); try { S.end && S.end(env, u); } catch (e) { console.warn(e); } done(); };
+        box.addEventListener("click", finish);
+        try { S.begin && S.begin(env, box, u, c); } catch (e) { console.warn(e); }
+        unoVoiceLoad(key, 900).then(info => { if (ended) return; run(info, info ? Math.min(UNO_FX_MAX, Math.max(UNO_FX_MIN, info.dur * 1000 + 700)) : S.ms); }).catch(e => { console.warn(e); finish(); });
+        function run(info, main) {
+            const tail = S.tail(env), total = main + tail, cv = hbEl("canvas", "fx-cv"); box.appendChild(cv);
+            const dpr = Math.min(1.5, window.devicePixelRatio || 1), W = cv.width = innerWidth * dpr, H = cv.height = innerHeight * dpr, g = cv.getContext("2d");
+            const prog = hbEl("div", "fx-prog"), pin = hbEl("i"); prog.appendChild(pin); box.appendChild(prog); box.appendChild(hbEl("div", "fx-skip", "TAP TO SKIP"));
+            if (info) voice = unoVoicePlay(info);
+            const t0 = performance.now();
+            const frame = now => {
+                if (ended) return;
+                if (!box.isConnected) { finish(); return; }
+                const el = now - t0, ph = el < main ? "main" : "tail";
+                if (ph === "tail" && !env.tailed) { env.tailed = true; try { S.tailStart && S.tailStart(env, cv, u, W, H); } catch (e) { console.warn(e); } }
+                g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H); g.scale(W / innerWidth, W / innerWidth);
+                try { S.draw(g, innerWidth, innerHeight, { ph: ph, t: Math.min(1, el / main), tt: ph === "tail" ? Math.min(1, (el - main) / tail) : 0, s: el / 1000, el: el, now: now, main: main }, env, u); } catch (e) { console.warn(e); }
+                pin.style.width = Math.max(0, (1 - el / total) * 100) + "%";
+                if (el < total) requestAnimationFrame(frame); else finish();
+            };
+            requestAnimationFrame(frame);
+            setTimeout(finish, total + 600);
+        }
+    };
+}
+UNO_FX_HOOKS.jjk_e = unoSceneHook("jjk_e", unoGojo);
+UNO_FX_HOOKS.jjk_u = unoSceneHook("jjk_u", unoSukuna);
+
 
 const unoSpCache = {};
 function unoSpArt(pic, c) {
@@ -4032,7 +4320,7 @@ window.unoPlay = (ci, col, tg) => unoTx(u => {
     if (!fh.length) { u.phase = "over"; u.winner = p; msg = nm + " wins the round!"; }
     u.n++; u.msg = msg;
     const id = (u.round || 1) + ":" + u.n;
-    if (sp && u.phase === "play") u.fx = { id: id, ci: ci, p: p };
+    if (sp && u.phase === "play") u.fx = { id: id, ci: ci, p: p, to: nx };
     if (c.k === "e" && u.phase === "play") u.peek = { id: id, p: p, t: Date.now() };
 });
 window.unoDrawClick = () => unoTx(u => {
@@ -4206,7 +4494,7 @@ function unoPeekShow(u, me) {
         r.appendChild(hd); rows.appendChild(r);
     });
     box.appendChild(rows); box.appendChild(hbEl("div", "u-peek-bar"));
-    const showPeek = () => { if ($("unoFx")) return setTimeout(showPeek, 200); setTimeout(() => { $("uno").appendChild(box); setTimeout(() => box.remove(), 3000); }, 600); }; setTimeout(showPeek, 300);   // after the banner, then exactly 3 seconds
+    const showPeek = () => { if ($("unoFx")) return setTimeout(showPeek, 200); if (unoFxOwnsPeek && u.peek && unoFxOwnsPeek === u.peek.id) return; setTimeout(() => { $("uno").appendChild(box); setTimeout(() => box.remove(), 3000); }, 600); }; setTimeout(showPeek, 300);   // after the banner, then exactly 3 seconds
 }
 
 window.createRoom =
