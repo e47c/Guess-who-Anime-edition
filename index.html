@@ -1116,6 +1116,11 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 .u-opp.frozen.fxk-jojo_f{border-color:#ffd84a;background:linear-gradient(120deg,rgba(70,48,0,.92),rgba(150,108,12,.62));box-shadow:0 0 0 2px #ffd84acc,0 0 38px #ffd84a;animation:uAura 1.6s ease-in-out infinite;filter:sepia(.35) saturate(1.5)}
 .u-opp.frozen.fxk-jojo_f::after{content:"🕒";position:absolute;right:6px;top:2px;font-size:20px;transform:skewX(8deg);filter:drop-shadow(0 0 6px #ffd84a)}
 @keyframes uAura{50%{box-shadow:0 0 0 3px #fff3a8,0 0 56px #ffd84a}}
+
+.fx-hand{inset:0;z-index:2;pointer-events:none}
+.fx-hc{position:absolute!important;left:0;top:0;width:220px;height:330px;transform-origin:50% 50%}
+.fx-hc .ucard{position:absolute;left:0;top:0;width:220px;height:330px;margin:0;box-shadow:0 10px 30px #000a}
+.fx-cv.fg{z-index:3}
 </style>
 
 </head>
@@ -3606,7 +3611,7 @@ const UNO_SPECIAL = {
     dragonball:  { f: ["Hit", ""],               t: ["Whis", ""],                u: ["Goku", ""],              e: ["Jiren", ""] },
     jjk:         { f: ["Uraume", ""],            t: ["Aoi Todo", ""],            u: ["Sukuna", ""],            e: ["Satoru Gojo", ""] },
     demonslayer: { f: ["Doma", ""],              t: ["Nakime", ""],              u: ["Tanjiro Kamado", ""],    e: ["Yoriichi Tsugikuni", ""] },
-    bleach:      { f: ["Toshiro Hitsugaya", ""], t: ["Yoruichi Shihoin", ""],    u: ["Ichigo Kurosaki", ""],   e: ["Yhwach", ""] },
+    bleach:      { f: ["Toshiro Hitsugaya", ""], t: ["Aizen", ""],    u: ["Ichigo Kurosaki", ""],   e: ["Yhwach", ""] },
     hxh:         { f: ["Kurapika", ""],          t: ["Knov", ""],                u: ["Isaac Netero", ""],      e: ["Neon Nostrade", ""] },
     blackclover: { f: ["Julius Novachrono", ""], t: ["Finral Roulacase", ""],    u: ["Yami Sukehiro", ""],     e: ["Vanessa Enoteca", ""] },
     jojo:        { f: ["DIO", ""],               t: ["Bruno Bucciarati", ""],    u: ["Jotaro Kujo", ""],       e: ["Diavolo", ""] }
@@ -3627,7 +3632,7 @@ const UNO_SPECIAL = {
 const UNO_VOICE_DIR = "audio/special/", UNO_VOICE_EXT = ["mp3", "ogg", "wav", "m4a"], unoVoiceInfo = {};
 /* The animation lasts as long as the voice line (+ a short outro), but never less than MIN or more than MAX.
    With no audio file it lasts UNO_FX_MS. All in milliseconds. */
-const UNO_FX_MS = 8000, UNO_FX_MIN = 5000, UNO_FX_MAX = 20000;
+const UNO_FX_MS = 8000, UNO_FX_MIN = 5000, UNO_FX_MAX = 10000;   // an animation never lasts more than 10 s in total
 function unoVoiceLoad(key, wait) {                       // -> Promise of {src, dur} or null when there is no audio file
     return new Promise(res => {
         if (muted || unoVoiceInfo[key] === null) return res(null);
@@ -3658,7 +3663,7 @@ const UNO_FX_CFG = {
     jjk_u: ["slash", "Dismantle", "Sukuna", "#ff3b3b"],            jjk_e: ["eye", "Six Eyes", "Gojo", "#7df3ff"],
     demonslayer_f: ["ice", "Frozen Lotus", "Doma", "#e0f7ff"],     demonslayer_t: ["warp", "Infinity Castle", "Nakime", "#d9a05b"],
     demonslayer_u: ["blast", "Hinokami Kagura", "Tanjiro", "#ff7b2e"], demonslayer_e: ["eye", "Transparent World", "Yoriichi", "#ff8a5c"],
-    bleach_f: ["ice", "Hyorinmaru", "Hitsugaya", "#bfeaff"],       bleach_t: ["warp", "Flash Step", "Yoruichi", "#ffb347"],
+    bleach_f: ["ice", "Hyorinmaru", "Hitsugaya", "#bfeaff"],       bleach_t: ["warp", "Kyoka Suigetsu", "Aizen", "#b388ff"],
     bleach_u: ["slash", "Getsuga Tensho", "Ichigo", "#ff2b2b"],    bleach_e: ["eye", "The Almighty", "Yhwach", "#ffffff"],
     hxh_f: ["slash", "Judgment Chain", "Kurapika", "#ff4d6d"],     hxh_t: ["warp", "Portal Step", "Knov", "#6fd36f"],
     hxh_u: ["rush", "100-Type Guanyin", "Netero", "#ffd23f"],      hxh_e: ["eye", "Lovely Ghostwriter", "Neon", "#ff9de2"],
@@ -4081,7 +4086,7 @@ function unoSceneHook(key, S) {
         try { S.begin && S.begin(env, box, u, c); } catch (e) { console.warn(e); }
         unoVoiceLoad(key, 900).then(info => { if (ended) return; run(info, info ? Math.min(UNO_FX_MAX, Math.max(UNO_FX_MIN, info.dur * 1000 + 700)) : S.ms); }).catch(e => { console.warn(e); finish(); });
         function run(info, main) {
-            const tail = S.tail(env), total = main + tail, cv = hbEl("canvas", "fx-cv"); box.appendChild(cv);
+            const tail = S.tail(env); main = Math.min(main, UNO_FX_MAX - tail); const total = main + tail, cv = hbEl("canvas", "fx-cv"); box.appendChild(cv);
             const dpr = Math.min(1.5, window.devicePixelRatio || 1), W = cv.width = innerWidth * dpr, H = cv.height = innerHeight * dpr, g = cv.getContext("2d");
             const prog = hbEl("div", "fx-prog"), pin = hbEl("i"); prog.appendChild(pin); box.appendChild(prog); box.appendChild(hbEl("div", "fx-skip", "TAP TO SKIP"));
             if (info) voice = unoVoicePlay(info);
@@ -4130,7 +4135,7 @@ function fxThrow(g, w, h, tt, env, mode, t0) {
     const lp = fxS(.7, .82, tt); if (lp > 0) { const sl = fxSlam(Math.min(1, (tt - .7) / .3)), k = .7 + .3 * sl.sc / 3.2; g.save(); g.translate(cx, mode === "sky" ? h * .66 : h * .5); g.scale(k, k); g.globalAlpha = lp * (1 - fxS(.94, 1, tt));
         fxText(g, "+5", 0, 0, M * .26, "#fff", env.edge || "#000", env.trail || "#fff", "sans-serif"); fxText(g, env.to + " draws 5 cards", 0, M * .2, M * .06, "#fff", env.edge || "#000", env.trail || "#fff", "sans-serif"); g.restore(); g.globalAlpha = 1; }
 }
-function fxFist(g, x, y, s, ang, coat, cr, T) {
+function fxFistBlocky(g, x, y, s, ang, coat, cr, T) {
     g.save(); g.translate(x, y); g.rotate(ang); g.scale(s, s); g.lineJoin = "round";
     const body = () => fxRR(g, -48, -34, 96, 78, 22), knu = () => [-34, -11, 11, 34].forEach(k => { g.beginPath(); g.arc(k, -36, 15, 0, 6.283); }), thumb = () => fxRR(g, -62, -6, 28, 50, 13);
     const all = f => { body(); f(); [-34, -11, 11, 34].forEach(k => { g.beginPath(); g.arc(k, -36, 15, 0, 6.283); f(); }); thumb(); f(); };
@@ -4254,7 +4259,7 @@ const unoNaruto = Object.assign(fxFin(0, { trail: "#7fe0ff", edge: "#06304f" }),
             if (t >= B[1]) { const f = fxS(0, .5, c); ox = cx; oy = h * .62 + (cy - h * .62) * f; r = M * (.34 - .12 * f); }
             const aura = g.createRadialGradient(ox, oy, r * .3, ox, oy, r * 3.2); aura.addColorStop(0, "rgba(90,200,255,.5)"); aura.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = aura; g.fillRect(0, 0, w, h);
             if (t < B[1]) for (let i = 0; i < 80; i++) { const ph = (s * (.5 + grow) + fxR(i + 9)) % 1, a = fxR(i) * 6.283, d = (1 - ph) * M * .9 + r; g.globalAlpha = Math.min(1, ph * grow + .1); g.strokeStyle = i % 3 ? "#7fe0ff" : "#fff"; g.lineWidth = 1 + fxR(i + 2) * 2.5; g.beginPath(); g.moveTo(ox + Math.cos(a) * d, oy + Math.sin(a) * d); g.lineTo(ox + Math.cos(a) * (d + 26), oy + Math.sin(a) * (d + 26)); g.stroke(); } g.globalAlpha = 1;
-            if (t < B[1]) { const hs = M * .0042; g.fillStyle = "#e3a982"; g.strokeStyle = "#2a1208"; g.lineWidth = 5; fxRR(g, cx - 110 * hs * 1.5, h * .95, 330 * hs, 120 * hs, 40 * hs); g.fill(); g.stroke(); for (let f = 0; f < 4; f++) { fxRR(g, cx - 120 * hs + f * 70 * hs, h * .95 - 70 * hs, 56 * hs, 110 * hs, 24 * hs); g.fill(); g.stroke(); } }
+            if (t < B[1]) fxHand(g, cx, h * .96, M * .0072, -.04, "open", { sleeve: "#d96a1a", cuff: "#1a1a22" });
             g.save(); g.translate(ox, oy); g.beginPath(); g.arc(0, 0, r, 0, 6.283); const og = g.createRadialGradient(0, 0, 0, 0, 0, r); og.addColorStop(0, "#ffffff"); og.addColorStop(.5, "#9fe8ff"); og.addColorStop(1, "#1a7fe0"); g.fillStyle = og; g.shadowColor = "#4cc9f0"; g.shadowBlur = 60; g.fill(); g.shadowBlur = 0; g.clip();
             g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = Math.max(2, r * .05); for (let k = 0; k < 9; k++) { g.rotate(s * 9 + k * .7); g.beginPath(); g.arc(0, 0, r * (.2 + k * .09), 0, 2.4); g.stroke(); } g.restore();
             if (t >= B[1]) {
@@ -4280,6 +4285,174 @@ const unoNaruto = Object.assign(fxFin(0, { trail: "#7fe0ff", edge: "#06304f" }),
 UNO_FX_HOOKS.bleach_u = unoSceneHook("bleach_u", unoIchigo);
 UNO_FX_HOOKS.onepiece_u = unoSceneHook("onepiece_u", unoLuffy);
 UNO_FX_HOOKS.naruto_u = unoSceneHook("naruto_u", unoNaruto);
+
+/* =====================================================================
+   v3 · ANIME-HAND RENDERER + REAL-CARD STAGE + FREEZE CARDS (each one its own choreography)
+   Rules: max 10 s · silent (voice lines still load from audio/special/ as before) · first-person view ·
+   the frozen player's REAL cards are on stage (yours face-up if you are the target; an opponent's hand is shown as
+   real card BACKS in their real count and layout, because showing their faces to everybody would leak their hand).
+   ===================================================================== */
+const FX_POSE = {
+    open:  { f: [[.05, .16, .1], [0, .12, .1], [.04, .14, .1], [.08, .18, .12]], th: [-.2, .25] },
+    point: { f: [[0, .04, .04], [0, .05, .05], [1.3, 1.5, 1], [1.4, 1.5, 1]], th: [.5, .7] },
+    claw:  { f: [[.35, .5, .4], [.3, .5, .4], [.35, .5, .4], [.4, .55, .4]], th: [-.1, .5] }
+};
+function fxHand(g, x, y, s, ang, pose, o) {
+    o = o || {}; const sk = o.skin || ["#fff0e2", "#f0b690", "#a05a3c"], sh = [], P = FX_POSE[pose];
+    g.save(); g.translate(x, y); g.rotate(ang); g.scale(o.flip ? -s : s, s); g.lineJoin = "round"; g.lineCap = "round";
+    const seg = (px, py, a, L, w0, w1) => { const nx = -Math.sin(a), ny = Math.cos(a), ex = px + Math.cos(a) * L, ey = py + Math.sin(a) * L;
+        sh.push(f => { g.beginPath(); g.moveTo(px + nx * w0 / 2, py + ny * w0 / 2); g.lineTo(ex + nx * w1 / 2, ey + ny * w1 / 2); g.lineTo(ex - nx * w1 / 2, ey - ny * w1 / 2); g.lineTo(px - nx * w0 / 2, py - ny * w0 / 2); g.closePath(); f(); g.beginPath(); g.arc(ex, ey, w1 / 2, 0, 6.283); f(); }); return [ex, ey, a]; };
+    if (o.sleeve) { g.beginPath(); g.moveTo(-44, 38); g.lineTo(44, 38); g.lineTo(66, 200); g.lineTo(-66, 200); g.closePath(); g.fillStyle = o.sleeve; g.fill(); g.lineWidth = 4; g.strokeStyle = "#000"; g.stroke();
+        g.strokeStyle = "rgba(255,255,255,.2)"; g.lineWidth = 3; for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(-30 + i * 20, 50); g.quadraticCurveTo(-36 + i * 24, 120, -44 + i * 29, 196); g.stroke(); }
+        g.fillStyle = o.cuff || "#e8e8f0"; g.fillRect(-48, 32, 96, 14); }
+    if (pose === "fist") {
+        sh.push(f => { fxRR(g, -42, -30, 84, 78, 22); f(); }); for (let i = 0; i < 4; i++) sh.push(f => { fxRR(g, -46 + i, -40 + i * 19, 92 - i * 3, 21, 10); f(); }); sh.push(f => { fxRR(g, -60, 22, 62, 23, 11); f(); });
+    } else {
+        sh.push(f => { g.beginPath(); g.moveTo(-36, -34); g.lineTo(36, -34); g.bezierCurveTo(44, -6, 36, 26, 28, 44); g.lineTo(-26, 44); g.bezierCurveTo(-40, 24, -44, -8, -36, -34); g.closePath(); f(); });
+        const L = [44, 52, 48, 38], bx = [-27, -9, 9, 27], sp = [-.17, -.05, .06, .18];
+        for (let i = 0; i < 4; i++) { let a = -1.5708 + sp[i], px = bx[i], py = -34; [[.46, 15, 13], [.3, 13, 11], [.24, 11, 8]].forEach((q, j) => { a += P.f[i][j]; const r = seg(px, py, a, L[i] * q[0] * 1.5, q[1], q[2]); px = r[0]; py = r[1]; }); }
+        let a = -2.5 + P.th[0], r = seg(-32, 22, a, 34, 19, 15); seg(r[0], r[1], a + P.th[1] * .5, 28, 15, 10);
+    }
+    const gr = g.createLinearGradient(-50, 0, 50, 0); gr.addColorStop(0, sk[0]); gr.addColorStop(.55, sk[1]); gr.addColorStop(1, sk[2]);
+    sh.forEach(f => f(() => { g.fillStyle = gr; g.fill(); }));
+    sh.forEach(f => f(() => { g.lineWidth = 3.5; g.strokeStyle = o.ink || "#3a1a10"; g.stroke(); }));
+    g.strokeStyle = "rgba(120,50,30,.55)"; g.lineWidth = 2; if (pose !== "fist") for (let i = 0; i < 3; i++) { g.beginPath(); g.moveTo(-30 + i * 6, -6 + i * 10); g.quadraticCurveTo(0, 6 + i * 8, 30 - i * 4, -2 + i * 12); g.stroke(); }
+    if (o.coat > 0) { const ga = g.globalAlpha; g.globalAlpha = ga * o.coat; sh.forEach(f => f(() => { g.fillStyle = "#07050b"; g.fill(); })); sh.forEach(f => f(() => { g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = 2; g.stroke(); }));
+        if (o.cr) { g.strokeStyle = "#ff2a2a"; g.lineWidth = 3; g.shadowColor = "#f00"; g.shadowBlur = 14; const q = Math.floor((o.T || 0) * 14); for (let i = 0; i < 7; i++) { const bx2 = -50 + fxR(i + q) * 100, by = -45 + fxR(i + 9 + q) * 90; g.beginPath(); g.moveTo(bx2, by); g.lineTo(bx2 + 18, by - 10); g.lineTo(bx2 + 8, by + 6); g.lineTo(bx2 + 30, by + 4); g.stroke(); } g.shadowBlur = 0; }
+        g.globalAlpha = ga; }
+    g.restore();
+}
+function fxFistOld() {} // (the old blocky fist was replaced by fxHand)
+function fxFist(g, x, y, s, ang, coat, cr, T) { fxHand(g, x, y, s * 1.05, ang, "fist", { coat: coat, cr: cr, T: T }); }
+
+/* ----- real-card stage: the frozen player's real hand, fanned out in the middle of the screen ----- */
+function fxLayout(box, u) {
+    const w = innerWidth, h = innerHeight, to = u.fx.to || unoNext(u, u.fx.p, 1), real = to === Number(myPlayer);
+    const ids = (u.hands["p" + to] || []).slice().sort((a, b) => (u.cards[a].s - u.cards[b].s) || (u.cards[a].v - u.cards[b].v)), n = Math.max(1, ids.length);
+    const k = Math.min(h * .36 / 330, (w * .9) / (220 * (1 + (n - 1) * .5)), 1.3), step = 220 * k * .5, mid = (n - 1) / 2, root = hbEl("div", "fx-hand"), cards = [];
+    ids.forEach((ci, i) => {
+        const d = i - mid, x = w / 2 + d * step, y = h * .5 + d * d * k * 2.2, rot = d * Math.min(.06, .6 / n), wrap = hbEl("div", "fx-hc"), el = real ? unoCardEl(u, ci, "big") : hbEl("div", "ucard big back");
+        wrap.style.transform = "translate(" + (x - 110) + "px," + (y - 165) + "px) rotate(" + rot + "rad) scale(" + k + ")"; wrap.appendChild(el); root.appendChild(wrap);
+        el.animate([{ opacity: 0, transform: "translateY(90px)" }, { opacity: 1, transform: "none" }], { duration: 600, delay: 200 + i * 45, easing: "ease-out", fill: "backwards" }); cards.push({ x: x, y: y, k: k, rot: rot });
+    });
+    box.appendChild(root); return { root: root, cards: cards, real: real, name: u.names["p" + to] || "?" };
+}
+function fxCard(g, c, fn) { g.save(); g.translate(c.x, c.y); g.rotate(c.rot); fxRR(g, -110 * c.k, -165 * c.k, 220 * c.k, 330 * c.k, 14 * c.k); g.clip(); fn(220 * c.k, 330 * c.k); g.restore(); }
+function fxFrost(g, c, p, sd, tint) {
+    if (p <= 0) return;
+    fxCard(g, c, (W, H) => {
+        const top = H / 2 - H * 1.05 * p, gr = g.createLinearGradient(0, H / 2, 0, top); gr.addColorStop(0, "rgba(235,250,255,.85)"); gr.addColorStop(.7, "rgba(" + tint + ",.45)"); gr.addColorStop(1, "rgba(" + tint + ",0)"); g.fillStyle = gr; g.fillRect(-W / 2, top, W, H * 1.1);
+        g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = Math.max(1, c.k * 1.5);
+        for (let i = 0; i < 14; i++) { let x = -W / 2 + W * fxR(i + sd), y = H / 2, a = -1.5708 + (fxR(i + sd + 5) - .5) * .5;
+            for (let j = 0; j < 7 && H / 2 - y < H * p; j++) { const L = H * .07 * (1 + fxR(i + j + sd) * .8); g.beginPath(); g.moveTo(x, y); x += Math.cos(a) * L; y += Math.sin(a) * L; g.lineTo(x, y); g.moveTo(x, y); g.lineTo(x + Math.cos(a + .9) * L * .6, y + Math.sin(a + .9) * L * .6); g.moveTo(x, y); g.lineTo(x + Math.cos(a - .9) * L * .6, y + Math.sin(a - .9) * L * .6); g.stroke(); a += (fxR(i * 3 + j + sd) - .5) * .5; } }
+    });
+}
+function fxSpire(g, x, y, hh, ww, e) {
+    const h = hh * e; if (h < 2) return; const gr = g.createLinearGradient(x - ww / 2, 0, x + ww / 2, 0); gr.addColorStop(0, "rgba(235,250,255,.9)"); gr.addColorStop(.5, "rgba(150,210,255,.8)"); gr.addColorStop(1, "rgba(60,110,190,.85)");
+    g.beginPath(); g.moveTo(x - ww / 2, y); g.lineTo(x - ww * .15, y - h * .7); g.lineTo(x, y - h); g.lineTo(x + ww * .2, y - h * .65); g.lineTo(x + ww / 2, y); g.closePath(); g.fillStyle = gr; g.fill(); g.strokeStyle = "#fff"; g.lineWidth = 2; g.stroke();
+    g.beginPath(); g.moveTo(x, y - h); g.lineTo(x - ww * .05, y); g.moveTo(x - ww * .15, y - h * .7); g.lineTo(x + ww * .2, y - h * .65); g.stroke();
+}
+function fxSnow(g, x, y, r) { g.save(); g.translate(x, y); for (let i = 0; i < 6; i++) { g.rotate(1.0472); g.beginPath(); g.moveTo(0, 0); g.lineTo(r, 0); [[.35, .32], [.6, .24], [.82, .14]].forEach(b => { const px = r * b[0], l = r * b[1]; g.moveTo(px, 0); g.lineTo(px + l * .6, l); g.moveTo(px, 0); g.lineTo(px + l * .6, -l); }); g.stroke(); } g.restore(); }
+function fxLotus(g, x, y, r, open) {
+    if (open <= 0) return; g.save(); g.translate(x, y);
+    for (let ring = 0; ring < 3; ring++) { const n = 9 - ring * 2, len = r * (1 - ring * .27) * open;
+        for (let i = 0; i < n; i++) { g.save(); g.rotate((i - (n - 1) / 2) * (1.9 / (n - 1)) * open); g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(len * .38, -len * .45, 0, -len); g.quadraticCurveTo(-len * .38, -len * .45, 0, 0);
+            const pg = g.createLinearGradient(0, 0, 0, -len); pg.addColorStop(0, "rgba(255,240,250,.95)"); pg.addColorStop(1, "rgba(150,210,255,.9)"); g.fillStyle = pg; g.fill(); g.strokeStyle = "#fff"; g.lineWidth = 2; g.stroke(); g.restore(); } }
+    g.restore();
+}
+function fxDragon(g, P, uh, M) {
+    const N = 44; for (let k = N; k >= 0; k--) { const u = uh - k * .011; if (u < 0) continue; const p = P(u), r = M * .05 * (1 - k / N * .75);
+        g.beginPath(); g.arc(p[0], p[1], r, 0, 6.283); g.fillStyle = "rgba(225,246,255,.93)"; g.fill(); g.strokeStyle = "#7fd0ff"; g.lineWidth = 3; g.stroke();
+        if (k % 3 === 0) { g.beginPath(); g.moveTo(p[0] - r * .4, p[1] - r * .8); g.lineTo(p[0], p[1] - r * 1.9); g.lineTo(p[0] + r * .4, p[1] - r * .8); g.fillStyle = "#fff"; g.fill(); } }
+    const a = P(uh), b = P(Math.max(0, uh - .012)), an = Math.atan2(a[1] - b[1], a[0] - b[0]), r = M * .06; g.save(); g.translate(a[0], a[1]); g.rotate(an);
+    g.beginPath(); g.moveTo(-r, -r); g.lineTo(r * 2.2, -r * .3); g.lineTo(r * 2.6, r * .25); g.lineTo(r * 1.2, r * .9); g.lineTo(-r, r); g.closePath(); g.fillStyle = "#f2fbff"; g.fill(); g.strokeStyle = "#5bbcff"; g.lineWidth = 4; g.stroke();
+    g.beginPath(); g.moveTo(-r * .2, -r); g.lineTo(-r * 1.8, -r * 2.1); g.lineTo(r * .3, -r * .7); g.moveTo(-r * .2, r); g.lineTo(-r * 1.8, r * 2.1); g.lineTo(r * .3, r * .7); g.fillStyle = "#cfeeff"; g.fill(); g.stroke();
+    g.beginPath(); g.arc(r * .9, -r * .2, r * .17, 0, 6.283); g.fillStyle = "#1a5fd0"; g.fill(); g.restore();
+}
+function fxGlass(g, x, y, w, h, a, al) { g.save(); g.translate(x, y); g.rotate(a); g.globalAlpha = al; g.beginPath(); g.moveTo(0, -h / 2); g.lineTo(w / 2, 0); g.lineTo(0, h / 2); g.lineTo(-w / 2, 0); g.closePath(); const gr = g.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2); gr.addColorStop(0, "rgba(220,245,255,.9)"); gr.addColorStop(.5, "rgba(120,180,230,.55)"); gr.addColorStop(1, "rgba(230,250,255,.85)"); g.fillStyle = gr; g.fill(); g.strokeStyle = "#fff"; g.lineWidth = 3; g.stroke(); g.restore(); }
+function fxSky(g, w, h, a, b, c) { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, a); gr.addColorStop(.6, b); gr.addColorStop(1, c); g.fillStyle = gr; g.fillRect(-20, -20, w + 40, h + 40); }
+
+const FZ = {
+    /* AOKIJI: calm, lazy. Frost creeps over the cards, the sea freezes, then huge ice spires burst up and entomb everything. */
+    onepiece_f: { name: "Ice Age", sub: "Aokiji", col: "#bfeaff",
+        cam: T => [1 + .14 * T.t, 0, -12 * T.t, 0],
+        bg(g, w, h, T) { fxSky(g, w, h, "#0b1830", "#37587f", "#aac4dc"); const f = fxS(.12, .5, T.t); g.fillStyle = "rgba(210,240,255," + (.85 * f) + ")"; g.fillRect(w / 2 - w * f * .6, h * .62, w * f * 1.2, h);
+            g.fillStyle = "rgba(255,255,255,.5)"; for (let i = 0; i < 40; i++) g.fillRect(fxR(i) * w, (fxR(i + 3) * .5 + T.s * .05 * (.3 + fxR(i + 8))) % 1 * h, 2, 2); },
+        world(g, w, h, T, E) { E.cards.forEach((c, i) => fxFrost(g, c, fxS(.2 + i * .02, .52 + i * .02, T.t), i * 7, "150,210,255"));
+            for (let j = 0; j < 11; j++) fxSpire(g, w * (.05 + .09 * j), h * .86, h * (.35 + .3 * fxR(j)), w * .09, fxS(.5 + fxR(j + 3) * .2, .84, T.t));
+            E.cards.forEach(c => fxFrost(g, c, 1, 3, "150,210,255") || 0); },
+        screen(g, w, h, T) { const b = Math.sin(T.s * 1.2) * 4; fxHand(g, w * .8, h * .9 + b, M3(w, h) * .0042, -.35, "open", { sleeve: "#1b2540", cuff: "#c9d6ee" }); } },
+    /* HAKU: trapped inside a dome of ice mirrors; his reflection flickers between them; needles strike from every direction. */
+    naruto_f: { name: "Crystal Ice Mirrors", sub: "Haku", col: "#9fe8ff",
+        cam: T => [1.06 + .04 * Math.sin(T.s * 2), 14 * Math.sin(T.s * 1.3), 0, .035 * Math.sin(T.s * 1.7)],
+        bg(g, w, h, T) { fxSky(g, w, h, "#03121a", "#0a3a4a", "#0a1e2a"); for (let i = 0; i < 14; i++) { const a = i / 14 * 6.283, mx = w / 2 + Math.cos(a) * w * .46, my = h / 2 + Math.sin(a) * h * .46, al = fxS(.03 + i * .03, .12 + i * .03, T.t);
+                fxGlass(g, mx, my, h * .22, h * .5, a + 1.5708, al); if (al > .9 && Math.floor(T.s * 6) % 14 === i) { g.fillStyle = "#13222a"; g.beginPath(); g.arc(mx, my - h * .08, h * .045, 0, 6.283); g.fill(); g.fillRect(mx - h * .05, my - h * .04, h * .1, h * .17); g.fillStyle = "#fff"; g.beginPath(); g.arc(mx, my - h * .075, h * .03, 0, 6.283); g.fill(); } } },
+        world(g, w, h, T, E) { const n = E.cards.length; if (!n) return; for (let k = 0; k < 36; k++) { const tk = .4 + .45 * k / 36, p = (T.t - tk) / .07; if (p < 0) continue; const a = (k % 14) / 14 * 6.283, sx = w / 2 + Math.cos(a) * w * .46, sy = h / 2 + Math.sin(a) * h * .46, c = E.cards[k % n], tx = c.x + (fxR(k) - .5) * c.k * 150, ty = c.y + (fxR(k + 4) - .5) * c.k * 240, q = Math.min(1, p);
+                const x = sx + (tx - sx) * q, y = sy + (ty - sy) * q, an = Math.atan2(ty - sy, tx - sx); g.strokeStyle = "#e8f6ff"; g.lineWidth = 3; g.shadowColor = "#9fe8ff"; g.shadowBlur = 10; g.beginPath(); g.moveTo(x - Math.cos(an) * 90, y - Math.sin(an) * 90); g.lineTo(x, y); g.stroke(); g.shadowBlur = 0;
+                if (p >= 1) { g.beginPath(); g.arc(tx, ty, 8 + Math.min(40, (p - 1) * 160), 0, 6.283); g.strokeStyle = "rgba(180,235,255," + Math.max(0, 1 - (p - 1) * 4) + ")"; g.lineWidth = 3; g.stroke(); } }
+            E.cards.forEach((c, i) => fxFrost(g, c, fxS(.68 + i * .02, .95, T.t), i * 5, "120,210,255")); },
+        screen(g, w, h, T) { const m = M3(w, h) * .0036; fxHand(g, w * .3, h * .92, m, -.25, "point", { sleeve: "#e9dbe6", cuff: "#cfa0b8" }); fxHand(g, w * .7, h * .92, m, .25, "point", { sleeve: "#e9dbe6", cuff: "#cfa0b8", flip: true }); } },
+    /* URAUME: elegant. A fingertip draws a glowing line, and precise snowflake lattices bloom along it over every card. */
+    jjk_f: { name: "Frost Calm", sub: "Uraume", col: "#cfeaff",
+        cam: T => [1 + .06 * T.t, 0, 0, 0],
+        bg(g, w, h, T) { fxSky(g, w, h, "#07040f", "#150b2a", "#05030a"); g.beginPath(); g.arc(w * .5, h * .3, h * .22, 0, 6.283); g.fillStyle = "rgba(235,235,255,.14)"; g.fill(); g.fillStyle = "rgba(255,255,255,.7)"; for (let i = 0; i < 50; i++) g.fillRect(fxR(i) * w, ((fxR(i + 3) + T.s * .04 * (.3 + fxR(i + 8))) % 1) * h, 2, 2); },
+        world(g, w, h, T, E) { const p = fxS(.05, .4, T.t); g.strokeStyle = "rgba(190,240,255,.95)"; g.lineWidth = 4; g.shadowColor = "#7fe9ff"; g.shadowBlur = 18; g.beginPath(); for (let i = 0; i <= 60 * p; i++) { const u = i / 60; g.lineTo(w * (.15 + .7 * u), h * (.3 + .1 * Math.sin(u * 9))); } g.stroke(); g.shadowBlur = 0;
+            g.strokeStyle = "rgba(200,240,255,.28)"; g.lineWidth = 2; g.save(); g.translate(w / 2, h * .5); g.rotate(T.s * .15); fxSnow(g, 0, 0, Math.min(w, h) * .46 * fxS(.3, .7, T.t)); g.restore();
+            E.cards.forEach((c, i) => { const e = fxS(.35 + i * .03, .66 + i * .03, T.t); fxFrost(g, c, e * .9, i * 11, "190,220,255"); g.strokeStyle = "rgba(255,255,255,.95)"; g.lineWidth = 2.5; g.save(); g.translate(c.x, c.y); g.rotate(c.rot + T.s * .3 * (i % 2 ? 1 : -1)); fxSnow(g, 0, 0, c.k * 105 * e); g.restore(); }); },
+        screen(g, w, h, T) { const u = fxS(.05, .4, T.t); fxHand(g, w * (.15 + .7 * u), h * 1.02 - h * .1 * Math.sin(u * 9 * .5), M3(w, h) * .0045, -.15 + .25 * u, "point", { sleeve: "#14101c", cuff: "#c9c9e8", skin: ["#f6f0ff", "#d9cfe8", "#8a7aa0"] }); } },
+    /* DOMA: beautiful and terrifying. Ice vines crawl up, giant frozen lotuses bloom, glittering freezing dust fills the air. */
+    demonslayer_f: { name: "Frozen Lotus", sub: "Doma", col: "#ffd0f0",
+        cam: T => [1 + .08 * Math.sin(T.t * 3), 0, 0, .02 * Math.sin(T.s)],
+        bg(g, w, h, T) { fxSky(g, w, h, "#12051c", "#3a0f3c", "#1a0510"); const v = g.createRadialGradient(w / 2, h / 2, h * .3, w / 2, h / 2, h * .95); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(120,0,40," + (.55 + .15 * Math.sin(T.s * 3)) + ")"); g.fillStyle = v; g.fillRect(0, 0, w, h); },
+        world(g, w, h, T, E) { fxLotus(g, w / 2, h * .62, Math.min(w, h) * .4, fxS(.1, .45, T.t) * .9);
+            E.cards.forEach((c, i) => { const e = fxS(.28 + i * .03, .6 + i * .03, T.t); g.strokeStyle = "rgba(200,235,255,.9)"; g.lineWidth = 4; g.beginPath(); g.moveTo(c.x + (i % 2 ? 30 : -30), h); g.quadraticCurveTo(c.x + (i % 2 ? -40 : 40), c.y + c.k * 200, c.x, c.y + c.k * 200 - e * c.k * 330 * .55); g.stroke(); fxFrost(g, c, fxS(.5, .88, T.t), i * 9, "220,190,255"); fxLotus(g, c.x, c.y + c.k * 150, c.k * 105, fxS(.4 + i * .03, .7 + i * .03, T.t)); });
+            for (let i = 0; i < 90; i++) { g.globalAlpha = .4 + .6 * Math.abs(Math.sin(T.s * 3 + i)); g.fillStyle = i % 3 ? "#e8f6ff" : "#ffc8ef"; g.fillRect(fxR(i) * w, h - ((fxR(i + 3) * .4 + T.s * .12 * (.4 + fxR(i + 8))) % 1) * h, 3, 3); } g.globalAlpha = 1; },
+        screen(g, w, h, T) { fxHand(g, w * .22, h * .9, M3(w, h) * .0042, .3, "claw", { sleeve: "#4a1230", cuff: "#ffb0d8", skin: ["#fff4fa", "#f2c4dc", "#a8647e"], flip: true }); } },
+    /* HITSUGAYA: Hyorinmaru. We hold the blade; an ice dragon spirals out, freezing each card as it passes, and crashes in a burst of ice. */
+    bleach_f: { name: "Hyorinmaru", sub: "Toshiro Hitsugaya", col: "#bfeaff",
+        cam: T => [1 + .06 * T.t, 0, 0, 0],
+        bg(g, w, h, T) { fxSky(g, w, h, "#dff4ff", "#9ed0ee", "#eaf8ff"); g.save(); g.globalAlpha = .1; fxText(g, "氷輪丸", w / 2, h * .5, Math.min(w, h) * .6, "#000", "#000", "#000"); g.restore(); g.strokeStyle = "rgba(0,40,80,.12)"; g.lineWidth = 2; for (let i = 0; i < 26; i++) { const a = fxR(i) * 6.283; g.beginPath(); g.moveTo(w / 2 + Math.cos(a) * h * .4, h / 2 + Math.sin(a) * h * .4); g.lineTo(w / 2 + Math.cos(a) * w, h / 2 + Math.sin(a) * w); g.stroke(); } },
+        world(g, w, h, T, E) { const P = u => { const an = u * 14; return [w / 2 + Math.cos(an) * w * .38 * (1 - u * .4), h * .5 + Math.sin(an) * h * .3 * (1 - u * .3)]; }, uh = fxS(.1, .7, T.t), n = E.cards.length;
+            E.cards.forEach((c, i) => fxFrost(g, c, fxS(.25 + i / Math.max(1, n) * .5, .4 + i / Math.max(1, n) * .5, uh), i * 13, "130,200,255")); if (T.t < .74) fxDragon(g, P, uh, Math.min(w, h));
+            const b = fxS(.72, .9, T.t); if (b > 0) { for (let k = 0; k < 14; k++) { const a = k / 14 * 6.283; fxSpire(g, w / 2 + Math.cos(a) * w * .1 * b * 3, h * .5 + Math.sin(a) * h * .1 * b * 3 + h * .1, h * .3, w * .06, b); } g.beginPath(); g.arc(w / 2, h * .5, b * h * .7, 0, 6.283); g.strokeStyle = "rgba(255,255,255," + (1 - b) + ")"; g.lineWidth = 12; g.stroke(); } },
+        screen(g, w, h, T) { const m = M3(w, h); g.save(); g.translate(w * .5, h * .98); g.beginPath(); g.moveTo(-14, 0); g.lineTo(-8, -h * .9); g.lineTo(0, -h * .98); g.lineTo(12, -h * .88); g.lineTo(16, 0); g.closePath(); g.fillStyle = "rgba(235,250,255,.95)"; g.fill(); g.strokeStyle = "#5bbcff"; g.lineWidth = 3 + 4 * Math.sin(T.s * 4) ** 2; g.shadowColor = "#5bbcff"; g.shadowBlur = 24; g.stroke(); g.shadowBlur = 0; g.restore();
+            fxHand(g, w * .5, h * 1.0, m * .0058, 0, "fist", { skin: ["#fff0e2", "#f0b690", "#a05a3c"] }); } }
+};
+function M3(w, h) { return Math.min(w, h); }
+
+function unoCineHook(key, S) {
+    const gen = UNO_FX_HOOKS[key];
+    return (box, done, c, u) => {
+        if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return gen(box, done, c, u);
+        box.textContent = ""; box.classList.add("cine"); box.style.setProperty("--c", S.col);
+        let ended = false, voice = null;
+        const finish = () => { if (ended) return; ended = true; if (voice) unoVoiceStop(voice); done(); };
+        box.addEventListener("click", finish);
+        unoVoiceLoad(key, 900).then(info => { if (ended) return; run(info, Math.min(UNO_FX_MAX, Math.max(UNO_FX_MIN, info ? info.dur * 1000 + 700 : 9500))); }).catch(e => { console.warn(e); finish(); });
+        function run(info, ms) {
+            const w = innerWidth, h = innerHeight, M = Math.min(w, h), dpr = Math.min(1.5, window.devicePixelRatio || 1), mk = cls => { const cv = hbEl("canvas", cls); cv.width = w * dpr; cv.height = h * dpr; box.appendChild(cv); return cv; };
+            const cb = mk("fx-cv"), E = fxLayout(box, u), cf = mk("fx-cv fg"), gb = cb.getContext("2d"), gf = cf.getContext("2d");
+            const prog = hbEl("div", "fx-prog"), pin = hbEl("i"); prog.appendChild(pin); box.appendChild(prog); box.appendChild(hbEl("div", "fx-skip", "TAP TO SKIP"));
+            if (info) voice = unoVoicePlay(info);
+            const t0 = performance.now();
+            const frame = now => {
+                if (ended) return; if (!box.isConnected) { finish(); return; }
+                const el = now - t0, t = Math.min(1, el / ms), T = { t: t, s: el / 1000, ms: ms }, cam = S.cam(T), cx = w / 2, cy = h / 2;
+                gb.setTransform(dpr, 0, 0, dpr, 0, 0); gb.clearRect(0, 0, w, h); try { S.bg(gb, w, h, T, E); } catch (e) { console.warn(e); }
+                E.root.style.transform = "translate(" + cam[1] + "px," + cam[2] + "px) rotate(" + cam[3] + "rad) scale(" + cam[0] + ")";
+                gf.setTransform(dpr, 0, 0, dpr, 0, 0); gf.clearRect(0, 0, w, h); gf.save(); gf.translate(cx + cam[1], cy + cam[2]); gf.rotate(cam[3]); gf.scale(cam[0], cam[0]); gf.translate(-cx, -cy);
+                try { S.world(gf, w, h, T, E); } catch (e) { console.warn(e); } gf.restore();
+                try { S.screen(gf, w, h, T, E); } catch (e) { console.warn(e); }
+                const ta = fxS(.03, .1, t) * (1 - fxS(.5, .62, t)); if (ta > 0) { gf.globalAlpha = ta; fxText(gf, S.name, cx, h * .1, M * .075, "#fff", "#06304f", S.col, "sans-serif"); fxText(gf, S.sub + " → " + E.name, cx, h * .1 + M * .07, M * .028, "#fff", "#06304f", S.col, "sans-serif"); gf.globalAlpha = 1; }
+                box.style.opacity = t > .93 ? Math.max(0, (1 - t) / .07) : 1; pin.style.width = (1 - t) * 100 + "%";
+                if (t < 1) requestAnimationFrame(frame); else finish();
+            };
+            requestAnimationFrame(frame); setTimeout(finish, ms + 500);
+        }
+    };
+}
+Object.keys(FZ).forEach(k => { UNO_FX_HOOKS[k] = unoCineHook(k, FZ[k]); });
+
 
 /* =====================================================================
    FIRST-PERSON SCENES, group 2:  jojo_f DIO (The World)  ·  naruto_e Neji (Byakugan)
@@ -4941,7 +5114,7 @@ function unoSpecialFx(u, f) {
     box.appendChild(hbEl("p", null, (u.names["p" + f.p] || "?") + " · " + c.n));
     $("uno").appendChild(box);
     const close = () => { box.classList.add("out"); setTimeout(() => box.remove(), 420); };
-    try { d.snd(); } catch (e) {}
+    if (!UNO_FX_HOOKS[c.sk + "_" + c.k]) try { d.snd(); } catch (e) {}   // silent while a hand-made animation exists (voice lines come from audio/special/)
     const hook = UNO_FX_HOOKS[c.sk + "_" + c.k];
     if (hook) { try { hook(box, close, c, u); } catch (e) { console.warn(e); close(); } } else setTimeout(close, 1700);
 }
