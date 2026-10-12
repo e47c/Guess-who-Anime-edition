@@ -4500,6 +4500,66 @@ const unoTodo = {
 };
 UNO_FX_HOOKS.jjk_t = unoSceneHook("jjk_t", unoTodo);
 
+/* =====================================================================
+   YHWACH · The Almighty (bleach_e)  -  first person, silent, 9.8 s (owner) / 8.4 s (others)
+   1 an ink-black sea of watching eyes   2 you fall into one eye, through eyes inside eyes
+   3 shards of possible futures flicker, overlap, then collapse onto the REAL opponent cards   4 the black drains away
+   Only the player who used the card gets the real reveal afterwards (existing peek screen).
+   ===================================================================== */
+const FX_YH_EYE = { stops: [[0, "#ffffff"], [.3, "#e3e8ff"], [.65, "#8790d0"], [1, "#161440"]], rim: "#d6dcff", glow: "#8a7bff", slit: true };
+function fxInk(g, w, h, s, a) {        // black liquid: slow dark-violet blobs, sheen lines, dripping streaks
+    g.fillStyle = "#010003"; g.fillRect(0, 0, w, h); const M = Math.min(w, h);
+    for (let i = 0; i < 8; i++) { const x = w * (.1 + .8 * fxR(i + 3) + .06 * Math.sin(s * .5 + i)), y = h * (.1 + .8 * fxR(i + 9) + .06 * Math.cos(s * .4 + i * 2)), r = M * (.35 + .3 * fxR(i + 15)), n = g.createRadialGradient(x, y, 0, x, y, r);
+        n.addColorStop(0, "rgba(46,14,70," + .5 * a + ")"); n.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = n; g.fillRect(0, 0, w, h); }
+    g.lineWidth = 1.2; for (let i = 0; i < 9; i++) { const y = h * (.12 + .1 * i) + 8 * Math.sin(s * .8 + i); g.strokeStyle = "rgba(190,170,255," + (.07 * a) + ")"; g.beginPath(); g.moveTo(0, y); g.bezierCurveTo(w * .3, y - 26 * Math.sin(s + i), w * .6, y + 26 * Math.cos(s * .9 + i), w, y); g.stroke(); }
+    g.lineCap = "round"; for (let i = 0; i < 16; i++) { const x = fxR(i + 40) * w, L = h * (.1 + .5 * ((s * .05 * (.4 + fxR(i + 41)) + fxR(i + 42)) % 1)); g.strokeStyle = "rgba(8,2,16,.9)"; g.lineWidth = 3 + fxR(i + 43) * 7; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, L); g.stroke(); g.fillStyle = "rgba(8,2,16,.9)"; g.beginPath(); g.arc(x, L, 4 + fxR(i + 44) * 6, 0, 6.283); g.fill(); }
+}
+function fxMini(g, x, y, W, col, a) {   // a small abstract eye outline (for the tunnel of eyes inside eyes)
+    g.save(); g.translate(x, y); g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = Math.max(1, W * .03); g.beginPath(); g.moveTo(-W / 2, 0); g.quadraticCurveTo(0, -W * .5, W / 2, 0); g.quadraticCurveTo(0, W * .5, -W / 2, 0); g.stroke();
+    g.beginPath(); g.arc(0, 0, W * .17, 0, 6.283); g.stroke(); g.beginPath(); g.ellipse(0, 0, W * .02, W * .17, 0, 0, 6.283); g.fillStyle = col; g.fill(); g.restore();
+}
+const unoYhwach = {
+    col: "#8a7bff", ms: 6800, tail: env => env.owner ? 3000 : 1600,
+    begin(env, box, u) { env.me = Number(myPlayer); env.owner = env.me === u.fx.p; if (env.owner && u.peek) unoFxOwnsPeek = u.peek.id; env.rects = Array.from(document.querySelectorAll(".u-opp")).map(e => e.getBoundingClientRect()); },
+    end(env, u) { if (env.owner && !env.shown) { env.shown = 1; unoFxOwnsPeek = null; unoPeekShow(u, env.me); } },
+    draw(g, w, h, T, env, u) {
+        const cx = w / 2, cy = h / 2, M = Math.min(w, h), t = T.t, s = T.s, R = Math.hypot(w, h) / 2, V = "#8a7bff";
+        const marks = a => env.rects.forEach((r, i) => { const x = r.left + r.width / 2, y = r.top + r.height / 2; g.save(); g.globalAlpha = a; g.strokeStyle = "#fff"; g.lineWidth = 3; g.shadowColor = V; g.shadowBlur = 26; g.strokeRect(r.left - 8, r.top - 8, r.width + 16, r.height + 16); g.shadowBlur = 0; fxMini(g, x, r.top - M * .045, M * .08, "#fff", 1); g.restore(); });
+        if (T.ph === "tail") { marks(1 - fxS(.5, 1, T.tt)); return; }
+        const dive = fxS(.24, .50, t), z = Math.exp(dive * 6.4);
+        if (t < .56) {
+            fxInk(g, w, h, s, 1);
+            g.save(); g.translate(cx, cy); g.scale(z, z); g.translate(-cx, -cy);                          // ACT 1+2a: the sea of eyes, we fall toward the big one in the middle
+            const open = i => fxS(.02 + (i % 12) * .014, .1 + (i % 12) * .014, t);
+            for (let i = 0; i < 26; i++) { const an = fxR(i) * 6.283, d = M * (.18 + .7 * fxR(i + 5)), W = M * (.07 + .09 * fxR(i + 8)); fxEye(g, cx + Math.cos(an) * d * 1.5, cy + Math.sin(an) * d, W, open(i) * (.8 + .2 * Math.sin(s * 2 + i)), Object.assign({ tilt: (fxR(i + 2) - .5) * .6 }, FX_YH_EYE)); }
+            fxEye(g, cx, cy, M * .46, fxS(.1, .22, t) * (1 - fxS(.46, .5, t) * .0), FX_YH_EYE); g.restore();
+            if (t > .4) {                                                                                // ACT 2b: eyes inside eyes, an endless tunnel
+                const a = fxS(.4, .5, t), ph = (s * .9) % 1; g.fillStyle = "rgba(0,0,6," + a * .85 + ")"; g.fillRect(0, 0, w, h);
+                for (let k = 13; k >= 0; k--) { const sc = Math.pow(1.62, k - ph); fxMini(g, cx + Math.sin(s + k) * M * .01 * k, cy + Math.cos(s * .8 + k) * M * .008 * k, M * .03 * sc, k % 3 === 0 ? "#fff" : k % 3 === 1 ? "#a99cff" : "#5a4ac8", a * Math.max(0, 1 - k / 13)); }
+            }
+            if (t > .08 && t < .24) { g.globalAlpha = fxS(.08, .14, t) * (1 - fxS(.2, .24, t)); fxText(g, "全知全能", cx, h * .9, M * .08, "#fff", "#1a1440", V); g.globalAlpha = 1; }
+        } else {                                                                                          // ACT 3: shards of possible futures, overlapping, then ONE becomes real
+            const b = (t - .56) / .44, conv = fxS(.52, .72, b), live = 1 - fxS(.8, 1, b);
+            g.fillStyle = "#02010a"; g.fillRect(0, 0, w, h); const tg = env.rects.length ? env.rects.map(r => ({ x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height })) : [{ x: cx, y: h * .1, w: M * .4, h: M * .12 }];
+            for (let i = 0; i < 10; i++) {
+                const gt = tg[i % tg.length], hx = w * (.12 + .76 * fxR(i + 60)), hy = h * (.2 + .6 * fxR(i + 70)), x = hx + (gt.x - hx) * conv, y = hy + (gt.y - hy) * conv, sw = M * (.34 - .12 * conv), sh = sw * .62, sd = ((s * 7) | 0) + i * 13;
+                [[-5, "rgba(0,255,255,.35)"], [5, "rgba(255,0,200,.35)"], [0, null]].forEach(([off, tint]) => {      // overlapping ghost layers
+                    g.save(); g.translate(x + off * (1 - conv), y); g.rotate((fxR(i + 80) - .5) * .7 * (1 - conv)); g.globalAlpha = (tint ? .6 : 1) * live * Math.min(1, b * 6);
+                    g.beginPath(); g.moveTo(-sw / 2 + 14, -sh / 2); g.lineTo(sw / 2, -sh / 2); g.lineTo(sw / 2 - 14, sh / 2); g.lineTo(-sw / 2, sh / 2); g.closePath(); g.fillStyle = tint || "#0a0820"; g.fill(); g.strokeStyle = tint ? tint : "#a99cff"; g.lineWidth = 2; g.stroke();
+                    if (!tint) { g.save(); g.clip(); const n = 3 + (fxR(sd) * 4 | 0); for (let c = 0; c < n; c++) { const cxx = (c - n / 2 + .5) * sw * .16 + (fxR(sd + c) - .5) * sw * .1 * (1 - conv), cyy = (fxR(sd + c + 9) - .5) * sh * .3 * (1 - conv); g.fillStyle = c === ((fxR(sd + 3) * n) | 0) && conv < .7 ? "#fff" : "rgba(160,150,255,.55)"; g.fillRect(cxx - sw * .06, cyy - sh * .2, sw * .12, sh * .4); } g.restore(); }
+                    g.restore();
+                });
+            }
+            if (conv > .6) { g.globalAlpha = fxS(.6, .85, conv) * live; marks(1); g.globalAlpha = 1; }
+            const sl = fxSlam(Math.min(1, Math.max(0, (b - .62) / .25))); if (b > .62 && b < .95) { g.save(); g.translate(cx, cy); g.scale(.8 + .2 * sl.sc / 3.2, .8 + .2 * sl.sc / 3.2); g.globalAlpha = sl.a; fxText(g, "THE ALMIGHTY", 0, 0, M * .1, "#fff", "#1a1440", V, "sans-serif"); g.restore(); }
+            if (b > .9) { g.fillStyle = "rgba(255,255,255," + .5 * (1 - (b - .9) / .1) + ")"; g.fillRect(0, 0, w, h); }
+            if (b > .8) { g.globalCompositeOperation = "destination-out"; g.fillStyle = "rgba(0,0,0," + fxS(.8, 1, b) + ")"; g.fillRect(0, 0, w, h); g.globalCompositeOperation = "source-over"; }   // the black drains away
+        }
+    }
+};
+UNO_FX_HOOKS.bleach_e = unoSceneHook("bleach_e", unoYhwach);
+
+
 
 
 
