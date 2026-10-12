@@ -1148,6 +1148,10 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 @keyframes uWCard{from{opacity:0;transform:translateY(140px) rotate(-18deg) scale(.5)}}
 @keyframes uWFloat{0%,100%{transform:scale(.72) translateY(0) rotate(-2deg)}50%{transform:scale(.72) translateY(-10px) rotate(2deg)}}
 @keyframes uWChip{from{opacity:0;transform:translateY(24px) skewX(-8deg)}}
+
+/* TEMPORARILY HIDDEN SERIES (Headbanz + Imposter): Attack on Titan, My Hero Academia, Re:Zero.
+   To bring them back: delete this rule, delete the three "series-off" classes in the series list, and empty HB_HIDDEN_SERIES in the script. */
+body .series-pick .anime-option.series-off,body.hb-mode .series-pick .anime-option.hb-only.series-off,body.uno-mode .series-pick .anime-option.hb-only.uno-ok.series-off{display:none!important}
 </style>
 
 </head>
@@ -1221,14 +1225,14 @@ Pick your series. Hide a character. Guess theirs first.
 <label class="anime-option" style="--c:#e8e8f4">
 <input type="checkbox" value="bleach">
 <span class="bg"></span><span class="kanji" aria-hidden="true">霊</span><span class="name">Bleach</span>
-</label><label class="anime-option hb-only" style="--c:#c9a227"><input type="checkbox" value="aot"><span class="bg"></span><span class="kanji" aria-hidden="true">巨</span><span class="name">Attack on Titan</span></label>
-<label class="anime-option hb-only" style="--c:#3ec46d"><input type="checkbox" value="mha"><span class="bg"></span><span class="kanji" aria-hidden="true">英</span><span class="name">My Hero Academia</span></label>
+</label><label class="anime-option hb-only series-off" style="--c:#c9a227"><input type="checkbox" value="aot"><span class="bg"></span><span class="kanji" aria-hidden="true">巨</span><span class="name">Attack on Titan</span></label>
+<label class="anime-option hb-only series-off" style="--c:#3ec46d"><input type="checkbox" value="mha"><span class="bg"></span><span class="kanji" aria-hidden="true">英</span><span class="name">My Hero Academia</span></label>
 <label class="anime-option hb-only" style="--c:#6fd36f"><input type="checkbox" value="hxh"><span class="bg"></span><span class="kanji" aria-hidden="true">狩</span><span class="name">Hunter x Hunter</span></label>
 <label class="anime-option hb-only" style="--c:#d0d0e0"><input type="checkbox" value="deathnote"><span class="bg"></span><span class="kanji" aria-hidden="true">死</span><span class="name">Death Note</span></label>
 <label class="anime-option hb-only" style="--c:#ff6b35"><input type="checkbox" value="chainsaw"><span class="bg"></span><span class="kanji" aria-hidden="true">鎖</span><span class="name">Chainsaw Man</span></label>
 <label class="anime-option hb-only" style="--c:#f2c94c"><input type="checkbox" value="blackclover"><span class="bg"></span><span class="kanji" aria-hidden="true">黒</span><span class="name">Black Clover</span></label>
 <label class="anime-option hb-only" style="--c:#c77dff"><input type="checkbox" value="jojo"><span class="bg"></span><span class="kanji" aria-hidden="true">奇</span><span class="name">JoJo's Bizarre Adventure</span></label>
-<label class="anime-option hb-only" style="--c:#8ecae6"><input type="checkbox" value="rezero"><span class="bg"></span><span class="kanji" aria-hidden="true">死</span><span class="name">Re:Zero</span></label>
+<label class="anime-option hb-only series-off" style="--c:#8ecae6"><input type="checkbox" value="rezero"><span class="bg"></span><span class="kanji" aria-hidden="true">死</span><span class="name">Re:Zero</span></label>
 <label class="anime-option hb-only" style="--c:#ff7b54"><input type="checkbox" value="fireforce"><span class="bg"></span><span class="kanji" aria-hidden="true">炎</span><span class="name">Fire Force</span></label>
 <label class="anime-option hb-only" style="--c:#a8e6cf"><input type="checkbox" value="frieren"><span class="bg"></span><span class="kanji" aria-hidden="true">葬</span><span class="name">Frieren</span></label>
 <label class="anime-option hb-only" style="--c:#ffd166"><input type="checkbox" value="gachiakuta"><span class="bg"></span><span class="kanji" aria-hidden="true">塵</span><span class="name">Gachiakuta</span></label>
@@ -2726,6 +2730,10 @@ function pickBalanced(keys, size) {
    with images. If it can't be reached, the built-in
    names below keep the mode working (name-only cards).
 ========================================= */
+/* Hidden for now in Headbanz + Imposter (tell me when to unhide): empty this list to bring them back */
+const HB_HIDDEN_SERIES = ["aot", "mha", "rezero"];
+const hbVisibleKeys = keys => (keys || []).filter(k => !HB_HIDDEN_SERIES.includes(k));
+function hbHiddenUncheck() { HB_HIDDEN_SERIES.forEach(k => document.querySelectorAll('.anime-poll input[value="' + k + '"]').forEach(i => { i.checked = false; })); }
 let homeMode = "gw", homeDiff = "normal", hbKey = "", hbWrongSeen = 0, hbBusy = false, homeRounds = 5;
 const HB_SERIES = {
     onepiece: { id: 21, re: /one piece/i, label: "One Piece", names: "Monkey D. Luffy|Roronoa Zoro|Nami|Usopp|Sanji|Tony Tony Chopper|Nico Robin|Franky|Brook|Portgas D. Ace|Trafalgar Law|Shanks|Dracule Mihawk|Boa Hancock|Kaido|Sabo" },
@@ -2760,7 +2768,7 @@ window.setGameType = function (t) {
     $("diffField").classList.toggle("hidden", !multi);
     $("hbRoundsBox").classList.toggle("hidden", t !== "hb");
     $("imBox").classList.toggle("hidden", t !== "im");
-    if (t === "gw") document.querySelectorAll(".hb-only input").forEach(c => { c.checked = false; });
+    if (t === "gw") document.querySelectorAll(".hb-only input").forEach(c => { c.checked = false; }); hbHiddenUncheck();
     if (t === "uno") document.querySelectorAll("#animePoll input").forEach(c => { if (!UNO_DECKS[c.value]) c.checked = false; });
     $("modeHint").textContent = {
         gw: "Classic board. Pick a secret, flip cards, guess theirs.",
@@ -2956,6 +2964,7 @@ function hbAssign(pool, players, depth) {
 /* ---------- room creation + lobby ---------- */
 async function createHB(name, keys) {
     if (hbBusy) return; hbBusy = true;
+    keys = hbVisibleKeys(keys);
     try {
         room = generateCode(); myPlayer = 1;
         await set(ref(db, "rooms/" + room), {
@@ -3034,7 +3043,7 @@ async function hbBegin(kind) {
     let keys = d.animes || [];
     if (kind !== "first") {
         const box = document.querySelector("#hbRound .anime-poll");
-        if (box) keys = [...box.querySelectorAll("input:checked")].map(c => c.value);
+        if (box) keys = hbVisibleKeys([...box.querySelectorAll("input:checked")].map(c => c.value));
         if (!keys.length) { toast("Pick at least one series."); return; }
     }
     $("hbLoading").classList.remove("hidden"); { const lt = document.querySelector("#hbLoading div"); if (lt) lt.textContent = "Summoning characters..."; }
@@ -3276,6 +3285,7 @@ window.setLaps = function (n) { homeLaps = n; document.querySelectorAll(".lapbtn
 
 async function createIM(name, keys) {
     if (hbBusy) return; hbBusy = true;
+    keys = hbVisibleKeys(keys);
     try {
         room = generateCode(); myPlayer = 1;
         await set(ref(db, "rooms/" + room), {
@@ -3322,7 +3332,7 @@ async function imBegin(kind) {
     let keys = d.animes || [];
     if (kind !== "first") {
         const box = document.querySelector("#imPanel .anime-poll");
-        if (box) keys = [...box.querySelectorAll("input:checked")].map(c => c.value);
+        if (box) keys = hbVisibleKeys([...box.querySelectorAll("input:checked")].map(c => c.value));
         if (!keys.length) { toast("Pick at least one series."); return; }
     }
     $("hbLoading").classList.remove("hidden"); { const lt = document.querySelector("#hbLoading div"); if (lt) lt.textContent = "Summoning characters..."; }
