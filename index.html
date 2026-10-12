@@ -1152,6 +1152,45 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 /* TEMPORARILY HIDDEN SERIES (Headbanz + Imposter): Attack on Titan, My Hero Academia, Re:Zero.
    To bring them back: delete this rule, delete the three "series-off" classes in the series list, and empty HB_HIDDEN_SERIES in the script. */
 body .series-pick .anime-option.series-off,body.hb-mode .series-pick .anime-option.hb-only.series-off,body.uno-mode .series-pick .anime-option.hb-only.uno-ok.series-off{display:none!important}
+/* ===== swap cards: real card backs ===== */
+.ucard.cb{background:radial-gradient(circle at 50% 38%,#ff3b3b 0,#c10f15 38%,#2a0508 100%);border:3px solid #fff}
+.ucard.cb::before{content:"✦";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:46px;color:#fff;text-shadow:3px 3px 0 #000}
+/* ===== FUTURE SIGHT reveal: one look per character ===== */
+.u-peek.pk::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0}
+.u-peek.pk>*{position:relative;z-index:1}
+.u-peek.pk{background:var(--pbg)}
+.u-peek.pk h2{color:var(--pt);text-shadow:0 0 22px var(--pg),3px 3px 0 #000;letter-spacing:.16em;font-size:clamp(26px,5vw,46px);animation:pkTitle .5s cubic-bezier(.2,1.3,.3,1) backwards}
+.u-peek.pk .u-peek-row{border-color:var(--pg)!important;box-shadow:0 0 30px color-mix(in srgb,var(--pg) 45%,transparent)}
+.u-peek.pk .ucard.mini{box-shadow:0 0 16px var(--pg);animation:var(--pa) .7s cubic-bezier(.2,1.2,.3,1) backwards;animation-delay:calc(var(--i,0)*80ms + .15s)}
+@keyframes pkTitle{from{opacity:0;transform:scale(2.2)}}
+@keyframes pkRipple{0%{opacity:0;transform:scale(.2);filter:brightness(3)}60%{transform:scale(1.15)}}
+@keyframes pkScan{0%{clip-path:inset(0 50% 0 50%);filter:brightness(2.5) saturate(0)}100%{clip-path:inset(0 0 0 0)}}
+@keyframes pkRadar{0%,40%{opacity:0}45%{opacity:1}55%{opacity:.2}65%,100%{opacity:1}}
+@keyframes pkCut{0%{opacity:0;transform:translateX(-70px) skewX(-20deg);filter:brightness(3)}100%{opacity:1}}
+@keyframes pkGhost{0%{opacity:0;filter:invert(1) grayscale(1) contrast(1.4)}50%{opacity:.7;filter:invert(1) grayscale(1) contrast(1.4)}100%{opacity:1}}
+@keyframes pkRise{0%{opacity:0;transform:translateY(-90px);filter:blur(10px) brightness(.2)}100%{opacity:1}}
+@keyframes pkFlip{0%{opacity:0;transform:perspective(500px) rotateY(180deg) scale(.6)}100%{opacity:1}}
+@keyframes pkSwing{0%{opacity:0;transform:translateY(-60px) rotate(-25deg)}60%{transform:rotate(9deg)}100%{opacity:1}}
+@keyframes pkPop{0%{opacity:0;transform:scale(2.4) rotate(-12deg)}70%{transform:scale(.92) rotate(3deg)}100%{opacity:1}}
+@keyframes pkSpin{to{transform:rotate(360deg)}}
+.pk-onepiece_e{--pbg:radial-gradient(circle at 50% 50%,#3a0508ee,#050001fa 72%);--pt:#ffe0e0;--pg:#ff2a3a;--pa:pkRipple}
+.pk-onepiece_e::before{background:repeating-radial-gradient(circle at 50% 50%,transparent 0 46px,#ff2a3a33 48px 50px);animation:pkSpin 40s linear infinite}
+.pk-naruto_e{--pbg:radial-gradient(circle at 50% 45%,#0a1440f0,#02040dfa 72%);--pt:#e6edff;--pg:#8fa4ff;--pa:pkScan}
+.pk-naruto_e::before{inset:-30%;background:repeating-conic-gradient(from 0deg,#8fa4ff26 0 6deg,transparent 6deg 22.5deg),radial-gradient(circle,transparent 30%,#8fa4ff22 31% 32%,transparent 33%);animation:pkSpin 30s linear infinite}
+.pk-dragonball_e{--pbg:radial-gradient(circle at 50% 50%,#1c1c24f2,#050508fa 74%);--pt:#e8e8f0;--pg:#ff5a3c;--pa:pkRadar}
+.pk-dragonball_e::before{background:linear-gradient(#ffffff0d 1px,transparent 1px) 0 0/44px 44px,linear-gradient(90deg,#ffffff0d 1px,transparent 1px) 0 0/44px 44px,conic-gradient(from 0deg,#ff5a3c33,transparent 20%);animation:pkSpin 5s linear infinite}
+.pk-jjk_e{--pbg:radial-gradient(circle at 50% 50%,#031a3af2,#01060fFA 72%);--pt:#dff6ff;--pg:#4cc9ff;--pa:pkCut}
+.pk-jjk_e::before{background:repeating-linear-gradient(60deg,#4cc9ff22 0 1px,transparent 1px 38px),repeating-linear-gradient(120deg,#4cc9ff22 0 1px,transparent 1px 38px)}
+.pk-demonslayer_e{--pbg:radial-gradient(circle at 50% 50%,#150205f4,#000 74%);--pt:#fff;--pg:#ff3b3b;--pa:pkGhost}
+.pk-demonslayer_e::before{background:repeating-linear-gradient(90deg,#ff3b3b1f 0 1px,transparent 1px 26px),radial-gradient(circle at 50% 100%,#ff3b3b33,transparent 60%)}
+.pk-bleach_e{--pbg:radial-gradient(circle at 50% 30%,#1a0a30f4,#010003 72%);--pt:#fff;--pg:#8a7bff;--pa:pkRise}
+.pk-bleach_e::before{background:radial-gradient(circle at 20% 80%,#2e0e46aa,transparent 40%),radial-gradient(circle at 80% 70%,#2e0e46aa,transparent 40%),repeating-linear-gradient(90deg,#00000000 0 60px,#0a0414aa 60px 66px)}
+.pk-hxh_e{--pbg:radial-gradient(circle at 50% 40%,#3a0a3af2,#0a010dfa 74%);--pt:#ffe6f6;--pg:#ff7ad9;--pa:pkFlip}
+.pk-hxh_e::before{background:radial-gradient(circle,#ffd6f088 1.5px,transparent 2.5px) 0 0/54px 54px,radial-gradient(circle,#ff7ad966 1px,transparent 2px) 20px 28px/38px 38px}
+.pk-blackclover_e{--pbg:radial-gradient(circle at 50% 50%,#3a0412f2,#080002fa 74%);--pt:#ffe3ea;--pg:#ff3b66;--pa:pkSwing}
+.pk-blackclover_e::before{background:repeating-linear-gradient(100deg,#ff3b6655 0 2px,transparent 2px 34px),repeating-linear-gradient(80deg,#ff3b6633 0 1px,transparent 1px 52px)}
+.pk-jojo_e{--pbg:radial-gradient(circle at 50% 50%,#3a0a2cf4,#0a0108 76%);--pt:#fff;--pg:#ff4fa8;--pa:pkPop}
+.pk-jojo_e::before{background:radial-gradient(#ff4fa866 2.4px,transparent 3px) 0 0/16px 16px;content:"ゴゴゴゴゴ";display:flex;align-items:center;justify-content:center;font-size:30vw;font-weight:900;color:#ff4fa81f;letter-spacing:.1em;white-space:nowrap;overflow:hidden}
 </style>
 
 </head>
@@ -4603,13 +4642,25 @@ UNO_FX_HOOKS.naruto_e = unoSceneHook("naruto_e", unoNeji);
    jjk_t Todo = black/white shadow hands, hard-cut claps
    The two blocks in these scenes are the REAL swap: your hand area and the target player's plate (read from the page).
    ===================================================================== */
-function fxSwapBegin(env, u) {
+function fxSwapBegin(env, u, box) {
     env.sw = u.fx.sw || u.fx.to; env.name = u.names["p" + env.sw] || "?";
     const rr = e => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
     const pl = document.querySelector('.u-opp[data-p="' + env.sw + '"]') || document.querySelector(".u-opp"), hd = document.getElementById("unoHand");
     env.A = hd ? rr(hd) : { x: innerWidth * .2, y: innerHeight * .72, w: innerWidth * .6, h: innerHeight * .22 };
     env.B = pl ? rr(pl) : { x: innerWidth * .35, y: innerHeight * .03, w: innerWidth * .3, h: innerHeight * .14 };
     env.A.h = Math.min(env.A.h, innerHeight * .26);
+    /* the real cards: group 0 = the swapper's old cards (now in the target's hand), group 1 = the target's old cards (now in the swapper's hand).
+       Only the two players involved see faces; everyone else sees card backs, so nothing leaks. */
+    env.me = Number(myPlayer); env.up = env.me === u.fx.p || env.me === env.sw;
+    const layer = document.createElement("div"); layer.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3"; box.appendChild(layer);
+    const key = ci => { const c = u.cards[ci]; return (c.k === "w" || c.k === "x" ? 9 : c.s) * 1000 + (c.k === "a" ? c.v : 20); };
+    const mk = ci => { const el = env.up ? unoCardEl(u, ci, "") : hbEl("div", "ucard cb"); el.style.cssText += ";position:absolute;left:0;top:0;width:118px;height:176px;transform-origin:0 0;transition:none;opacity:0;margin:0;animation:none"; layer.appendChild(el); return el; };
+    env.grp = [arr(u.hands["p" + env.sw]).slice().sort((a, b) => key(a) - key(b)).map(mk), arr(u.hands["p" + u.fx.p]).slice().sort((a, b) => key(a) - key(b)).map(mk)];
+}
+function fxPlace(env, idx, r, a, k) {      // lay the real cards of one group out inside rect r (fans them, scales them to fit)
+    const L = env.grp[idx], n = L.length; if (!n) return;
+    const sc = Math.min(r.h / 176, 1.15), cw = 118 * sc, step = n > 1 ? Math.min(cw * .85, (r.w - cw) / (n - 1)) : 0, x0 = r.x + (r.w - (cw + step * (n - 1))) / 2, y0 = r.y + (r.h - 176 * sc) / 2, fl = Math.sin((k || 0) * Math.PI);
+    L.forEach((el, i) => { el.style.opacity = a; el.style.transform = "translate(" + (x0 + i * step) + "px," + (y0 - fl * r.h * .25) + "px) rotate(" + ((i - n / 2) * fl * 2.2) + "deg) scale(" + sc + ")"; });
 }
 const fxLerp = (a, b, k) => ({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, w: a.w + (b.w - a.w) * k, h: a.h + (b.h - a.h) * k });
 function fxBlk(g, r, col, a, txt, ink) {
@@ -4620,7 +4671,7 @@ const fxCtr = r => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
 
 /* ---------- LAW · ROOM / Shambles: a blue sphere opens, the two hands are cut out and exchanged ---------- */
 const unoLaw = {
-    col: "#4cc9f0", ms: 7600, tail: () => 1800, begin: (env, box, u) => fxSwapBegin(env, u),
+    col: "#4cc9f0", ms: 7600, tail: () => 1800, begin: (env, box, u) => fxSwapBegin(env, u, box),
     draw(g, w, h, T, env, u) {
         const cx = w / 2, cy = h / 2, M = Math.min(w, h), t = T.t, s = T.s, C = "#4cc9f0", R = Math.hypot(w, h) * .55, A = env.A, B = env.B;
         const grow = T.ph === "tail" ? 1 - fxS(.2, 1, T.tt) : fxS(.2, .46, t) * (1 - fxS(.84, 1, t) * .0), rad = R * grow, k = T.ph === "tail" ? 1 : fxS(.56, .8, t);
@@ -4640,7 +4691,7 @@ const unoLaw = {
         [[A, "YOUR CARDS"], [B, env.name + "'S CARDS"]].forEach(([r, lb], i) => {
             const dst = i ? A : B, p = fxLerp(r, dst, 1 - Math.pow(1 - k, 3)), arc = Math.sin(k * 3.14) * -M * .12;
             if (k > 0 && k < 1 && T.ph === "main") { g.save(); g.globalAlpha = .25; g.strokeStyle = C; g.setLineDash([6, 6]); g.beginPath(); g.moveTo(fxCtr(r).x, fxCtr(r).y); g.lineTo(fxCtr(dst).x, fxCtr(dst).y); g.stroke(); g.restore(); }
-            if (cut > 0 && cut < 1 || k > 0) fxBlk(g, { x: p.x, y: p.y + arc - lift, w: p.w, h: p.h }, C, 1, i ? (k < .5 ? lb : "YOUR CARDS") : (k < .5 ? lb : env.name + "'S CARDS"));
+            fxPlace(env, i, { x: p.x, y: p.y + arc - lift, w: p.w, h: p.h }, (cut > 0 || k > 0) ? 1 : 0, 0);
             if (cut > 0 && cut < 1) { g.strokeStyle = "#fff"; g.lineWidth = 2; g.shadowColor = C; g.shadowBlur = 14; g.setLineDash([10, 6]); g.lineDashOffset = -s * 60; g.strokeRect(r.x - 6, r.y - 6, r.w + 12, r.h + 12); g.setLineDash([]); g.shadowBlur = 0; }
         });
         if (T.ph === "main" && t > .78 && t < .9) { const sl = fxSlam(Math.min(1, (t - .78) / .1)); g.save(); g.translate(cx, cy); g.scale(.7 + .3 * sl.sc / 3.2, .7 + .3 * sl.sc / 3.2); g.globalAlpha = sl.a; fxText(g, "SHAMBLES", 0, 0, M * .12, "#fff", "#07304a", C, "sans-serif"); g.restore(); g.fillStyle = "rgba(180,235,255," + (.5 * (1 - (t - .78) / .12)) + ")"; g.fillRect(0, 0, w, h); }
@@ -4650,7 +4701,7 @@ UNO_FX_HOOKS.onepiece_t = unoSceneHook("onepiece_t", unoLaw);
 
 /* ---------- MINATO · Flying Thunder God: a marked kunai is thrown, you blink to it, the hands swap in a flash ---------- */
 const unoMinato = {
-    col: "#ffd23f", ms: 7600, tail: () => 1800, begin: (env, box, u) => fxSwapBegin(env, u),
+    col: "#ffd23f", ms: 7600, tail: () => 1800, begin: (env, box, u) => fxSwapBegin(env, u, box),
     draw(g, w, h, T, env, u) {
         const cx = w / 2, cy = h / 2, M = Math.min(w, h), t = T.t, s = T.s, Y = "#ffd23f", A = env.A, B = env.B, tg = fxCtr(B), R = Math.hypot(w, h) / 2;
         const sw = T.ph === "tail" ? 1 : fxS(.7, .8, t);
@@ -4671,7 +4722,7 @@ const unoMinato = {
         }
         if (t >= .7 || T.ph === "tail") {                              // the exchange: both hands blink to each other's place, thunder snaps between them
             const a = T.ph === "tail" ? 1 - fxS(.4, 1, T.tt) : 1;
-            [[A, B, "YOUR CARDS"], [B, A, env.name + "'S CARDS"]].forEach(([r, d, lb], i) => { const p = sw < .5 ? r : d; fxBlk(g, p, Y, a, sw < .5 ? lb : (i ? "YOUR CARDS" : env.name + "'S CARDS")); if (sw > 0 && sw < 1) { g.globalAlpha = 1 - sw; g.strokeStyle = Y; g.lineWidth = 3; g.strokeRect(r.x, r.y, r.w, r.h); g.globalAlpha = 1; } });
+            [[A, B, "YOUR CARDS"], [B, A, env.name + "'S CARDS"]].forEach(([r, d, lb], i) => { const p = sw < .5 ? r : d; fxPlace(env, i, p, a, 0); if (sw > 0 && sw < 1) { g.globalAlpha = 1 - sw; g.strokeStyle = Y; g.lineWidth = 3; g.strokeRect(r.x, r.y, r.w, r.h); g.globalAlpha = 1; } });
             if (T.ph === "main" && t < .86) { const a1 = fxCtr(A), b1 = fxCtr(B); fxBolt(g, a1.x, a1.y, b1.x, b1.y, (T.now / 60 | 0), Y); fxBolt(g, b1.x, b1.y, a1.x, a1.y, (T.now / 60 | 0) + 9, "#fff"); }
         }
     }
@@ -4685,26 +4736,24 @@ function fxClap(g, x, y, M, flip, col) {
     g.lineTo(M * .24, M * .08); g.lineTo(M * .36, -M * .04); g.lineTo(M * .4, M * .05); g.lineTo(M * .26, M * .3); g.lineTo(M * .24, M * .5); g.closePath(); g.fill(); g.stroke(); g.restore();
 }
 const unoTodo = {
-    col: "#c77dff", ms: 7800, tail: () => 1600, begin: (env, box, u) => fxSwapBegin(env, u),
+    col: "#c77dff", ms: 7800, tail: () => 1600, begin: (env, box, u) => fxSwapBegin(env, u, box),
     draw(g, w, h, T, env, u) {
         const cx = w / 2, cy = h / 2, M = Math.min(w, h), t = T.t, A = env.A, B = env.B, W = "#fff";
         const clap = (a, b) => t >= a && t < b, lines = q => { g.strokeStyle = W; g.lineWidth = 3; for (let i = 0; i < 36; i++) { const an = fxR(i) * 6.283; g.beginPath(); g.moveTo(cx + Math.cos(an) * M * .15, cy + Math.sin(an) * M * .15); g.lineTo(cx + Math.cos(an) * R0 * (1 - q * .3), cy + Math.sin(an) * R0 * (1 - q * .3)); g.stroke(); } }, R0 = Math.hypot(w, h) / 2;
-        if (T.ph === "tail") { const a = 1 - fxS(.3, 1, T.tt); fxBlk(g, B, "#c77dff", a, "YOUR CARDS", "#000"); fxBlk(g, A, "#c77dff", a, env.name + "'S CARDS", "#000"); return; }
+        if (T.ph === "tail") { const a = 1 - fxS(.3, 1, T.tt); fxPlace(env, 0, B, 1, 0); fxPlace(env, 1, A, 1, 0); g.globalAlpha = 1; return; }
         g.fillStyle = "#f4f1ea"; g.fillRect(0, 0, w, h);
         if (t < .2) {                                                  // cut 1: your object in front, two shadow hands rise to clap
-            fxBlk(g, { x: cx - M * .2, y: h * .72, w: M * .4, h: M * .2 }, "#000", 1, "YOUR CARDS", "#111");
+            fxPlace(env, 0, { x: cx - M * .3, y: h * .68, w: M * .6, h: M * .26 }, 1, 0); fxPlace(env, 1, A, 0, 0);
             const a = fxS(0, .19, t); fxClap(g, cx - M * .52 * (1 - a) - M * .1, h * 1.02 - a * h * .38, M, 1, "#c77dff"); fxClap(g, cx + M * .52 * (1 - a) + M * .1, h * 1.02 - a * h * .38, M, -1, "#c77dff");
         } else if (clap(.2, .26)) { g.fillStyle = "#000"; g.fillRect(0, 0, w, h); lines((t - .2) / .06); g.save(); g.translate(cx, cy); g.rotate(-.12); fxText(g, "パン!", 0, 0, M * .34, "#fff", "#7a2cc4", "#c77dff"); g.restore(); }
         else if (t < .52) {                                            // cut 2: hard cut, the viewpoint is now right beside your cards (huge)
-            g.fillStyle = "#101018"; g.fillRect(0, 0, w, h); const z = 1 + .08 * Math.sin(T.s * 14); fxBlk(g, { x: cx - M * .46 * z, y: cy - M * .26 * z, w: M * .92 * z, h: M * .52 * z }, "#c77dff", 1, "YOUR CARDS", "#1d1230");
+            g.fillStyle = "#101018"; g.fillRect(0, 0, w, h); const z = 1 + .08 * Math.sin(T.s * 14); fxPlace(env, 0, { x: cx - M * .6 * z, y: cy - M * .3 * z, w: M * 1.2 * z, h: M * .6 * z }, 1, 0); fxPlace(env, 1, A, 0, 0);
             g.fillStyle = "rgba(0,0,0," + (.6 * fxS(.34, .5, t)) + ")"; g.fillRect(0, 0, w, h);
         } else if (clap(.52, .58)) { g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); g.fillStyle = "#000"; lines((t - .52) / .06); g.save(); g.translate(cx, cy); g.rotate(.1); fxText(g, "パン!!", 0, 0, M * .4, "#000", "#c77dff", "#c77dff"); g.restore(); }
         else {                                                         // cut 3: a jagged tear sweeps across, before on one side, after (hands exchanged) on the other
             const q = fxS(.58, .78, t), tx = w * q; g.fillStyle = "#f4f1ea"; g.fillRect(0, 0, w, h);
-            g.save(); g.beginPath(); g.moveTo(0, 0); for (let i = 0; i <= 12; i++) g.lineTo(tx + (i % 2 ? 26 : -26) * (q > 0 && q < 1 ? 1 : 0), h * i / 12); g.lineTo(0, h); g.closePath(); g.clip(); fxBlk(g, A, "#000", 1, "YOUR CARDS", "#111"); fxBlk(g, B, "#000", 1, env.name + "'S CARDS", "#111"); g.restore();
-            g.save(); g.beginPath(); g.moveTo(w, 0); for (let i = 0; i <= 12; i++) g.lineTo(tx + (i % 2 ? 26 : -26) * (q > 0 && q < 1 ? 1 : 0), h * i / 12); g.lineTo(w, h); g.closePath(); g.clip(); fxBlk(g, B, "#c77dff", 1, "YOUR CARDS", "#1d1230"); fxBlk(g, A, "#c77dff", 1, env.name + "'S CARDS", "#1d1230"); g.restore();
-            if (q > 0 && q < 1) { g.strokeStyle = "#c77dff"; g.lineWidth = 5; g.beginPath(); for (let i = 0; i <= 12; i++) g.lineTo(tx + (i % 2 ? 26 : -26), h * i / 12); g.stroke(); }
-            const o = fxS(.84, 1, t); if (o > 0) { g.fillStyle = "rgba(244,241,234," + o * 0 + ")"; }
+            [0, 1].forEach(i => { const before = i ? B : A, after = i ? A : B; fxPlace(env, i, tx > fxCtr(before).x ? after : before, 1, 0); });   // the world re-forms from left to right: each real hand jumps the moment the tear passes it
+            if (q > 0 && q < 1) { g.strokeStyle = "#c77dff"; g.lineWidth = 6; g.beginPath(); for (let i = 0; i <= 12; i++) g.lineTo(tx + (i % 2 ? 26 : -26), h * i / 12); g.stroke(); g.strokeStyle = "#fff"; g.lineWidth = 2; g.stroke(); }
         }
     }
 };
@@ -5183,15 +5232,19 @@ function unoSpecialFx(u, f) {
     const hook = UNO_FX_HOOKS[c.sk + "_" + c.k];
     if (hook) { try { hook(box, close, c, u); } catch (e) { console.warn(e); close(); } } else setTimeout(close, 1700);
 }
+const UNO_PK = { onepiece_e: "OBSERVATION HAKI", naruto_e: "白眼 BYAKUGAN", dragonball_e: "KI SENSING", jjk_e: "六眼 SIX EYES", demonslayer_e: "TRANSPARENT WORLD",
+    bleach_e: "THE ALMIGHTY", hxh_e: "LOVELY GHOSTWRITER", blackclover_e: "RED THREAD OF FATE", jojo_e: "EPITAPH" };
 function unoPeekShow(u, me) {
     const old = $("unoPeek"); if (old) old.remove();
     const box = hbEl("div", "u-peek"); box.id = "unoPeek";
-    box.appendChild(hbEl("h2", null, "👁️ FUTURE SIGHT"));
+    const fxk = u.fx && u.cards[u.fx.ci] ? u.cards[u.fx.ci].sk + "_e" : "";
+    if (UNO_PK[fxk]) box.classList.add("pk", "pk-" + fxk);
+    box.appendChild(hbEl("h2", null, UNO_PK[fxk] || "👁️ FUTURE SIGHT"));
     const rows = hbEl("div", "u-peek-rows");
     u.seats.filter(p => p !== me).forEach(p => {
         const r = hbEl("div", "u-peek-row"), nm = hbEl("div", "u-peek-name", u.names["p" + p]); nm.style.color = HB_COLORS[p - 1]; r.appendChild(nm);
         const hd = hbEl("div", "u-peek-hand");
-        (u.hands["p" + p] || []).slice().sort((a, b) => (u.cards[a].s - u.cards[b].s) || ((u.cards[a].v) - (u.cards[b].v))).forEach(ci => hd.appendChild(unoCardEl(u, ci, "mini")));
+        (u.hands["p" + p] || []).slice().sort((a, b) => (u.cards[a].s - u.cards[b].s) || ((u.cards[a].v) - (u.cards[b].v))).forEach((ci, ix) => { const el = unoCardEl(u, ci, "mini"); el.style.setProperty("--i", ix); hd.appendChild(el); });
         r.appendChild(hd); rows.appendChild(r);
     });
     box.appendChild(rows); box.appendChild(hbEl("div", "u-peek-bar"));
