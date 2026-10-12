@@ -1121,6 +1121,33 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 .fx-hc{position:absolute!important;left:0;top:0;width:220px;height:330px;transform-origin:50% 50%}
 .fx-hc .ucard{position:absolute;left:0;top:0;width:220px;height:330px;margin:0;box-shadow:0 10px 30px #000a}
 .fx-cv.fg{z-index:3}
+
+/* Anime Uno winning / losing screen */
+#unoOver{background:radial-gradient(circle at 50% 36%,rgba(70,10,12,.93),rgba(3,1,2,.97) 72%);overflow-y:auto}
+#unoOver.win{background:radial-gradient(circle at 50% 36%,rgba(130,78,0,.92),rgba(10,4,0,.97) 72%)}
+#unoOver::after{content:"";position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;animation:uWFlash .8s}
+#unoWinCv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#unoOver .u-over{padding-top:7vh;animation:uWShake .6s .12s}
+#unoOver.win .u-over::before{background:linear-gradient(100deg,transparent,#b87a0c 16%,#ffd45a 50%,#b87a0c 84%,transparent);box-shadow:0 0 90px #ffb347aa}
+#unoOver .u-over h1{animation:uWSlam .75s .15s cubic-bezier(.2,1.2,.3,1) backwards}
+#unoOver.win .u-over h1{color:#fff7d0;text-shadow:7px 7px 0 #5a3500,0 0 40px #ffcf4a}
+.u-over>.u-win-k{position:absolute;left:0;right:0;top:3vh;font-family:serif;font-size:clamp(130px,32vw,400px);font-weight:900;line-height:1;color:transparent;-webkit-text-stroke:3px rgba(255,220,120,.32);opacity:0;pointer-events:none;animation:uWK 1.4s .45s forwards}
+#unoOver .stars{animation:uWPulse 1.6s infinite}
+.u-win-card{height:250px;display:flex;justify-content:center;margin:6px 0 8px;animation:uWCard .85s .9s cubic-bezier(.2,1.3,.4,1) backwards}
+.u-win-card .ucard{transform:scale(.72);transform-origin:top center;box-shadow:0 0 36px var(--c),0 0 90px #ffb34777;animation:uWFloat 3s ease-in-out infinite}
+.u-win-chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:6px 0 16px}
+.u-win-chip{padding:6px 16px;border:2px solid var(--gold-bright);background:rgba(0,0,0,.6);transform:skewX(-8deg);animation:uWChip .5s calc(1.6s + var(--i)*.15s) backwards}
+.u-win-chip small{display:block;font-size:10px;font-weight:800;letter-spacing:.18em;color:var(--gold-bright)}
+.u-win-chip b{font-family:var(--font-display);font-weight:400;font-size:20px;color:#fff}
+.u-win-btns{animation:uWChip .5s 2.3s backwards}
+@keyframes uWFlash{0%{opacity:.95}100%{opacity:0}}
+@keyframes uWSlam{from{opacity:0;transform:skewX(-8deg) rotate(-3deg) scale(4.5)}}
+@keyframes uWShake{0%,100%{transform:none}20%{transform:translate(-9px,6px)}40%{transform:translate(8px,-7px)}60%{transform:translate(-5px,3px)}80%{transform:translate(3px,-2px)}}
+@keyframes uWK{0%{opacity:0;transform:scale(1.4)}40%{opacity:1}100%{opacity:.9;transform:scale(1)}}
+@keyframes uWPulse{0%,100%{opacity:.7;text-shadow:0 0 12px #ffb347}50%{opacity:1;text-shadow:0 0 30px #ffd45a}}
+@keyframes uWCard{from{opacity:0;transform:translateY(140px) rotate(-18deg) scale(.5)}}
+@keyframes uWFloat{0%,100%{transform:scale(.72) translateY(0) rotate(-2deg)}50%{transform:scale(.72) translateY(-10px) rotate(2deg)}}
+@keyframes uWChip{from{opacity:0;transform:translateY(24px) skewX(-8deg)}}
 </style>
 
 </head>
@@ -1454,7 +1481,7 @@ Loading...
 </div>
 <div id="unoColor" class="hb-picker hidden"><div style="text-align:center"><h1>CHOOSE THE ANIME</h1><div class="uno-colors" id="unoColorBtns"></div><button class="pop ghost" style="margin-top:18px" onclick="unoColorCancel()">Cancel</button></div></div>
 <div id="unoTarget" class="hb-picker hidden"><div style="text-align:center"><h1>SWAP HANDS WITH...</h1><div class="uno-colors" id="unoTargetBtns"></div><button class="pop ghost" style="margin-top:18px" onclick="unoTargetCancel()">Cancel</button></div></div>
-<div id="unoOver" class="hb-picker hidden"><div class="u-over"><div class="stars">★ ★ ★</div><h1 id="unoOverTitle"></h1><p id="unoOverSub"></p><button class="u-btn" onclick="unoRematch()">PLAY AGAIN</button> <button class="u-btn alt" onclick="exitGame()">EXIT</button></div></div>
+<div id="unoOver" class="hb-picker hidden"><canvas id="unoWinCv"></canvas><div class="u-over"><div class="u-win-k" id="unoWinK"></div><div class="stars">★ ★ ★</div><h1 id="unoOverTitle"></h1><p id="unoOverSub"></p><div class="u-win-card" id="unoWinCard"></div><div class="u-win-chips" id="unoWinChips"></div><div class="u-win-btns"><button class="u-btn" onclick="unoRematch()">PLAY AGAIN</button> <button class="u-btn alt" onclick="exitGame()">EXIT</button></div></div></div>
 </div>
 <div id="result" class="screen hidden">
 <canvas id="fx" class="fx"></canvas>
@@ -5080,11 +5107,39 @@ function showUNO(data) {
     ov.classList.toggle("hidden", !over);
     if (over) {
         const win = u.winner === me, k = u.round + ":" + u.winner;
-        $("unoOverTitle").textContent = win ? "YOU WIN!" : (u.names["p" + u.winner] || "?") + " WINS!";
+        ov.classList.toggle("win", win); $("unoOverTitle").textContent = win ? "VICTORY!" : (u.names["p" + u.winner] || "?") + " WINS!";
         $("unoOverSub").textContent = win ? "You got rid of every card." : "Better luck next round.";
-        if (unoSeen.over !== k) { unoSeen.over = k; if (win) { sfx("win"); confetti(); } else sfx("lose"); }
+        if (unoSeen.over !== k) { unoSeen.over = k; try { unoWinBuild(u, me, win); } catch (e) { console.warn(e); } if (win) { sfx("win"); confetti(); } else sfx("lose"); }
     }
 }
+/* ---------- Anime Uno: the winning / losing screen ---------- */
+let unoWinRaf = 0;
+function unoWinBuild(u, me, win) {
+    $("unoWinK").textContent = win ? "勝利" : "敗北";
+    const cd = $("unoWinCard"), last = u.disc[u.disc.length - 1]; cd.innerHTML = ""; if (last != null && u.cards[last]) cd.appendChild(unoCardEl(u, last, "big"));
+    const others = u.seats.filter(p => p !== u.winner).reduce((a, p) => a + (u.hands["p" + p] || []).length, 0), mine = (u.hands["p" + me] || []).length, ch = $("unoWinChips"); ch.innerHTML = "";
+    [["ROUND", u.round], win ? ["OPPONENTS STILL HOLDING", others + " CARDS"] : ["YOU WERE HOLDING", mine + " CARDS"], ["FINISHING CARD", (u.cards[last] || {}).n || "?"]].forEach((c, i) => {
+        const d = hbEl("div", "u-win-chip"); d.style.setProperty("--i", i); d.appendChild(hbEl("small", null, c[0])); d.appendChild(hbEl("b", null, String(c[1]))); ch.appendChild(d); });
+    unoWinCanvas(win);
+}
+function unoWinCanvas(win) {
+    cancelAnimationFrame(unoWinRaf); const cv = $("unoWinCv"), g = cv.getContext("2d"), w = cv.width = innerWidth, h = cv.height = innerHeight; g.clearRect(0, 0, w, h);
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const cx = w / 2, cy = h * .34, R = Math.hypot(w, h) / 2, col = win ? ["#ffd45a", "#fff3b0", "#ff9e2c", "#ffffff", "#ff5a7a"] : ["#8a0f12", "#c5121e", "#6a6a74"], ps = [], t0 = performance.now();
+    const rnd = Math.random, spawn = (n, up) => { for (let i = 0; i < n; i++) ps.push({ x: rnd() * w, y: up ? h + 10 : -20, vx: (rnd() - .5) * (up ? 1.5 : 3), vy: up ? -2 - rnd() * 4 : 2 + rnd() * 4, r: rnd() * 6, vr: (rnd() - .5) * .25, s: 5 + rnd() * 9, c: col[rnd() * col.length | 0], sp: up }); };
+    const frame = now => {
+        const ov = $("unoOver"); if (!ov || ov.classList.contains("hidden")) return; const s = (now - t0) / 1000; g.clearRect(0, 0, w, h);
+        const b = Math.max(0, 1 - s / 1.1); if (b > 0) { g.strokeStyle = "rgba(255,255,255," + .75 * b + ")"; g.lineWidth = 2; for (let i = 0; i < 70; i++) { const a = i / 70 * 6.283 + (i % 3) * .02, d0 = R * .12 + (1 - b) * R * .5 * (.4 + (i % 7) / 7), d1 = d0 + R * (.25 + (i % 5) / 8) * b; g.beginPath(); g.moveTo(cx + Math.cos(a) * d0, cy + Math.sin(a) * d0); g.lineTo(cx + Math.cos(a) * d1, cy + Math.sin(a) * d1); g.stroke(); } }
+        g.save(); g.translate(cx, cy); g.rotate(s * .12); g.fillStyle = col[0]; g.globalAlpha = Math.min(1, s / .6) * (win ? .2 : .12); for (let i = 0; i < 20; i++) { const a = i / 20 * 6.283; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a - .06) * R, Math.sin(a - .06) * R); g.lineTo(Math.cos(a + .06) * R, Math.sin(a + .06) * R); g.fill(); } g.restore(); g.globalAlpha = 1;
+        const rr = (s - .1) * R * 1.4; if (rr > 0 && rr < R * 1.2) { g.beginPath(); g.arc(cx, cy, rr, 0, 6.283); g.strokeStyle = win ? "rgba(255,230,140," + Math.max(0, 1 - rr / (R * 1.2)) + ")" : "rgba(200,20,30," + Math.max(0, 1 - rr / (R * 1.2)) + ")"; g.lineWidth = 14; g.stroke(); }
+        if (win) { if (s < 7) spawn(s < 1.5 ? 6 : 2, false); spawn(1, true); } else if (rnd() < .7) spawn(1, false);
+        for (let i = ps.length - 1; i >= 0; i--) { const p = ps[i]; p.x += p.vx + Math.sin(s * 2 + i) * .4; p.y += p.vy; p.r += p.vr; if (!p.sp) p.vy = Math.min(p.vy + .02, 6); if (p.y > h + 30 || p.y < -40) { ps.splice(i, 1); continue; }
+            g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.c; g.globalAlpha = p.sp ? .8 : 1; if (p.sp) { g.fillRect(-p.s / 2, -1.5, p.s, 3); g.fillRect(-1.5, -p.s / 2, 3, p.s); } else if (win && i % 3 === 0) { g.beginPath(); g.ellipse(0, 0, p.s * .6, p.s * .3, 0, 0, 6.283); g.fill(); } else g.fillRect(-p.s / 2, -p.s / 3, p.s, p.s * .6); g.restore(); }
+        g.globalAlpha = 1; unoWinRaf = requestAnimationFrame(frame);
+    };
+    unoWinRaf = requestAnimationFrame(frame);
+}
+
 function unoBuildColors(u, keys) {
     const b = $("unoColorBtns"); b.innerHTML = "";
     u.anime.forEach((a, s) => { const x = hbEl("button", "u-pickbtn"); x.style.setProperty("--c", UNO_SUIT[s]); x.appendChild(hbEl("span", null, UNO_KANJI[keys[s]] || "")); x.appendChild(hbEl("b", null, a)); x.onclick = () => unoColorPick(s); b.appendChild(x); });
