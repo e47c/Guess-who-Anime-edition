@@ -1154,6 +1154,62 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 body .series-pick .anime-option.series-off,body.hb-mode .series-pick .anime-option.hb-only.series-off,body.uno-mode .series-pick .anime-option.hb-only.uno-ok.series-off{display:none!important}
 </style>
 
+<style id="duelCss">
+#duel{min-height:100vh;padding:10px 10px 200px;color:#f6efe3;background:radial-gradient(ellipse at 50% 20%,#2a1020 0,#0b0610 72%);--cw:clamp(50px,8.2vw,80px)}
+#duel.shake{animation:dshake .45s}
+@keyframes dshake{10%,50%,90%{transform:translate(-7px,3px)}30%,70%{transform:translate(7px,-3px)}}
+.dhdr{display:flex;justify-content:space-between;align-items:center;gap:10px;max-width:1100px;margin:0 auto 8px}
+.dhdr b{font-family:var(--font-display);font-size:26px;color:var(--gold-bright)}
+.dopps{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:1150px;margin:0 auto 8px}
+.dpan{border:2px solid rgba(201,165,106,.4);border-radius:10px;padding:8px;background:rgba(20,8,14,.82);width:min(100%,330px)}
+#dMine .dpan{width:min(100%,360px)}#dMine{margin:0 auto}
+.dpan.turn{border-color:var(--pc);box-shadow:0 0 18px var(--pc)}
+.dpan.out{opacity:.35;filter:grayscale(1)}
+.dpan.tgt{cursor:crosshair;border-color:#ff4d6d;animation:dpulse 1s infinite}
+@keyframes dpulse{50%{box-shadow:0 0 22px #ff4d6d}}
+.dhead{display:flex;justify-content:space-between;font-weight:800}
+.dlp{font-family:var(--font-mono);color:var(--gold-bright);font-size:18px}
+.dlpb{height:7px;background:#000;border-radius:4px;overflow:hidden;margin:4px 0}
+.dlpb i{display:block;height:100%;background:linear-gradient(90deg,#c1272d,#ffd23f)}
+.dmeta{font-size:11px;opacity:.7;margin-bottom:5px}
+.drow{display:flex;gap:6px;justify-content:center;margin-top:5px}
+.dz{width:var(--cw);height:calc(var(--cw)*1.4);border:1px dashed rgba(201,165,106,.35);border-radius:6px;position:relative;flex:none}
+.dz.t{transform:scale(.72);margin:-6px -4px}
+.dz.def .dcard{transform:rotate(90deg) scale(.72)}
+.dz.tgt{border:2px solid #ff4d6d;box-shadow:0 0 12px #ff4d6d;cursor:crosshair}
+.dz.sel{border:2px solid #ffd23f;box-shadow:0 0 14px #ffd23f}
+.dz.used .dcard{filter:brightness(.55)}
+.dcard{width:100%;height:100%;border-radius:6px;border:2px solid var(--rc,#b08d57);background:#1a0f16;overflow:hidden;font-size:9px;line-height:1.1;display:flex;flex-direction:column;box-shadow:0 2px 6px #000}
+.dcard.back{background:repeating-linear-gradient(45deg,#4a1414,#4a1414 6px,#2a0a0a 6px,#2a0a0a 12px);border-color:#c9a56a}
+.dn{background:rgba(0,0,0,.75);padding:2px 3px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:2px solid var(--sc,#888)}
+.dimg{flex:1;min-height:0;background:#000}
+.dimg img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.dst{display:flex;justify-content:space-between;padding:2px 3px;background:rgba(0,0,0,.8);font-weight:800;font-family:var(--font-mono)}
+.dst b:first-child{color:#ff8a6b}.dst b:last-child{color:#7bc4ff}
+.dcard.r-UR{box-shadow:0 0 8px #ffd23f}
+.dcard.r-SR{border-color:#ff6bd6;box-shadow:0 0 12px #ff6bd6;background:linear-gradient(135deg,#2a0f3a,#0f2a3a)}
+.dcard.sp{background:linear-gradient(#103a30,#0a1a18);border-color:#4be0a8}
+.dcard.tp{background:linear-gradient(#3a1030,#1a0a18);border-color:#ff6b9d}
+.dcard.sp .dimg,.dcard.tp .dimg{display:flex;align-items:center;justify-content:center;font-size:calc(var(--cw)*.45)}
+.dcard.sp .dimg::after{content:"\2726"}.dcard.tp .dimg::after{content:"\2620"}
+.dcard.newc{animation:dsum .6s}
+@keyframes dsum{0%{transform:scale(2.2) rotateY(90deg);opacity:0;filter:brightness(3)}100%{transform:none;opacity:1}}
+.dlog{text-align:center;max-width:900px;margin:6px auto 10px;min-height:38px;font-size:14px;color:var(--gold-bright)}
+.dhand{position:fixed;left:0;right:0;bottom:0;padding:8px 8px 10px;background:linear-gradient(transparent,#000 35%);z-index:5}
+.dbar{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:4px;min-height:40px}
+.dbar button{padding:8px 14px;font-size:13px}.dbar .alt{background:var(--ocean-mid)}
+.dd{font-size:13px;max-width:520px;text-align:center}
+.dhc{display:flex;gap:6px;justify-content:center;overflow-x:auto;padding:14px 4px 2px}
+.dh{width:var(--cw);height:calc(var(--cw)*1.4);flex:none;cursor:pointer;transition:transform .15s}
+.dh:hover{transform:translateY(-8px)}.dh.sel{transform:translateY(-16px);filter:drop-shadow(0 0 8px #ffd23f)}
+.dban{position:fixed;left:0;right:0;top:38%;text-align:center;font-family:var(--font-display);font-size:clamp(28px,6vw,58px);color:#fff;text-shadow:0 0 22px var(--bc),0 3px 0 #000;z-index:60;pointer-events:none;animation:dban 1.7s forwards}
+@keyframes dban{0%{transform:scale(2.5);opacity:0}15%{transform:scale(1);opacity:1}80%{opacity:1}100%{opacity:0;transform:scale(1.1)}}
+.dnum{position:fixed;font-family:var(--font-mono);font-weight:800;font-size:34px;z-index:60;pointer-events:none;animation:dnum 1.2s forwards;text-shadow:0 2px 0 #000;transform:translateX(-50%)}
+@keyframes dnum{to{transform:translate(-50%,-60px);opacity:0}}
+.dghost{position:fixed;z-index:55;pointer-events:none}
+.dghost .dcard{filter:drop-shadow(0 0 14px #ff4d6d)}
+#duelOver{z-index:70}
+</style>
 </head>
 
 
@@ -1188,7 +1244,7 @@ Pick your series. Hide a character. Guess theirs first.
 </div>
 
 
-<div class="field"><label>Game mode</label><div class="sizes"><button id="modeGW" class="modebtn selected" onclick="setGameType('gw')">Guess Who</button><button id="modeHB" class="modebtn" onclick="setGameType('hb')">Headbanz</button><button id="modeIM" class="modebtn" onclick="setGameType('im')">Imposter</button><button id="modeUNO" class="modebtn" onclick="setGameType('uno')">Anime UNO</button></div>
+<div class="field"><label>Game mode</label><div class="sizes"><button id="modeGW" class="modebtn selected" onclick="setGameType('gw')">Guess Who</button><button id="modeHB" class="modebtn" onclick="setGameType('hb')">Headbanz</button><button id="modeIM" class="modebtn" onclick="setGameType('im')">Imposter</button><button id="modeUNO" class="modebtn" onclick="setGameType('uno')">Anime UNO</button><button id="modeDUEL" class="modebtn" onclick="setGameType('duel')">Anime Duel</button></div>
 <p class="anime-hint" id="modeHint">Classic board. Pick a secret, flip cards, guess theirs.</p></div>
 <div
     id="animePoll" class="field series-pick">
@@ -1475,6 +1531,14 @@ Loading...
 <button class="pop ghost" style="width:100%;margin-top:14px" onclick="imCloseGuess()">Cancel</button></div></div>
 </div>
 <div id="hbLoading" class="hb-loading hidden"><div>Summoning characters...</div></div>
+<div id="duel" class="hidden">
+<div class="dhdr"><div><b id="duelTurn"></b> <span id="duelTimer" style="font-family:var(--font-mono);margin-left:8px"></span></div><button class="pop ghost" onclick="exitGame()">EXIT</button></div>
+<div class="dopps" id="dOpps"></div>
+<div class="dlog" id="dLog"></div>
+<div class="dopps" id="dMine"></div>
+<div class="dhand"><div class="dbar" id="dBar"></div><div class="dhc" id="dHand"></div></div>
+<div id="duelOver" class="hb-picker hidden"><div style="text-align:center;margin-top:18vh"><h1 id="duelOverT" style="font-size:56px"></h1><p id="duelOverS"></p><button onclick="duelRematch()">PLAY AGAIN</button> <button class="secondary" onclick="exitGame()">EXIT</button></div></div>
+</div>
 <div id="uno" class="hidden">
 <div class="game-header"><div class="game-header-inner"><div><div class="turn" id="unoTurn"></div><div class="status" id="unoStatus"></div></div><button class="pop ghost" onclick="exitGame()">EXIT</button></div></div>
 <div class="uno-wrap">
@@ -2481,7 +2545,7 @@ function updatePresenceBanner(data) {
     const pres = data.presence || {}, box = $("oppBanner"), me = Number(myPlayer);
     const gone = [1, 2, 3, 4, 5, 6].filter(i => data["player" + i] && i !== me && pres["p" + i] === false);
     const key = gone.join(",");
-    const hb = data.gameType === "headbanz" || data.gameType === "imposter" || data.gameType === "uno";
+    const hb = data.gameType === "headbanz" || data.gameType === "imposter" || data.gameType === "uno" || data.gameType === "duel";
     const names = gone.map(i => data["player" + i].name).join(", ");
     $("oppBannerText").textContent = hb
         ? names + (gone.length > 1 ? " have" : " has") + " left the game. The round continues without them."
@@ -2531,7 +2595,7 @@ function showOnly(id) {
 
     document
         .querySelectorAll(
-            "#home,#lobby,#secret,#game,#hb,#im,#uno,#result"
+            "#home,#lobby,#secret,#game,#hb,#im,#uno,#duel,#result"
         )
         .forEach(
             el =>
@@ -2761,9 +2825,9 @@ const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$searc
 window.setGameType = function (t) {
     homeMode = t;
     const multi = t === "hb" || t === "im";
-    document.body.classList.toggle("hb-mode", multi);
+    document.body.classList.toggle("hb-mode", multi || t === "duel");
     document.body.classList.toggle("uno-mode", t === "uno");
-    Object.entries({ GW: "gw", HB: "hb", IM: "im", UNO: "uno" }).forEach(([k, v]) => $("mode" + k).classList.toggle("selected", t === v));
+    Object.entries({ GW: "gw", HB: "hb", IM: "im", UNO: "uno", DUEL: "duel" }).forEach(([k, v]) => $("mode" + k).classList.toggle("selected", t === v));
     $("sizeField").classList.toggle("hidden", t !== "gw");
     $("diffField").classList.toggle("hidden", !multi);
     $("hbRoundsBox").classList.toggle("hidden", t !== "hb");
@@ -2774,6 +2838,7 @@ window.setGameType = function (t) {
         gw: "Classic board. Pick a secret, flip cards, guess theirs.",
         hb: "2 to 4 players. You see everyone else's character but not your own. Ask on your call, then guess yours first!",
         im: "3 to 6 players. Everyone sees the same character except the imposter. Give clues, vote, and catch them!",
+        duel: "2 to 4 players. Summon your favourite characters, set traps, attack, and drain everyone else's 4000 LP. Last duelist standing wins!",
         uno: "2 to 6 players. Pick exactly 4 series (" + document.querySelectorAll("#animePoll input:checked").length + "/4 picked): they become the 4 colours."
     }[t];
 };
@@ -5234,6 +5299,7 @@ async function() {
     }
     if (homeMode === "hb") return createHB(name, selectedAnimes);
     if (homeMode === "uno") return createUNO(name, selectedAnimes);
+    if (homeMode === "duel") return createDuel(name, selectedAnimes);
     if (homeMode === "im") return createIM(name, selectedAnimes);
 
     const sourcePool =
@@ -5366,7 +5432,7 @@ async function() {
     }
     if (data.status && data.status !== "waiting") { toast("That match has already started."); return; }
 
-    const maxPlayers = data.gameType === "uno" ? 6 : data.gameType === "headbanz" ? 4 : data.gameType === "imposter" ? 6 : 2;
+    const maxPlayers = data.gameType === "duel" ? 4 : data.gameType === "uno" ? 6 : data.gameType === "headbanz" ? 4 : data.gameType === "imposter" ? 6 : 2;
     for (let slot = 2; slot <= maxPlayers; slot++) {
         if (data["player" + slot]) continue;
         const res = await runTransaction(ref(db, "rooms/" + code + "/player" + slot), cur => cur ? undefined : { uid: user.uid, name: name, ready: false });
@@ -5420,8 +5486,10 @@ function listenToRoom() {
         updateLobby(currentRoomData); if (currentRoomData.gameType === "headbanz") updateLobbyHB(currentRoomData);
         if (currentRoomData.gameType === "imposter") updateLobbyIM(currentRoomData);
         if (currentRoomData.gameType === "uno") updateLobbyUNO(currentRoomData);
+        if (currentRoomData.gameType === "duel") updateLobbyDuel(currentRoomData);
 
         if (currentRoomData.gameType === "uno" && currentRoomData.status === "playing") { showUNO(currentRoomData); return; }
+        if (currentRoomData.gameType === "duel" && currentRoomData.status === "playing") { showDuel(currentRoomData); return; }
         if (currentRoomData.gameType === "headbanz" && currentRoomData.status === "playing") { showHB(currentRoomData); return; }
         if (currentRoomData.gameType === "imposter" && currentRoomData.status === "playing") { showIM(currentRoomData); return; }
         if (currentRoomData.status === "selecting") {
@@ -5611,6 +5679,7 @@ async function() {
     if (currentRoomData && currentRoomData.gameType === "headbanz") return hbStart();
     if (currentRoomData && currentRoomData.gameType === "imposter") return imBegin("first");
     if (currentRoomData && currentRoomData.gameType === "uno") return unoStart();
+    if (currentRoomData && currentRoomData.gameType === "duel") return duelStart();
 
     if (
         !currentRoomData
@@ -6414,6 +6483,317 @@ async function initApp() {
     }
 }
 await initApp();
+
+/* =========================================================
+   ANIME DUEL  (Yu-Gi-Oh style, simplified, 2 to 4 players)
+   State lives at rooms/<room>/duel and every move is a transaction.
+   Empty zones are stored as 0 so Firebase keeps the arrays intact.
+========================================================= */
+const DFX = {
+    pow: { k: "s", n: "Power Surge", d: "+500 ATK to one of your monsters.", t: "m" },
+    heal: { k: "s", n: "Healing Spring", d: "Gain 1000 LP." },
+    nuke: { k: "s", n: "Meteor Strike", d: "Destroy one opponent monster.", t: "m" },
+    draw: { k: "s", n: "Double Draw", d: "Draw 2 cards." },
+    hit: { k: "s", n: "Direct Hit", d: "An opponent of your choice loses 600 LP.", t: "p" },
+    bar: { k: "t", n: "Barrier", d: "Set it face-down. Negates the next attack on you." },
+    ref: { k: "t", n: "Mirror Guard", d: "Set it face-down. Destroys the next monster that attacks you." },
+    blast: { k: "t", n: "Counter Blast", d: "Set it face-down. The attacker's owner loses 800 LP and the attack stops." }
+};
+const DRAR = { N: "#b08d57", R: "#9fc4e8", UR: "#ffd23f", SR: "#ff6bd6" };
+let dSel = null, dSeen = { n: -1, fx: -1, over: "", round: -1 }, dZ = {}, dZn = {}, dLP = {}, dPrev = {};
+const dEsc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const dShuf = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const dRr = (lo, hi) => lo + 100 * (Math.random() * ((hi - lo) / 100 + 1) | 0);
+
+/* ---------- room + lobby ---------- */
+async function createDuel(name, keys) {
+    if (hbBusy) return;
+    hbBusy = true;
+    try {
+        toast("Loading characters...");
+        const pool = await hbBuildPool(keys, "normal");
+        const chars = dShuf(pool.filter(c => c.i)).slice(0, 90).map(c => ({ n: c.n, i: c.i, s: Math.max(0, keys.findIndex(k => HB_SERIES[k].label === c.s)) }));
+        if (chars.length < 14) { toast("Not enough characters with pictures. Tick more series."); return; }
+        room = generateCode(); myPlayer = 1;
+        await set(ref(db, "rooms/" + room), {
+            gameType: "duel", mode: mode, animes: keys, duel: { chars: chars, phase: "lobby", anime: keys.map(k => HB_SERIES[k].label) },
+            player1: { uid: user.uid, name: name, ready: false }, player2: null, player3: null, player4: null,
+            status: "waiting", turn: 1, winner: null, result: null
+        });
+        saveSession(); openLobby();
+    } catch (e) { console.error(e); toast("Could not create the room: " + (e.message || e)); }
+    finally { hbBusy = false; }
+}
+function updateLobbyDuel(d) {
+    const ps = [1, 2, 3, 4].filter(i => d["player" + i]), shown = Math.min(4, Math.max(2, ps.length + 1));
+    [1, 2, 3, 4, 5, 6].forEach(i => {
+        const nm = $("p" + i + "Name"), p = d["player" + i];
+        nm.parentElement.classList.toggle("hidden", i > shown);
+        nm.textContent = p ? p.name : "Waiting..."; nm.style.color = p ? HB_COLORS[i - 1] : "";
+        const st = $("p" + i + "Status"); if (st) { st.textContent = p ? "● Connected" : "○ Waiting"; st.className = p ? "ready" : ""; }
+    });
+    const host = Number(myPlayer) === 1, enough = ps.length >= 2;
+    $("lobbyStatus").textContent = !enough ? "Anime Duel needs 2 to 4 duelists (" + ps.length + " so far)..." : ps.length + " duelists. " + (host ? "Start when everyone is in." : "Waiting for the host to start.");
+    $("startButton").classList.toggle("hidden", !(host && enough));
+    $("startButton").disabled = false; $("startButton").textContent = "START DUEL";
+}
+
+/* ---------- rules ---------- */
+function duelDeal(chars, anime, seats, names, round) {
+    const cards = [], deck = {}, hands = {}, hp = {}, field = {}, gy = {}, pp = dShuf(chars); let ci = 0;
+    seats.forEach(p => {
+        const mine = [], k = "p" + p;
+        for (let j = 0; j < 14; j++) {
+            const c = pp[ci++ % pp.length], x = Math.random(), r = x < .55 ? "N" : x < .8 ? "R" : x < .95 ? "UR" : "SR";
+            const B = { N: [1000, 1800, 500, 2000], R: [1800, 2400, 800, 2400], UR: [2400, 3000, 1000, 2600], SR: [3000, 3500, 1500, 3000] }[r];
+            cards.push({ k: "m", n: c.n, i: c.i, s: c.s, r: r, a: dRr(B[0], B[1]), d: dRr(B[2], B[3]) }); mine.push(cards.length - 1);
+        }
+        Object.keys(DFX).forEach(e => { cards.push({ k: DFX[e].k, e: e, n: DFX[e].n }); mine.push(cards.length - 1); });
+        const dk = dShuf(mine); hands[k] = dk.splice(0, 5); deck[k] = dk; hp[k] = 4000; gy[k] = 0; field[k] = { m: [0, 0, 0], t: [0, 0, 0] };
+    });
+    const u = { chars: chars, cards: cards, anime: anime, seats: seats, names: names, hands: hands, deck: deck, hp: hp, gy: gy, field: field, out: { none: 0 },
+        turn: seats[0], tc: 1, sum: false, phase: "play", round: round, n: 1, fx: null, winner: 0, msg: "Duel start! " + names["p" + seats[0]] + " goes first. No attacks in the opening round." };
+    duelNorm(u); duelDraw(u, seats[0], 1); u.deadline = Date.now() + 45000; return u;
+}
+function duelNorm(u) {
+    u.cards = arr(u.cards); u.seats = arr(u.seats); u.anime = arr(u.anime); u.out = u.out || {}; u.hp = u.hp || {}; u.names = u.names || {}; u.gy = u.gy || {};
+    u.hands = u.hands || {}; u.deck = u.deck || {}; u.field = u.field || {};
+    u.seats.forEach(p => {
+        const k = "p" + p, f = u.field[k] || {}; u.hands[k] = arr(u.hands[k]); u.deck[k] = arr(u.deck[k]); u.gy[k] = u.gy[k] || 0;
+        f.m = [0, 1, 2].map(i => (f.m && f.m[i]) || 0); f.t = [0, 1, 2].map(i => (f.t && f.t[i]) || 0); u.field[k] = f;
+    });
+    return u;
+}
+const duelAlive = u => u.seats.filter(p => !u.out["p" + p]);
+const duelMy = u => u.phase === "play" && u.turn === Number(myPlayer) && !u.out["p" + u.turn];
+function duelNext(u, p) { const s = u.seats, n = s.length, i = s.indexOf(p); for (let j = 1; j <= n; j++) { const q = s[(i + j) % n]; if (!u.out["p" + q]) return q; } return p; }
+function duelDraw(u, p, n) { const k = "p" + p; for (let i = 0; i < n; i++) if (u.deck[k].length) u.hands[k].push(u.deck[k].shift()); }
+function duelKill(u, p) { const k = "p" + p; u.out[k] = true; u.hp[k] = 0; u.field[k].m = [0, 0, 0]; u.field[k].t = [0, 0, 0]; u.hands[k] = []; }
+function duelDmg(u, p, n) { const k = "p" + p; if (u.out[k] || n <= 0) return; u.hp[k] = Math.max(0, u.hp[k] - n); if (!u.hp[k]) duelKill(u, p); }
+function duelEnd(u) {
+    const p = u.turn, pk = "p" + p, h = u.hands[pk]; while (h.length > 7) { h.pop(); u.gy[pk]++; }      // hand limit 7
+    const nx = duelNext(u, p), nk = "p" + nx; u.turn = nx; u.tc++; u.sum = false;
+    u.field[nk].m.forEach(m => { if (m) m.h = 0; }); u.deadline = Date.now() + 45000;
+    if (u.deck[nk].length) duelDraw(u, nx, 1); else { duelKill(u, nx); u.msg = (u.msg || "") + " " + u.names[nk] + " has no cards left to draw and is out!"; }
+}
+function duelCheck(u) {
+    for (let g = 0; g < 6; g++) {
+        const a = duelAlive(u);
+        if (a.length <= 1) { u.phase = "over"; u.winner = a[0] || 0; u.msg = (u.msg || "") + " " + (a[0] ? u.names["p" + a[0]] + " wins the duel!" : "Nobody wins!"); return; }
+        if (u.out["p" + u.turn]) duelEnd(u); else return;
+    }
+}
+async function duelTx(fn) {
+    try {
+        const r = await runTransaction(ref(db, "rooms/" + room + "/duel"), cur => {
+            if (!cur) return cur; const u = duelNorm(cur); u.fx = null;
+            if (fn(u) === false) return; duelCheck(u);
+            if (u.fx) u.fx.n = (u.n || 0) + 1; u.n = (u.n || 0) + 1; return u;
+        });
+        if (!r.committed) toast("You can't do that right now.");
+    } catch (e) { console.error(e); toast("That move didn't go through. Try again."); }
+}
+function duelSummon(u, ci, def) {
+    const p = Number(myPlayer), k = "p" + p, h = u.hands[k], f = u.field[k];
+    if (!duelMy(u) || u.sum || !h.includes(ci) || u.cards[ci].k !== "m") return false;
+    const z = f.m.indexOf(0); if (z < 0) return false;
+    h.splice(h.indexOf(ci), 1); f.m[z] = { c: ci, d: def ? 1 : 0, fd: def ? 1 : 0, b: 0, h: 0 }; u.sum = true;
+    u.msg = u.names[k] + (def ? " set a monster face-down." : " summoned " + u.cards[ci].n + "!");
+}
+function duelSet(u, ci) {
+    const p = Number(myPlayer), k = "p" + p, h = u.hands[k], f = u.field[k];
+    if (!duelMy(u) || !h.includes(ci) || u.cards[ci].k !== "t") return false;
+    const z = f.t.indexOf(0); if (z < 0) return false;
+    h.splice(h.indexOf(ci), 1); f.t[z] = { c: ci }; u.msg = u.names[k] + " set a card face-down.";
+}
+function duelSpell(u, ci, tp, tz) {
+    const p = Number(myPlayer), k = "p" + p, h = u.hands[k], c = u.cards[ci], tk = "p" + tp;
+    if (!duelMy(u) || !h.includes(ci) || c.k !== "s") return false;
+    const e = c.e, fx = { t: "sp", p: p, nm: c.n, tp: tp, tz: tz, dmg: 0, dp: 0, heal: 0 }; let msg = u.names[k] + " used " + c.n + ".";
+    if (e === "pow") { const m = tp === p && u.field[k].m[tz]; if (!m) return false; m.b += 500; msg += " +500 ATK!"; }
+    else if (e === "heal") { u.hp[k] += 1000; fx.heal = 1000; msg += " +1000 LP!"; }
+    else if (e === "nuke") { if (tp === p || u.out[tk] || !u.field[tk] || !u.field[tk].m[tz]) return false; u.field[tk].m[tz] = 0; u.gy[tk]++; msg += " A monster of " + u.names[tk] + " is destroyed!"; }
+    else if (e === "draw") duelDraw(u, p, 2);
+    else if (e === "hit") { if (tp === p || u.out[tk] || !u.field[tk]) return false; duelDmg(u, tp, 600); fx.dmg = 600; fx.dp = tp; msg += " " + u.names[tk] + " loses 600 LP!"; }
+    else return false;
+    h.splice(h.indexOf(ci), 1); u.gy[k]++; u.fx = fx; u.msg = msg;
+}
+function duelAttack(u, z, tp, tz) {
+    const p = Number(myPlayer), k = "p" + p, f = u.field[k], m = f.m[z], tk = "p" + tp;
+    if (!duelMy(u) || !m || m.h || m.d || u.tc <= u.seats.length || tp === p || u.out[tk] || !u.field[tk]) return false;
+    const tf = u.field[tk], tm = tz >= 0 ? tf.m[tz] : 0;
+    if (tz >= 0 ? !tm : tf.m.some(x => x)) return false;                       // direct attacks only when their field is empty
+    m.h = 1; const A = u.cards[m.c], atk = A.a + m.b, nm = u.names[k], tn = u.names[tk];
+    const fx = { t: "atk", p: p, z: z, tp: tp, tz: tz, dmg: 0, dp: 0, nm: "" };
+    let msg = nm + "'s " + A.n + " attacks " + (tm ? tn + "'s monster" : tn + " directly") + "! ";
+    const ti = tf.t.findIndex(x => x);
+    if (ti >= 0) {                                                             // a face-down trap springs automatically
+        const tc = u.cards[tf.t[ti].c]; tf.t[ti] = 0; u.gy[tk]++; fx.nm = tc.n; msg += tc.n + " activates! ";
+        if (tc.e === "ref") { f.m[z] = 0; u.gy[k]++; msg += A.n + " is destroyed!"; }
+        else if (tc.e === "blast") { fx.dmg = 800; fx.dp = p; duelDmg(u, p, 800); msg += nm + " loses 800 LP!"; }
+        else msg += "The attack is negated.";
+    } else if (!tm) { fx.dmg = atk; fx.dp = tp; duelDmg(u, tp, atk); msg += tn + " takes " + atk + "!"; }
+    else {
+        const T = u.cards[tm.c]; tm.fd = 0;
+        if (!tm.d) {
+            const df = atk - (T.a + tm.b);
+            if (df > 0) { tf.m[tz] = 0; u.gy[tk]++; fx.dmg = df; fx.dp = tp; duelDmg(u, tp, df); msg += T.n + " is destroyed! " + tn + " takes " + df + "."; }
+            else if (df < 0) { f.m[z] = 0; u.gy[k]++; fx.dmg = -df; fx.dp = p; duelDmg(u, p, -df); msg += A.n + " is destroyed! " + nm + " takes " + (-df) + "."; }
+            else { tf.m[tz] = 0; f.m[z] = 0; u.gy[tk]++; u.gy[k]++; msg += "Both monsters are destroyed!"; }
+        } else if (atk > T.d) { tf.m[tz] = 0; u.gy[tk]++; msg += T.n + " (DEF) is destroyed!"; }
+        else if (atk < T.d) { fx.dmg = T.d - atk; fx.dp = p; duelDmg(u, p, fx.dmg); msg += "Too tough! " + nm + " takes " + fx.dmg + "."; }
+        else msg += "No damage.";
+    }
+    u.fx = fx; u.msg = msg;
+}
+async function duelStart() {
+    const d = currentRoomData, seats = [1, 2, 3, 4].filter(i => d["player" + i]);
+    if (seats.length < 2) { toast("Need at least 2 duelists."); return; }
+    const names = {}; seats.forEach(i => { names["p" + i] = d["player" + i].name; });
+    try { await update(ref(db, "rooms/" + room), { status: "playing", duel: duelDeal(arr(d.duel.chars), arr(d.duel.anime), seats, names, 1) }); }
+    catch (e) { toast("Could not start the duel."); }
+}
+window.duelRematch = () => {
+    const d = currentRoomData, seats = [1, 2, 3, 4].filter(i => d["player" + i]), names = {}; seats.forEach(i => { names["p" + i] = d["player" + i].name; });
+    duelTx(u => { if (u.phase !== "over") return false; Object.assign(u, duelDeal(arr(u.chars), arr(u.anime), seats, names, (u.round || 1) + 1)); });
+};
+/* 45 second turn timer: whoever's screen notices first ends the stalled turn (the transaction guards against doubles) */
+setInterval(() => {
+    const d = currentRoomData; if (!d || d.gameType !== "duel" || d.status !== "playing" || !d.duel || d.duel.phase !== "play") return;
+    const left = Math.ceil((d.duel.deadline - Date.now()) / 1000), el = $("duelTimer"); if (el) el.textContent = Math.max(0, left) + "s";
+    if (left <= -2) { const tc = d.duel.tc; duelTx(u => { if (u.tc !== tc || u.phase !== "play") return false; u.msg = u.names["p" + u.turn] + " ran out of time!"; duelEnd(u); }); }
+}, 1000);
+
+/* ---------- screen ---------- */
+function duelCard(c, b) {
+    if (c.k !== "m") return `<div class="dcard ${c.k === "s" ? "sp" : "tp"}" title="${dEsc(DFX[c.e].d)}"><div class="dn">${dEsc(c.n)}</div><div class="dimg"></div><div class="dst" style="justify-content:center">${c.k === "s" ? "SPELL" : "TRAP"}</div></div>`;
+    const a = c.a + (b || 0);
+    return `<div class="dcard r-${c.r}" style="--rc:${DRAR[c.r]};--sc:${HB_COLORS[c.s % 6]}" title="${dEsc(c.n)}  ATK ${a} / DEF ${c.d}"><div class="dn">${dEsc(c.n)}</div><div class="dimg">${c.i ? `<img src="${dEsc(c.i)}" alt="" referrerpolicy="no-referrer">` : ""}</div><div class="dst"><b>${a}</b><b>${c.d}</b></div></div>`;
+}
+function duelPanel(u, p) {
+    const k = "p" + p, f = u.field[k], out = u.out[k], s = dSel, mine = p === Number(myPlayer), turn = u.turn === p && u.phase === "play";
+    const pt = s && !out && !mine && ((s.sp && DFX[s.sp.e].t === "p") || (s.a != null && f.m.every(x => !x)));
+    const zone = (kind, z) => {
+        const id = "dz-" + k + "-" + kind + z, x = f[kind][z]; let inner = "", cls = "dz " + kind;
+        if (x) {
+            const c = u.cards[x.c]; inner = (mine || (kind === "m" && !x.fd)) ? duelCard(c, x.b) : `<div class="dcard back"></div>`;
+            if (dZ[id] !== undefined && dZ[id] !== x.c) inner = inner.replace('class="dcard', 'class="dcard newc');
+            if (kind === "m" && x.d) cls += " def";
+            if (mine && kind === "m" && x.h) cls += " used";
+            dZn[id] = x.c;
+        } else dZn[id] = -1;
+        const tg = s && !out && kind === "m" && x && ((s.sp && ((s.sp.e === "pow" && mine) || (s.sp.e === "nuke" && !mine))) || (s.a != null && !mine));
+        if (tg) cls += " tgt"; if (mine && kind === "m" && x && s && s.a === z) cls += " sel";
+        return `<div class="${cls}" id="${id}" onclick="event.stopPropagation();duelPick('${kind}',${p},${z})">${inner}</div>`;
+    };
+    const shown = dLP[k] != null ? dLP[k] : u.hp[k];
+    return `<div class="dpan${turn ? " turn" : ""}${out ? " out" : ""}${pt ? " tgt" : ""}" id="dp-${k}" style="--pc:${HB_COLORS[p - 1]}" onclick="duelPick('p',${p},0)">
+<div class="dhead"><span style="color:${HB_COLORS[p - 1]}">${dEsc(u.names[k])}${out ? " (out)" : ""}</span><span class="dlp" id="lp-${k}">${shown}</span></div>
+<div class="dlpb"><i style="width:${Math.min(100, u.hp[k] / 40)}%"></i></div>
+<div class="dmeta">Hand ${u.hands[k].length} · Deck ${u.deck[k].length} · Graveyard ${u.gy[k]}</div>
+<div class="drow">${[0, 1, 2].map(z => zone("m", z)).join("")}</div><div class="drow">${[0, 1, 2].map(z => zone("t", z)).join("")}</div></div>`;
+}
+function duelBar(u, me, myTurn) {
+    if (u.phase === "over") return "";
+    if (!myTurn) return `<span class="dd">${u.out["p" + me] ? "You're out. Spectating..." : "Waiting for " + dEsc(u.names["p" + u.turn]) + "..."}</span>`;
+    const s = dSel, f = u.field["p" + me], fm = f.m.indexOf(0) >= 0, ft = f.t.indexOf(0) >= 0; let h = "";
+    const b = (a, t, dis, cls) => `<button class="${cls || ""}" onclick="duelDo('${a}')"${dis ? " disabled" : ""}>${t}</button>`;
+    if (s && s.h != null) {
+        const c = u.cards[s.h]; h += `<span class="dd"><b>${dEsc(c.n)}</b> ${c.k === "m" ? "ATK " + c.a + " / DEF " + c.d : dEsc(DFX[c.e].d)}</span>`;
+        if (c.k === "m") h += b("sa", "Summon ATK", u.sum || !fm) + b("sd", "Set DEF", u.sum || !fm);
+        else if (c.k === "t") h += b("tr", "Set trap", !ft);
+        else h += b("sp", "Activate");
+    } else if (s && s.sp) h += `<span class="dd">Pick a target: ${DFX[s.sp.e].t === "p" ? "an opponent's panel" : s.sp.e === "pow" ? "one of your monsters" : "an opponent's monster"}.</span>`;
+    else if (s && s.a != null) h += `<span class="dd">Pick a target: an opponent's monster, or their panel if their field is empty.</span>`;
+    else h += `<span class="dd">${u.tc <= u.seats.length ? "Opening round: no attacks yet. Summon and set traps!" : "Pick a card from your hand, or tap one of your monsters to attack."}</span>`;
+    if (s) h += b("x", "Cancel", false, "alt");
+    return h + b("end", "End turn");
+}
+window.duelDo = a => {
+    const d = currentRoomData, u = d && d.duel ? duelNorm(d.duel) : null; if (!u) return; const me = Number(myPlayer);
+    if (a === "x") dSel = null;
+    else if (a === "end") { dSel = null; duelTx(x => { if (!duelMy(x)) return false; x.msg = x.names["p" + x.turn] + " ended their turn."; duelEnd(x); x.msg += " " + x.names["p" + x.turn] + ", you're up!"; }); }
+    else if (dSel && dSel.h != null) {
+        const ci = dSel.h, c = u.cards[ci];
+        if (a === "sa" || a === "sd") { dSel = null; duelTx(x => duelSummon(x, ci, a === "sd")); }
+        else if (a === "tr") { dSel = null; duelTx(x => duelSet(x, ci)); }
+        else if (a === "sp") { if (DFX[c.e].t) dSel = { sp: { ci: ci, e: c.e } }; else { dSel = null; duelTx(x => duelSpell(x, ci, me, -1)); } }
+    }
+    showDuel(d);
+};
+window.duelPick = (kind, p, z) => {
+    const d = currentRoomData, u = d && d.duel ? duelNorm(d.duel) : null; if (!u) return; const me = Number(myPlayer);
+    if (kind === "h") dSel = duelMy(u) ? { h: z } : null;
+    else if (!duelMy(u)) return;
+    else if (dSel && dSel.sp) {
+        const sp = dSel.sp, e = sp.e;
+        if (e === "pow" && kind === "m" && p === me) { dSel = null; duelTx(x => duelSpell(x, sp.ci, me, z)); }
+        else if (e === "nuke" && kind === "m" && p !== me) { dSel = null; duelTx(x => duelSpell(x, sp.ci, p, z)); }
+        else if (e === "hit" && kind === "p" && p !== me) { dSel = null; duelTx(x => duelSpell(x, sp.ci, p, -1)); }
+    } else if (kind === "m" && p === me) dSel = u.field["p" + me].m[z] ? { a: z } : null;
+    else if (dSel && dSel.a != null && p !== me) {
+        const a = dSel.a;
+        if (kind === "m") { dSel = null; duelTx(x => duelAttack(x, a, p, z)); }
+        else if (kind === "p") { dSel = null; duelTx(x => duelAttack(x, a, p, -1)); }
+    }
+    showDuel(d);
+};
+function duelLP(u) {
+    u.seats.forEach(p => {
+        const k = "p" + p, el = $("lp-" + k); if (!el) return;
+        const from = dLP[k] != null ? dLP[k] : u.hp[k], to = u.hp[k]; dLP[k] = to;
+        if (from === to) { el.textContent = to; return; }
+        const t0 = performance.now(), st = t => { const x = Math.min(1, (t - t0) / 700); el.textContent = Math.round(from + (to - from) * x); if (x < 1) requestAnimationFrame(st); };
+        requestAnimationFrame(st);
+    });
+}
+function duelPlayFx(fx, old) {
+    const box = $("duel");
+    const ban = (t, c) => { const b = document.createElement("div"); b.className = "dban"; b.style.setProperty("--bc", c); b.textContent = t; box.appendChild(b); setTimeout(() => b.remove(), 1700); };
+    const num = (p, t, c) => { const e = $("dp-p" + p); if (!e) return; const r = e.getBoundingClientRect(), n = document.createElement("div"); n.className = "dnum"; n.textContent = t; n.style.cssText = "left:" + (r.left + r.width / 2) + "px;top:" + (r.top + 20) + "px;color:" + c; document.body.appendChild(n); setTimeout(() => n.remove(), 1300); };
+    const shake = () => { box.classList.remove("shake"); void box.offsetWidth; box.classList.add("shake"); };
+    if (fx.t === "sp") {
+        ban(fx.nm, "#7be0ff"); tone(500, 1300, .3, "sine", .08);
+        setTimeout(() => { if (fx.dmg) { shake(); tone(200, 50, .25, "sawtooth", .1); num(fx.dp, "-" + fx.dmg, "#ff5d5d"); } if (fx.heal) num(fx.p, "+" + fx.heal, "#6dff9c"); }, 450);
+        return;
+    }
+    const a = old["dz-p" + fx.p + "-m" + fx.z], tg = fx.tz >= 0 ? old["dz-p" + fx.tp + "-m" + fx.tz] : null;
+    const tr = tg ? tg.r : ($("dp-p" + fx.tp) || box).getBoundingClientRect();
+    if (fx.nm) { ban("TRAP: " + fx.nm + "!", "#ff4d6d"); tone(900, 250, .35, "square", .08); }
+    if (a) {
+        const g = document.createElement("div"); g.className = "dghost"; g.innerHTML = a.h;
+        g.style.cssText = "left:" + a.r.left + "px;top:" + a.r.top + "px;width:" + a.r.width + "px;height:" + a.r.height + "px";
+        document.body.appendChild(g);
+        const dx = (tr.left + tr.width / 2 - (a.r.left + a.r.width / 2)) * .9, dy = (tr.top + tr.height / 2 - (a.r.top + a.r.height / 2)) * .9;
+        g.animate([{ transform: "none" }, { transform: `translate(${dx}px,${dy}px) scale(1.3)`, offset: .55 }, { transform: `translate(${dx}px,${dy}px) scale(1.3)`, offset: .65 }, { transform: "none" }], { duration: 900, easing: "ease-in" }).onfinish = () => g.remove();
+    }
+    setTimeout(() => { shake(); tone(180, 40, .3, "sawtooth", .12); if (fx.dmg) num(fx.dp, "-" + fx.dmg, "#ff5d5d"); }, 520);
+}
+function showDuel(d) {
+    showOnly("duel");
+    const u = duelNorm(d.duel), me = Number(myPlayer), seated = u.seats.includes(me), myTurn = duelMy(u), old = dPrev;
+    if (dSeen.round !== u.round) { dSeen = { n: -1, fx: -1, over: "", round: u.round }; dLP = {}; dZ = {}; dSel = null; }
+    const first = dSeen.n === -1; dSeen.n = u.n;
+    const fx = u.fx, play = !first && fx && fx.n !== dSeen.fx; if (fx) dSeen.fx = fx.n;
+    if (!myTurn) dSel = null;
+    dZn = {};
+    $("duelTurn").textContent = u.phase === "over" ? "DUEL OVER" : myTurn ? "YOUR TURN" : u.names["p" + u.turn] + "'s turn";
+    $("dLog").textContent = u.msg || "";
+    $("dOpps").innerHTML = u.seats.filter(p => p !== me).map(p => duelPanel(u, p)).join("");
+    $("dMine").innerHTML = seated ? duelPanel(u, me) : "";
+    $("dBar").innerHTML = duelBar(u, me, myTurn);
+    $("dHand").innerHTML = seated && !u.out["p" + me] ? u.hands["p" + me].map(ci => `<div class="dh${dSel && dSel.h === ci ? " sel" : ""}" onclick="duelPick('h',0,${ci})">${duelCard(u.cards[ci])}</div>`).join("") : "";
+    dZ = dZn; duelLP(u);
+    dPrev = {}; document.querySelectorAll("#duel [id^=dz-]").forEach(e => { dPrev[e.id] = { r: e.getBoundingClientRect(), h: e.innerHTML }; });
+    if (play) duelPlayFx(fx, old);
+    $("duelOver").classList.toggle("hidden", u.phase !== "over");
+    if (u.phase === "over") {
+        const win = u.winner === me;
+        $("duelOverT").textContent = win ? "VICTORY!" : u.winner ? u.names["p" + u.winner] + " WINS" : "DRAW";
+        $("duelOverS").textContent = win ? "You are the Anime Duel champion!" : "Better luck next duel.";
+        if (win && dSeen.over !== u.round) { dSeen.over = u.round; try { confetti(); } catch (e) {} }
+    }
+}
 
 </script>
 
