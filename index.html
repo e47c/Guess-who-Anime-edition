@@ -4889,6 +4889,140 @@ const unoShanks = {
 };
 UNO_FX_HOOKS.onepiece_e = unoSceneHook("onepiece_e", unoShanks);
 
+/* =====================================================================
+   PERCEPTION SCENES, batch 2:  Jiren (ki sensing) · Yoriichi (Transparent World) · Diavolo (Epitaph)
+   Each ends on a dark screen and then the Future Sight table appears (only for the player who used the card).
+   ===================================================================== */
+function fxPeekScene(col, ms, bg, draw) {
+    return {
+        col: col, ms: ms, tail: env => env.owner ? 800 : 1400,
+        begin(env, box, u) { env.me = Number(myPlayer); env.owner = env.me === u.fx.p; if (env.owner && u.peek) unoFxOwnsPeek = u.peek.id; env.rects = Array.from(document.querySelectorAll(".u-opp")).map(e => e.getBoundingClientRect()); },
+        end(env, u) { if (env.owner && !env.shown) { env.shown = 1; unoFxOwnsPeek = null; unoPeekShow(u, env.me); } },
+        draw(g, w, h, T, env, u) {
+            if (T.ph === "tail") { g.globalAlpha = env.owner ? 1 : 1 - fxS(.3, 1, T.tt); g.fillStyle = bg; g.fillRect(0, 0, w, h); g.globalAlpha = 1; return; }
+            draw(g, w, h, T, env, u);
+        }
+    };
+}
+/* ---------- JIREN: eyes shut, he senses by vibration. Gray rings spread; every ring that touches a plate ignites that opponent's ki ---------- */
+function fxKi(g, x, y, wd, ht, lit, s, seed) {
+    for (let j = 0; j < 9; j++) {
+        const fx = x + (j / 8 - .5) * wd, fh = ht * (1.2 + 1.3 * fxR(seed + j)) * (.7 + .3 * Math.sin(s * 9 + j * 2)), fw = wd * .09;
+        const gr = g.createLinearGradient(0, y, 0, y - fh); gr.addColorStop(0, "rgba(255,230,200," + lit * .8 + ")"); gr.addColorStop(.4, "rgba(255,110,40," + lit * .6 + ")"); gr.addColorStop(1, "rgba(120,0,0,0)");
+        g.fillStyle = gr; g.beginPath(); g.moveTo(fx - fw, y); g.quadraticCurveTo(fx - fw * .4, y - fh * .5, fx + 6 * Math.sin(s * 7 + j), y - fh); g.quadraticCurveTo(fx + fw * .4, y - fh * .5, fx + fw, y); g.closePath(); g.fill();
+    }
+}
+const unoJiren = fxPeekScene("#ff5a3c", 6600, "#030304", (g, w, h, T, env) => {
+    const cx = w / 2, cy = h / 2, M = Math.min(w, h), t = T.t, s = T.s, R = Math.hypot(w, h) * .6, O = "#ff5a3c";
+    g.fillStyle = "#030304"; g.fillRect(0, 0, w, h);
+    for (let k = 0; k < 6; k++) { const q = (t - (.12 + k * .1)) / .36; if (q > 0 && q < 1) { g.strokeStyle = "rgba(200,200,210," + (.5 * (1 - q)) + ")"; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, q * R, 0, 6.283); g.stroke(); g.strokeStyle = "rgba(120,120,130," + (.3 * (1 - q)) + ")"; g.beginPath(); g.arc(cx, cy, q * R * .93, 0, 6.283); g.stroke(); } }   // vibrations in the dark
+    env.rects.forEach((r, i) => {
+        const x = r.left + r.width / 2, y = r.top + r.height / 2, tt = .12 + Math.min(1, Math.hypot(x - cx, y - cy) / R) * .36, lit = fxS(tt, tt + .1, t) * (1 - fxS(.84, .95, t));
+        if (lit <= 0) return; g.save(); g.globalAlpha = 1; g.strokeStyle = "rgba(255,120,60," + lit * .6 + ")"; g.lineWidth = 2; g.strokeRect(r.left - 6, r.top - 6, r.width + 12, r.height + 12);
+        fxKi(g, x, r.top + r.height, r.width, r.height * .9, lit, s, i * 11 + 1); g.globalAlpha = lit; fxText(g, String(9000 + ((fxR(((s * 9) | 0) + i) * 90000) | 0)), x, r.top - M * .04, M * .035, "#fff", "#300", O); g.restore();
+    });
+    if (t < .1) { g.fillStyle = "#030304"; const c = 1 - t / .1; g.fillRect(0, 0, w, cy * c); g.fillRect(0, h - cy * c, w, cy * c); }          // the eyes close
+    if (t > .58 && t < .86) { const o = fxS(.58, .7, t), a = 1 - fxS(.74, .86, t); g.globalAlpha = a; const gr = g.createRadialGradient(cx, cy, 0, cx, cy, M * (.2 + .6 * o)); gr.addColorStop(0, "rgba(255,90,60,.55)"); gr.addColorStop(1, "rgba(255,90,60,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h);   // the eyes open, red
+        g.fillStyle = "#fff"; g.fillRect(cx - M * .5 * o, cy - 2, M * o, 4); fxText(g, "気", cx, cy, M * .3, "rgba(255,255,255,.18)", "#ff5a3c", O); g.globalAlpha = 1; }
+});
+UNO_FX_HOOKS.dragonball_e = unoSceneHook("dragonball_e", unoJiren);
+
+/* ---------- YORIICHI: the Transparent World. Ink-wash calm, a red sun, the opponent seen through like glass: veins, a pulse, the cards inside ---------- */
+const unoYoriichi = fxPeekScene("#ff3b3b", 6600, "#060607", (g, w, h, T, env) => {
+    const cx = w / 2, cy = h / 2, M = Math.min(w, h), t = T.t, s = T.s, R = Math.hypot(w, h) / 2, K = "#ff3b3b";
+    const bg = g.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, "#1b1b21"); bg.addColorStop(1, "#060607"); g.fillStyle = bg; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 7; i++) { const x = ((fxR(i + 5) * w * 1.4 + s * 14 * (.4 + fxR(i))) % (w * 1.4)) - w * .2, y = h * (.15 + .7 * fxR(i + 9)), n = g.createRadialGradient(x, y, 0, x, y, M * .45); n.addColorStop(0, "rgba(255,255,255,.07)"); n.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = n; g.fillRect(0, 0, w, h); }   // ink-wash mist
+    const sun = fxS(0, .3, t), fade = 1 - fxS(.86, .97, t); g.save(); g.globalAlpha = fade; g.translate(cx, cy * .8); g.strokeStyle = "rgba(255,59,59," + .55 * sun + ")"; g.lineWidth = 2;
+    for (let k = 0; k < 3; k++) { g.beginPath(); g.arc(0, 0, M * (.12 + k * .06) * (.6 + .4 * sun) + 3 * Math.sin(s * 2 + k), 0, 6.283); g.stroke(); } for (let k = 0; k < 48; k++) { const an = k / 48 * 6.283 + s * .08, L = M * (.06 + .05 * fxR(k)) * sun; g.beginPath(); g.moveTo(Math.cos(an) * M * .3, Math.sin(an) * M * .3); g.lineTo(Math.cos(an) * (M * .3 + L), Math.sin(an) * (M * .3 + L)); g.stroke(); } g.restore();   // the sun halo
+    const tp = fxS(.22, .5, t) * fade;
+    env.rects.forEach((r, i) => {
+        const x = r.left, y = r.top, W = r.width, H = r.height; g.save(); g.globalAlpha = tp; g.fillStyle = "rgba(255,255,255,.05)"; g.fillRect(x, y, W, H); g.strokeStyle = "rgba(255,230,230,.7)"; g.lineWidth = 1.5; g.strokeRect(x, y, W, H);
+        g.strokeStyle = "rgba(255,70,70,.65)"; g.lineWidth = 1; for (let k = 0; k < 18; k++) { let px = x + W / 2, py = y + H / 2, an = fxR(k + i * 7) * 6.283; g.beginPath(); g.moveTo(px, py); for (let sg = 0; sg < 4; sg++) { an += (fxR(k * 5 + sg) - .5) * 1.2; px += Math.cos(an) * W * .09; py += Math.sin(an) * H * .22; g.lineTo(px, py); } g.stroke(); }   // see-through veins
+        g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 2; g.beginPath(); for (let px = 0; px <= W; px += 4) { const ph = (px / W * 3 - s * .8) % 1, v = ph < .1 ? Math.sin(ph / .1 * 3.14) * -H * .36 : ph < .16 ? H * .12 : 0; g.lineTo(x + px, y + H * .5 + v); } g.stroke();   // the heartbeat, seen through the body
+        if (t > .55) { const c = fxS(.55, .75, t); g.globalAlpha = c * tp; g.strokeStyle = "rgba(255,255,255,.9)"; for (let k = 0; k < 5; k++) g.strokeRect(x + W * (.08 + k * .17), y + H * .18, W * .14, H * .64); }                               // the cards inside, drawn like glass
+        g.restore();
+    });
+    if (t > .15 && t < .75) { g.globalAlpha = fxS(.15, .25, t) * (1 - fxS(.65, .75, t)); "透き通る世界".split("").forEach((c, i) => fxText(g, c, w * .07, h * .14 + i * M * .085, M * .06, "#fff", "#300", K)); g.globalAlpha = 1; }
+});
+UNO_FX_HOOKS.demonslayer_e = unoSceneHook("demonslayer_e", unoYoriichi);
+
+/* ---------- DIAVOLO: Epitaph. Jagged manga panels of the future flicker; then King Crimson erases the time between and only the real cards remain ---------- */
+const unoDiavolo = fxPeekScene("#ff4fa8", 6600, "#08010a", (g, w, h, T, env) => {
+    const cx = w / 2, cy = h / 2, M = Math.min(w, h), t = T.t, s = T.s, R = Math.hypot(w, h) / 2, P = "#ff4fa8";
+    g.fillStyle = "#08010a"; g.fillRect(0, 0, w, h);
+    const panels = [[[0, 0], [.46, 0], [.38, .52], [0, .44]], [[.46, 0], [1, 0], [1, .36], [.56, .46], [.38, .52]], [[0, .44], [.38, .52], [.56, .46], [.5, 1], [0, 1]], [[.56, .46], [1, .36], [1, 1], [.5, 1]]], pal = [P, "#7a1fa2", "#ffa6dc", "#3a0a58"];
+    const life = 1 - fxS(.5, .62, t), step = (s * 3) | 0;
+    if (life > 0) panels.forEach((pn, k) => {
+        const on = fxS(.04 + k * .07, .1 + k * .07, t); if (on <= 0) return; g.save(); g.beginPath(); pn.forEach(([x, y], i) => { const px = w * x + (1 - on) * (k % 2 ? 60 : -60), py = h * y; i ? g.lineTo(px, py) : g.moveTo(px, py); }); g.closePath(); g.clip(); g.globalAlpha = on * life;
+        g.fillStyle = pal[k]; g.fillRect(0, 0, w, h); g.fillStyle = "rgba(0,0,0,.28)"; for (let yy = 0; yy < h; yy += 22) for (let xx = (yy / 22 % 2) * 11; xx < w; xx += 22) { g.beginPath(); g.arc(xx, yy, 3.4, 0, 6.283); g.fill(); }   // halftone
+        const fx = w * (pn[0][0] + pn[2][0]) / 2, fy = h * (pn[0][1] + pn[2][1]) / 2; g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = 2; for (let l = 0; l < 30; l++) { const an = l / 30 * 6.283; g.beginPath(); g.moveTo(fx + Math.cos(an) * M * .12, fy + Math.sin(an) * M * .12); g.lineTo(fx + Math.cos(an) * R, fy + Math.sin(an) * R); g.stroke(); }
+        g.fillStyle = "#08010a"; for (let c = 0; c < 5; c++) { const o = fxR(step * 7 + k * 13 + c) * 30 - 15, hl = c === ((fxR(step + k) * 5) | 0); g.fillStyle = hl ? "#fff" : "#08010a"; g.fillRect(fx - M * .17 + c * M * .07, fy - M * .06 + o, M * .055, M * .12); }   // possible futures: cards that keep rearranging
+        g.restore(); g.strokeStyle = "#08010a"; g.lineWidth = 5; g.beginPath(); pn.forEach(([x, y], i) => i ? g.lineTo(w * x, h * y) : g.moveTo(w * x, h * y)); g.closePath(); g.stroke();
+    });
+    if (t > .2 && t < .5) { const sl = fxSlam(Math.min(1, (t - .2) / .12)); g.save(); g.translate(cx, cy); g.rotate(-.1); g.scale(sl.sc, sl.sc); g.globalAlpha = sl.a; fxText(g, "EPITAPH", 0, 0, M * .17, "#fff", "#5a0a3a", P, "sans-serif"); g.restore(); }
+    if (t >= .5 && t < .72) {                                                              // KING CRIMSON: time is erased, a red tear sweeps, the world goes negative
+        const q = (t - .5) / .22, tx = w * fxS(0, 1, q); g.save(); g.beginPath(); g.rect(0, 0, tx, h); g.clip(); g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); g.fillStyle = "#000"; for (let i = 0; i < 40; i++) g.fillRect(fxR(i) * w, fxR(i + 3) * h, 3 + fxR(i + 5) * 40, 2); g.restore();
+        g.strokeStyle = "#e11b1b"; g.lineWidth = 6; g.beginPath(); for (let i = 0; i <= 12; i++) g.lineTo(tx + (i % 2 ? 22 : -22), h * i / 12); g.stroke();
+        if (q > .15 && q < .9) { g.save(); g.translate(cx, cy); g.rotate(.06); fxText(g, "KING CRIMSON", 0, 0, M * .13, "#e11b1b", "#000", "#fff", "sans-serif"); g.restore(); }
+    }
+    if (t >= .72) { const a = fxS(.72, .82, t) * (1 - fxS(.9, .98, t)); env.rects.forEach(r => { g.save(); g.globalAlpha = a; g.strokeStyle = P; g.lineWidth = 4; g.shadowColor = P; g.shadowBlur = 30; g.strokeRect(r.left - 8, r.top - 8, r.width + 16, r.height + 16); g.shadowBlur = 0; g.fillStyle = "rgba(255,79,168,.12)"; g.fillRect(r.left, r.top, r.width, r.height); g.restore(); }); }   // only the real cards remain
+});
+UNO_FX_HOOKS.jojo_e = unoSceneHook("jojo_e", unoDiavolo);
+
+/* ---------- NEON · Lovely Ghostwriter: in a trance her pen writes a four-line prophecy by itself; the words turn gold and stream to the opponent's cards ---------- */
+const unoNeon = fxPeekScene("#ff7ad9", 6600, "#12031a", (g, w, h, T, env) => {
+    const cx = w / 2, cy = h / 2, M = Math.min(w, h), t = T.t, s = T.s, K = "#ff7ad9", x0 = w * .14, x1 = w * .86;
+    const pg = g.createLinearGradient(0, 0, 0, h); pg.addColorStop(0, "#fff4f8"); pg.addColorStop(1, "#f4c2d8"); g.fillStyle = pg; g.fillRect(0, 0, w, h);
+    g.strokeStyle = "rgba(190,110,150,.25)"; g.lineWidth = 1; for (let y = h * .18; y < h; y += M * .06) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }                 // the notepaper
+    const wr = fxS(.06, .6, t) * 4, gold = fxS(.62, .72, t); let tip = null;
+    g.lineCap = "round"; g.lineWidth = 3.2;
+    for (let L = 0; L < 4; L++) {
+        const p = Math.min(1, Math.max(0, wr - L)); if (p <= 0) continue; const by = h * (.26 + .12 * L), xe = x0 + (x1 - x0) * p;
+        g.strokeStyle = "rgb(" + ((122 + 100 * gold) | 0) + "," + ((26 + 120 * gold) | 0) + "," + ((90 - 40 * gold) | 0) + ")"; g.shadowColor = gold > 0 ? "#ffc84a" : "transparent"; g.shadowBlur = 14 * gold; g.beginPath();
+        let ly = by; for (let x = x0; x <= xe; x += 3) { ly = by + Math.sin(x * .09 + L) * 7 + Math.sin(x * .33) * 2.5; ((x - x0) % 150) > 128 ? g.moveTo(x, ly) : g.lineTo(x, ly); } g.stroke(); g.shadowBlur = 0;   // handwriting, words with gaps
+        if (p < 1) tip = { x: xe, y: ly };
+    }
+    if (tip && t < .64) {                                                                                                                                            // the pen moves on its own, the hand in a trance
+        g.strokeStyle = "#4a1030"; g.lineWidth = 7; g.beginPath(); g.moveTo(tip.x, tip.y); g.lineTo(tip.x + M * .14, tip.y - M * .34); g.stroke(); g.fillStyle = "#ffc84a"; g.beginPath(); g.arc(tip.x, tip.y, 4, 0, 6.283); g.fill();
+        g.fillStyle = "#f6d2c4"; g.strokeStyle = "#8a4a5a"; g.lineWidth = 3; g.beginPath(); g.ellipse(tip.x + M * .2, tip.y - M * .42, M * .08, M * .1, .3, 0, 6.283); g.fill(); g.stroke();
+        for (let k = 0; k < 3; k++) { const q = (s * 1.3 + k / 3) % 1; g.strokeStyle = "rgba(255,122,217," + (.6 * (1 - q)) + ")"; g.lineWidth = 2; g.beginPath(); g.arc(tip.x, tip.y, q * M * .12, 0, 6.283); g.stroke(); }
+        for (let k = 0; k < 6; k++) { g.fillStyle = "rgba(255,200,74," + (.5 + .5 * Math.sin(s * 8 + k)) + ")"; g.fillRect(tip.x + (fxR(k + ((s * 6) | 0)) - .5) * M * .2, tip.y + (fxR(k + 9 + ((s * 6) | 0)) - .5) * M * .2, 3, 3); }
+    }
+    const dim = fxS(.64, .78, t);
+    if (dim > 0) env.rects.forEach((r, i) => {                                                                                                                         // the prophecy flows to the cards it is about
+        const ax = cx, ay = h * .44, bx = r.left + r.width / 2, by = r.top + r.height / 2, cxx = (ax + bx) / 2 + (i - .5) * M * .3, cyy = (ay + by) / 2;
+        for (let k = 0; k < 24; k++) { const u = ((s * .45 + k / 24) % 1), a = (1 - u) * (1 - u), b = 2 * (1 - u) * u, c = u * u; g.fillStyle = "rgba(255,190,60," + dim * (1 - u * .4) + ")"; g.beginPath(); g.arc(a * ax + b * cxx + c * bx, a * ay + b * cyy + c * by, 3.5 - u * 1.5, 0, 6.283); g.fill(); }
+        g.save(); g.globalAlpha = dim; g.strokeStyle = "#ffb43a"; g.lineWidth = 4; g.shadowColor = K; g.shadowBlur = 26; g.strokeRect(r.left - 8, r.top - 8, r.width + 16, r.height + 16); g.restore();
+    });
+    g.globalAlpha = fxS(.1, .3, t) * (1 - fxS(.5, .62, t)); fxText(g, "LOVELY GHOSTWRITER", cx, h * .9, M * .05, "#fff", "#7a1a5a", K, "sans-serif"); g.globalAlpha = 1;
+    const dk = fxS(.84, .97, t); if (dk > 0) { g.fillStyle = "rgba(18,3,26," + dk + ")"; g.fillRect(0, 0, w, h); }
+});
+UNO_FX_HOOKS.hxh_e = unoSceneHook("hxh_e", unoNeon);
+
+/* ---------- VANESSA · Red Thread of Fate: Rouge. Five red threads leave her fingertips, find the opponent, knot around it and carry what they feel back ---------- */
+const unoVanessa = fxPeekScene("#ff3b66", 6600, "#060003", (g, w, h, T, env) => {
+    const cx = w / 2, cy = h / 2, M = Math.min(w, h), t = T.t, s = T.s, K = "#ff3b66", R = env.rects.length ? env.rects : [{ left: w * .35, top: h * .06, width: w * .3, height: h * .12 }];
+    const bg = g.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, "#1a0310"); bg.addColorStop(1, "#060003"); g.fillStyle = bg; g.fillRect(0, 0, w, h);
+    g.fillStyle = "rgba(255,160,190,.5)"; for (let i = 0; i < 60; i++) g.fillRect(fxR(i) * w, fxR(i + 7) * h, 1.6, 1.6);
+    const fade = 1 - fxS(.84, .97, t); g.globalAlpha = fade; g.lineCap = "round";
+    for (let i = 0; i < 14; i++) { const a = [fxR(i) * w, fxR(i + 3) < .5 ? 0 : h], b = [fxR(i + 6) * w, fxR(i + 9) < .5 ? 0 : h]; g.strokeStyle = "rgba(255,59,102," + (.12 + .1 * Math.sin(s * 2 + i)) + ")"; g.lineWidth = 1; g.beginPath(); g.moveTo(a[0], a[1]); g.quadraticCurveTo((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 60 * Math.sin(s + i), b[0], b[1]); g.stroke(); }   // faint web in the dark
+    const tips = [0, 1, 2, 3, 4].map(k => ({ x: cx + (k - 2) * M * .1, y: h * (.8 + Math.abs(k - 2) * .025) }));
+    g.fillStyle = "#050204"; g.strokeStyle = "#8a1030"; g.lineWidth = 3; g.shadowColor = K; g.shadowBlur = 16; g.beginPath(); g.ellipse(cx, h * 1.05, M * .3, M * .3, 0, 0, 6.283); g.fill(); g.stroke();                       // your hand, fingers spread
+    tips.forEach(p => { g.lineWidth = 17; g.strokeStyle = "#050204"; g.beginPath(); g.moveTo(cx + (p.x - cx) * .5, h * 1.0); g.lineTo(p.x, p.y); g.stroke(); g.lineWidth = 2; g.strokeStyle = "#8a1030"; g.stroke(); }); g.shadowBlur = 0;
+    tips.forEach((a, k) => {
+        const r = R[k % R.length], bx = r.left + r.width * (.2 + .15 * ((k / R.length) | 0) + .25 * (k % 3)), by = r.top + r.height / 2, p = fxS(.1 + k * .04, .42 + k * .03, t), vib = fxS(.5, .6, t) * (1 - fxS(.84, .95, t)), mx = (a.x + bx) / 2, my = (a.y + by) / 2 + M * .1 * (k % 2 ? 1 : -1);
+        const pt = u => { const q = 1 - u, wv = Math.sin(u * 22 - s * 14) * M * .012 * vib * Math.sin(u * 3.14); return [q * q * a.x + 2 * q * u * mx + u * u * bx + wv, q * q * a.y + 2 * q * u * my + u * u * by + wv]; };
+        [[9, "rgba(255,59,102,.22)"], [3, "#ff3b66"], [1.2, "#ffd9e2"]].forEach(([lw, col]) => { g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); for (let i = 0; i <= 40; i++) { if (i / 40 > p) break; const q = pt(i / 40); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); } g.stroke(); });
+        if (p > .98) { g.fillStyle = "#ff3b66"; g.beginPath(); g.arc(bx, by, 7, 0, 6.283); g.fill(); g.strokeStyle = "#fff"; g.lineWidth = 1.5; g.stroke(); }
+        if (t > .56) for (let j = 0; j < 3; j++) { const u = 1 - ((s * .8 + j / 3 + k * .2) % 1), q = pt(u); g.fillStyle = "rgba(255,255,255,.9)"; g.beginPath(); g.arc(q[0], q[1], 3, 0, 6.283); g.fill(); }   // what the threads feel travels back to you
+    });
+    const kn = fxS(.42, .6, t); R.forEach(r => { g.save(); g.strokeStyle = "#ff3b66"; g.lineWidth = 3; g.shadowColor = K; g.shadowBlur = 18; const per = 2 * (r.width + r.height + 24); g.setLineDash([per * kn, per]); g.strokeRect(r.left - 12, r.top - 12, r.width + 24, r.height + 24); g.restore(); });   // the thread knots around them
+    g.globalAlpha = fxS(.1, .25, t) * (1 - fxS(.45, .6, t)) * fade; "運命の赤い糸".split("").forEach((c, i) => fxText(g, c, w * .93, h * .16 + i * M * .08, M * .055, "#fff", "#400018", K)); g.globalAlpha = 1;
+});
+UNO_FX_HOOKS.blackclover_e = unoSceneHook("blackclover_e", unoVanessa);
+
+
+
 
 
 
