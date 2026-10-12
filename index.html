@@ -4387,6 +4387,120 @@ const unoNeji = {
 };
 UNO_FX_HOOKS.naruto_e = unoSceneHook("naruto_e", unoNeji);
 
+/* =====================================================================
+   FIRST-PERSON SCENES, group 1: SPACE  (three different visual languages)
+   onepiece_t Law = blue ROOM sphere + surgical cuts   naruto_t Minato = thrown kunai + yellow flash teleport
+   jjk_t Todo = black/white shadow hands, hard-cut claps
+   The two blocks in these scenes are the REAL swap: your hand area and the target player's plate (read from the page).
+   ===================================================================== */
+function fxSwapBegin(env, u) {
+    env.sw = u.fx.sw || u.fx.to; env.name = u.names["p" + env.sw] || "?";
+    const rr = e => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
+    const pl = document.querySelector('.u-opp[data-p="' + env.sw + '"]') || document.querySelector(".u-opp"), hd = document.getElementById("unoHand");
+    env.A = hd ? rr(hd) : { x: innerWidth * .2, y: innerHeight * .72, w: innerWidth * .6, h: innerHeight * .22 };
+    env.B = pl ? rr(pl) : { x: innerWidth * .35, y: innerHeight * .03, w: innerWidth * .3, h: innerHeight * .14 };
+    env.A.h = Math.min(env.A.h, innerHeight * .26);
+}
+const fxLerp = (a, b, k) => ({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, w: a.w + (b.w - a.w) * k, h: a.h + (b.h - a.h) * k });
+function fxBlk(g, r, col, a, txt, ink) {
+    g.save(); g.globalAlpha = a; g.fillStyle = ink || "rgba(8,10,24,.88)"; g.strokeStyle = col; g.lineWidth = 3; g.shadowColor = col; g.shadowBlur = 20; g.fillRect(r.x, r.y, r.w, r.h); g.strokeRect(r.x, r.y, r.w, r.h); g.shadowBlur = 0;
+    if (txt) fxText(g, txt, r.x + r.w / 2, r.y + r.h / 2, Math.max(12, Math.min(r.h * .38, 30)), "#fff", "#000", col, "sans-serif"); g.restore();
+}
+const fxCtr = r => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
+
+/* ---------- LAW · ROOM / Shambles: a blue sphere opens, the two hands are cut out and exchanged ---------- */
+const unoLaw = {
+    col: "#4cc9f0", ms: 7600, tail: () => 1800, begin: (env, box, u) => fxSwapBegin(env, u),
+    draw(g, w, h, T, env, u) {
+        const cx = w / 2, cy = h / 2, M = Math.min(w, h), t = T.t, s = T.s, C = "#4cc9f0", R = Math.hypot(w, h) * .55, A = env.A, B = env.B;
+        const grow = T.ph === "tail" ? 1 - fxS(.2, 1, T.tt) : fxS(.2, .46, t) * (1 - fxS(.84, 1, t) * .0), rad = R * grow, k = T.ph === "tail" ? 1 : fxS(.56, .8, t);
+        if (T.ph === "main" && t < .24) {                              // spread fingers, a small sphere blooms in the palm
+            const a = fxS(0, .2, t), hx = w * .22, hy = h * (1.05 - .3 * a); g.save(); g.translate(hx, hy); g.fillStyle = "#0b1020"; g.strokeStyle = C; g.lineWidth = 3; g.shadowColor = C; g.shadowBlur = 18;
+            g.beginPath(); g.arc(0, 0, M * .13, 0, 6.283); g.fill(); g.stroke(); for (let i = 0; i < 5; i++) { const an = -2.5 + i * .5; g.beginPath(); g.moveTo(Math.cos(an) * M * .11, Math.sin(an) * M * .11); g.lineTo(Math.cos(an) * M * .27, Math.sin(an) * M * .27); g.lineWidth = 14; g.lineCap = "round"; g.stroke(); }
+            g.restore(); g.strokeStyle = C; g.lineWidth = 2; g.beginPath(); g.arc(hx, hy - M * .05, M * .02 + t * M * .5, 0, 6.283); g.stroke();
+        }
+        if (grow > 0) {                                                // THE ROOM: translucent wireframe sphere, floor grid bending inside it
+            g.save(); g.beginPath(); g.arc(cx, cy, rad, 0, 6.283); g.clip(); const fg = g.createRadialGradient(cx, cy, 0, cx, cy, rad); fg.addColorStop(0, "rgba(10,60,120,.12)"); fg.addColorStop(1, "rgba(20,120,220,.5)"); g.fillStyle = fg; g.fillRect(0, 0, w, h);
+            g.strokeStyle = "rgba(120,220,255,.35)"; g.lineWidth = 1; for (let i = -8; i <= 8; i++) { g.beginPath(); g.moveTo(cx + i * M * .09, cy + rad); g.lineTo(cx + i * M * .014, cy + M * .05); g.stroke(); } for (let j = 1; j < 9; j++) { const y = cy + M * .05 + Math.pow(j / 9, 2) * rad; g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); } g.restore();
+            g.strokeStyle = C; g.lineWidth = 2.5; g.shadowColor = C; g.shadowBlur = 26; g.beginPath(); g.arc(cx, cy, rad, 0, 6.283); g.stroke(); g.lineWidth = 1; for (let i = 0; i < 6; i++) { g.beginPath(); g.ellipse(cx, cy, rad * Math.abs(Math.cos(i * .52 + s * .3)), rad, 0, 0, 6.283); g.stroke(); } for (let i = 1; i < 5; i++) { g.beginPath(); g.ellipse(cx, cy, rad, rad * i / 5, 0, 0, 6.283); g.stroke(); } g.shadowBlur = 0;
+        }
+        if (T.ph === "main" && t > .22 && t < .5) { const sl = fxSlam(Math.min(1, (t - .22) / .12)); g.save(); g.translate(cx, cy); g.scale(sl.sc, sl.sc); g.globalAlpha = sl.a; fxText(g, "ROOM", 0, 0, M * .17, "#fff", "#07304a", C, "sans-serif"); g.restore(); }
+        const cut = T.ph === "tail" ? 1 : fxS(.46, .58, t);            // surgical cuts trace both hands, they lift out of the screen
+        const lift = T.ph === "tail" ? 0 : Math.sin(Math.min(1, Math.max(0, (t - .5) / .1)) * 1.57) * (1 - fxS(.78, .84, t)) * 10;
+        [[A, "YOUR CARDS"], [B, env.name + "'S CARDS"]].forEach(([r, lb], i) => {
+            const dst = i ? A : B, p = fxLerp(r, dst, 1 - Math.pow(1 - k, 3)), arc = Math.sin(k * 3.14) * -M * .12;
+            if (k > 0 && k < 1 && T.ph === "main") { g.save(); g.globalAlpha = .25; g.strokeStyle = C; g.setLineDash([6, 6]); g.beginPath(); g.moveTo(fxCtr(r).x, fxCtr(r).y); g.lineTo(fxCtr(dst).x, fxCtr(dst).y); g.stroke(); g.restore(); }
+            if (cut > 0 && cut < 1 || k > 0) fxBlk(g, { x: p.x, y: p.y + arc - lift, w: p.w, h: p.h }, C, 1, i ? (k < .5 ? lb : "YOUR CARDS") : (k < .5 ? lb : env.name + "'S CARDS"));
+            if (cut > 0 && cut < 1) { g.strokeStyle = "#fff"; g.lineWidth = 2; g.shadowColor = C; g.shadowBlur = 14; g.setLineDash([10, 6]); g.lineDashOffset = -s * 60; g.strokeRect(r.x - 6, r.y - 6, r.w + 12, r.h + 12); g.setLineDash([]); g.shadowBlur = 0; }
+        });
+        if (T.ph === "main" && t > .78 && t < .9) { const sl = fxSlam(Math.min(1, (t - .78) / .1)); g.save(); g.translate(cx, cy); g.scale(.7 + .3 * sl.sc / 3.2, .7 + .3 * sl.sc / 3.2); g.globalAlpha = sl.a; fxText(g, "SHAMBLES", 0, 0, M * .12, "#fff", "#07304a", C, "sans-serif"); g.restore(); g.fillStyle = "rgba(180,235,255," + (.5 * (1 - (t - .78) / .12)) + ")"; g.fillRect(0, 0, w, h); }
+    }
+};
+UNO_FX_HOOKS.onepiece_t = unoSceneHook("onepiece_t", unoLaw);
+
+/* ---------- MINATO · Flying Thunder God: a marked kunai is thrown, you blink to it, the hands swap in a flash ---------- */
+const unoMinato = {
+    col: "#ffd23f", ms: 7600, tail: () => 1800, begin: (env, box, u) => fxSwapBegin(env, u),
+    draw(g, w, h, T, env, u) {
+        const cx = w / 2, cy = h / 2, M = Math.min(w, h), t = T.t, s = T.s, Y = "#ffd23f", A = env.A, B = env.B, tg = fxCtr(B), R = Math.hypot(w, h) / 2;
+        const sw = T.ph === "tail" ? 1 : fxS(.7, .8, t);
+        if (T.ph === "main" && t < .58) {
+            g.fillStyle = "rgba(0,0,0," + (.5 - .15 * fxS(.3, .58, t)) + ")"; g.fillRect(0, 0, w, h);
+            const aim = fxS(0, .3, t), fly = fxS(.3, .56, t);
+            if (t < .32) { g.save(); g.translate(w * .8 - aim * w * .06, h * (1.08 - .38 * aim)); g.rotate(-.35 - (1 - aim) * .3); g.fillStyle = "#0b0a10"; g.strokeStyle = Y; g.lineWidth = 3; g.shadowColor = Y; g.shadowBlur = 16;
+                g.beginPath(); g.moveTo(-M * .09, M * .4); g.lineTo(-M * .12, 0); g.lineTo(M * .12, 0); g.lineTo(M * .09, M * .4); g.closePath(); g.fill(); g.stroke(); g.restore(); }
+            const kx = w * .76 + (tg.x - w * .76) * fly, ky = h * .7 + (tg.y - h * .7) * fly, ks = (1 - fly * .8) * M * .16, ang = s * 22;   // the kunai spins down the screen toward their cards
+            if (t > .3) { for (let i = 6; i > 0; i--) { const q = Math.max(0, fly - i * .035); g.globalAlpha = .12 * (7 - i); g.strokeStyle = Y; g.lineWidth = ks * .2; g.beginPath(); g.moveTo(w * .76 + (tg.x - w * .76) * q, h * .7 + (tg.y - h * .7) * q); g.lineTo(kx, ky); g.stroke(); } g.globalAlpha = 1;
+                g.save(); g.translate(kx, ky); g.rotate(ang); g.fillStyle = "#e8e0b0"; g.strokeStyle = "#000"; g.lineWidth = 2; g.shadowColor = Y; g.shadowBlur = 20; g.beginPath(); g.moveTo(0, -ks); g.lineTo(ks * .24, 0); g.lineTo(0, ks * .5); g.lineTo(-ks * .24, 0); g.closePath(); g.fill(); g.stroke(); g.restore(); }
+            if (t > .54) { const q = fxS(.54, .6, t); g.save(); g.translate(tg.x, tg.y); g.globalAlpha = q; g.strokeStyle = Y; g.lineWidth = 3; g.shadowColor = Y; g.shadowBlur = 24; g.beginPath(); g.arc(0, 0, M * .06 + (1 - q) * 60, 0, 6.283); g.stroke(); for (let i = 0; i < 6; i++) { g.beginPath(); g.moveTo(Math.cos(i) * M * .03, Math.sin(i) * M * .03); g.lineTo(Math.cos(i + 1.1) * M * .09, Math.sin(i + 1.1) * M * .09); g.stroke(); } g.restore(); }   // the seal marks the target
+        }
+        if (T.ph === "main" && t > .58 && t < .72) {                  // THE BLINK: one hard flash and speed lines collapsing onto the kunai
+            const q = (t - .58) / .14; g.fillStyle = "rgba(255,250,200," + (1 - q * .6) + ")"; g.fillRect(0, 0, w, h); g.strokeStyle = Y; g.lineWidth = 3;
+            for (let i = 0; i < 50; i++) { const an = fxR(i) * 6.283, d = R * (1 - q) * (.4 + fxR(i + 3)), L = R * .3; g.beginPath(); g.moveTo(tg.x + Math.cos(an) * (d + L), tg.y + Math.sin(an) * (d + L)); g.lineTo(tg.x + Math.cos(an) * d, tg.y + Math.sin(an) * d); g.stroke(); }
+            g.save(); g.translate(cx, cy); g.rotate(-.1); g.globalAlpha = fxS(0, .3, q); fxText(g, "飛雷神", 0, 0, M * .2, "#fff", "#4a3600", Y); g.restore();
+        }
+        if (t >= .7 || T.ph === "tail") {                              // the exchange: both hands blink to each other's place, thunder snaps between them
+            const a = T.ph === "tail" ? 1 - fxS(.4, 1, T.tt) : 1;
+            [[A, B, "YOUR CARDS"], [B, A, env.name + "'S CARDS"]].forEach(([r, d, lb], i) => { const p = sw < .5 ? r : d; fxBlk(g, p, Y, a, sw < .5 ? lb : (i ? "YOUR CARDS" : env.name + "'S CARDS")); if (sw > 0 && sw < 1) { g.globalAlpha = 1 - sw; g.strokeStyle = Y; g.lineWidth = 3; g.strokeRect(r.x, r.y, r.w, r.h); g.globalAlpha = 1; } });
+            if (T.ph === "main" && t < .86) { const a1 = fxCtr(A), b1 = fxCtr(B); fxBolt(g, a1.x, a1.y, b1.x, b1.y, (T.now / 60 | 0), Y); fxBolt(g, b1.x, b1.y, a1.x, a1.y, (T.now / 60 | 0) + 9, "#fff"); }
+        }
+    }
+};
+UNO_FX_HOOKS.naruto_t = unoSceneHook("naruto_t", unoMinato);
+
+/* ---------- TODO · Boogie Woogie: shadow hands clap, hard cuts, the world re-forms with the hands exchanged ---------- */
+function fxClap(g, x, y, M, flip, col) {
+    g.save(); g.translate(x, y); g.scale(flip, 1); g.fillStyle = "#050507"; g.strokeStyle = col; g.lineWidth = 4; g.lineJoin = "round";
+    g.beginPath(); g.moveTo(0, M * .5); g.lineTo(-M * .02, M * .12); for (let i = 0; i < 4; i++) { const fx = M * (.0 + i * .05); g.lineTo(fx - M * .01, -M * (.26 + (i === 1 || i === 2 ? .06 : 0))); g.lineTo(fx + M * .035, -M * (.26 + (i === 1 || i === 2 ? .06 : 0))); g.lineTo(fx + M * .04, M * .02); }
+    g.lineTo(M * .24, M * .08); g.lineTo(M * .36, -M * .04); g.lineTo(M * .4, M * .05); g.lineTo(M * .26, M * .3); g.lineTo(M * .24, M * .5); g.closePath(); g.fill(); g.stroke(); g.restore();
+}
+const unoTodo = {
+    col: "#c77dff", ms: 7800, tail: () => 1600, begin: (env, box, u) => fxSwapBegin(env, u),
+    draw(g, w, h, T, env, u) {
+        const cx = w / 2, cy = h / 2, M = Math.min(w, h), t = T.t, A = env.A, B = env.B, W = "#fff";
+        const clap = (a, b) => t >= a && t < b, lines = q => { g.strokeStyle = W; g.lineWidth = 3; for (let i = 0; i < 36; i++) { const an = fxR(i) * 6.283; g.beginPath(); g.moveTo(cx + Math.cos(an) * M * .15, cy + Math.sin(an) * M * .15); g.lineTo(cx + Math.cos(an) * R0 * (1 - q * .3), cy + Math.sin(an) * R0 * (1 - q * .3)); g.stroke(); } }, R0 = Math.hypot(w, h) / 2;
+        if (T.ph === "tail") { const a = 1 - fxS(.3, 1, T.tt); fxBlk(g, B, "#c77dff", a, "YOUR CARDS", "#000"); fxBlk(g, A, "#c77dff", a, env.name + "'S CARDS", "#000"); return; }
+        g.fillStyle = "#f4f1ea"; g.fillRect(0, 0, w, h);
+        if (t < .2) {                                                  // cut 1: your object in front, two shadow hands rise to clap
+            fxBlk(g, { x: cx - M * .2, y: h * .72, w: M * .4, h: M * .2 }, "#000", 1, "YOUR CARDS", "#111");
+            const a = fxS(0, .19, t); fxClap(g, cx - M * .52 * (1 - a) - M * .1, h * 1.02 - a * h * .38, M, 1, "#c77dff"); fxClap(g, cx + M * .52 * (1 - a) + M * .1, h * 1.02 - a * h * .38, M, -1, "#c77dff");
+        } else if (clap(.2, .26)) { g.fillStyle = "#000"; g.fillRect(0, 0, w, h); lines((t - .2) / .06); g.save(); g.translate(cx, cy); g.rotate(-.12); fxText(g, "パン!", 0, 0, M * .34, "#fff", "#7a2cc4", "#c77dff"); g.restore(); }
+        else if (t < .52) {                                            // cut 2: hard cut, the viewpoint is now right beside your cards (huge)
+            g.fillStyle = "#101018"; g.fillRect(0, 0, w, h); const z = 1 + .08 * Math.sin(T.s * 14); fxBlk(g, { x: cx - M * .46 * z, y: cy - M * .26 * z, w: M * .92 * z, h: M * .52 * z }, "#c77dff", 1, "YOUR CARDS", "#1d1230");
+            g.fillStyle = "rgba(0,0,0," + (.6 * fxS(.34, .5, t)) + ")"; g.fillRect(0, 0, w, h);
+        } else if (clap(.52, .58)) { g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); g.fillStyle = "#000"; lines((t - .52) / .06); g.save(); g.translate(cx, cy); g.rotate(.1); fxText(g, "パン!!", 0, 0, M * .4, "#000", "#c77dff", "#c77dff"); g.restore(); }
+        else {                                                         // cut 3: a jagged tear sweeps across, before on one side, after (hands exchanged) on the other
+            const q = fxS(.58, .78, t), tx = w * q; g.fillStyle = "#f4f1ea"; g.fillRect(0, 0, w, h);
+            g.save(); g.beginPath(); g.moveTo(0, 0); for (let i = 0; i <= 12; i++) g.lineTo(tx + (i % 2 ? 26 : -26) * (q > 0 && q < 1 ? 1 : 0), h * i / 12); g.lineTo(0, h); g.closePath(); g.clip(); fxBlk(g, A, "#000", 1, "YOUR CARDS", "#111"); fxBlk(g, B, "#000", 1, env.name + "'S CARDS", "#111"); g.restore();
+            g.save(); g.beginPath(); g.moveTo(w, 0); for (let i = 0; i <= 12; i++) g.lineTo(tx + (i % 2 ? 26 : -26) * (q > 0 && q < 1 ? 1 : 0), h * i / 12); g.lineTo(w, h); g.closePath(); g.clip(); fxBlk(g, B, "#c77dff", 1, "YOUR CARDS", "#1d1230"); fxBlk(g, A, "#c77dff", 1, env.name + "'S CARDS", "#1d1230"); g.restore();
+            if (q > 0 && q < 1) { g.strokeStyle = "#c77dff"; g.lineWidth = 5; g.beginPath(); for (let i = 0; i <= 12; i++) g.lineTo(tx + (i % 2 ? 26 : -26), h * i / 12); g.stroke(); }
+            const o = fxS(.84, 1, t); if (o > 0) { g.fillStyle = "rgba(244,241,234," + o * 0 + ")"; }
+        }
+    }
+};
+UNO_FX_HOOKS.jjk_t = unoSceneHook("jjk_t", unoTodo);
+
+
 
 
 
@@ -4609,7 +4723,7 @@ window.unoPlay = (ci, col, tg) => unoTx(u => {
     if (!fh.length) { u.phase = "over"; u.winner = p; msg = nm + " wins the round!"; }
     u.n++; u.msg = msg;
     const id = (u.round || 1) + ":" + u.n;
-    if (sp && u.phase === "play") u.fx = { id: id, ci: ci, p: p, to: nx };
+    if (sp && u.phase === "play") u.fx = { id: id, ci: ci, p: p, to: nx, sw: c.k === "t" ? tg : 0 };
     if (c.k === "e" && u.phase === "play") u.peek = { id: id, p: p, t: Date.now() };
 });
 window.unoDrawClick = () => unoTx(u => {
