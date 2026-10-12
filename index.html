@@ -1039,7 +1039,7 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 .u-peek-name{font-family:var(--font-display);font-size:22px;margin-bottom:4px}
 .u-peek-hand{display:flex;flex-wrap:wrap;gap:6px}
 .u-peek-bar{width:min(420px,80%);height:8px;background:#fff2;border-radius:99px;overflow:hidden}
-.u-peek-bar::after{content:"";display:block;height:100%;background:var(--gold-bright);animation:uBar 3s linear 0s forwards}
+.u-peek-bar::after{content:"";display:block;height:100%;background:var(--gold-bright);animation:uBar 6s linear 0s forwards}
 @keyframes uBar{from{width:100%}to{width:0}}
 @media(prefers-reduced-motion:reduce){#uno *{animation:none!important}}
 
@@ -1160,8 +1160,12 @@ body .series-pick .anime-option.series-off,body.hb-mode .series-pick .anime-opti
 .u-peek.pk>*{position:relative;z-index:1}
 .u-peek.pk{background:var(--pbg)}
 .u-peek.pk h2{color:var(--pt);text-shadow:0 0 22px var(--pg),3px 3px 0 #000;letter-spacing:.16em;font-size:clamp(26px,5vw,46px);animation:pkTitle .5s cubic-bezier(.2,1.3,.3,1) backwards}
-.u-peek.pk .u-peek-row{border-color:var(--pg)!important;box-shadow:0 0 30px color-mix(in srgb,var(--pg) 45%,transparent)}
-.u-peek.pk .ucard.mini{box-shadow:0 0 16px var(--pg);animation:var(--pa) .7s cubic-bezier(.2,1.2,.3,1) backwards;animation-delay:calc(var(--i,0)*80ms + .15s)}
+.u-peek-table{position:relative;display:flex;flex-direction:column;justify-content:space-evenly;gap:6px;padding:16px;overflow:hidden;border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.07),rgba(255,255,255,.015));border:2px solid color-mix(in srgb,var(--pg,#fff) 70%,transparent);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);box-shadow:0 0 70px color-mix(in srgb,var(--pg,#9dffb5) 45%,transparent),inset 0 0 50px color-mix(in srgb,var(--pg,#9dffb5) 22%,transparent);animation:uFxIn .35s ease-out backwards}
+.u-peek-table::after{content:"";position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent 0 70%,color-mix(in srgb,var(--pg,#fff) 30%,transparent) 85%,transparent);animation:pkSpin 9s linear infinite;pointer-events:none;z-index:0}
+.u-peek-sec{position:relative;z-index:1;text-align:center}
+.u-peek-grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:4px}
+.u-peek-cell{position:relative;flex:0 0 auto;filter:drop-shadow(0 0 9px var(--pg,#9dffb5));animation:var(--pa,pkRise) .7s cubic-bezier(.2,1.2,.3,1) backwards;animation-delay:calc(var(--i,0)*70ms + .15s)}
+.u-peek-cell .ucard{box-shadow:0 0 18px var(--pg,#9dffb5),0 6px 16px #000a}
 @keyframes pkTitle{from{opacity:0;transform:scale(2.2)}}
 @keyframes pkRipple{0%{opacity:0;transform:scale(.2);filter:brightness(3)}60%{transform:scale(1.15)}}
 @keyframes pkScan{0%{clip-path:inset(0 50% 0 50%);filter:brightness(2.5) saturate(0)}100%{clip-path:inset(0 0 0 0)}}
@@ -1173,8 +1177,8 @@ body .series-pick .anime-option.series-off,body.hb-mode .series-pick .anime-opti
 @keyframes pkSwing{0%{opacity:0;transform:translateY(-60px) rotate(-25deg)}60%{transform:rotate(9deg)}100%{opacity:1}}
 @keyframes pkPop{0%{opacity:0;transform:scale(2.4) rotate(-12deg)}70%{transform:scale(.92) rotate(3deg)}100%{opacity:1}}
 @keyframes pkSpin{to{transform:rotate(360deg)}}
-.pk-onepiece_e{--pbg:radial-gradient(circle at 50% 50%,#3a0508ee,#050001fa 72%);--pt:#ffe0e0;--pg:#ff2a3a;--pa:pkRipple}
-.pk-onepiece_e::before{background:repeating-radial-gradient(circle at 50% 50%,transparent 0 46px,#ff2a3a33 48px 50px);animation:pkSpin 40s linear infinite}
+.pk-onepiece_e{--pbg:#000;--pt:#ffe0e0;--pg:#ff2a3a;--pa:pkRise}
+.pk-onepiece_e::before{background:radial-gradient(circle,#ff2a3a55 1.2px,transparent 2px) 0 0/90px 90px;opacity:.5}
 .pk-naruto_e{--pbg:radial-gradient(circle at 50% 45%,#0a1440f0,#02040dfa 72%);--pt:#e6edff;--pg:#8fa4ff;--pa:pkScan}
 .pk-naruto_e::before{inset:-30%;background:repeating-conic-gradient(from 0deg,#8fa4ff26 0 6deg,transparent 6deg 22.5deg),radial-gradient(circle,transparent 30%,#8fa4ff22 31% 32%,transparent 33%);animation:pkSpin 30s linear infinite}
 .pk-dragonball_e{--pbg:radial-gradient(circle at 50% 50%,#1c1c24f2,#050508fa 74%);--pt:#e8e8f0;--pg:#ff5a3c;--pa:pkRadar}
@@ -3667,7 +3671,7 @@ unoSym.f = "❄"; unoSym.t = "⇄"; unoSym.u = "+5"; unoSym.e = "◉";
    f = Freeze        next player loses their next 2 turns
    t = Swap Hands    swap your hand with a player you choose
    u = Ultimate      next player draws 5 (and is skipped)
-   e = Future Sight  you see every other hand for 3 seconds
+   e = Future Sight  you see every other hand for 6 seconds
    They are coloured by their anime (like normal cards): playable on that colour or on the same special type. */
 const UNO_SP = {
     f: { emoji: "🧊", label: "FREEZE",       file: "freeze",   snd: () => { tone(1400, 500, .5, "triangle", .07); tone(900, 200, .6, "sine", .05, .1); } },
@@ -4818,6 +4822,72 @@ const unoYhwach = {
 };
 UNO_FX_HOOKS.bleach_e = unoSceneHook("bleach_e", unoYhwach);
 
+/* =====================================================================
+   SHANKS (onepiece_e): first-person silhouette, the sword is drawn, a tight series of Conqueror's Haki bursts hits every corner of the page,
+   the screen cracks and SHATTERS, and the opponent's cards float in a pure black void (the reveal table).  Synth sound included (respects mute).
+   ===================================================================== */
+let fxAC = null;
+function fxSnd(kind, i) {
+    if (muted) return;
+    try {
+        fxAC = fxAC || new (window.AudioContext || window.webkitAudioContext)(); const a = fxAC; if (a.state === "suspended") a.resume(); const n = a.currentTime;
+        const amp = (v, dur) => { const g = a.createGain(); g.gain.setValueAtTime(v, n); g.gain.exponentialRampToValueAtTime(.001, n + dur); g.connect(a.destination); return g; };
+        const noise = dur => { const b = a.createBuffer(1, Math.floor(a.sampleRate * dur), a.sampleRate), d = b.getChannelData(0); for (let k = 0; k < d.length; k++) d[k] = Math.random() * 2 - 1; const s = a.createBufferSource(); s.buffer = b; return s; };
+        const filt = (type, f) => { const x = a.createBiquadFilter(); x.type = type; x.frequency.value = f; return x; };
+        if (kind === "shing") { const s = noise(.55), f = filt("highpass", 3200); s.connect(f); f.connect(amp(.32, .55)); s.start(n); }
+        else if (kind === "boom") { const o = a.createOscillator(); o.type = "sine"; o.frequency.setValueAtTime(100 - i * 8, n); o.frequency.exponentialRampToValueAtTime(26, n + .75); o.connect(amp(.9, .85)); o.start(n); o.stop(n + .9); const s = noise(.5), f = filt("lowpass", 500 + i * 220); s.connect(f); f.connect(amp(.55, .5)); s.start(n); }
+        else if (kind === "crack") { const s = noise(1.2), f = filt("bandpass", 2400); s.connect(f); f.connect(amp(.7, 1.2)); s.start(n); }
+    } catch (e) {}
+}
+const unoShanks = {
+    col: "#ff2a3a", ms: 7000, tail: env => env.owner ? 800 : 1400,
+    begin(env, box, u) { env.me = Number(myPlayer); env.owner = env.me === u.fx.p; if (env.owner && u.peek) unoFxOwnsPeek = u.peek.id; },
+    end(env, u) { if (env.owner && !env.shown) { env.shown = 1; unoFxOwnsPeek = null; unoPeekShow(u, env.me); } },
+    draw(g, w, h, T, env, u) {
+        const cx = w / 2, cy = h / 2, M = Math.min(w, h), t = T.t, s = T.s, R = Math.hypot(w, h) / 2, RED = "#ff2a3a";
+        if (T.ph === "tail") { g.globalAlpha = env.owner ? 1 : 1 - fxS(.3, 1, T.tt); g.fillStyle = "#000"; g.fillRect(0, 0, w, h); g.globalAlpha = 1; return; }
+        const B = [.42, .48, .54, .60, .66], cue = (k, at, kind, i) => { if (t >= at && !env["c" + k]) { env["c" + k] = 1; fxSnd(kind, i); } };
+        cue(0, .20, "shing"); B.forEach((a, i) => cue(i + 1, a, "boom", i)); cue(9, .71, "crack");
+        const nb = B.filter(a => t >= a).length, hit = B.reduce((m, a) => t >= a ? Math.max(m, 1 - (t - a) / .06) : m, 0), sx = (fxR(((s * 40) | 0) + 1) - .5) * 26 * hit, sy = (fxR(((s * 40) | 0) + 2) - .5) * 26 * hit;
+        g.save(); g.translate(sx, sy);
+        if (t < .71) {
+            g.fillStyle = "#040103"; g.fillRect(-40, -40, w + 80, h + 80); const vg = g.createRadialGradient(cx, cy, M * .2, cx, cy, R); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(130,0,14," + (.45 + .25 * Math.sin(s * 5) * (t < .4 ? 1 : 0) + .3 * hit) + ")"); g.fillStyle = vg; g.fillRect(-40, -40, w + 80, h + 80);
+            g.strokeStyle = "#a3121e"; g.lineWidth = 3; g.lineCap = "round"; for (let i = 0; i < 16; i++) { const x = w * (.06 + .88 * fxR(i + 5)), L = h * (.08 + .1 * fxR(i + 9)) * (1 + .12 * Math.sin(s * 2 + i)); g.beginPath(); g.moveTo(x, -10); g.quadraticCurveTo(x + 14 * Math.sin(s + i), L * .5, x + 8 * Math.sin(s * 1.3 + i), L); g.stroke(); }   // red hair falling into view
+            const hx = w * .78, hy = h * .92, ang = -2.25, bx = Math.cos(ang), by = Math.sin(ang), draw = fxS(.2, .34, t);                                    // the right hand on the hilt
+            g.save(); g.fillStyle = "#07060a"; g.beginPath(); g.moveTo(-20, h + 20); g.lineTo(-20, h * .8 + 18 * Math.sin(s * 2)); g.quadraticCurveTo(w * .15, h * .9, w * .3, h + 20); g.fill();   // cloak edge
+            g.translate(hx, hy); g.rotate(ang + 1.57); g.fillStyle = "#0a0910"; g.strokeStyle = "#5a1018"; g.lineWidth = 3; g.fillRect(-M * .02, M * .02, M * .04, M * .9); g.beginPath(); g.moveTo(-M * .09, 0); g.lineTo(M * .09, 0); g.lineTo(M * .09, -M * .03); g.lineTo(-M * .09, -M * .03); g.closePath(); g.fill(); g.stroke();   // scabbard + guard
+            g.fillStyle = "#000"; g.beginPath(); g.ellipse(0, M * .06, M * .075, M * .1, 0, 0, 6.283); g.fill(); g.stroke(); g.restore();                  // fist
+            if (draw > 0) { const L = M * 1.15 * draw, x0 = hx + bx * M * .02, y0 = hy + by * M * .02, x1 = x0 + bx * L, y1 = y0 + by * L, nx = -by * M * .022, ny = bx * M * .022;
+                g.fillStyle = "#050507"; g.strokeStyle = "#fff"; g.lineWidth = 2; g.shadowColor = "#fff"; g.shadowBlur = 14; g.beginPath(); g.moveTo(x0 + nx, y0 + ny); g.lineTo(x1, y1); g.lineTo(x0 - nx, y0 - ny); g.closePath(); g.fill(); g.stroke(); g.shadowBlur = 0;
+                const gl = (s * 1.4) % 1; g.fillStyle = "rgba(255,255,255," + (.7 * (1 - draw * .6)) + ")"; g.beginPath(); g.arc(x0 + (x1 - x0) * gl, y0 + (y1 - y0) * gl, 5, 0, 6.283); g.fill();
+                if (t > .34) { for (let i = 0; i < 4; i++) { const q = .15 + .7 * fxR(i + (s * 12 | 0)), px = x0 + (x1 - x0) * q, py = y0 + (y1 - y0) * q; fxBolt(g, px, py, px + (fxR(i + 3) - .5) * M * .3, py + (fxR(i + 7) - .5) * M * .3, (s * 14 | 0) + i, i % 2 ? "#ff2a3a" : "#220004"); } } }
+            if (t < .2) { g.fillStyle = "rgba(0,0,0," + (.5 * (1 - fxS(0, .2, t))) + ")"; g.fillRect(0, 0, w, h); }
+            for (let i = 0; i < nb; i++) {                                                                                                                         // THE BURSTS: rings that sweep every pixel, bolts to every edge
+                const q = Math.min(1.5, (t - B[i]) / .1), rr = q * R * 1.25, a = Math.max(0, 1 - q * .7);
+                g.globalAlpha = a; g.strokeStyle = RED; g.lineWidth = 34 * (1 - Math.min(1, q * .7)) + 4; g.shadowColor = RED; g.shadowBlur = 40; g.beginPath(); g.arc(cx, cy, rr, 0, 6.283); g.stroke(); g.strokeStyle = "#fff"; g.lineWidth = 5; g.beginPath(); g.arc(cx, cy, rr * .97, 0, 6.283); g.stroke(); g.shadowBlur = 0;
+                for (let k = 0; k < 18; k++) { const an = k / 18 * 6.283 + i; fxBolt(g, cx + Math.cos(an) * rr * .6, cy + Math.sin(an) * rr * .6, cx + Math.cos(an) * rr, cy + Math.sin(an) * rr, i * 31 + k + ((s * 20) | 0), k % 2 ? "#ff2a3a" : "#fff"); }
+                g.globalAlpha = 1; if (q < .35) { g.fillStyle = "rgba(255,40,50," + .35 * (1 - q / .35) + ")"; g.fillRect(0, 0, w, h); }
+            }
+            if (nb) { const cp = Math.min(1, (nb - 1) / 4 + hit * .1); g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 1.6; g.shadowColor = RED; g.shadowBlur = 10;      // the glass of the page cracks, wider with every burst
+                for (let k = 0; k < 22; k++) { let x = cx, y = cy, an = k / 22 * 6.283 + fxR(k) * .3; g.beginPath(); g.moveTo(x, y); for (let sg = 0; sg < 9; sg++) { if (sg / 9 > cp * 1.05) break; const L = R * .13 * (.6 + fxR(k * 9 + sg)); an += (fxR(k * 17 + sg) - .5) * .8; x += Math.cos(an) * L; y += Math.sin(an) * L; g.lineTo(x, y); } g.stroke(); } g.shadowBlur = 0; }
+        } else {                                                                                                                                                      // THE FOURTH WALL BREAKS: the screen falls away in shards, black void behind
+            const q = (t - .71) / .29; g.fillStyle = "#000"; g.fillRect(-40, -40, w + 80, h + 80);
+            if (q < .12) { g.fillStyle = "rgba(255,255,255," + (1 - q / .12) + ")"; g.fillRect(-40, -40, w + 80, h + 80); }
+            const rings = [0, .34, .7, 1.2], sec = 12, fall = q * q;
+            for (let r = 0; r < 3; r++) for (let k = 0; k < sec; k++) {
+                const a0 = k / sec * 6.283, a1 = (k + 1) / sec * 6.283, ma = (a0 + a1) / 2, r0 = rings[r] * R, r1 = rings[r + 1] * R, v = (1.4 - r * .25) * R * q * .9 * (.7 + fxR(r * 20 + k)), rot = (fxR(r * 30 + k) - .5) * 3 * q;
+                const ox = Math.cos(ma) * v, oy = Math.sin(ma) * v + fall * h * (.5 + fxR(r * 40 + k)); g.save(); g.translate(cx + ox, cy + oy); g.rotate(rot); g.translate(-cx, -cy); g.globalAlpha = Math.max(0, 1 - q * 1.15);
+                g.beginPath(); g.moveTo(cx + Math.cos(a0) * r0, cy + Math.sin(a0) * r0); g.lineTo(cx + Math.cos(a0) * r1, cy + Math.sin(a0) * r1); g.lineTo(cx + Math.cos(a1) * r1, cy + Math.sin(a1) * r1); g.lineTo(cx + Math.cos(a1) * r0, cy + Math.sin(a1) * r0); g.closePath();
+                g.fillStyle = "rgba(34,10,14,.95)"; g.fill(); g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 2; g.stroke(); g.restore();
+            }
+            g.globalAlpha = 1; if (q > .5) { g.fillStyle = "#ff2a3a"; for (let i = 0; i < 24; i++) { g.globalAlpha = .5 * fxS(.5, .9, q) * (.4 + .6 * fxR(i)); g.fillRect(fxR(i + 2) * w, (fxR(i + 9) * h + s * 18 * (1 + fxR(i))) % h, 2, 2); } g.globalAlpha = 1; }   // embers drifting in the void
+        }
+        g.restore();
+    }
+};
+UNO_FX_HOOKS.onepiece_e = unoSceneHook("onepiece_e", unoShanks);
+
+
 
 
 
@@ -5240,15 +5310,21 @@ function unoPeekShow(u, me) {
     const fxk = u.fx && u.cards[u.fx.ci] ? u.cards[u.fx.ci].sk + "_e" : "";
     if (UNO_PK[fxk]) box.classList.add("pk", "pk-" + fxk);
     box.appendChild(hbEl("h2", null, UNO_PK[fxk] || "👁️ FUTURE SIGHT"));
-    const rows = hbEl("div", "u-peek-rows");
-    u.seats.filter(p => p !== me).forEach(p => {
-        const r = hbEl("div", "u-peek-row"), nm = hbEl("div", "u-peek-name", u.names["p" + p]); nm.style.color = HB_COLORS[p - 1]; r.appendChild(nm);
-        const hd = hbEl("div", "u-peek-hand");
-        (u.hands["p" + p] || []).slice().sort((a, b) => (u.cards[a].s - u.cards[b].s) || ((u.cards[a].v) - (u.cards[b].v))).forEach((ci, ix) => { const el = unoCardEl(u, ci, "mini"); el.style.setProperty("--i", ix); hd.appendChild(el); });
-        r.appendChild(hd); rows.appendChild(r);
+    const opp = u.seats.filter(p => p !== me), n = opp.reduce((s, p) => s + (u.hands["p" + p] || []).length, 0) || 1;
+    const S = Math.min(innerWidth * .92, innerHeight * .72, 800), table = hbEl("div", "u-peek-table");      // a square, see-through table
+    table.style.width = table.style.height = S + "px"; box.appendChild(table);
+    const sc = Math.max(.36, Math.min(1.3, S * Math.sqrt(.78 / (n + opp.length * 2.5)) / 176)), ix = { i: 0 };   // cards as big as the table allows, never a thin line
+    opp.forEach(p => {
+        const sec = hbEl("div", "u-peek-sec"), nm = hbEl("div", "u-peek-name", u.names["p" + p]); nm.style.color = HB_COLORS[p - 1]; sec.appendChild(nm);
+        const grid = hbEl("div", "u-peek-grid");
+        (u.hands["p" + p] || []).slice().sort((a, b) => (u.cards[a].s - u.cards[b].s) || (u.cards[a].v - u.cards[b].v)).forEach(ci => {
+            const cell = hbEl("div", "u-peek-cell"), el = unoCardEl(u, ci, ""); cell.style.width = 118 * sc + "px"; cell.style.height = 176 * sc + "px"; cell.style.setProperty("--i", ix.i++);
+            el.style.cssText += ";position:absolute;left:0;top:0;width:118px;height:176px;transform-origin:0 0;transform:scale(" + sc + ");margin:0;transition:none"; cell.appendChild(el); grid.appendChild(cell);
+        });
+        sec.appendChild(grid); table.appendChild(sec);
     });
-    box.appendChild(rows); box.appendChild(hbEl("div", "u-peek-bar"));
-    const showPeek = () => { if ($("unoFx")) return setTimeout(showPeek, 200); if (unoFxOwnsPeek && u.peek && unoFxOwnsPeek === u.peek.id) return; setTimeout(() => { $("uno").appendChild(box); setTimeout(() => box.remove(), 3000); }, 600); }; setTimeout(showPeek, 300);   // after the banner, then exactly 3 seconds
+    box.appendChild(hbEl("div", "u-peek-bar"));
+    const showPeek = () => { if ($("unoFx")) return setTimeout(showPeek, 200); if (unoFxOwnsPeek && u.peek && unoFxOwnsPeek === u.peek.id) return; setTimeout(() => { $("uno").appendChild(box); setTimeout(() => box.remove(), 6000); }, 600); }; setTimeout(showPeek, 300);   // after the banner, then 6 seconds
 }
 
 window.createRoom =
