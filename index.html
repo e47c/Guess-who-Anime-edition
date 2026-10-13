@@ -1205,6 +1205,10 @@ body .series-pick .anime-option.series-off,body.hb-mode .series-pick .anime-opti
 .u-opp.frozen[class*="fxk-"][class*="_f"]::after{position:absolute;right:6px;top:2px;font-size:20px;transform:skewX(8deg);filter:drop-shadow(0 0 6px #bfe9ff)}
 .u-opp.frozen.fxk-onepiece_f::after,.u-opp.frozen.fxk-jjk_f::after{content:"❄"}
 .u-opp.frozen.fxk-naruto_f::after{content:"🪞"}.u-opp.frozen.fxk-demonslayer_f::after{content:"🪷"}.u-opp.frozen.fxk-bleach_f::after{content:"🐉"}
+.u-opp.frozen.fxk-dragonball_f{border-color:#b388ff;background:repeating-linear-gradient(90deg,rgba(179,136,255,.5) 0 2px,transparent 2px 14px),linear-gradient(120deg,rgba(14,6,34,.95),rgba(90,40,170,.55));box-shadow:0 0 0 2px #b388ffcc,0 0 40px #8a5cff}
+.u-opp.frozen.fxk-blackclover_f{border-color:#ffe27a;filter:grayscale(.85);background:linear-gradient(120deg,rgba(40,40,52,.95),rgba(150,150,170,.45));box-shadow:0 0 0 2px #ffe27acc,0 0 34px #ffe27a}
+.u-opp.frozen.fxk-hxh_f{border-color:#f2c94c;background:repeating-linear-gradient(45deg,rgba(242,201,76,.35) 0 3px,transparent 3px 12px),linear-gradient(120deg,rgba(40,10,14,.95),rgba(120,20,40,.55));box-shadow:0 0 0 2px #f2c94ccc,0 0 36px #ff4d6d}
+.u-opp.frozen.fxk-dragonball_f::after{content:"⏳"}.u-opp.frozen.fxk-blackclover_f::after{content:"🕰️"}.u-opp.frozen.fxk-hxh_f::after{content:"⛓"}
 </style>
 
 </head>
@@ -5141,6 +5145,79 @@ const unoHitsugaya = fxIce("#5aa9ff", 7000, (g, w, h, T, env) => {
     fxShell(g, r, fxS(.78, .9, t), s, B);
 });
 UNO_FX_HOOKS.bleach_f = unoSceneHook("bleach_f", unoHitsugaya);
+
+/* =====================================================================
+   TIME + FREEZE GROUP:  Hit (dragonball_f) · Julius (blackclover_f) · Kurapika (hxh_f)     ~8.6 s, silent
+   ===================================================================== */
+function fxFrz(col, ms, endFn, draw) { return { col: col, ms: ms, tail: () => 1600, begin: fxFrzBegin, draw(g, w, h, T, env, u) { if (T.ph === "tail") { endFn(g, env.r, 1 - fxS(.3, 1, T.tt), T.s); return; } draw(g, w, h, T, env, u); } }; }
+function fxCage(g, r, a) {            // Time Cage: purple bars of skipped time
+    if (a <= 0) return; g.save(); g.globalAlpha = a; g.strokeStyle = "#b388ff"; g.lineWidth = 3; g.shadowColor = "#b388ff"; g.shadowBlur = 20; const x0 = r.x - 12, y0 = r.y - 12, W = r.w + 24, H = r.h + 24;
+    g.fillStyle = "rgba(120,60,200,.18)"; g.fillRect(x0, y0, W, H); for (let i = 0; i <= 9; i++) { const x = x0 + W * i / 9; g.beginPath(); g.moveTo(x, y0 - 8); g.lineTo(x, y0 + H + 8); g.stroke(); } g.strokeRect(x0 - 6, y0 - 8, W + 12, 6); g.strokeRect(x0 - 6, y0 + H + 2, W + 12, 6); g.restore();
+}
+function fxStasis(g, r, a) {          // Chrono Stasis: the plate drained of colour inside a stopped gold clock
+    if (a <= 0) return; g.save(); g.globalAlpha = a; g.fillStyle = "rgba(150,150,160,.3)"; g.fillRect(r.x - 6, r.y - 6, r.w + 12, r.h + 12); const cx = r.x + r.w / 2, cy = r.y + r.h / 2, R = Math.hypot(r.w, r.h) * .62;
+    g.strokeStyle = "#ffe27a"; g.lineWidth = 2.5; g.shadowColor = "#ffe27a"; g.shadowBlur = 18; g.beginPath(); g.arc(cx, cy, R, 0, 6.283); g.stroke(); for (let i = 0; i < 12; i++) { const an = i / 12 * 6.283; g.beginPath(); g.moveTo(cx + Math.cos(an) * R * .9, cy + Math.sin(an) * R * .9); g.lineTo(cx + Math.cos(an) * R, cy + Math.sin(an) * R); g.stroke(); }
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx, cy - R * .7); g.stroke(); g.restore();
+}
+function fxBind(g, r, a) {            // Emperor Time: golden chain links wrapped round the plate
+    if (a <= 0) return; g.save(); g.globalAlpha = a; const x0 = r.x - 10, y0 = r.y - 10, W = r.w + 20, H = r.h + 20, per = 2 * (W + H); g.strokeStyle = "#f2c94c"; g.lineWidth = 3; g.shadowColor = "#f2c94c"; g.shadowBlur = 14;
+    for (let d = 0; d < per; d += 16) { let x, y; if (d < W) { x = x0 + d; y = y0; } else if (d < W + H) { x = x0 + W; y = y0 + d - W; } else if (d < 2 * W + H) { x = x0 + W - (d - W - H); y = y0 + H; } else { x = x0; y = y0 + H - (d - 2 * W - H); } const o = ((d / 16) | 0) % 2; g.beginPath(); g.ellipse(x, y, o ? 9 : 5, o ? 5 : 9, 0, 0, 6.283); g.stroke(); } g.restore();
+}
+function fxLinks(g, pt, n, p, size) {
+    for (let i = 0; i < n; i++) { const u = i / n; if (u > p) break; const a = pt(u), b = pt(Math.min(1, u + .01)), an = Math.atan2(b[1] - a[1], b[0] - a[0]), o = i % 2; g.save(); g.translate(a[0], a[1]); g.rotate(an); g.beginPath(); g.ellipse(0, 0, o ? size * .55 : size, o ? size * .35 : size * .5, 0, 0, 6.283); g.stroke(); g.restore(); }
+}
+
+/* ---------- HIT · Time-Skip / Time Cage: cold and exact. Time is SKIPPED (jump cuts, torn frames, the plate appears at moments that never happened), then a cage of skipped time closes ---------- */
+const unoHit = fxFrz("#b388ff", 7000, fxCage, (g, w, h, T, env) => {
+    const t = T.t, s = T.s, M = Math.min(w, h), r = env.r, cx = r.x + r.w / 2, cy = r.y + r.h / 2, bgA = 1 - fxS(.84, .97, t), V = "#b388ff", st = (t * 40) | 0, SK = [.26, .34, .42, .5];
+    g.fillStyle = "rgba(8,3,20," + .88 * bgA + ")"; g.fillRect(0, 0, w, h);
+    const f = fxS(0, .18, t) * (1 - fxS(.3, .42, t)); if (f > 0) { g.save(); g.globalAlpha = f; g.fillStyle = "#0a0614"; g.strokeStyle = V; g.lineWidth = 3; g.shadowColor = V; g.shadowBlur = 20; g.beginPath(); g.ellipse(w / 2, h * (1.05 - .15 * f), M * .15, M * .12, 0, 0, 6.283); g.fill(); g.stroke(); g.restore(); }   // a clenched fist, motionless
+    g.strokeStyle = "rgba(179,136,255,.18)"; g.lineWidth = 1; for (let i = 0; i < 20; i++) { const y = h * i / 20; g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+    const done = SK.filter(a => t >= a).length;
+    for (let k = 0; k < done; k++) { g.globalAlpha = .45 * bgA; g.strokeStyle = V; g.lineWidth = 2; g.strokeRect(r.x + (k + 1) * 22 * (k % 2 ? -1 : 1), r.y + (k + 1) * 14, r.w, r.h); g.globalAlpha = 1; }   // the plate, at moments that were skipped
+    SK.forEach(a => { const q = (t - a) / .05; if (q > 0 && q < 1) { const bw = M * .02 + q * w * .5; g.fillStyle = "rgba(225,205,255," + (1 - q) + ")"; g.fillRect(cx - bw, 0, 2 * bw, h); for (let i = 0; i < 9; i++) { g.fillStyle = "rgba(8,3,20,.9)"; g.fillRect(0, h * i / 9 + (fxR(st + i) - .5) * 40, w, h / 18); } } });                 // the skip: a slit tears open, frames are torn
+    const p = fxS(.55, .72, t); if (p > 0) {                                                                                                                                       // the cage: beams from the corners, a wireframe prism around the plate
+        const F = { x: r.x - 14, y: r.y - 14, w: r.w + 28, h: r.h + 28 }, Bk = { x: cx - F.w * .3, y: cy - F.h * .3, w: F.w * .6, h: F.h * .6 }; g.strokeStyle = V; g.lineWidth = 2.5; g.shadowColor = V; g.shadowBlur = 24;
+        [[0, 0], [w, 0], [0, h], [w, h]].forEach(([x, y], i) => { const tx = i % 2 ? F.x + F.w : F.x, ty = i > 1 ? F.y + F.h : F.y; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (tx - x) * p, y + (ty - y) * p); g.stroke(); });
+        if (p > .8) { g.strokeRect(F.x, F.y, F.w, F.h); g.strokeRect(Bk.x, Bk.y, Bk.w, Bk.h); [[0, 0], [1, 0], [0, 1], [1, 1]].forEach(([a, b]) => { g.beginPath(); g.moveTo(F.x + a * F.w, F.y + b * F.h); g.lineTo(Bk.x + a * Bk.w, Bk.y + b * Bk.h); g.stroke(); }); } g.shadowBlur = 0;
+    }
+    if (t > .7 && t < .82) { const q = (t - .7) / .12; g.fillStyle = "rgba(225,205,255," + .6 * (1 - q) + ")"; g.fillRect(0, 0, w, h); const sl = fxSlam(Math.min(1, q * 2)); g.save(); g.translate(w / 2, h * .5); g.rotate(-.05); g.scale(sl.sc, sl.sc); g.globalAlpha = sl.a * (1 - fxS(.78, .82, t)); fxText(g, "TIME CAGE", 0, 0, M * .14, "#fff", "#2a0a5a", V, "sans-serif"); g.restore(); }
+    fxCage(g, r, fxS(.74, .88, t) * bgA);
+});
+UNO_FX_HOOKS.dragonball_f = unoSceneHook("dragonball_f", unoHit);
+
+/* ---------- JULIUS · Chrono Stasis: a magic circle of a clock, an hourglass whose sand FREEZES mid-fall, a golden dome of stopped time closes over the plate ---------- */
+const unoJulius = fxFrz("#ffe27a", 7000, fxStasis, (g, w, h, T, env) => {
+    const t = T.t, s = T.s, M = Math.min(w, h), r = env.r, cx = r.x + r.w / 2, cy = r.y + r.h / 2, bgA = 1 - fxS(.84, .97, t), G = "#ffe27a", mx = w / 2, my = h * .55, on = fxS(.04, .25, t), stop = fxS(.46, .5, t), st = Math.min(s, 3.4);
+    g.fillStyle = "rgba(8,10,26," + .88 * bgA + ")"; g.fillRect(0, 0, w, h);
+    g.save(); g.translate(mx, my); g.globalAlpha = on * bgA; g.strokeStyle = G; g.shadowColor = G; g.shadowBlur = 16; g.lineWidth = 2;
+    [.34, .27, .2].forEach((rd, i) => { g.save(); g.rotate((i % 2 ? -1 : 1) * st * (.4 - .1 * i) * (1 - stop)); g.beginPath(); g.arc(0, 0, M * rd, 0, 6.283); g.stroke(); for (let k = 0; k < 12; k++) { const an = k / 12 * 6.283; g.beginPath(); g.moveTo(Math.cos(an) * M * rd * .92, Math.sin(an) * M * rd * .92); g.lineTo(Math.cos(an) * M * rd, Math.sin(an) * M * rd); g.stroke(); if (i === 0) g.strokeRect(Math.cos(an) * M * rd * .8 - 5, Math.sin(an) * M * rd * .8 - 5, 10, 10); } g.restore(); });
+    const hand = (ang, L) => { g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(ang) * M * L, Math.sin(ang) * M * L); g.lineWidth = 4; g.stroke(); }; const spin = t < .5 ? st * 6 : 3.4 * 6; hand(-1.57 + spin, .26); hand(-1.57 + spin / 12, .16); g.restore();   // the clock hands race, then stop
+    const hx = mx, hy = h * .2, HG = M * .08; g.save(); g.globalAlpha = on * bgA; g.strokeStyle = "#fff"; g.lineWidth = 2.5; g.shadowColor = G; g.shadowBlur = 14; g.beginPath(); g.moveTo(hx - HG, hy - HG * 1.7); g.lineTo(hx + HG, hy - HG * 1.7); g.lineTo(hx + 3, hy); g.lineTo(hx + HG, hy + HG * 1.7); g.lineTo(hx - HG, hy + HG * 1.7); g.lineTo(hx - 3, hy); g.closePath(); g.stroke();
+    g.fillStyle = G; const ST = Math.min(s, 3.4); g.fillRect(hx - 1.5, hy, 3, HG * 1.6); for (let i = 0; i < 18; i++) { const u = (stop > 0 ? .4 + fxR(i) * .6 : (ST * .8 + i / 18) % 1), gy = hy + u * HG * 1.6; g.globalAlpha = on * bgA * (stop > 0 ? .6 + .4 * Math.sin(s * 3 + i) : 1); g.fillRect(hx - 5 + fxR(i + 3) * 10, gy, 2.5, 2.5); } g.restore();       // sand falls, then hangs in the air
+    const dm = fxS(.5, .78, t); if (dm > 0) { const rd = M * (.1 + dm * 1.0), dx = cx, dy = cy; const gr = g.createRadialGradient(dx, dy, 0, dx, dy, rd); gr.addColorStop(0, "rgba(255,226,122,.0)"); gr.addColorStop(.85, "rgba(255,226,122,.16)"); gr.addColorStop(1, "rgba(255,255,255,.5)"); g.globalAlpha = bgA; g.fillStyle = gr; g.beginPath(); g.arc(dx, dy, rd, 0, 6.283); g.fill(); g.strokeStyle = G; g.lineWidth = 2; g.stroke(); g.globalAlpha = 1; }    // the dome of stopped time spreads over the plate
+    g.fillStyle = "#ffe9a0"; for (let i = 0; i < 60; i++) { g.globalAlpha = (.3 + .5 * Math.sin(s * 2 + i)) * dm * bgA; g.fillRect(cx + (fxR(i) - .5) * M * .9, cy + (fxR(i + 5) - .5) * M * .5, 2, 2); } g.globalAlpha = 1;
+    if (t > .46 && t < .74) { const sl = fxSlam(Math.min(1, (t - .46) / .12)); g.save(); g.translate(w / 2, h * .82); g.scale(.7 + .3 * sl.sc / 3.2, .7 + .3 * sl.sc / 3.2); g.globalAlpha = sl.a * (1 - fxS(.68, .74, t)); fxText(g, "CHRONO STASIS", 0, 0, M * .08, "#fff", "#4a3a00", G, "sans-serif"); g.restore(); }
+    fxStasis(g, r, fxS(.74, .88, t) * bgA);
+});
+UNO_FX_HOOKS.blackclover_f = unoSceneHook("blackclover_f", unoJulius);
+
+/* ---------- KURAPIKA · Emperor Time: scarlet eyes, chains fly from your fingertips, wrap and tighten on the plate, a golden seal clamps shut ---------- */
+const unoKurapika = fxFrz("#f2c94c", 7000, fxBind, (g, w, h, T, env) => {
+    const t = T.t, s = T.s, M = Math.min(w, h), r = env.r, cx = r.x + r.w / 2, cy = r.y + r.h / 2, bgA = 1 - fxS(.84, .97, t), Y = "#f2c94c", R = "#ff2a4a";
+    g.fillStyle = "rgba(6,8,22," + .88 * bgA + ")"; g.fillRect(0, 0, w, h); const vg = g.createRadialGradient(w / 2, h / 2, M * .3, w / 2, h / 2, Math.hypot(w, h) / 2); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(120,0,20," + .5 * bgA * fxS(.1, .3, t) + ")"); g.fillStyle = vg; g.fillRect(0, 0, w, h);
+    const ey = fxS(.06, .24, t) * bgA; if (ey > 0) [-1, 1].forEach(sd => { g.save(); g.translate(w / 2 + sd * M * .26, h * .13); g.rotate(sd * -.22); g.globalAlpha = ey; g.fillStyle = R; g.shadowColor = R; g.shadowBlur = 36; g.beginPath(); g.moveTo(-M * .09, 0); g.quadraticCurveTo(0, -M * .06 * ey, M * .09, 0); g.quadraticCurveTo(0, M * .05 * ey, -M * .09, 0); g.fill(); g.fillStyle = "#1a0006"; g.beginPath(); g.arc(0, 0, M * .018, 0, 6.283); g.fill(); g.restore(); });     // the scarlet eyes
+    const hd = fxS(0, .16, t); g.save(); g.globalAlpha = hd * bgA; g.fillStyle = "#07080f"; g.strokeStyle = Y; g.lineWidth = 3; g.shadowColor = Y; g.shadowBlur = 12; g.beginPath(); g.ellipse(w / 2, h * 1.04, M * .22, M * .18, 0, 0, 6.283); g.fill(); g.stroke(); g.restore();
+    g.strokeStyle = Y; g.lineWidth = 2.5; g.shadowColor = Y; g.shadowBlur = 12;
+    for (let k = 0; k < 5; k++) { const ax = w / 2 + (k - 2) * M * .09, ay = h * .86, p = fxS(.14 + k * .03, .46 + k * .03, t), tx = cx + (k - 2) * r.w * .18, ty = cy + (k % 2 ? 1 : -1) * r.h * .3, my = (ay + ty) / 2 + M * (k % 2 ? .12 : -.12), sw = Math.sin(s * 3 + k) * 10 * (1 - p);
+        fxLinks(g, u => { const q = 1 - u; return [q * q * ax + 2 * q * u * ((ax + tx) / 2 + sw) + u * u * tx, q * q * ay + 2 * q * u * my + u * u * ty]; }, 34, p, M * .016); }
+    const wr = fxS(.46, .72, t) * bgA; if (wr > 0) for (let l = 0; l < 3; l++) { const rd = (1 - wr * .25) * (1 + l * .22); g.save(); g.translate(cx, cy); g.rotate(l * .5 + s * .8 * (1 - wr)); g.globalAlpha = wr; fxLinks(g, u => [Math.cos(u * 6.283) * r.w * .55 * rd, Math.sin(u * 6.283) * r.h * .9 * rd], 30, 1, M * .014); g.restore(); }   // chains wrap and tighten
+    g.shadowBlur = 0; if (t > .68) { const q = fxS(.68, .78, t) * bgA; g.save(); g.translate(cx, cy); g.globalAlpha = q; g.strokeStyle = Y; g.fillStyle = "rgba(242,201,76,.2)"; g.lineWidth = 4; g.shadowColor = Y; g.shadowBlur = 24; g.beginPath(); g.arc(0, 0, M * .06 * (2 - q), 0, 6.283); g.fill(); g.stroke(); g.beginPath(); g.moveTo(-M * .04, 0); g.lineTo(M * .04, 0); g.moveTo(0, -M * .05); g.lineTo(0, M * .05); g.stroke(); g.restore(); }   // the golden seal clamps shut
+    if (t > .3 && t < .66) { const sl = fxSlam(Math.min(1, (t - .3) / .12)); g.save(); g.translate(w / 2, h * .5); g.scale(.7 + .3 * sl.sc / 3.2, .7 + .3 * sl.sc / 3.2); g.globalAlpha = sl.a * (1 - fxS(.6, .66, t)); fxText(g, "EMPEROR TIME", 0, 0, M * .1, "#fff", "#5a0014", R, "sans-serif"); g.restore(); }
+    fxBind(g, r, fxS(.74, .88, t) * bgA);
+});
+UNO_FX_HOOKS.hxh_f = unoSceneHook("hxh_f", unoKurapika);
+
 
 
 
