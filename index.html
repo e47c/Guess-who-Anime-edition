@@ -4778,6 +4778,120 @@ const unoTodo = {
 UNO_FX_HOOKS.jjk_t = unoSceneHook("jjk_t", unoTodo);
 
 /* =====================================================================
+   SWAP GROUP 2:  Whis · Nakime · Aizen · Knov · Finral · Bruno     (dragonball_t, demonslayer_t, bleach_t, hxh_t, blackclover_t, jojo_t)
+   Real cards again (fxPlace): your real hand and the target's real hand change places. ~9.4 s, silent.
+   ===================================================================== */
+function fxSw(col, ms, draw) { return { col: col, ms: ms, tail: () => 1800, begin: (env, box, u) => fxSwapBegin(env, u, box), draw(g, w, h, T, env, u) { if (T.ph === "tail") { fxPlace(env, 0, env.B, 1, 0); fxPlace(env, 1, env.A, 1, 0); return; } draw(g, w, h, T, env, u); } }; }
+const fxRect = (c, w, h) => ({ x: c.x - w / 2, y: c.y - h / 2, w: w, h: h });
+function fxStar(g, n, W, H, s) { g.fillStyle = "#fff"; for (let i = 0; i < n; i++) { g.globalAlpha = .3 + .7 * Math.abs(Math.sin(s * 1.5 + i)); g.fillRect(fxR(i) * W, fxR(i + 7) * H, 2, 2); } g.globalAlpha = 1; }
+
+/* ---------- WHIS · Temporal Do-Over + instant movement: the staff taps, time RUNS BACKWARD, and the cards are moved again, instantly, the way they should have been ---------- */
+const unoWhis = fxSw("#8fe3ff", 7000, (g, w, h, T, env) => {
+    const t = T.t, s = T.s, M = Math.min(w, h), cx = w / 2, cy = h / 2, A = env.A, B = env.B, C = "#8fe3ff", R = Math.hypot(w, h) / 2;
+    const bg = g.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, "#1a2250"); bg.addColorStop(1, "#080c24"); g.fillStyle = bg; g.fillRect(0, 0, w, h); fxStar(g, 70, w, h, s);
+    const sx = w * .64, sy = h * .4; g.strokeStyle = "#e8d8a0"; g.lineWidth = 7; g.lineCap = "round"; g.beginPath(); g.moveTo(w * .88, h * 1.02); g.lineTo(sx, sy); g.stroke(); const og = g.createRadialGradient(sx, sy, 0, sx, sy, M * .06); og.addColorStop(0, "#fff"); og.addColorStop(1, "#59b8ff"); g.fillStyle = og; g.beginPath(); g.arc(sx, sy, M * .05, 0, 6.283); g.fill();     // the staff
+    for (let k = 0; k < 3; k++) { const q = (t - .14 - k * .05) / .3; if (q > 0 && q < 1) { g.strokeStyle = "rgba(143,227,255," + (1 - q) + ")"; g.lineWidth = 3; g.beginPath(); g.arc(sx, sy, q * R, 0, 6.283); g.stroke(); } }      // the tap, ripples
+    const rw = fxS(.16, .5, t); if (rw > 0 && t < .6) { g.save(); g.translate(cx, cy); g.globalAlpha = Math.min(1, rw * 3) * (1 - fxS(.5, .6, t)); g.strokeStyle = C; g.lineWidth = 3; g.shadowColor = C; g.shadowBlur = 20; g.beginPath(); g.arc(0, 0, M * .3, 0, 6.283); g.stroke(); for (let i = 0; i < 12; i++) { const an = i / 12 * 6.283; g.beginPath(); g.moveTo(Math.cos(an) * M * .27, Math.sin(an) * M * .27); g.lineTo(Math.cos(an) * M * .3, Math.sin(an) * M * .3); g.stroke(); }
+        const ang = -s * 8 * rw; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(ang) * M * .24, Math.sin(ang) * M * .24); g.lineWidth = 5; g.stroke(); g.restore();
+        g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = 2; for (let i = 0; i < 26; i++) { const an = fxR(i) * 6.283, u = 1 - ((s * 1.6 + fxR(i + 4)) % 1); g.beginPath(); g.moveTo(cx + Math.cos(an) * R * u, cy + Math.sin(an) * R * u); g.lineTo(cx + Math.cos(an) * R * (u + .06), cy + Math.sin(an) * R * (u + .06)); g.stroke(); } }          // the world is wound back
+    const e = t < .16 ? 1 : t < .5 ? 1 - fxS(.16, .5, t) : t < .56 ? 0 : fxS(.56, .68, t);
+    for (let j = 6; j >= 1; j--) { const q = Math.max(0, e - j * .07); if (t > .56 && e < 1) { g.globalAlpha = .1 * (7 - j); g.strokeStyle = C; g.lineWidth = 2; const a = fxLerp(A, B, q), b = fxLerp(B, A, q); g.strokeRect(a.x, a.y, a.w, a.h); g.strokeRect(b.x, b.y, b.w, b.h); g.globalAlpha = 1; } }     // afterimages of the instant movement
+    fxPlace(env, 0, fxLerp(A, B, e), 1, 0); fxPlace(env, 1, fxLerp(B, A, e), 1, 0);
+    if (t > .2 && t < .48) { g.globalAlpha = fxS(.2, .26, t) * (1 - fxS(.42, .48, t)); fxText(g, "TEMPORAL DO-OVER", cx, h * .12, M * .07, "#fff", "#10306a", C, "sans-serif"); g.globalAlpha = 1; }
+    if (t > .56 && t < .8) { g.globalAlpha = fxS(.56, .62, t) * (1 - fxS(.74, .8, t)); fxText(g, "INSTANT MOVEMENT", cx, h * .12, M * .07, "#fff", "#10306a", C, "sans-serif"); g.globalAlpha = 1; if (t < .64) { g.fillStyle = "rgba(255,255,255," + .5 * (1 - (t - .56) / .08) + ")"; g.fillRect(0, 0, w, h); } }
+});
+UNO_FX_HOOKS.dragonball_t = unoSceneHook("dragonball_t", unoWhis);
+
+/* ---------- NAKIME · Infinity Castle: a biwa is struck, rooms of shoji and tatami spin, the castle turns itself over and the two hands fall into each other's rooms ---------- */
+const unoNakime = fxSw("#d9a441", 7000, (g, w, h, T, env) => {
+    const t = T.t, s = T.s, M = Math.min(w, h), cx = w / 2, cy = h / 2, A = env.A, B = env.B, O = "#d9a441", SK = [.2, .36, .52];
+    const roll = SK.reduce((a, x) => a + fxS(x, x + .1, t), 0) * 1.5708;
+    g.save(); g.translate(cx, cy); g.rotate(roll); g.translate(-cx, -cy); g.fillStyle = "#1b0f0a"; g.fillRect(-w, -h, w * 3, h * 3);
+    for (let k = 0; k < 6; k++) { const sc = Math.pow(.72, k), rw = w * 1.3 * sc, rh = h * 1.3 * sc, x = cx - rw / 2, y = cy - rh / 2; g.strokeStyle = "#4a2a14"; g.lineWidth = 8 * sc + 2; g.strokeRect(x, y, rw, rh); g.fillStyle = k % 2 ? "#e8dcc0" : "#f4ead0"; for (let i = 0; i < 6; i++) { const px = x + rw * i / 6 + 3; g.fillRect(px, y + 3, rw / 6 - 6, rh - 6); } g.strokeStyle = "#5a3a20"; g.lineWidth = 2 * sc + .5; for (let i = 0; i < 6; i++) for (let j = 1; j < 5; j++) { const px = x + rw * i / 6, py = y + rh * j / 5; g.beginPath(); g.moveTo(px, py); g.lineTo(px + rw / 6, py); g.stroke(); } if (k < 5) { g.fillStyle = "rgba(20,8,0,.55)"; g.fillRect(x, y, rw, rh); } }
+    g.restore(); const ov = g.createRadialGradient(cx, cy, M * .3, cx, cy, Math.hypot(w, h) / 2); ov.addColorStop(0, "rgba(0,0,0,0)"); ov.addColorStop(1, "rgba(10,0,0,.85)"); g.fillStyle = ov; g.fillRect(0, 0, w, h);
+    const bx = w * .82, by = h * .78; g.save(); g.translate(bx, by); g.rotate(-.5); g.fillStyle = "#2a1408"; g.strokeStyle = O; g.lineWidth = 3; g.beginPath(); g.ellipse(0, M * .06, M * .12, M * .17, 0, 0, 6.283); g.fill(); g.stroke(); g.fillRect(-M * .018, -M * .5, M * .036, M * .5); g.strokeRect(-M * .018, -M * .5, M * .036, M * .5);
+    for (let i = 0; i < 4; i++) { g.strokeStyle = "#f4e6b0"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(-M * .012 + i * M * .008, -M * .48); g.lineTo(-M * .02 + i * M * .013, M * .1); g.stroke(); } g.restore();                                                  // the biwa
+    SK.forEach(a => { const q = (t - a) / .1; if (q > 0 && q < 1) { g.strokeStyle = "rgba(255,230,160," + (1 - q) + ")"; g.lineWidth = 4; g.beginPath(); g.arc(bx, by, q * M * .7, 0, 6.283); g.stroke(); g.save(); g.translate(w * .55, h * .45); g.rotate(-.12); g.globalAlpha = 1 - q; fxText(g, "ベン!", 0, 0, M * .22, "#fff", "#5a1a00", O); g.restore(); } });
+    const e = fxS(.4, .5, t), arc = Math.sin(Math.min(1, Math.max(0, (t - .4) / .1)) * Math.PI);
+    fxPlace(env, 0, fxLerp(env.A, env.B, e), 1, arc); fxPlace(env, 1, fxLerp(env.B, env.A, e), 1, arc);
+});
+UNO_FX_HOOKS.demonslayer_t = unoSceneHook("demonslayer_t", unoNakime);
+
+/* ---------- AIZEN · Kyoka Suigetsu: complete hypnosis. You never saw where the hands really were. A ripple passes, the illusion breaks, and the swap has already happened ---------- */
+const unoAizen = fxSw("#b9a7ff", 7000, (g, w, h, T, env) => {
+    const t = T.t, s = T.s, M = Math.min(w, h), cx = w / 2, cy = h / 2, A = env.A, B = env.B, L = "#b9a7ff", R = Math.hypot(w, h) / 2;
+    const bg = g.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, "#241a4a"); bg.addColorStop(.55, "#0c0a1c"); bg.addColorStop(1, "#150f30"); g.fillStyle = bg; g.fillRect(0, 0, w, h);
+    const mg = g.createRadialGradient(cx, h * .2, 0, cx, h * .2, M * .22); mg.addColorStop(0, "rgba(245,240,255,.95)"); mg.addColorStop(1, "rgba(185,167,255,0)"); g.fillStyle = mg; g.fillRect(0, 0, w, h);
+    g.strokeStyle = "rgba(185,167,255,.22)"; g.lineWidth = 1.5; for (let i = 0; i < 16; i++) { const y = h * (.5 + .03 * i); g.beginPath(); for (let x = 0; x <= w; x += 8) { const yy = y + Math.sin(x * .02 + s * 2 + i) * 5 * (1 + i * .1); x ? g.lineTo(x, yy) : g.moveTo(x, yy); } g.stroke(); }                                       // water below the moon
+    for (let k = 0; k < 5; k++) { const q = (s * .35 + k / 5) % 1; g.strokeStyle = "rgba(210,195,255," + (.35 * (1 - q)) + ")"; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, q * R, 0, 6.283); g.stroke(); }
+    const hd = fxS(0, .18, t) * (1 - fxS(.22, .3, t)); if (hd > 0) { g.save(); g.globalAlpha = hd; g.fillStyle = "#08060f"; g.strokeStyle = L; g.lineWidth = 3; g.shadowColor = L; g.shadowBlur = 16; g.beginPath(); g.ellipse(cx, h * (1.05 - .6 * hd), M * .12, M * .09, 0, 0, 6.283); g.fill(); g.stroke(); g.restore(); }   // a hand sweeps the hair back
+    if (t > .2 && t < .32) { const q = fxS(.2, .26, t) * (1 - fxS(.28, .32, t)); g.strokeStyle = "rgba(255,255,255," + q + ")"; g.lineWidth = 3; g.beginPath(); g.moveTo(cx - M * .15 * q, h * .32); g.lineTo(cx + M * .15 * q, h * .32); g.moveTo(cx, h * .32 - M * .1 * q); g.lineTo(cx, h * .32 + M * .1 * q); g.stroke(); }
+    if (t > .3 && t < .56) { g.globalAlpha = fxS(.3, .36, t) * (1 - fxS(.5, .56, t)); fxText(g, "砕けろ  鏡花水月", cx, h * .12, M * .07, "#fff", "#2a1a6a", L); g.globalAlpha = 1; }
+    const e = fxS(.6, .74, t), flick = t < .6 && ((s * 5) | 0) % 2 === 0;                                                                                                                      // the false picture flickers, then reality
+    if (t > .3 && t < .66) { g.globalAlpha = .55; g.strokeStyle = L; g.lineWidth = 2; g.setLineDash([8, 6]); const a = flick ? B : A, b = flick ? A : B; g.strokeRect(a.x, a.y, a.w, a.h); g.strokeRect(b.x, b.y, b.w, b.h); g.setLineDash([]); g.globalAlpha = 1; }
+    if (t > .6 && t < .76) { const q = (t - .6) / .16; g.strokeStyle = "rgba(255,255,255," + (1 - q) + ")"; g.lineWidth = 6; g.beginPath(); g.arc(cx, cy, q * R, 0, 6.283); g.stroke(); }
+    fxPlace(env, 0, fxLerp(A, B, e), 1, 0); fxPlace(env, 1, fxLerp(B, A, e), 1, 0);
+});
+UNO_FX_HOOKS.bleach_t = unoSceneHook("bleach_t", unoAizen);
+
+/* ---------- KNOV · Hide and Seek: two Nen doorways open, one on each hand, and the cards are posted through them ---------- */
+function fxDoor(g, c, W, H, p, s, col) {
+    if (p <= 0) return; const r = fxRect(c, W * p, H * p); g.save(); g.fillStyle = "rgba(0,20,10,.8)"; g.fillRect(r.x, r.y, r.w, r.h); g.beginPath(); g.rect(r.x, r.y, r.w, r.h); g.clip(); g.strokeStyle = "rgba(125,255,176,.5)"; g.lineWidth = 2;
+    for (let i = 0; i < 7; i++) { g.beginPath(); for (let k = 0; k <= 30; k++) { const an = k / 30 * 9 + s * 2 + i * .9, rd = (k / 30) * Math.max(W, H) * .6; g.lineTo(c.x + Math.cos(an) * rd, c.y + Math.sin(an) * rd * .6); } g.stroke(); } g.restore();
+    g.strokeStyle = col; g.lineWidth = 4; g.shadowColor = col; g.shadowBlur = 22; g.strokeRect(r.x, r.y, r.w, r.h); g.shadowBlur = 0;
+}
+const unoKnov = fxSw("#7dffb0", 7000, (g, w, h, T, env) => {
+    const t = T.t, s = T.s, M = Math.min(w, h), cx = w / 2, A = env.A, B = env.B, N = "#7dffb0", cA = fxCtr(A), cB = fxCtr(B);
+    g.fillStyle = "#020a06"; g.fillRect(0, 0, w, h); for (let i = 0; i < 40; i++) { const u = ((s * .3 * (.4 + fxR(i)) + fxR(i + 3)) % 1); g.fillStyle = "rgba(125,255,176," + .3 * (1 - u) + ")"; g.fillRect(fxR(i + 8) * w + 20 * Math.sin(s + i), h * (1 - u), 3, 12); }                // Nen aura rising
+    const hd = fxS(0, .14, t) * (1 - fxS(.24, .34, t)); if (hd > 0) { g.save(); g.globalAlpha = hd; g.strokeStyle = N; g.lineWidth = 3; g.shadowColor = N; g.shadowBlur = 16; g.fillStyle = "#04120a"; [-1, 1].forEach(sd => { g.beginPath(); g.ellipse(cx + sd * M * .18, h * .9, M * .08, M * .1, 0, 0, 6.283); g.fill(); g.stroke(); }); g.strokeRect(cx - M * .1, h * .8, M * .2, M * .12); g.restore(); }   // hands pinching a small doorway into being
+    const dp = fxS(.14, .3, t); fxDoor(g, cA, A.w * .45, A.h * .95, dp, s, N); fxDoor(g, cB, B.w * .5, B.h * 1.3, dp, s, N);
+    const sh = fxS(.32, .5, t), em = fxS(.56, .76, t);
+    const rs = (r, q) => fxRect(fxCtr(r), r.w * Math.max(.02, 1 - q), r.h * Math.max(.02, 1 - q)), gr = (r, q) => fxRect(fxCtr(r), r.w * Math.max(.02, q), r.h * Math.max(.02, q));
+    if (t < .52) { fxPlace(env, 0, rs(A, sh), sh < .95 ? 1 : 0, 0); fxPlace(env, 1, rs(B, sh), sh < .95 ? 1 : 0, 0); }                                                                       // each hand is pulled into its doorway
+    else { fxPlace(env, 0, gr(B, em), 1, 0); fxPlace(env, 1, gr(A, em), 1, 0); }                                                                                                          // and comes out of the other one
+    if (t > .18 && t < .5) { g.globalAlpha = fxS(.18, .24, t) * (1 - fxS(.44, .5, t)); fxText(g, "HIDE AND SEEK", cx, h * .1, M * .07, "#fff", "#063a1a", N, "sans-serif"); g.globalAlpha = 1; }
+    if (t > .56 && t < .68) { g.fillStyle = "rgba(125,255,176," + .3 * (1 - (t - .56) / .12) + ")"; g.fillRect(0, 0, w, h); }
+});
+UNO_FX_HOOKS.hxh_t = unoSceneHook("hxh_t", unoKnov);
+
+/* ---------- FINRAL · Fallen Angel's Gate: a huge winged magic circle opens, the hands spiral into its center and out the other side ---------- */
+function fxWing(g, x, y, sd, W, p, col) { for (let i = 0; i < 9; i++) { g.save(); g.translate(x, y); g.rotate(sd * (-.2 - i * .17)); g.fillStyle = col; g.strokeStyle = "rgba(255,255,255,.7)"; g.lineWidth = 1.5; g.beginPath(); g.ellipse(sd * W * p * (.4 + i * .05), 0, W * p * (.55 - i * .03), W * .07, 0, 0, 6.283); g.fill(); g.stroke(); g.restore(); } }
+const unoFinral = fxSw("#9d7bff", 7000, (g, w, h, T, env) => {
+    const t = T.t, s = T.s, M = Math.min(w, h), cx = w / 2, cy = h * .5, A = env.A, B = env.B, V = "#9d7bff";
+    g.fillStyle = "#07041a"; g.fillRect(0, 0, w, h); fxStar(g, 50, w, h, s);
+    const op = fxS(.06, .34, t), gate = fxS(.4, .56, t) * (1 - fxS(.8, .92, t));
+    if (gate > 0) { g.save(); g.globalAlpha = gate; fxWing(g, cx, cy, -1, M * .75, gate, "rgba(60,40,140,.55)"); fxWing(g, cx, cy, 1, M * .75, gate, "rgba(60,40,140,.55)"); g.restore(); }      // the Fallen Angel's wings
+    g.save(); g.translate(cx, cy); g.globalAlpha = op; g.strokeStyle = V; g.lineWidth = 3; g.shadowColor = V; g.shadowBlur = 24;
+    [.22, .17, .1].forEach((rd, i) => { g.save(); g.rotate((i % 2 ? -1 : 1) * s * .6); g.beginPath(); g.arc(0, 0, M * rd * (1 + gate * .4), 0, 6.283); g.stroke(); for (let k = 0; k < 6 + i * 2; k++) { const an = k / (6 + i * 2) * 6.283; g.strokeRect(Math.cos(an) * M * rd * .84 * (1 + gate * .4) - 4, Math.sin(an) * M * rd * .84 * (1 + gate * .4) - 4, 8, 8); } g.restore(); });
+    g.beginPath(); for (let k = 0; k < 7; k++) { const an = k * 2.693 - 1.57; k ? g.lineTo(Math.cos(an) * M * .14, Math.sin(an) * M * .14) : g.moveTo(Math.cos(an) * M * .14, Math.sin(an) * M * .14); } g.stroke(); g.restore();
+    const e = fxS(.46, .78, t), gc = { x: cx, y: cy };
+    const pos = (from, to, q) => { if (q < .5) { const u = q * 2, c = fxCtr(from), sc = 1 - .85 * u, ang = u * 5, rd = (1 - u) * M * .12; return fxRect({ x: c.x + (gc.x - c.x) * u + Math.cos(ang) * rd, y: c.y + (gc.y - c.y) * u + Math.sin(ang) * rd }, from.w * sc, from.h * sc); } const u = (q - .5) * 2, c = fxCtr(to), sc = .15 + .85 * u, ang = 5 + u * 5, rd = u < 1 ? M * .12 * (1 - u) : 0; return fxRect({ x: gc.x + (c.x - gc.x) * u + Math.cos(ang) * rd, y: gc.y + (c.y - gc.y) * u + Math.sin(ang) * rd }, to.w * sc, to.h * sc); };
+    if (t < .46) { fxPlace(env, 0, A, 1, 0); fxPlace(env, 1, B, 1, 0); } else { fxPlace(env, 0, pos(A, B, e), 1, 0); fxPlace(env, 1, pos(B, A, e), 1, 0); }
+    if (t > .4 && t < .72) { g.globalAlpha = fxS(.4, .46, t) * (1 - fxS(.66, .72, t)); fxText(g, "FALLEN ANGEL'S GATE", cx, h * .1, M * .065, "#fff", "#2a1a6a", V, "sans-serif"); g.globalAlpha = 1; }
+});
+UNO_FX_HOOKS.blackclover_t = unoSceneHook("blackclover_t", unoFinral);
+
+/* ---------- BRUNO · Sticky Fingers: ARI ARI ARI, zippers open on both hands, Stand fists pass the cards through, ARRIVEDERCI ---------- */
+function fxZip(g, r, p, col) {
+    if (p <= 0) return; const per = 2 * (r.w + r.h), L = per * p; g.save(); g.strokeStyle = "#000"; g.lineWidth = 6; g.strokeRect(r.x, r.y, r.w, r.h); g.strokeStyle = col; g.lineWidth = 2; g.setLineDash([L, per]); g.strokeRect(r.x, r.y, r.w, r.h); g.setLineDash([]);
+    g.fillStyle = "#fff"; for (let d = 0; d < L; d += 12) { let x, y; if (d < r.w) { x = r.x + d; y = r.y; } else if (d < r.w + r.h) { x = r.x + r.w; y = r.y + d - r.w; } else if (d < 2 * r.w + r.h) { x = r.x + r.w - (d - r.w - r.h); y = r.y + r.h; } else { x = r.x; y = r.y + r.h - (d - 2 * r.w - r.h); } g.fillRect(x - 3, y - (d / 12 % 2 ? 6 : 0), 6, 6); } g.restore();
+}
+const unoBruno = fxSw("#4cc9f0", 7000, (g, w, h, T, env) => {
+    const t = T.t, s = T.s, M = Math.min(w, h), cx = w / 2, cy = h / 2, A = env.A, B = env.B, Q = "#4cc9f0", cA = fxCtr(A), cB = fxCtr(B);
+    g.fillStyle = "#0b3a6a"; g.fillRect(0, 0, w, h); g.fillStyle = "rgba(255,255,255,.12)"; for (let yy = 0; yy < h; yy += 22) for (let xx = (yy / 22 % 2) * 11; xx < w; xx += 22) { g.beginPath(); g.arc(xx, yy, 3, 0, 6.283); g.fill(); }
+    if (t < .3) { const q = fxS(0, .18, t), fs = M * (.15 + .5 * q); g.save(); g.translate(cx, cy + M * .1 * (1 - q)); g.fillStyle = "#4cc9f0"; g.strokeStyle = "#000"; g.lineWidth = 7; g.beginPath(); g.ellipse(0, 0, fs, fs * .8, 0, 0, 6.283); g.fill(); g.stroke(); for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(-fs * .6 + i * fs * .4, -fs * .5); g.lineTo(-fs * .6 + i * fs * .4, fs * .1); g.stroke(); } g.restore();
+        g.globalAlpha = fxS(.04, .1, t); ["ARI", "ARI", "ARI"].forEach((tx, i) => { g.save(); g.translate(cx + (i - 1) * M * .45, h * .2 + (i % 2) * M * .1); g.rotate((i - 1) * .12); fxText(g, tx + "!", 0, 0, M * .1, "#fff", "#000", Q, "sans-serif"); g.restore(); }); g.globalAlpha = 1; }               // the punch
+    const zp = fxS(.22, .42, t), cl = fxS(.78, .92, t), zz = zp * (1 - cl); fxZip(g, A, zz, "#fff"); fxZip(g, B, zz, "#fff");
+    if (zz > .8) [A, B].forEach((r, i) => { g.fillStyle = "rgba(0,10,30,.7)"; g.fillRect(r.x + 4, r.y + 4, r.w - 8, r.h - 8); });                                                                                                      // the gap inside the zipper
+    const e = fxS(.46, .72, t); if (e > 0 && e < 1) { g.strokeStyle = "#000"; g.lineWidth = 8; g.beginPath(); g.moveTo(cA.x, cA.y); g.lineTo(cB.x, cB.y); g.stroke(); g.strokeStyle = "#fff"; g.lineWidth = 3; g.setLineDash([10, 8]); g.stroke(); g.setLineDash([]);
+        [[cA, cB, 0], [cB, cA, 1]].forEach(([a, b, i]) => { const p = fxLerp({ x: a.x, y: a.y, w: 0, h: 0 }, { x: b.x, y: b.y, w: 0, h: 0 }, e); g.fillStyle = "#4cc9f0"; g.strokeStyle = "#000"; g.lineWidth = 5; g.beginPath(); g.arc(p.x + (i ? 24 : -24), p.y, M * .045, 0, 6.283); g.fill(); g.stroke(); }); }                                                           // Stand fists carry the hands through the zipper
+    fxPlace(env, 0, fxLerp(A, B, e), 1, 0); fxPlace(env, 1, fxLerp(B, A, e), 1, 0);
+    if (t > .7 && t < .9) { const sl = fxSlam(Math.min(1, (t - .7) / .1)); g.save(); g.translate(cx, cy); g.rotate(-.06); g.scale(sl.sc, sl.sc); g.globalAlpha = sl.a * (1 - fxS(.84, .9, t)); fxText(g, "ARRIVEDERCI!", 0, 0, M * .13, "#fff", "#000", Q, "sans-serif"); g.restore(); }
+});
+UNO_FX_HOOKS.jojo_t = unoSceneHook("jojo_t", unoBruno);
+
+
+/* =====================================================================
    YHWACH · The Almighty (bleach_e)  -  first person, silent, 9.8 s (owner) / 8.4 s (others)
    1 an ink-black sea of watching eyes   2 you fall into one eye, through eyes inside eyes
    3 shards of possible futures flicker, overlap, then collapse onto the REAL opponent cards   4 the black drains away
@@ -5217,6 +5331,106 @@ const unoKurapika = fxFrz("#f2c94c", 7000, fxBind, (g, w, h, T, env) => {
     fxBind(g, r, fxS(.74, .88, t) * bgA);
 });
 UNO_FX_HOOKS.hxh_f = unoSceneHook("hxh_f", unoKurapika);
+
+/* =====================================================================
+   ULTIMATE GROUP:  Goku · Tanjiro · Netero · Yami · Jotaro   (dragonball_u, demonslayer_u, hxh_u, blackclover_u, jojo_u)
+   Each attack travels at the REAL opponent plate. After the impact, 5 card backs fly from the draw pile into that plate = "draws 5".  ~8.6 s, silent.
+   ===================================================================== */
+function fxUltEnd(g, env, q, col) {
+    const r = env.r, a = 1 - fxS(.6, 1, q), cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+    g.save(); g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = 2; g.shadowColor = col; g.shadowBlur = 16;                                                  // scorch cracks on the plate
+    for (let i = 0; i < 10; i++) { let x = cx, y = cy, an = fxR(i) * 6.283; g.beginPath(); g.moveTo(x, y); for (let sg = 0; sg < 4; sg++) { an += (fxR(i * 7 + sg) - .5) * 1.1; x += Math.cos(an) * r.w * .12; y += Math.sin(an) * r.h * .3; g.lineTo(x, y); } g.stroke(); } g.restore();
+    const d = env.dp, c0 = { x: d.x + d.w / 2, y: d.y + d.h / 2 };
+    for (let k = 0; k < 5; k++) {                                                                                                                              // five cards fly from the draw pile into the plate
+        const p = fxS(k * .09, k * .09 + .42, q); if (p <= 0 || p >= 1) continue; const x = c0.x + (cx - c0.x) * p, y = c0.y + (cy - c0.y) * p - Math.sin(p * 3.14) * 50, sz = (1 - p) * d.h * .8 + p * r.h * .7;
+        g.save(); g.translate(x, y); g.rotate((k - 2) * .25 * (1 - p)); const gr = g.createLinearGradient(0, -sz / 2, 0, sz / 2); gr.addColorStop(0, "#ff3b3b"); gr.addColorStop(1, "#4a0508"); g.fillStyle = gr; g.strokeStyle = "#fff"; g.lineWidth = 2.5; g.shadowColor = col; g.shadowBlur = 14; g.fillRect(-sz * .33, -sz / 2, sz * .66, sz); g.strokeRect(-sz * .33, -sz / 2, sz * .66, sz); g.restore();
+    }
+}
+function fxUlt(col, ms, draw) {
+    return { col: col, ms: ms, tail: () => 1800,
+        begin(env, box, u) { fxFrzBegin(env, box, u); const e = document.getElementById("unoDraw"), r = e ? e.getBoundingClientRect() : null; env.dp = r ? { x: r.left, y: r.top, w: r.width, h: r.height } : { x: innerWidth * .08, y: innerHeight * .4, w: 90, h: 130 }; },
+        draw(g, w, h, T, env, u) { if (T.ph === "tail") { fxUltEnd(g, env, T.tt, col); return; } draw(g, w, h, T, env, u); } };
+}
+const fxBoom = (g, x, y, M, q, col) => { if (q <= 0 || q >= 1) return; g.save(); g.fillStyle = "rgba(255,255,255," + (.7 * (1 - q)) + ")"; g.fillRect(0, 0, 4000, 4000); g.restore(); g.strokeStyle = col; g.shadowColor = col; g.shadowBlur = 30; for (let i = 0; i < 3; i++) { const k = Math.max(0, q - i * .12); g.globalAlpha = 1 - q; g.lineWidth = 16 * (1 - k); g.beginPath(); g.arc(x, y, k * M * .7, 0, 6.283); g.stroke(); } g.globalAlpha = 1; g.shadowBlur = 0; for (let i = 0; i < 24; i++) { const an = fxR(i) * 6.283, d = q * M * (.3 + .6 * fxR(i + 5)); g.fillStyle = col; g.fillRect(x + Math.cos(an) * d, y + Math.sin(an) * d, 4, 4); } };
+
+/* ---------- GOKU · Kamehameha: your cupped hands, a ball of blue light gathering, KA-ME-HA-ME-HA, a wide beam into the plate ---------- */
+const unoGoku = fxUlt("#59c8ff", 6800, (g, w, h, T, env) => {
+    const t = T.t, s = T.s, M = Math.min(w, h), r = env.r, tx = r.x + r.w / 2, ty = r.y + r.h / 2, B = "#59c8ff", bgA = 1 - fxS(.86, .97, t), bx = w / 2, by = h * .8, ch = fxS(.04, .42, t);
+    const sk = (t > .42 && t < .62) ? 10 : 0; g.save(); g.translate((fxR((s * 60) | 0) - .5) * sk, (fxR(((s * 60) | 0) + 3) - .5) * sk);
+    g.fillStyle = "rgba(4,10,34," + .88 * bgA + ")"; g.fillRect(-20, -20, w + 40, h + 40); fxStar(g, 60, w, h, s);
+    for (let i = 0; i < 46; i++) { const u = 1 - ((s * 1.1 + fxR(i)) % 1), an = fxR(i + 4) * 6.283, d = M * (.1 + .8 * u) * (1 - .4 * (1 - ch)); g.fillStyle = "rgba(160,225,255," + (.8 * ch * (1 - u)) + ")"; g.fillRect(bx + Math.cos(an) * d, by + Math.sin(an) * d * .6, 3, 3); }                      // energy gathers
+    [-1, 1].forEach(sd => { g.save(); g.translate(bx + sd * M * (.16 - .06 * ch), by + M * .12); g.rotate(sd * -.4); g.fillStyle = "#0a1630"; g.strokeStyle = B; g.lineWidth = 3; g.shadowColor = B; g.shadowBlur = 16; g.beginPath(); g.ellipse(0, 0, M * .09, M * .12, 0, 0, 6.283); g.fill(); g.stroke(); g.restore(); });
+    const rd = M * (.02 + .13 * ch) * (1 + .06 * Math.sin(s * 30)), bl = g.createRadialGradient(bx, by, 0, bx, by, rd); bl.addColorStop(0, "#fff"); bl.addColorStop(.5, "#9fe0ff"); bl.addColorStop(1, "rgba(60,160,255,0)"); g.fillStyle = bl; g.beginPath(); g.arc(bx, by, rd * 1.8, 0, 6.283); g.fill();
+    [[.06, "KA"], [.14, "ME"], [.22, "HA"], [.3, "ME"], [.38, "HA!!"]].forEach(([a, tx2]) => { const q = (t - a) / .07; if (q > 0 && q < 1) { g.save(); g.translate(w / 2, h * .22); g.scale(1.6 - .6 * Math.min(1, q * 3), 1.6 - .6 * Math.min(1, q * 3)); g.globalAlpha = 1 - q * .7; fxText(g, tx2, 0, 0, M * .14, "#fff", "#0a3a7a", B, "sans-serif"); g.restore(); } });
+    const bt = fxS(.42, .58, t); if (bt > 0 && t < .86) { const hx = bx + (tx - bx) * bt, hy = by + (ty - by) * bt, ang = Math.atan2(ty - by, tx - bx), L = Math.hypot(hx - bx, hy - by), Wd = M * (.1 + .02 * Math.sin(s * 40)); g.save(); g.translate(bx, by); g.rotate(ang);
+        const gr = g.createLinearGradient(0, -Wd, 0, Wd); gr.addColorStop(0, "rgba(60,160,255,0)"); gr.addColorStop(.35, "rgba(120,210,255,.9)"); gr.addColorStop(.5, "#fff"); gr.addColorStop(.65, "rgba(120,210,255,.9)"); gr.addColorStop(1, "rgba(60,160,255,0)"); g.fillStyle = gr; g.shadowColor = B; g.shadowBlur = 40; g.fillRect(0, -Wd, L, Wd * 2); g.beginPath(); g.arc(L, 0, Wd, 0, 6.283); g.fill(); g.restore(); }
+    fxBoom(g, tx, ty, M, (t - .58) / .3, B); g.restore();
+});
+UNO_FX_HOOKS.dragonball_u = unoSceneHook("dragonball_u", unoGoku);
+
+/* ---------- TANJIRO · Hinokami Kagura: three fire slashes, then the Sun Halo Dragon Head Dance swallows the plate ---------- */
+const unoTanjiro = fxUlt("#ff6a2a", 6800, (g, w, h, T, env) => {
+    const t = T.t, s = T.s, M = Math.min(w, h), r = env.r, tx = r.x + r.w / 2, ty = r.y + r.h / 2, F = "#ff6a2a", bgA = 1 - fxS(.86, .97, t);
+    g.fillStyle = "rgba(18,2,4," + .88 * bgA + ")"; g.fillRect(0, 0, w, h); for (let i = 0; i < 50; i++) { const u = ((s * .3 * (.4 + fxR(i)) + fxR(i + 3)) % 1); g.fillStyle = "rgba(255,150,60," + .6 * (1 - u) + ")"; g.fillRect(fxR(i + 8) * w + 14 * Math.sin(s * 2 + i), h * (1 - u), 3, 3); }
+    const sw = fxS(0, .16, t); g.save(); g.translate(w * .8 - sw * w * .1, h * 1.05 - sw * h * .25); g.rotate(-.9); g.fillStyle = "#050204"; g.strokeStyle = "#ff3b2a"; g.lineWidth = 3; g.shadowColor = F; g.shadowBlur = 18; g.fillRect(-M * .018, -M * .7, M * .036, M * .7); g.strokeRect(-M * .018, -M * .7, M * .036, M * .7); g.fillRect(-M * .06, 0, M * .12, 10); g.restore();   // the black nichirin blade
+    [[.18, 0], [.3, 1], [.42, 2]].forEach(([a, k]) => { const q = (t - a) / .14; if (q > 0 && q < 1) { const sx = k === 1 ? w : 0, sy = h * (.9 - k * .4), ex = tx + (k - 1) * M * .15, ey = ty + (k % 2 ? 1 : -1) * M * .06, e = fxS(0, .5, q), cx2 = (sx + ex) / 2, cy2 = (sy + ey) / 2 - M * .3;
+        g.save(); g.globalAlpha = 1 - fxS(.5, 1, q); g.strokeStyle = "#fff0c0"; g.shadowColor = F; g.shadowBlur = 30; for (let l = 0; l < 3; l++) { g.lineWidth = [26, 14, 4][l]; g.strokeStyle = ["rgba(255,80,20,.6)", "rgba(255,170,60,.9)", "#fff"][l]; g.beginPath(); for (let i = 0; i <= 24; i++) { const u = i / 24 * e, qq = 1 - u; const x = qq * qq * sx + 2 * qq * u * cx2 + u * u * ex, y = qq * qq * sy + 2 * qq * u * cy2 + u * u * ey; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); } g.restore(); } });                    // three fiery crescents
+    if (t > .1 && t < .3) { g.globalAlpha = fxS(.1, .16, t) * (1 - fxS(.24, .3, t)); fxText(g, "ヒノカミ神楽", w / 2, h * .12, M * .08, "#fff", "#5a0a00", F); g.globalAlpha = 1; }
+    const hl = fxS(.5, .72, t); if (hl > 0 && t < .88) { g.save(); g.translate(tx, ty); g.rotate(s * .6); g.strokeStyle = F; g.shadowColor = F; g.shadowBlur = 40; g.lineWidth = 12; const R = M * (.6 - .38 * hl); g.beginPath(); g.arc(0, 0, R, 0, 6.283); g.stroke(); for (let i = 0; i < 28; i++) { const an = i / 28 * 6.283; g.beginPath(); g.moveTo(Math.cos(an) * R, Math.sin(an) * R); g.lineTo(Math.cos(an) * (R + M * .07 * (1 + Math.sin(s * 9 + i))), Math.sin(an) * (R + M * .07 * (1 + Math.sin(s * 9 + i)))); g.lineWidth = 5; g.stroke(); } g.restore();
+        const hx = w * (1.1 - 1.2 * hl), hy = ty + Math.sin(hl * 6) * M * .1; g.fillStyle = "rgba(255,120,30,.9)"; g.strokeStyle = "#fff"; g.lineWidth = 3; g.beginPath(); g.moveTo(hx, hy - M * .12); g.quadraticCurveTo(hx + M * .3, hy, hx, hy + M * .12); g.quadraticCurveTo(hx + M * .08, hy, hx, hy - M * .12); g.fill(); g.stroke(); }                           // the sun halo and the dragon-head slash
+    fxBoom(g, tx, ty, M, (t - .7) / .2, F);
+    if (t > .5 && t < .78) { g.save(); g.translate(w / 2, h * .55); g.globalAlpha = fxS(.5, .56, t) * (1 - fxS(.72, .78, t)); fxText(g, "日輪", 0, 0, M * .2, "#fff", "#5a0a00", F); g.restore(); }
+});
+UNO_FX_HOOKS.demonslayer_u = unoSceneHook("demonslayer_u", unoTanjiro);
+
+/* ---------- NETERO · 100-Type Guanyin Bodhisattva + Zero Hand: a prayer, a golden Buddha with a hundred hands, a flood of fists, then ONE palm ---------- */
+const unoNetero = fxUlt("#ffd24a", 6800, (g, w, h, T, env) => {
+    const t = T.t, s = T.s, M = Math.min(w, h), r = env.r, tx = r.x + r.w / 2, ty = r.y + r.h / 2, Y = "#ffd24a", bgA = 1 - fxS(.88, .98, t), cx = w / 2, cy = h * .5;
+    g.fillStyle = "rgba(10,6,0," + .9 * bgA + ")"; g.fillRect(0, 0, w, h);
+    const st = fxS(.14, .4, t) * bgA, bs = (t > .4 && t < .7) ? (fxR((s * 50) | 0) - .5) * 8 : 0; g.save(); g.translate(bs, bs * .6);
+    if (st > 0) { g.save(); g.translate(cx, cy); g.globalAlpha = st; g.rotate(s * .08); for (let i = 0; i < 40; i++) { g.strokeStyle = "rgba(255,210,74,.35)"; g.lineWidth = 3; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(i / 40 * 6.283) * M, Math.sin(i / 40 * 6.283) * M); g.stroke(); } g.restore();
+        g.save(); g.translate(cx, cy); g.globalAlpha = st; g.strokeStyle = Y; g.lineWidth = 4; g.shadowColor = Y; g.shadowBlur = 30; g.beginPath(); g.arc(0, -M * .08, M * .3 * st, 0, 6.283); g.stroke(); g.fillStyle = "#1a1004"; g.beginPath(); g.moveTo(-M * .2, M * .5); g.quadraticCurveTo(-M * .16, -M * .1, 0, -M * .2); g.quadraticCurveTo(M * .16, -M * .1, M * .2, M * .5); g.closePath(); g.fill(); g.stroke(); g.beginPath(); g.arc(0, -M * .24, M * .06, 0, 6.283); g.fill(); g.stroke();
+        for (let i = 0; i < 20; i++) { const an = -3.14 + i / 19 * 3.14 + (i < 10 ? .0 : .0), L = M * (.36 + .04 * Math.sin(s * 4 + i)) * st; g.beginPath(); g.moveTo(0, -M * .05); g.lineTo(Math.cos(an) * L, -M * .05 + Math.sin(an) * L * .8); g.lineWidth = 3; g.stroke(); g.fillStyle = Y; g.beginPath(); g.arc(Math.cos(an) * L, -M * .05 + Math.sin(an) * L * .8, M * .02, 0, 6.283); g.fill(); } g.restore(); }                           // a golden Bodhisattva with a hundred hands
+    const pr = fxS(0, .14, t) * (1 - fxS(.3, .42, t)); if (pr > 0) { g.save(); g.globalAlpha = pr; g.fillStyle = "#120a02"; g.strokeStyle = Y; g.lineWidth = 3; g.shadowColor = Y; g.shadowBlur = 16; [-1, 1].forEach(sd => { g.beginPath(); g.moveTo(cx, h * .98); g.lineTo(cx + sd * M * .07, h * .98); g.lineTo(cx + sd * M * .02, h * .76); g.closePath(); g.fill(); g.stroke(); }); g.restore(); }       // palms together, praying
+    for (let i = 0; i < 40; i++) { const st0 = .4 + i * .007, q = fxS(st0, st0 + .08, t) * (t < .72 ? 1 : 0); if (q <= 0 || q >= 1) continue; const a0 = -3.14 + (i % 20) / 19 * 3.14, x0 = cx + Math.cos(a0) * M * .3, y0 = cy - M * .05 + Math.sin(a0) * M * .24, x = x0 + (tx - x0) * q, y = y0 + (ty - y0) * q;
+        g.strokeStyle = "rgba(255,210,74,.6)"; g.lineWidth = 3; g.beginPath(); g.moveTo(x0 + (tx - x0) * Math.max(0, q - .25), y0 + (ty - y0) * Math.max(0, q - .25)); g.lineTo(x, y); g.stroke(); g.fillStyle = Y; g.strokeStyle = "#5a3a00"; g.lineWidth = 2; g.beginPath(); g.arc(x, y, M * .03 * (1 + q), 0, 6.283); g.fill(); g.stroke(); if (q > .92) { g.fillStyle = "rgba(255,255,255,.8)"; g.fillRect(tx + (fxR(i) - .5) * r.w, ty + (fxR(i + 3) - .5) * r.h, 8, 8); } }   // the barrage of golden fists
+    g.restore();
+    if (t > .72 && t < .9) { const q = (t - .72) / .18, sc = .3 + 1.2 * fxS(0, .5, q); g.save(); g.translate(cx, cy); g.scale(sc, sc); g.globalAlpha = 1 - fxS(.55, 1, q); g.fillStyle = "#fff4c0"; g.strokeStyle = Y; g.lineWidth = 6; g.shadowColor = Y; g.shadowBlur = 50; g.beginPath(); g.ellipse(0, M * .06, M * .16, M * .2, 0, 0, 6.283); g.fill(); g.stroke(); for (let k = 0; k < 4; k++) { g.beginPath(); g.ellipse((k - 1.5) * M * .07, -M * .14, M * .035, M * .1, (k - 1.5) * .12, 0, 6.283); g.fill(); g.stroke(); } g.restore(); fxText(g, "ZERO HAND", cx, h * .12, M * .08, "#fff", "#5a3a00", Y, "sans-serif"); }     // ONE open palm
+    fxBoom(g, tx, ty, M, (t - .78) / .12, Y);
+});
+UNO_FX_HOOKS.hxh_u = unoSceneHook("hxh_u", unoNetero);
+
+/* ---------- YAMI · Dark Cloaked Dimension Slash: a katana opens real rifts in the screen, black fog pours out, and the last cut X's the plate out of the world ---------- */
+const unoYami = fxUlt("#a06bff", 6800, (g, w, h, T, env) => {
+    const t = T.t, s = T.s, M = Math.min(w, h), r = env.r, tx = r.x + r.w / 2, ty = r.y + r.h / 2, V = "#a06bff", bgA = 1 - fxS(.86, .97, t);
+    g.fillStyle = "rgba(6,2,14," + .9 * bgA + ")"; g.fillRect(0, 0, w, h); for (let i = 0; i < 7; i++) { const x = ((fxR(i + 2) * w * 1.4 + s * 20 * (.5 + fxR(i))) % (w * 1.4)) - w * .2, y = h * (.2 + .6 * fxR(i + 8)), n = g.createRadialGradient(x, y, 0, x, y, M * .5); n.addColorStop(0, "rgba(40,10,70,.35)"); n.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = n; g.fillRect(0, 0, w, h); }
+    const sw = fxS(0, .14, t); g.save(); g.translate(w * .74, h * 1.04 - sw * h * .2); g.rotate(-.7); g.fillStyle = "#020104"; g.strokeStyle = V; g.lineWidth = 3; g.shadowColor = V; g.shadowBlur = 18; g.fillRect(-M * .016, -M * .75, M * .032, M * .75); g.strokeRect(-M * .016, -M * .75, M * .032, M * .75); g.restore();
+    const rift = (x0, y0, x1, y1, q, wd) => { const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy), nx = -dy / L, ny = dx / L, e = fxS(0, .3, q), o = fxS(.1, .7, q) * wd; g.save(); g.shadowColor = V; g.shadowBlur = 26; g.fillStyle = "#000"; g.strokeStyle = V; g.lineWidth = 3; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + dx * e + nx * o, y0 + dy * e + ny * o); g.lineTo(x0 + dx * e - nx * o, y0 + dy * e - ny * o); g.closePath(); g.fill(); g.stroke(); g.strokeStyle = "rgba(255,255,255," + (1 - e) + ")"; g.lineWidth = 3; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + dx * e, y0 + dy * e); g.stroke(); g.restore(); };
+    [[.16, 0, h * .85, tx + M * .2, ty], [.28, w, h * .15, tx - M * .2, ty], [.4, 0, h * .15, tx + M * .1, ty + M * .1]].forEach(([a, x0, y0, x1, y1]) => { const q = (t - a) / .3; if (q > 0) rift(x0, y0, x0 + (x1 - x0) * 1.5, y0 + (y1 - y0) * 1.5, Math.min(1.2, q), M * .05 * (1 - fxS(.8, 1, t))); });    // three dimension cuts across the screen
+    const fq = (t - .56) / .3; if (fq > 0) { rift(tx - M * .35, ty - M * .22, tx + M * .35, ty + M * .22, Math.min(1, fq * 1.4), M * .09); rift(tx + M * .35, ty - M * .22, tx - M * .35, ty + M * .22, Math.min(1, fq * 1.4), M * .09); }                       // the final X
+    if (t > .1 && t < .5) { g.globalAlpha = fxS(.1, .16, t) * (1 - fxS(.44, .5, t)); fxText(g, "暗黒次元斬", w / 2, h * .12, M * .08, "#fff", "#2a0a5a", V); g.globalAlpha = 1; }
+    for (let i = 0; i < 30; i++) { const u = ((s * .5 + fxR(i)) % 1); g.fillStyle = "rgba(160,107,255," + .5 * (1 - u) * fxS(.5, .7, t) + ")"; g.fillRect(tx + (fxR(i + 3) - .5) * M * .8, ty + (fxR(i + 7) - .5) * M * .5 - u * 40, 3, 3); }
+    fxBoom(g, tx, ty, M, (t - .72) / .16, V);
+});
+UNO_FX_HOOKS.blackclover_u = unoSceneHook("blackclover_u", unoYami);
+
+/* ---------- JOTARO · Star Platinum, ORA ORA ORA: a hail of purple fists, ORA lettering everywhere, then one gigantic punch through the screen ---------- */
+const unoJotaro = fxUlt("#b388ff", 6800, (g, w, h, T, env) => {
+    const t = T.t, s = T.s, M = Math.min(w, h), r = env.r, tx = r.x + r.w / 2, ty = r.y + r.h / 2, P = "#b388ff", bgA = 1 - fxS(.86, .97, t), cx = w / 2, cy = h / 2, R = Math.hypot(w, h) / 2;
+    g.fillStyle = "rgba(34,12,74," + .94 * bgA + ")"; g.fillRect(0, 0, w, h); g.fillStyle = "rgba(255,255,255,.07)"; for (let yy = 0; yy < h; yy += 20) for (let xx = (yy / 20 % 2) * 10; xx < w; xx += 20) { g.beginPath(); g.arc(xx, yy, 2.6, 0, 6.283); g.fill(); }
+    g.strokeStyle = "rgba(255,255,255,.18)"; g.lineWidth = 2; for (let i = 0; i < 40; i++) { const an = fxR(i) * 6.283; g.beginPath(); g.moveTo(tx + Math.cos(an) * M * .1, ty + Math.sin(an) * M * .1); g.lineTo(tx + Math.cos(an) * R, ty + Math.sin(an) * R); g.stroke(); }
+    if (t < .2) { g.globalAlpha = fxS(0, .06, t) * (1 - fxS(.14, .2, t)); for (let i = 0; i < 6; i++) fxText(g, "ゴ", w * (.1 + i * .16), h * (.2 + (i % 2) * .5), M * .16, "rgba(255,255,255,.25)", "#000", P); g.globalAlpha = 1; }
+    const br = fxS(.12, .7, t); const n = Math.floor(br * 34);
+    for (let i = Math.max(0, n - 12); i < n; i++) { const side = i % 2 ? -1 : 1, q = ((br * 34 - i) / 1.6), x0 = cx + side * w * .28, y0 = h * 1.05, k = Math.min(1, q), x = x0 + (tx + (fxR(i) - .5) * r.w * .6 - x0) * k, y = y0 + (ty - y0) * k, sz = M * (.14 - .09 * k);
+        g.globalAlpha = 1 - Math.max(0, q - 1) * .8; g.strokeStyle = "rgba(190,150,255,.5)"; g.lineWidth = sz * .5; g.beginPath(); g.moveTo(x0 + (x - x0) * Math.max(0, k - .3), y0 + (y - y0) * Math.max(0, k - .3)); g.lineTo(x, y); g.stroke();
+        g.fillStyle = "#7b4fd8"; g.strokeStyle = "#000"; g.lineWidth = 5; g.beginPath(); g.ellipse(x, y, sz, sz * .8, 0, 0, 6.283); g.fill(); g.stroke(); for (let f = 0; f < 3; f++) { g.beginPath(); g.moveTo(x - sz * .5 + f * sz * .5, y - sz * .5); g.lineTo(x - sz * .5 + f * sz * .5, y); g.stroke(); } g.globalAlpha = 1; }                              // Star Platinum's fists
+    for (let i = 0; i < 8; i++) { const a = .16 + i * .06, q = (t - a) / .1; if (q > 0 && q < 1) { g.save(); g.translate(w * (.15 + fxR(i + 4) * .7), h * (.15 + fxR(i + 9) * .6)); g.rotate((fxR(i) - .5) * .5); g.globalAlpha = 1 - q; g.scale(1 + q * .3, 1 + q * .3); fxText(g, "ORA!", 0, 0, M * (.06 + .07 * fxR(i + 2)), "#fff", "#000", P, "sans-serif"); g.restore(); } }
+    if (t > .72 && t < .9) { const q = (t - .72) / .18, sc = .2 + 2.2 * fxS(0, .5, q); g.save(); g.translate(cx, cy); g.scale(sc, sc); g.globalAlpha = 1 - fxS(.6, 1, q); g.fillStyle = "#7b4fd8"; g.strokeStyle = "#000"; g.lineWidth = 8; g.beginPath(); g.ellipse(0, 0, M * .2, M * .17, 0, 0, 6.283); g.fill(); g.stroke(); for (let f = 0; f < 4; f++) { g.beginPath(); g.moveTo(-M * .12 + f * M * .08, -M * .1); g.lineTo(-M * .12 + f * M * .08, M * .01); g.stroke(); } g.restore();
+        g.save(); g.translate(cx, cy * .5); g.rotate(-.06); const sl = fxSlam(Math.min(1, q * 2)); g.scale(sl.sc, sl.sc); fxText(g, "ORAAAA!!", 0, 0, M * .16, "#fff", "#000", P, "sans-serif"); g.restore(); }
+    fxBoom(g, tx, ty, M, (t - .8) / .1, P);
+});
+UNO_FX_HOOKS.jojo_u = unoSceneHook("jojo_u", unoJotaro);
+
 
 
 
