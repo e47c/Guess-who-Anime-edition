@@ -12,7 +12,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
 <style>
 
@@ -1209,6 +1209,142 @@ body .series-pick .anime-option.series-off,body.hb-mode .series-pick .anime-opti
 .u-opp.frozen.fxk-blackclover_f{border-color:#ffe27a;filter:grayscale(.85);background:linear-gradient(120deg,rgba(40,40,52,.95),rgba(150,150,170,.45));box-shadow:0 0 0 2px #ffe27acc,0 0 34px #ffe27a}
 .u-opp.frozen.fxk-hxh_f{border-color:#f2c94c;background:repeating-linear-gradient(45deg,rgba(242,201,76,.35) 0 3px,transparent 3px 12px),linear-gradient(120deg,rgba(40,10,14,.95),rgba(120,20,40,.55));box-shadow:0 0 0 2px #f2c94ccc,0 0 36px #ff4d6d}
 .u-opp.frozen.fxk-dragonball_f::after{content:"⏳"}.u-opp.frozen.fxk-blackclover_f::after{content:"🕰️"}.u-opp.frozen.fxk-hxh_f::after{content:"⛓"}
+
+/* =========================================================
+   HUD SKIN — tactical shooter x shonen (home + lobby only)
+   Remove this whole block to go back to the old look.
+========================================================= */
+#home, #lobby {
+    --font-display: 'Teko', 'Rajdhani', 'Pirata One', sans-serif;
+    --font-body: 'Rajdhani', 'Inter', sans-serif;
+    --hud-line: rgba(246,239,227,.16);
+    --cut: 16px;
+    font-family: var(--font-body);
+    position: relative; overflow: hidden;
+}
+#home::before, #lobby::before {
+    content: ""; display: block; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background:
+        repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px),
+        linear-gradient(rgba(246,239,227,.035) 1px, transparent 1px) 0 0/48px 48px,
+        linear-gradient(90deg, rgba(246,239,227,.035) 1px, transparent 1px) 0 0/48px 48px;
+}
+#home::after, #lobby::after {
+    content: ""; display: block; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse at 50% 120%, rgba(225,27,27,.35), transparent 60%),
+                radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,.65) 100%);
+    -webkit-mask-image: none; mask-image: none;
+}
+
+/* panel: cut corners, red top rail, corner brackets */
+#home .panel, #lobby .panel {
+    background: linear-gradient(170deg, rgba(18,8,8,.93), rgba(6,3,3,.96));
+    border: 1px solid var(--hud-line); border-top: 4px solid var(--luffy-red); border-radius: 0;
+    box-shadow: none;
+    clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut));
+    animation: hudIn .5s cubic-bezier(.2,.9,.3,1) both;
+}
+#home .panel::before, #lobby .panel::before, #home .panel::after, #lobby .panel::after {
+    content: ""; display: block; position: absolute; width: 26px; height: 26px; pointer-events: none;
+    background: none; border: 0; border-radius: 0; transform: none; box-shadow: none; top: auto; left: auto;
+}
+#home .panel::before, #lobby .panel::before { top: 8px; right: 8px; border-top: 3px solid var(--gold); border-right: 3px solid var(--gold); }
+#home .panel::after, #lobby .panel::after { bottom: 8px; left: 8px; border-bottom: 3px solid var(--gold); border-left: 3px solid var(--gold); }
+@keyframes hudIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+/* title */
+#home .t-top, #home .t-bot { font-family: var(--font-mono); font-size: 13px; letter-spacing: .5em; margin-right: -.5em; color: var(--luffy-red); text-transform: uppercase; }
+#home .t-big {
+    font-size: clamp(76px, 20vw, 132px); text-transform: uppercase; letter-spacing: .02em; line-height: .85;
+    color: #fff; -webkit-text-stroke: 0; transform: skewX(-10deg);
+    text-shadow: 4px 0 0 var(--luffy-red), -2px 0 0 rgba(80,220,255,.45), 0 0 34px rgba(225,27,27,.45);
+    animation: hudSlam .5s cubic-bezier(.2,1.3,.4,1) both;
+}
+@keyframes hudSlam { from { transform: skewX(-10deg) scale(1.35); opacity: 0; filter: blur(6px); } to { transform: skewX(-10deg); opacity: 1; filter: none; } }
+#home .subtitle { font-size: 16px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: rgba(246,239,227,.7); }
+#home .subtitle::before { content: "▌MATCHMAKING // "; color: var(--luffy-red); }
+
+/* labels + inputs */
+#home label:not(.anime-option) {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--gold-bright);
+    display: flex; align-items: center; gap: 8px;
+}
+#home label:not(.anime-option)::before { content: ""; width: 8px; height: 8px; background: var(--luffy-red); transform: rotate(45deg); flex: none; }
+#home input#name, #home #joinArea input {
+    font-family: var(--font-body); font-size: 20px; font-weight: 700; letter-spacing: .06em;
+    background: rgba(246,239,227,.05); border: 1px solid var(--hud-line); border-left: 4px solid var(--luffy-red); border-radius: 0;
+}
+#home input#name:focus, #home #joinArea input:focus { border-color: var(--gold-bright); border-left-color: var(--luffy-red); background: rgba(225,27,27,.1); }
+#home .anime-hint { font-size: 14px; font-weight: 500; color: rgba(246,239,227,.55); }
+
+/* series tiles = loadout slots */
+.series-pick .anime-option {
+    border: 1px solid var(--hud-line); border-radius: 0; min-height: 84px; font-family: var(--font-display); font-size: 22px; letter-spacing: .04em; text-transform: uppercase;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+.series-pick .anime-option:has(input:checked) { transform: none; box-shadow: none; border-color: var(--c); }
+.series-pick .anime-option:hover { transform: translateY(-2px); }
+.series-pick .anime-option::after {
+    content: "○ OFF"; position: absolute; left: 10px; top: 7px; z-index: 2; font: 700 10px/1 var(--font-mono); letter-spacing: .16em; color: rgba(246,239,227,.45);
+}
+.series-pick .anime-option:has(input:checked)::after { content: "● ARMED"; color: var(--ink); }
+
+/* angled buttons */
+#home .size, #home .modebtn, #home .main-buttons button {
+    transform: none; border: 0; border-radius: 0; box-shadow: none; text-transform: uppercase;
+    font-family: var(--font-display); letter-spacing: .08em; font-size: 24px; padding: 8px 10px;
+    background: rgba(246,239,227,.07); color: var(--parchment);
+    clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+}
+#home .size:hover:not(:disabled), #home .modebtn:hover:not(:disabled), #home .main-buttons button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: none; filter: brightness(1.25); }
+#home .size:active:not(:disabled), #home .modebtn:active:not(:disabled), #home .main-buttons button:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+#home .size.selected, #home .modebtn.selected { background: linear-gradient(180deg, var(--luffy-red), var(--luffy-red-dim)); color: #fff; box-shadow: inset 0 -4px 0 #fff; }
+#home .main-buttons button { font-size: 30px; padding: 12px 10px; background: linear-gradient(180deg, var(--luffy-red), var(--luffy-red-dim)); color: #fff; box-shadow: inset 0 -4px 0 rgba(0,0,0,.4); }
+#home .main-buttons .secondary { background: rgba(246,239,227,.12); color: #fff; }
+
+/* LOBBY */
+#lobby h1 { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; -webkit-text-stroke: 0; color: #fff; transform: none; text-shadow: 3px 0 0 var(--luffy-red); }
+#lobby h1::before { content: "// LOBBY"; display: block; font: 700 12px/1 var(--font-mono); letter-spacing: .4em; color: var(--luffy-red); margin-bottom: 6px; }
+.lobby-label { font: 700 11px/1 var(--font-mono); letter-spacing: .3em; text-transform: uppercase; color: rgba(246,239,227,.55); margin-bottom: 8px; }
+#lobby .room-code {
+    font-family: var(--font-mono); font-weight: 700; color: #fff; background: rgba(0,0,0,.55); transform: none; box-shadow: none;
+    border: 1px solid var(--hud-line); border-left: 6px solid var(--luffy-red); border-radius: 0; letter-spacing: .35em;
+    text-shadow: 0 0 18px rgba(225,27,27,.6);
+}
+#lobby .pop {
+    transform: none; border: 0; border-radius: 0; box-shadow: none; text-transform: uppercase; font-size: 22px; letter-spacing: .08em;
+    background: linear-gradient(180deg, var(--luffy-red), var(--luffy-red-dim)); color: #fff;
+    clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+#lobby .pop:hover:not(:disabled) { transform: translateY(-2px); box-shadow: none; filter: brightness(1.2); }
+#lobby .pop:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+#lobby .pop.secondary { background: rgba(246,239,227,.14); color: #fff; }
+#lobby .pop.ghost { background: rgba(246,239,227,.06); color: rgba(246,239,227,.75); }
+
+/* players = operator cards */
+#lobby .player {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 8px; padding: 10px 14px;
+    background: linear-gradient(90deg, rgba(225,27,27,.16), rgba(246,239,227,.04) 40%);
+    border: 1px solid var(--hud-line); border-left: 5px solid var(--luffy-red); border-radius: 0;
+    font-family: var(--font-display); font-size: 26px; letter-spacing: .06em; text-transform: uppercase;
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+}
+#lobby .player > span:first-child { flex: 1; }
+#lobby .player > span:first-child::before { font: 700 11px/1 var(--font-mono); letter-spacing: .2em; color: var(--gold-bright); margin-right: 10px; vertical-align: middle; }
+#lobby .player:nth-child(1) > span:first-child::before { content: "P1 · HOST"; }
+#lobby .player:nth-child(2) > span:first-child::before { content: "P2"; }
+#lobby .player:nth-child(3) > span:first-child::before { content: "P3"; }
+#lobby .player:nth-child(4) > span:first-child::before { content: "P4"; }
+#lobby .player:nth-child(5) > span:first-child::before { content: "P5"; }
+#lobby .player:nth-child(6) > span:first-child::before { content: "P6"; }
+#lobby .player > span:last-child { font: 700 12px/1 var(--font-mono); letter-spacing: .14em; color: rgba(246,239,227,.45); }
+#lobby .player .ready { color: #6dff95; text-shadow: 0 0 10px rgba(109,255,149,.5); }
+#lobbyStatus { font: 600 14px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; }
+#lobbyStatus::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; background: var(--luffy-red); animation: hudBlink 1s steps(2) infinite; }
+@keyframes hudBlink { 50% { opacity: .15; } }
+
+@media (max-width: 520px) { #home .panel, #lobby .panel { --cut: 12px; } #home .size, #home .modebtn { font-size: 21px; } }
+@media (prefers-reduced-motion: reduce) { #home .panel, #lobby .panel, #home .t-big, #lobbyStatus::before { animation: none; } }
 </style>
 
 </head>
