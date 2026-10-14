@@ -1350,6 +1350,88 @@ body .series-pick .anime-option.series-off,body.hb-mode .series-pick .anime-opti
 
 @media (max-width: 520px) { #home .panel, #lobby .panel { --cut: 12px; } #home .size, #home .modebtn { font-size: 21px; } }
 @media (prefers-reduced-motion: reduce) { #home .panel, #lobby .panel, #home .t-big, #lobbyStatus::before { animation: none; } }
+
+/* =========================================================
+   MANGA BLEND SKIN — overrides the HUD skin above.
+   Panels melt into the background: translucent, halftone-faded,
+   speed lines, ink-and-paper details. Delete this block to go back to the HUD look.
+========================================================= */
+#home::before, #lobby::before {
+    background: radial-gradient(circle, rgba(246,239,227,.22) 1.3px, transparent 1.8px) 0 0/14px 14px;
+    -webkit-mask-image: radial-gradient(ellipse at center, transparent 30%, #000 100%); mask-image: radial-gradient(ellipse at center, transparent 30%, #000 100%);
+}
+#home::after, #lobby::after {
+    background: repeating-conic-gradient(from 0deg at 50% 45%, rgba(246,239,227,.09) 0 1deg, transparent 1deg 7deg);
+    -webkit-mask-image: radial-gradient(ellipse at center, transparent 22%, #000 85%); mask-image: radial-gradient(ellipse at center, transparent 22%, #000 85%);
+}
+/* panel = see-through manga panel with slightly crooked edges */
+#home .panel, #lobby .panel {
+    --cut: 0px;
+    background: radial-gradient(ellipse at 50% 40%, rgba(8,4,4,.62), rgba(8,4,4,.34) 100%);
+    -webkit-backdrop-filter: blur(5px) saturate(1.15); backdrop-filter: blur(5px) saturate(1.15);
+    border: 3px solid rgba(246,239,227,.85); border-top-width: 3px;
+    clip-path: polygon(0 1.2%, 100% 0, 99.2% 100%, .6% 98.8%);
+}
+#home .panel::before, #lobby .panel::before { /* halftone shading in the corner */
+    inset: auto; top: 0; right: 0; width: 55%; height: 38%; border: 0;
+    background: radial-gradient(circle, rgba(225,27,27,.55) 1.5px, transparent 2px) 0 0/9px 9px;
+    -webkit-mask-image: linear-gradient(225deg, #000, transparent 70%); mask-image: linear-gradient(225deg, #000, transparent 70%);
+}
+#home .panel::after, #lobby .panel::after { /* big sound-effect lettering */
+    inset: auto; width: auto; height: auto; border: 0; left: 14px; bottom: 6px; background: none;
+    font: 400 64px/1 'Dela Gothic One', sans-serif; color: rgba(246,239,227,.1); transform: rotate(-8deg); letter-spacing: -.04em;
+}
+#home .panel::after { content: "ドドド"; }
+#lobby .panel::after { content: "ゴゴゴ"; }
+
+/* title: bold manga logo */
+#home .t-top, #home .t-bot { font-family: 'Dela Gothic One', sans-serif; font-size: 13px; letter-spacing: .4em; margin-right: -.4em; color: #fff; text-shadow: 2px 2px 0 var(--luffy-red); }
+#home .t-big {
+    font-family: 'Dela Gothic One', sans-serif; font-size: clamp(54px, 15vw, 100px); letter-spacing: 0; text-transform: none; line-height: 1;
+    color: #fff; -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; transform: skewX(-8deg) rotate(-2deg);
+    text-shadow: 5px 5px 0 var(--luffy-red), 8px 8px 0 var(--ink);
+}
+@keyframes hudSlam { from { transform: skewX(-8deg) rotate(-2deg) scale(1.4); opacity: 0; } to { transform: skewX(-8deg) rotate(-2deg); opacity: 1; filter: none; } }
+#home .subtitle::before { content: "★ "; color: var(--gold-bright); }
+#home .subtitle { text-transform: none; letter-spacing: .02em; font-size: 17px; color: rgba(246,239,227,.85); text-shadow: 0 1px 6px #000; }
+
+/* labels = ink tags */
+#home label:not(.anime-option) { background: var(--ink); color: #fff; padding: 4px 12px 3px; width: fit-content; transform: skewX(-10deg); border-left: 4px solid var(--luffy-red); letter-spacing: .16em; }
+#home label:not(.anime-option)::before { content: none; }
+#home input#name, #home #joinArea input { background: rgba(246,239,227,.14); border: 2px solid rgba(246,239,227,.6); border-bottom-width: 4px; border-left-width: 2px; color: #fff; }
+#home input#name:focus, #home #joinArea input:focus { background: rgba(246,239,227,.24); border-color: #fff; border-left-color: #fff; }
+
+/* series tiles = little manga panels */
+.series-pick .anime-option { clip-path: none; border: 2px solid rgba(246,239,227,.55); font-family: 'Dela Gothic One', sans-serif; font-size: 15px; letter-spacing: 0; text-transform: none; }
+.series-pick .anime-option .bg { background: rgba(0,0,0,.35); }
+.series-pick .anime-option:nth-child(odd) { transform: rotate(-.8deg); } .series-pick .anime-option:nth-child(even) { transform: rotate(.8deg); }
+.series-pick .anime-option:hover { transform: rotate(0) translateY(-2px) scale(1.03); }
+.series-pick .anime-option:has(input:checked) { transform: rotate(0) scale(1.03); border-color: var(--ink); box-shadow: 4px 4px 0 var(--ink); }
+.series-pick .anime-option input:checked ~ .bg { background: radial-gradient(circle, rgba(0,0,0,.28) 1.3px, transparent 1.8px) 0 0/7px 7px, var(--c); }
+.series-pick .anime-option::after { content: "○"; font-family: var(--font-mono); }
+.series-pick .anime-option:has(input:checked)::after { content: "★ PICKED"; color: var(--ink); }
+
+/* buttons = ink + paper, no hard HUD cuts */
+#home .size, #home .modebtn, #home .main-buttons button, #lobby .pop {
+    clip-path: none; transform: skewX(-8deg); border: 2px solid rgba(246,239,227,.6); border-radius: 2px;
+    background: rgba(0,0,0,.35); color: #fff; box-shadow: none;
+}
+#home .size:hover:not(:disabled), #home .modebtn:hover:not(:disabled), #home .main-buttons button:hover:not(:disabled), #lobby .pop:hover:not(:disabled) { transform: skewX(-8deg) translate(-2px,-2px); box-shadow: 4px 4px 0 var(--ink); filter: none; border-color: #fff; }
+#home .size:active:not(:disabled), #home .modebtn:active:not(:disabled), #home .main-buttons button:active:not(:disabled), #lobby .pop:active:not(:disabled) { transform: skewX(-8deg) translate(2px,2px); box-shadow: 0 0 0 var(--ink); }
+#home .size.selected, #home .modebtn.selected { background: var(--luffy-red); border-color: var(--ink); box-shadow: 4px 4px 0 var(--ink); color: #fff; }
+#home .main-buttons button, #lobby .pop:not(.secondary):not(.ghost) { background: var(--luffy-red); border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); }
+#home .main-buttons .secondary, #lobby .pop.secondary { background: var(--sakura); color: var(--ink); border: 3px solid var(--ink); }
+#lobby .pop.ghost { background: rgba(0,0,0,.3); }
+
+/* lobby */
+#lobby h1 { font-family: 'Dela Gothic One', sans-serif; font-size: clamp(30px, 8vw, 46px); color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 var(--luffy-red); transform: skewX(-6deg); letter-spacing: 0; text-transform: none; }
+#lobby h1::before { content: "★ ROOM"; font-family: var(--font-mono); -webkit-text-stroke: 0; text-shadow: none; color: var(--gold-bright); }
+#lobby .room-code { background: #f6efe3; color: var(--ink); border: 3px solid var(--ink); border-left-width: 3px; transform: skewX(-6deg) rotate(-1deg); box-shadow: 6px 6px 0 var(--luffy-red); text-shadow: none; }
+#lobby .player { clip-path: none; background: rgba(0,0,0,.32); border: 2px solid rgba(246,239,227,.45); border-left: 6px solid var(--luffy-red); transform: skewX(-6deg); }
+#lobby .player > span { transform: skewX(6deg); }
+#lobbyStatus::before { content: "…"; width: auto; height: auto; background: none; color: var(--luffy-red); font-weight: 900; }
+
+@media (prefers-reduced-motion: reduce) { .series-pick .anime-option { transition: none; } }
 </style>
 
 </head>
