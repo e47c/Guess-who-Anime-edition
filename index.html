@@ -479,6 +479,11 @@ label {
         );
 }
 
+
+/* prank: the secret card shows a different picture instead of the faded X-out look */
+.card.eliminated.prank { opacity: 1; filter: none; }
+.card.eliminated.prank::after { content: none; }
+
 .guess-mode .card {
     border-color: var(--luffy-red);
     box-shadow: 0 0 0 2px rgba(193,39,45,.35);
@@ -6848,10 +6853,31 @@ function saveElim() {
         localStorage.setItem("gw_elim_" + room, JSON.stringify({ sig: boardSig(), list }));
     } catch (e) {}
 }
+/* ---- prank: one specific character shows another picture when crossed out ---- */
+const PRANK_TARGET = "images/anime/jjk/jk19.jpg";   // the card that triggers it
+const PRANK_IMAGE  = "images/prank.jpg";            // <- put your uploaded image here
+function prankKey() { return "gw_prank_" + room + "_" + boardSig(); }
+function prankState() { try { return localStorage.getItem(prankKey()); } catch (e) { return null; } }
+function setPrankState(v) { try { localStorage.setItem(prankKey(), v); } catch (e) {} }
+/* once per game: null -> "active" (first cross-out) -> "done" (after un-crossing). A new game has a new board, so it resets. */
+function applyPrank(card) {
+    const img = card.querySelector("img");
+    if (!img || !(card.dataset.src || "").endsWith(PRANK_TARGET)) return;
+    const st = prankState();
+    if (card.classList.contains("eliminated")) {
+        if (st === "done") return;               // already used this game: normal faded look
+        setPrankState("active");
+        img.onerror = () => { img.onerror = null; card.classList.remove("prank"); img.src = card.dataset.src; };
+        card.classList.add("prank"); img.src = PRANK_IMAGE;
+    } else {
+        if (st === "active") setPrankState("done");
+        img.onerror = null; card.classList.remove("prank"); img.src = card.dataset.src;
+    }
+}
 function flipCard(card) {
     if (card.classList.contains("flipping")) return;
     card.classList.add("flipping"); sfx("flip");
-    setTimeout(() => { card.classList.toggle("eliminated"); saveElim(); }, 150);
+    setTimeout(() => { card.classList.toggle("eliminated"); applyPrank(card); saveElim(); }, 150);
     setTimeout(() => card.classList.remove("flipping"), 330);
 }
 window.toggleNames = function () {
@@ -6875,8 +6901,10 @@ function renderBoard() {
         const card = document.createElement("div");
         card.className = "card";
         card.dataset.index = index;
+        card.dataset.src = character.image;
         if (elim.includes(index)) card.classList.add("eliminated");
         card.appendChild(makeImg(character.image));
+        applyPrank(card);
         addName(card, character.image);
         card.onclick = function () {
             if (guessMode) { makeGuess(index); return; }
