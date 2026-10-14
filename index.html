@@ -8,11 +8,12 @@
 <meta name="viewport"
       content="width=device-width, initial-scale=1.0">
 
-<title>Guess Who: Anime Edition</title>
+<title>ANIME ARCADE</title>
+<meta name="theme-color" content="#050303">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Permanent+Marker&display=swap" rel="stylesheet">
 
 <style>
 
@@ -1347,43 +1348,1180 @@ body .series-pick .anime-option.series-off,body.hb-mode .series-pick .anime-opti
 @media (prefers-reduced-motion: reduce) { #home .panel, #lobby .panel, #home .t-big, #lobbyStatus::before { animation: none; } }
 </style>
 
+<style id="arcade-ui">
+/* =========================================================
+   ANIME ARCADE — startup sequence + main menu
+   ---------------------------------------------------------
+   Everything below is additive. It restyles #home (the menu)
+   and adds #boot (intro, developer splash, loading screen).
+   Game screens, Firebase and game logic are untouched.
+
+   Palette
+     void   #050303   boot background
+     blood  #e11b1b   the one accent (already the game's red)
+     white  #ffffff   headline + primary action
+     bone   #f6efe3   body copy
+   Type
+     Dela Gothic One  wordmark, mode titles, start button
+     Permanent Marker the red brush word over every title
+     Teko             HUD labels, nav, numbers
+     Inter            reading text
+========================================================= */
+
+:root {
+    --aa-void: #050303;
+    --aa-blood: #e11b1b;
+    --aa-bone: #f6efe3;
+    --aa-heavy: 'Dela Gothic One', 'Pirata One', Impact, sans-serif;
+    --aa-brush: 'Permanent Marker', 'Dela Gothic One', cursive;
+    --aa-hud: 'Teko', 'Rajdhani', 'Arial Narrow', sans-serif;
+}
+
+/* ---------------------------------------------------------
+   BOOT OVERLAY
+--------------------------------------------------------- */
+#boot {
+    position: fixed; inset: 0; z-index: 100000;
+    background: var(--aa-void); color: #fff;
+    overflow: hidden; user-select: none; -webkit-user-select: none;
+    transition: opacity .7s ease, visibility 0s linear .7s;
+}
+#boot.out { opacity: 0; visibility: hidden; pointer-events: none; }
+
+#boot .bs {
+    position: absolute; inset: 0;
+    opacity: 0; visibility: hidden;
+    transition: opacity .55s ease, visibility 0s linear .55s;
+}
+#boot .bs.on { opacity: 1; visibility: visible; transition: opacity .8s ease; }
+
+#boot .bs-atmos {
+    background:
+        radial-gradient(ellipse 70% 55% at 50% 52%, rgba(120,12,12,.34), transparent 70%),
+        radial-gradient(ellipse 120% 90% at 50% 50%, #120606 0%, #070303 55%, #030101 100%);
+}
+#boot .bs-atmos::before {           /* slow red slash, like light through a door */
+    content: ""; position: absolute; inset: -20%;
+    background: linear-gradient(112deg, transparent 41%, rgba(225,27,27,.13) 47%, rgba(255,255,255,.05) 50%, transparent 56%);
+    animation: aa-slash 14s ease-in-out infinite alternate;
+}
+@keyframes aa-slash { from { transform: translateX(-9%); } to { transform: translateX(9%); } }
+
+#boot canvas.bp-fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* neon arcs (nod to the reference's glowing doorway) */
+#boot .bp-rings { position: absolute; left: 50%; top: 50%; width: 118vmin; height: 118vmin; transform: translate(-50%, -50%); pointer-events: none; }
+#boot .bp-rings i {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: rgba(255,255,255,.6); border-right-color: rgba(225,27,27,.45);
+    animation: aa-spin 46s linear infinite;
+}
+#boot .bp-rings i:nth-child(2) { inset: 7%;  border-top-color: rgba(255,255,255,.28); border-right-color: transparent; border-left-color: rgba(225,27,27,.35); animation-duration: 64s; animation-direction: reverse; }
+#boot .bp-rings i:nth-child(3) { inset: 15%; border-width: 3px; border-top-color: rgba(255,255,255,.18); border-bottom-color: rgba(225,27,27,.3); border-right-color: transparent; animation-duration: 88s; }
+@keyframes aa-spin { to { transform: rotate(360deg); } }
+
+/* ---- stage 1 ---- */
+#bsPress { cursor: pointer; outline: none; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#bsPress:focus-visible .bp-press { outline: 2px solid #fff; outline-offset: 8px; }
+.bp-logo { position: relative; text-align: center; line-height: .8; }
+.bp-a {
+    display: block; font-family: var(--aa-heavy); color: #fff;
+    font-size: clamp(54px, 15vw, 210px); letter-spacing: -.01em;
+    font-size: clamp(54px, 15cqw, 210px);
+}
+.bp-b {
+    display: block; font-family: var(--aa-brush); color: var(--aa-blood);
+    font-size: clamp(50px, 14vw, 196px); rotate: -5deg;
+    margin-top: -.3em; text-shadow: -.05em .04em 0 rgba(0,0,0,.65);
+}
+.bp-season {
+    display: inline-block; margin-top: clamp(18px, 3.4vh, 34px);
+    background: #fff; color: #0a0606; padding: 2px 18px 0;
+    font: 600 clamp(20px, 2.4vw, 30px)/1.2 var(--aa-hud); letter-spacing: .34em; text-indent: .34em;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 10px 100%);
+}
+.bp-press {
+    position: absolute; left: 50%; bottom: clamp(48px, 11vh, 120px); translate: -50% 0; white-space: nowrap; padding: 6px 4px 2px; text-align: center;
+    font: 500 clamp(20px, 2.6vw, 32px)/1 var(--aa-hud); letter-spacing: .32em; text-indent: .32em;
+    animation: aa-pulse 2.4s ease-in-out infinite;
+}
+@keyframes aa-pulse { 0%, 100% { opacity: .28; } 50% { opacity: 1; } }
+
+/* ---- stage 2 ---- */
+#bsDev { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; background: #000; }
+.bd-by { font: 500 clamp(16px, 2vw, 22px)/1 var(--aa-hud); letter-spacing: .5em; text-indent: .5em; color: rgba(255,255,255,.55); }
+.bd-name { margin: 16px 0 0; font: 400 clamp(30px, 6vw, 62px)/1.05 var(--aa-heavy); color: #fff; letter-spacing: .01em; overflow-wrap: anywhere; }
+.bd-msg { margin: 18px 0 0; font: italic 300 clamp(14px, 1.7vw, 18px)/1.5 'Inter', sans-serif; color: rgba(255,255,255,.62); max-width: 40ch; }
+
+/* ---- stage 3 ---- */
+#bsLoad { }
+.bl-mark { position: absolute; left: clamp(22px, 4vw, 56px); top: clamp(20px, 4vh, 44px); line-height: .8; }
+.bl-mark .bp-a { font-size: clamp(30px, 4.4vw, 56px); }
+.bl-mark .bp-b { font-size: clamp(28px, 4vw, 50px); }
+.bl-spin {
+    position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px;
+    border-radius: 50%; border: 3px solid rgba(255,255,255,.12); border-top-color: #fff;
+    animation: aa-spin 1s linear infinite;
+}
+.bl-hud { position: absolute; right: clamp(20px, 4vw, 56px); bottom: clamp(20px, 4.5vh, 52px); width: min(440px, calc(100% - 40px)); text-align: right; }
+.bl-head { font: 600 clamp(22px, 2.4vw, 30px)/1 var(--aa-hud); letter-spacing: .16em; }
+.bl-status { margin: 6px 0 12px; min-height: 1.3em; font: 400 15px/1.3 'Inter', sans-serif; color: rgba(255,255,255,.62); }
+.bl-row { display: flex; align-items: center; gap: 14px; }
+.bl-bar { flex: 1; display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; height: 14px; }
+.bl-bar i { background: rgba(255,255,255,.12); transition: background .12s linear; }
+.bl-bar i.f { background: #fff; }
+.bl-bar i.f.h { background: var(--aa-blood); }
+.bl-pct { min-width: 4.4ch; font: 700 22px/1 'JetBrains Mono', monospace; text-align: right; }
+.bl-meta { margin-top: 10px; font: 400 12px/1.2 'Inter', sans-serif; color: rgba(255,255,255,.4); min-height: 1.2em; }
+
+@media (max-width: 560px) {
+    .bl-bar { height: 12px; gap: 2px; }
+    .bl-pct { font-size: 19px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #boot .bp-rings i, #boot .bs-atmos::before, .bl-spin { animation: none; }
+    .bp-press { animation: none; opacity: .9; }
+    #boot .bs, #boot .bs.on, #boot { transition-duration: .01s; }
+}
+
+/* ---------------------------------------------------------
+   MAIN MENU (#home)
+--------------------------------------------------------- */
+#home.hub {
+    --hub-pad: clamp(18px, 3vw, 44px);
+    position: relative; isolation: isolate; overflow: hidden;
+    min-height: 100vh; min-height: 100dvh; padding: 0;
+    display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start;
+}
+#home.hub::before {       /* reading shade: dark on the left where the type sits */
+    content: ""; display: block; position: absolute; inset: 0; z-index: -1; pointer-events: none; -webkit-mask-image: none; mask-image: none;
+    background:
+        linear-gradient(90deg, rgba(5,3,3,.9) 0%, rgba(5,3,3,.55) 38%, rgba(5,3,3,.12) 66%, rgba(5,3,3,.5) 100%),
+        linear-gradient(0deg, rgba(5,3,3,.85) 0%, transparent 38%),
+        linear-gradient(180deg, rgba(5,3,3,.7) 0%, transparent 22%);
+}
+#home.hub::after { content: none; display: none; }
+
+/* --- top bar --- */
+.hub-top { display: flex; align-items: center; gap: clamp(16px, 3vw, 44px); padding: 18px var(--hub-pad) 10px; flex-wrap: wrap; }
+.hub-brand { line-height: .82; flex: none; }
+.hub-brand .hb-a { display: block; font: 400 clamp(22px, 2.2vw, 30px)/.9 var(--aa-heavy); color: #fff; letter-spacing: .01em; }
+.hub-brand .hb-b { display: inline-block; margin-top: 5px; padding: 1px 10px 0; font: 600 14px/1.25 var(--aa-hud); letter-spacing: .3em; color: #fff; border: 1px solid rgba(255,255,255,.7); }
+
+.hub-nav { display: flex; align-items: stretch; gap: 2px; flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.hub-nav::-webkit-scrollbar { display: none; }
+#home.hub button.hub-tab {
+    flex: none; padding: 6px 15px 4px; border: 0; border-radius: 0; background: transparent; color: #fff; box-shadow: none; filter: none; transform: none;
+    font: 600 21px/1.2 var(--aa-hud); letter-spacing: .1em; text-transform: uppercase; cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+}
+#home.hub button.hub-tab:hover:not(:disabled) { background: rgba(255,255,255,.14); transform: none; filter: none; box-shadow: none; }
+#home.hub button.hub-tab[aria-current="page"] { background: #fff; color: #0a0606; }
+#home.hub button.hub-tab:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+.hub-me { margin-left: auto; display: flex; align-items: stretch; flex: none; background: rgba(5,3,3,.7); border: 1px solid rgba(255,255,255,.14); }
+.hub-me .lv { display: grid; place-items: center; min-width: 40px; padding: 0 8px; background: #fff; color: #0a0606; font: 700 22px/1 var(--aa-hud); }
+.hub-me .av { display: grid; place-items: center; width: 38px; background: var(--av, var(--aa-blood)); color: #0a0606; font: 400 20px/1 var(--aa-heavy); }
+#home.hub input#name {
+    width: 190px; padding: 8px 12px 6px; border: 0; border-radius: 0; background: transparent; color: #fff;
+    font: 600 19px/1.2 var(--aa-hud); letter-spacing: .06em; box-shadow: none;
+}
+#home.hub input#name::placeholder { color: rgba(255,255,255,.45); }
+#home.hub input#name:focus { outline: 2px solid #fff; outline-offset: -2px; background: rgba(255,255,255,.07); }
+
+/* --- layout --- */
+.hub-main { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: clamp(20px, 3vw, 44px); padding: 0 var(--hub-pad) clamp(20px, 4vh, 40px); min-height: 0; }
+#home:not([data-view="play"]) .hub-side { display: none; }
+#home:not([data-view="play"]) .hub-main { grid-template-columns: minmax(0, 1fr); }
+
+.hub-stage { container-type: inline-size; display: flex; flex-direction: column; justify-content: flex-end; min-width: 0; }
+.hub-view { display: none; }
+#home[data-view="play"] .view-play, #home[data-view="modes"] .view-modes, #home[data-view="setup"] .view-setup, #home[data-view="profile"] .view-profile, #home[data-view="locked"] .view-locked { display: block; }
+
+/* --- play view --- */
+.hub-title { margin: 0; position: relative; line-height: .8; }
+.hub-title .ht-a {
+    display: block; font: 400 clamp(60px, 10vw, 150px)/.84 var(--aa-heavy); color: #fff; letter-spacing: -.012em; text-transform: uppercase;
+    font-size: clamp(56px, 11.5cqw, 150px);
+}
+.hub-title .ht-a.long { font-size: clamp(48px, 9.4cqw, 120px); }
+.hub-title .ht-b {
+    display: block; font: 400 clamp(54px, 9vw, 136px)/1 var(--aa-brush); color: var(--aa-blood);
+    font-size: clamp(50px, 10.6cqw, 130px); margin: -.3em 0 0 .18em; rotate: -5deg; transform-origin: left center;
+    text-shadow: -.05em .04em 0 rgba(0,0,0,.62); white-space: nowrap;
+}
+.hub-title.swap .ht-a, .hub-title.swap .ht-b { animation: aa-swap .28s cubic-bezier(.2,.9,.3,1) both; }
+.hub-title.swap .ht-b { animation-delay: .05s; }
+@keyframes aa-swap { from { opacity: 0; translate: -28px 0; } to { opacity: 1; translate: 0 0; } }
+
+#home.hub #modeHint { margin: 22px 0 18px; max-width: 52ch; font: 400 17px/1.5 'Inter', sans-serif; color: rgba(246,239,227,.85); }
+
+#home.hub .hub-modes { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; max-width: 700px; }
+#home.hub .hub-modes .modebtn {
+    flex: 1 1 100px; padding: 7px 10px 4px; border: 1px solid rgba(255,255,255,.3); border-radius: 0; background: rgba(5,3,3,.55); clip-path: none; white-space: nowrap;
+    font: 600 24px/1.2 var(--aa-hud); letter-spacing: .08em; text-transform: uppercase; color: #fff; box-shadow: none; transform: none; filter: none;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+#home.hub .hub-modes .modebtn:hover:not(:disabled):not(.selected) { transform: none; filter: none; box-shadow: none; border-color: #fff; background: rgba(255,255,255,.12); }
+#home.hub .hub-modes .modebtn.selected { background: #fff; color: #0a0606; border-color: #fff; box-shadow: none; }
+#home.hub .hub-modes .modebtn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+.hub-picked { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin: 0 0 20px; max-width: 640px; font: 500 18px/1.2 var(--aa-hud); letter-spacing: .06em; color: rgba(255,255,255,.7); }
+.hub-picked .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 1px; background: rgba(255,255,255,.1); color: #fff; }
+.hub-picked .chip::before { content: ""; width: 8px; height: 8px; background: var(--c, #fff); }
+#home.hub .hub-picked button { padding: 3px 4px 1px; border: 0; border-radius: 0; background: none; box-shadow: none; filter: none; color: #fff; font: 600 18px/1.2 var(--aa-hud); letter-spacing: .08em; text-decoration: underline; text-underline-offset: 4px; }
+#home.hub .hub-picked button:hover:not(:disabled) { transform: none; filter: none; box-shadow: none; text-decoration-color: var(--aa-blood); }
+
+#home.hub button.hub-start {
+    position: relative; display: block; width: min(100%, 560px); padding: 20px 26px 16px; border: 0; border-radius: 0; overflow: hidden; isolation: isolate;
+    background: #fff; color: #0a0606; box-shadow: none; filter: none; transform: none; cursor: pointer;
+    font: 400 clamp(32px, 3.6vw, 50px)/1 var(--aa-heavy); letter-spacing: .02em; text-align: center;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
+    transition: color .2s ease;
+}
+#home.hub button.hub-start::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--aa-blood); transform: scaleX(0); transform-origin: left; transition: transform .28s cubic-bezier(.2,.8,.2,1); }
+#home.hub button.hub-start:hover:not(:disabled)::before, #home.hub button.hub-start:focus-visible::before { transform: scaleX(1); }
+#home.hub button.hub-start:hover:not(:disabled), #home.hub button.hub-start:focus-visible { color: #fff; transform: none; filter: none; box-shadow: none; }
+#home.hub button.hub-start:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+#home.hub button.hub-start:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+
+#home.hub .join-area, #home.hub #joinArea { display: flex; gap: 6px; flex-wrap: nowrap; width: min(100%, 560px); margin: 8px 0 0; }
+#home.hub #joinArea input#joinCode {
+    flex: 1 1 auto; min-width: 0; padding: 12px 14px 9px; border: 1px solid rgba(255,255,255,.3); border-radius: 0; background: rgba(5,3,3,.62); color: #fff;
+    font: 700 22px/1.2 'JetBrains Mono', monospace; letter-spacing: .3em; text-transform: uppercase;
+}
+#home.hub #joinArea input#joinCode::placeholder { font: 500 19px/1.2 var(--aa-hud); letter-spacing: .14em; color: rgba(255,255,255,.45); }
+#home.hub #joinArea input#joinCode:focus { outline: 2px solid #fff; outline-offset: -2px; background: rgba(255,255,255,.08); }
+#home.hub #joinArea button {
+    flex: none; width: auto !important; margin: 0 !important; padding: 12px 24px 9px; border: 1px solid #fff; border-radius: 0; background: transparent; color: #fff; box-shadow: none; filter: none; transform: none;
+    font: 600 24px/1.2 var(--aa-hud); letter-spacing: .1em;
+    transition: background .15s ease, color .15s ease;
+}
+#home.hub #joinArea button:hover:not(:disabled) { background: #fff; color: #0a0606; transform: none; box-shadow: none; filter: none; }
+#home.hub #joinArea button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* --- side column --- */
+.hub-side { display: flex; flex-direction: column; gap: 12px; align-self: start; min-width: 0; }
+.hub-card { background: rgba(8,5,5,.8); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.09); }
+.hub-card h2 { margin: 0; font: 600 30px/1 var(--aa-hud); letter-spacing: .06em; color: #fff; text-transform: uppercase; text-shadow: none; }
+
+.ann { position: relative; aspect-ratio: 16 / 8.2; overflow: hidden; border: 0; background: #120606; }
+.ann-slide {
+    position: absolute; inset: 0; display: flex; align-items: flex-end; padding: 14px;
+    background: var(--g, linear-gradient(135deg, #3a0a0a, #0a0606));
+    opacity: 0; visibility: hidden; transition: opacity .45s ease, visibility 0s linear .45s;
+}
+.ann-slide.on { opacity: 1; visibility: visible; transition: opacity .45s ease; }
+.ann-slide::before { content: attr(data-glyph); position: absolute; right: 8px; top: -14px; font: 400 130px/1 var(--aa-heavy); color: rgba(255,255,255,.1); }
+.ann-slide .cap { position: relative; max-width: 100%; }
+.ann-slide b { display: inline-block; background: #0a0606; color: #fff; padding: 4px 12px 1px; font: 600 27px/1.1 var(--aa-hud); letter-spacing: .06em; text-transform: uppercase; }
+.ann-slide p { margin: 6px 0 0; max-width: 34ch; font: 400 13px/1.4 'Inter', sans-serif; color: rgba(255,255,255,.88); text-shadow: 0 1px 6px rgba(0,0,0,.7); }
+.ann-dots { position: absolute; left: 12px; top: 10px; display: flex; gap: 2px; z-index: 2; }
+#home.hub .ann-dots button { width: 22px; height: 12px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; filter: none; transform: none; position: relative; }
+#home.hub .ann-dots button::after { content: ""; position: absolute; left: 0; right: 0; top: 4px; height: 3px; background: rgba(255,255,255,.4); }
+#home.hub .ann-dots button[aria-current="true"]::after { background: #fff; }
+#home.hub .ann-dots button:hover:not(:disabled) { transform: none; filter: none; box-shadow: none; }
+#home.hub .ann-dots button:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+
+.hub-card.pad { padding: 16px 18px 18px; }
+.prog-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+.prog-top .lvl { font: 600 22px/1 var(--aa-hud); letter-spacing: .06em; color: #fff; }
+.bar { position: relative; height: 18px; background: rgba(225,27,27,.2); overflow: hidden; }
+.bar > i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--aa-blood); transition: width .5s cubic-bezier(.2,.8,.2,1); }
+.bar > span { position: absolute; left: 7px; top: 0; bottom: 0; display: flex; align-items: center; font: 700 12px/1 'Inter', sans-serif; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+.bar.thin { height: 14px; background: rgba(255,255,255,.12); }
+.bar.thin > i { background: rgba(255,255,255,.55); }
+.bar.thin.done > i { background: var(--aa-blood); }
+.bar.thin > span { font-size: 11px; }
+
+.daily-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.daily-top h2 { max-width: 6.5em; line-height: .92; }
+.daily-time { padding-top: 6px; font: 400 22px/1 var(--aa-brush); color: rgba(255,255,255,.72); rotate: -4deg; white-space: nowrap; }
+.ch { margin-top: 14px; }
+.ch-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; font: 600 14px/1.3 'Inter', sans-serif; color: #fff; }
+.ch-row .xp { flex: none; font: 600 22px/1 var(--aa-hud); letter-spacing: .04em; color: var(--aa-blood); }
+.ch.done .ch-row { color: rgba(255,255,255,.6); }
+.ch.done .xp { color: rgba(255,255,255,.6); }
+.hub-note { margin: 12px 0 0; font: 400 11px/1.4 'Inter', sans-serif; color: rgba(255,255,255,.4); }
+
+/* --- setup view --- */
+.hub-panel { width: 100%; max-width: 1100px; padding: clamp(16px, 2.4vw, 28px); background: rgba(8,5,5,.82); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.1); margin-bottom: 4px; }
+.hub-panel > h2 { margin: 0 0 4px; font: 400 clamp(28px, 4vw, 44px)/1 var(--aa-heavy); color: #fff; text-shadow: none; text-align: left; letter-spacing: 0; }
+.hub-panel > .sub { margin: 0 0 20px; font: 400 14px/1.5 'Inter', sans-serif; color: rgba(246,239,227,.7); }
+#home.hub .hub-setup .field > label, #home.hub .hub-panel label.lbl { display: block; margin: 0 0 8px; font: 600 22px/1 var(--aa-hud); letter-spacing: .1em; text-transform: uppercase; color: #fff; }
+#home.hub .hub-setup .field { margin-bottom: 22px; }
+#home:not([data-view="play"]) .hub-stage { justify-content: flex-start; padding-top: 8px; }
+.hub-setup .series-pick .anime-poll { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 8px; }
+.hub-setup .series-pick .anime-option { min-height: 84px; }
+#home.hub .hub-setup .sizes, #home.hub .hub-setup .field .sizes { gap: 6px; flex-wrap: wrap; max-width: 520px; }
+#home.hub .hub-setup .size, #home.hub .hub-setup .dbtn, #home.hub .hub-setup .rbtn, #home.hub .hub-setup .lapbtn {
+    flex: 1 1 80px; padding: 8px 12px 5px; border: 1px solid rgba(255,255,255,.3); border-radius: 0; background: rgba(5,3,3,.55); color: #fff; box-shadow: none; transform: none; filter: none; clip-path: none;
+    font: 600 24px/1.2 var(--aa-hud); letter-spacing: .08em; text-transform: uppercase;
+}
+#home.hub .hub-setup .size:hover:not(:disabled):not(.selected), #home.hub .hub-setup .modebtn:hover:not(:disabled):not(.selected) { transform: none; filter: none; box-shadow: none; border-color: #fff; }
+#home.hub .hub-setup .size.selected, #home.hub .hub-setup .modebtn.selected { background: #fff; color: #0a0606; border-color: #fff; box-shadow: none; }
+#home.hub .hub-setup .size:active:not(:disabled), #home.hub .hub-setup .modebtn:active:not(:disabled), #home.hub .hub-modes .modebtn:active:not(:disabled) { transform: none; box-shadow: none; }
+.hub-setup .anime-hint { font: 400 13px/1.5 'Inter', sans-serif; color: rgba(246,239,227,.6); }
+.hub-setup .back { margin-top: 6px; }
+#home.hub .hub-back { margin-top: 10px; padding: 12px 26px 9px; border: 1px solid #fff; border-radius: 0; background: #fff; color: #0a0606; box-shadow: none; filter: none; transform: none; font: 400 22px/1.1 var(--aa-heavy); }
+#home.hub .hub-back:hover:not(:disabled) { background: var(--aa-blood); color: #fff; transform: none; filter: none; box-shadow: none; }
+
+/* --- profile view --- */
+.pf-banner { position: relative; overflow: hidden; display: flex; align-items: flex-end; gap: 16px; min-height: 150px; padding: 18px; margin-bottom: 20px; background: linear-gradient(120deg, var(--pf, #e11b1b), #120606 78%); }
+.pf-banner::before { content: attr(data-glyph); position: absolute; right: 10px; top: -30px; font: 400 200px/1 var(--aa-heavy); color: rgba(0,0,0,.28); }
+.pf-banner .av { position: relative; display: grid; place-items: center; flex: none; width: 76px; height: 76px; background: #0a0606; color: var(--pf, #e11b1b); font: 400 40px/1 var(--aa-heavy); border: 3px solid #fff; }
+.pf-banner .who { position: relative; min-width: 0; }
+.pf-banner .who b { display: block; font: 400 clamp(24px, 3.4vw, 38px)/1.05 var(--aa-heavy); color: #fff; overflow-wrap: anywhere; }
+.pf-banner .who span { font: 600 20px/1.2 var(--aa-hud); letter-spacing: .1em; color: rgba(255,255,255,.85); }
+.pf-emblems { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+#home.hub .pf-emblems button { display: grid; place-items: center; width: 62px; height: 62px; padding: 0; border: 2px solid rgba(255,255,255,.25); border-radius: 0; background: rgba(5,3,3,.6); color: var(--c); box-shadow: none; filter: none; transform: none; font: 400 30px/1 var(--aa-heavy); transition: border-color .15s ease, background .15s ease; }
+#home.hub .pf-emblems button:hover:not(:disabled) { transform: none; filter: none; border-color: #fff; box-shadow: none; }
+#home.hub .pf-emblems button[aria-pressed="true"] { background: var(--c); color: #0a0606; border-color: #fff; }
+#home.hub .pf-emblems button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.pf-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 8px; }
+.pf-stats div { padding: 12px 14px 10px; background: rgba(255,255,255,.06); border-left: 3px solid var(--aa-blood); }
+.pf-stats b { display: block; font: 700 34px/1 var(--aa-hud); color: #fff; }
+.pf-stats span { font: 500 17px/1.2 var(--aa-hud); letter-spacing: .08em; color: rgba(255,255,255,.65); }
+
+/* --- entrance: one orchestrated moment when the menu first appears --- */
+#home.hub.enter .hub-title .ht-a { animation: aa-slam .55s cubic-bezier(.2,1.1,.3,1) both; }
+#home.hub.enter .hub-title .ht-b { animation: aa-slam .55s .12s cubic-bezier(.2,1.1,.3,1) both; }
+#home.hub.enter .hub-side > * { animation: aa-in .5s cubic-bezier(.2,.8,.2,1) both; }
+#home.hub.enter .hub-side > *:nth-child(2) { animation-delay: .08s; }
+#home.hub.enter .hub-side > *:nth-child(3) { animation-delay: .16s; }
+@keyframes aa-slam { from { opacity: 0; transform: scale(1.18) translateX(-18px); } to { opacity: 1; transform: none; } }
+@keyframes aa-in { from { opacity: 0; translate: 26px 0; } to { opacity: 1; translate: 0 0; } }
+
+/* --- small screens --- */
+@media (max-width: 980px) {
+    .hub-main { grid-template-columns: minmax(0, 1fr); }
+    .hub-stage { justify-content: flex-start; padding-top: 6px; }
+    .hub-side { align-self: stretch; }
+    .hub-me { margin-left: 0; width: 100%; }
+    #home.hub input#name { flex: 1; width: auto; min-width: 0; }
+    .hub-nav { order: 3; flex-basis: 100%; }
+}
+@media (max-width: 520px) {
+    #home.hub button.hub-tab { padding: 6px 16px 4px; font-size: 20px; }
+    #home.hub #modeHint { font-size: 15px; }
+    #home.hub .hub-modes .modebtn { flex-basis: 45%; }
+    .hub-card h2 { font-size: 26px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .hub-title.swap .ht-a, .hub-title.swap .ht-b, #home.hub.enter .hub-title .ht-a, #home.hub.enter .hub-title .ht-b, #home.hub.enter .hub-side > * { animation: none; }
+    .ann-slide, .bar > i, #home.hub button.hub-start::before { transition: none; }
+}
+
+
+/* =========================================================
+   v2: account area, showcase, modes, profile, modal, party lobby
+========================================================= */
+.hub-stage { position: relative; }
+#home.hub button.hub-tab.locked { color: rgba(255,255,255,.55); }
+#home.hub button.hub-tab.locked::after { content: "\1F512"; margin-left: 7px; font-size: 12px; opacity: .7; }
+#home.hub button.hub-tab.locked[aria-current="page"] { color: #0a0606; }
+
+.hub-acct { position: relative; margin-left: auto; display: flex; align-items: stretch; flex: none; background: rgba(5,3,3,.7); border: 1px solid rgba(255,255,255,.14); }
+.hub-acct .coin { display: flex; align-items: center; gap: 8px; padding: 0 12px; font: 700 22px/1 var(--aa-hud); color: #fff; border-right: 1px solid rgba(255,255,255,.14); }
+.hub-acct .coin i { width: 14px; height: 14px; border-radius: 50%; background: #f2c94c; box-shadow: inset -2px -2px 0 rgba(0,0,0,.25); }
+.hub-acct .lv { display: grid; place-items: center; min-width: 40px; padding: 0 8px; background: #fff; color: #0a0606; font: 700 22px/1 var(--aa-hud); }
+.hub-acct .av { display: grid; place-items: center; width: 38px; background: var(--av, var(--aa-blood)); color: #0a0606; font: 400 20px/1 var(--aa-heavy); }
+.hub-acct .uname { display: flex; align-items: center; max-width: 180px; padding: 6px 14px 4px; font: 600 20px/1.2 var(--aa-hud); letter-spacing: .06em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#home.hub button.gear { display: grid; place-items: center; width: 42px; padding: 0; border: 0; border-left: 1px solid rgba(255,255,255,.14); border-radius: 0; background: transparent; color: #fff; box-shadow: none; filter: none; transform: none; }
+#home.hub button.gear:hover:not(:disabled) { background: rgba(255,255,255,.14); transform: none; box-shadow: none; filter: none; }
+#home.hub button.gear:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+.settings { position: absolute; right: 0; top: calc(100% + 8px); width: 270px; padding: 16px; background: rgba(8,5,5,.96); border: 1px solid rgba(255,255,255,.18); z-index: 20; }
+.settings label { display: flex; justify-content: space-between; margin: 0 0 10px; font: 600 22px/1 var(--aa-hud); letter-spacing: .08em; color: #fff; text-transform: uppercase; }
+.settings p { margin: 10px 0 0; font: 400 12px/1.4 'Inter', sans-serif; color: rgba(255,255,255,.55); }
+.settings input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; padding: 0; border: 0; border-radius: 0; background: linear-gradient(90deg, #fff var(--p, 100%), rgba(255,255,255,.2) var(--p, 100%)); }
+.settings input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 22px; background: var(--aa-blood); border: 2px solid #fff; border-radius: 0; cursor: pointer; }
+.settings input[type=range]::-moz-range-thumb { width: 12px; height: 18px; background: var(--aa-blood); border: 2px solid #fff; border-radius: 0; cursor: pointer; }
+.settings input[type=range]:focus-visible { outline: 2px solid #fff; outline-offset: 6px; }
+
+/* player card (showcase, profile preview, party lobby) */
+.pcard { position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,.2); background: linear-gradient(165deg, var(--b1), var(--b2) 72%); }
+.pcard::before { content: attr(data-glyph); position: absolute; right: -6%; top: 4%; font-family: var(--aa-heavy); font-weight: 400; line-height: 1; font-size: 190px; color: rgba(255,255,255,.16); pointer-events: none; }
+.pcard::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, transparent 0 18px, rgba(255,255,255,.04) 18px 20px); pointer-events: none; }
+.pcard .foot { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; display: flex; align-items: center; gap: 10px; padding: 36px 12px 12px; background: linear-gradient(0deg, rgba(0,0,0,.88), transparent); }
+.pcard .av { flex: none; display: grid; place-items: center; width: 40px; height: 40px; background: var(--ac); color: #0a0606; font: 400 22px/1 var(--aa-heavy); }
+.pcard .id { min-width: 0; }
+.pcard .nm { display: block; font: 600 28px/1 var(--aa-hud); letter-spacing: .04em; color: var(--nc); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcard .tg { display: block; font: 500 17px/1.1 var(--aa-hud); letter-spacing: .1em; color: rgba(255,255,255,.65); font-style: normal; }
+.pcard .role { position: absolute; z-index: 2; top: 10px; left: 10px; padding: 3px 10px 1px; background: #fff; color: #0a0606; font: 600 16px/1.2 var(--aa-hud); letter-spacing: .12em; text-transform: uppercase; }
+.pcard .role.playing { background: var(--aa-blood); color: #fff; }
+.pcard.big { aspect-ratio: 3 / 5; width: 100%; }
+.pcard.small { aspect-ratio: 3 / 4.4; }
+.pcard.small::before { font-size: 120px; }
+.pcard.small .nm { font-size: 22px; }
+.pcard.small .av { width: 32px; height: 32px; font-size: 18px; }
+.pcard.small .foot { padding: 28px 10px 10px; }
+.pcard.empty { display: grid; place-items: center; background: rgba(255,255,255,.04); border: 1px dashed rgba(255,255,255,.3); }
+.pcard.empty::before, .pcard.empty::after { content: none; }
+.pcard.empty span { font: 500 20px/1 var(--aa-hud); letter-spacing: .12em; color: rgba(255,255,255,.5); text-transform: uppercase; }
+
+.hub-show { position: absolute; right: 0; bottom: 0; width: clamp(190px, 25cqw, 280px); z-index: 0; }
+#home:not([data-view="play"]) .hub-show { display: none; }
+.hub-show .pcard { box-shadow: 0 24px 60px rgba(0,0,0,.6); }
+
+#home.hub button.hub-invite {
+    display: block; width: min(100%, 560px); margin: 6px 0 0; padding: 12px 20px 9px; border: 1px solid #fff; border-radius: 0; background: rgba(5,3,3,.55); color: #fff; box-shadow: none; filter: none; transform: none;
+    font: 600 26px/1.2 var(--aa-hud); letter-spacing: .12em; text-transform: uppercase; transition: background .15s ease, color .15s ease;
+}
+#home.hub button.hub-invite:hover:not(:disabled) { background: #fff; color: #0a0606; transform: none; box-shadow: none; filter: none; }
+#home.hub button.hub-invite:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+#home.hub button.hub-start { text-transform: uppercase; }
+
+/* modes */
+.hub-panel.wide { max-width: 1100px; }
+.mode-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+#home.hub .mode-grid .modebtn.mode-card {
+    position: relative; display: flex; flex-direction: column; align-items: stretch; text-align: left; min-height: 330px; padding: 0; overflow: hidden; border: 1px solid rgba(255,255,255,.25); border-radius: 0; background: rgba(5,3,3,.7);
+    box-shadow: none; filter: none; transform: none; clip-path: none; color: #fff; font: 400 14px/1.4 'Inter', sans-serif; letter-spacing: 0; text-transform: none; transition: border-color .15s ease, background .15s ease;
+}
+#home.hub .mode-grid .modebtn.mode-card:hover:not(:disabled) { transform: none; filter: none; box-shadow: none; border-color: #fff; background: rgba(255,255,255,.08); }
+#home.hub .mode-grid .modebtn.mode-card.selected { background: rgba(5,3,3,.7); color: #fff; border: 2px solid #fff; box-shadow: none; }
+#home.hub .mode-grid .modebtn.mode-card:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.mc-art { position: relative; display: block; height: 150px; background: linear-gradient(150deg, var(--b1), var(--b2) 75%); overflow: hidden; }
+.mc-art::before { content: attr(data-glyph); position: absolute; right: 8px; top: -18px; font: 400 150px/1 var(--aa-heavy); color: rgba(255,255,255,.22); }
+.mc-name { display: block; padding: 14px 14px 0; font: 400 26px/1.1 var(--aa-heavy); color: #fff; }
+.mc-desc { display: block; padding: 8px 14px 0; color: rgba(246,239,227,.78); flex: 1; }
+.mc-pl { display: block; padding: 10px 14px 14px; font: 600 17px/1 var(--aa-hud); letter-spacing: .06em; white-space: nowrap; text-transform: uppercase; color: rgba(255,255,255,.6); }
+.mode-card.selected .mc-pl::before { content: "Selected \00B7 "; color: var(--aa-blood); }
+
+.hub-btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
+#home.hub .hub-back.ghost { background: transparent; color: #fff; }
+#home.hub .hub-back.ghost:hover:not(:disabled) { background: #fff; color: #0a0606; }
+
+/* profile */
+.pf-grid { display: grid; grid-template-columns: minmax(180px, 260px) minmax(0, 1fr); gap: clamp(16px, 3vw, 36px); align-items: start; }
+.pf-col-preview .pcard.big { margin-bottom: 8px; }
+.pf-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pf-stats div { padding: 10px 12px 8px; background: rgba(255,255,255,.06); border-left: 3px solid var(--aa-blood); }
+.pf-stats b { display: block; font: 700 28px/1 var(--aa-hud); color: #fff; }
+.pf-stats span { font: 500 16px/1.2 var(--aa-hud); letter-spacing: .08em; color: rgba(255,255,255,.65); }
+.pf-row { display: flex; gap: 10px; margin-bottom: 18px; }
+.pf-f.grow { flex: 1; min-width: 0; } .pf-f.tag { width: 130px; }
+#home.hub .pf-f input#name, #home.hub .tagbox input { width: 100%; padding: 10px 12px 7px; border: 1px solid rgba(255,255,255,.3); border-radius: 0; background: rgba(5,3,3,.6); color: #fff; font: 600 22px/1.2 var(--aa-hud); letter-spacing: .06em; box-shadow: none; }
+.tagbox { display: flex; align-items: center; border: 1px solid rgba(255,255,255,.3); background: rgba(5,3,3,.6); }
+.tagbox span { padding: 0 0 0 12px; font: 600 22px/1 var(--aa-hud); color: rgba(255,255,255,.6); }
+#home.hub .tagbox input { border: 0; background: transparent; padding-left: 4px; text-transform: uppercase; }
+#home.hub .pf-f input#name:focus, #home.hub .tagbox input:focus, #pfColorPick:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.pf-colors, .pf-avatars, .pf-banners { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+#home.hub .pf-colors button { width: 34px; height: 34px; padding: 0; border: 2px solid rgba(255,255,255,.25); border-radius: 0; box-shadow: none; filter: none; transform: none; }
+#home.hub .pf-colors button[aria-pressed="true"] { border-color: #fff; outline: 2px solid #fff; outline-offset: 2px; }
+.pf-custom { display: flex; align-items: center; gap: 10px; margin: -4px 0 18px; }
+.pf-custom label { margin: 0; }
+.pf-custom input[type=color] { width: 48px; height: 30px; padding: 0; border: 1px solid rgba(255,255,255,.3); border-radius: 0; background: none; cursor: pointer; }
+#home.hub .pf-avatars button { display: grid; place-items: center; width: 52px; height: 52px; padding: 0; border: 2px solid rgba(255,255,255,.25); border-radius: 0; background: rgba(5,3,3,.6); color: var(--c); box-shadow: none; filter: none; transform: none; font: 400 26px/1 var(--aa-heavy); }
+#home.hub .pf-avatars button[aria-pressed="true"] { background: var(--c); color: #0a0606; border-color: #fff; }
+#home.hub .pf-banners button { position: relative; overflow: hidden; width: 68px; height: 108px; padding: 0; border: 2px solid rgba(255,255,255,.25); border-radius: 0; background: linear-gradient(165deg, var(--b1), var(--b2) 72%); box-shadow: none; filter: none; transform: none; }
+#home.hub .pf-banners button::before { content: attr(data-glyph); position: absolute; right: -4px; top: 2px; font: 400 56px/1 var(--aa-heavy); color: rgba(255,255,255,.25); }
+#home.hub .pf-banners button[aria-pressed="true"] { border-color: #fff; outline: 2px solid #fff; outline-offset: 2px; }
+#home.hub .pf-avatars button:hover:not(:disabled), #home.hub .pf-banners button:hover:not(:disabled), #home.hub .pf-colors button:hover:not(:disabled) { border-color: #fff; transform: none; filter: none; box-shadow: none; }
+#home.hub .pf-avatars button:focus-visible, #home.hub .pf-banners button:focus-visible, #home.hub .pf-colors button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+.lockbox { max-width: 520px; text-align: center; }
+.lockbox .lockicon { font-size: 54px; margin-bottom: 8px; }
+.lockbox > h2 { text-align: center; }
+
+/* announcement */
+.ann { cursor: pointer; }
+.ann:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.ann-slide { background-size: cover; }
+.am { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; padding: 20px; background: rgba(0,0,0,.78); }
+.am-box { width: min(640px, 100%); max-height: 100%; overflow: auto; background: #0b0606; border: 1px solid rgba(255,255,255,.2); }
+.am-img { position: relative; aspect-ratio: 16 / 7; overflow: hidden; }
+.am-img::before { content: attr(data-glyph); position: absolute; right: 12px; top: -20px; font: 400 170px/1 var(--aa-heavy); color: rgba(255,255,255,.15); }
+.am-txt { padding: 18px 22px 6px; }
+.am-txt h2 { margin: 0 0 10px; font: 400 clamp(26px, 4vw, 38px)/1.05 var(--aa-heavy); color: #fff; text-align: left; text-shadow: none; letter-spacing: 0; }
+.am-txt p { margin: 0; font: 400 15px/1.6 'Inter', sans-serif; color: rgba(246,239,227,.85); white-space: pre-line; }
+.am-box > .hub-back { margin: 14px 22px 22px; }
+
+/* party lobby (the existing waiting room, dressed to match) */
+#lobby .panel { max-width: 960px; }
+.party-info { margin: 4px 0 14px; text-align: center; font: 500 22px/1.2 var(--aa-hud); letter-spacing: .08em; color: rgba(255,255,255,.85); }
+.party-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 0 auto 16px; max-width: 900px; }
+#lobby .old-players { display: none; }
+
+@media (max-width: 980px) {
+    .hub-show { position: relative; width: min(60%, 240px); margin: 18px 0 0 auto; }
+    .hub-acct { margin-left: 0; width: 100%; }
+    .hub-acct .uname { flex: 1; max-width: none; }
+    .pf-grid { grid-template-columns: 1fr; }
+    .pf-col-preview { max-width: 240px; }
+}
+@media (max-width: 520px) {
+    .mode-grid { grid-template-columns: 1fr 1fr; }
+    #home.hub .mode-grid .modebtn.mode-card { min-height: 260px; }
+    .mc-art { height: 100px; }
+    .settings { position: fixed; left: 14px; right: 14px; top: auto; bottom: 14px; width: auto; }
+}
+
+@media (min-width: 1100px) { .hub-top { flex-wrap: nowrap; } .hub-nav { overflow-x: auto; } }
+
+#home.hub .pf-f > label, #home.hub .pf-custom > label, #home.hub .pf-col-form > label.lbl { margin: 0 0 8px; font: 600 22px/1 var(--aa-hud); letter-spacing: .1em; text-transform: uppercase; color: #fff; }
+#home.hub .pf-custom > label { font-size: 18px; margin: 0; }
+#home.hub .pf-f > label::before, #home.hub .pf-custom > label::before, #home.hub .pf-col-form > label.lbl::before, #home.hub .hub-setup .field > label::before { content: none; display: none; }
+
+/* in-party mode change (reuses the menu screens) */
+.pc-banner { display: none; align-items: center; justify-content: space-between; gap: 12px; padding: 10px var(--hub-pad, 24px); background: var(--aa-blood); color: #fff; font: 600 20px/1.2 var(--aa-hud); letter-spacing: .08em; }
+#home.party-config .pc-banner { display: flex; }
+.pc-banner button { padding: 4px 16px 2px; border: 1px solid #fff; border-radius: 0; background: transparent; color: #fff; box-shadow: none; filter: none; transform: none; font: 600 20px/1.2 var(--aa-hud); letter-spacing: .1em; text-transform: uppercase; }
+.pc-banner button:hover:not(:disabled) { background: #fff; color: #0a0606; transform: none; box-shadow: none; filter: none; }
+#home.party-config .hub-nav, #home.party-config .hub-acct { display: none; }
+#home.hub .mode-grid .modebtn.mode-card:disabled { opacity: .42; cursor: not-allowed; }
+.mode-card[data-over]::after { content: attr(data-over); position: absolute; left: 0; right: 0; top: 54px; padding: 4px 10px 2px; background: var(--aa-blood); color: #fff; font: 600 20px/1.2 var(--aa-hud); letter-spacing: .1em; text-transform: uppercase; text-align: center; }
+.party-actions { display: flex; justify-content: center; margin: -4px 0 14px; }
+</style>
+
 </head>
 
 
 <body class="anime-theme">
+
+<!-- =========================================
+     STARTUP SEQUENCE: press to start, developer splash, loading
+========================================= -->
+<div id="boot">
+
+<section class="bs bs-atmos" id="bsPress" tabindex="0" role="button" aria-label="ANIME ARCADE, SEASON 1. Press anywhere to start.">
+    <canvas class="bp-fx" id="bootFx" aria-hidden="true"></canvas>
+    <div class="bp-rings" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="bp-logo" aria-hidden="true"><span class="bp-a">ANIME</span><span class="bp-b">Arcade</span><span class="bp-season">SEASON 1</span></div>
+    <div class="bp-press" aria-hidden="true">PRESS ANYWHERE TO START</div>
+</section>
+
+<section class="bs" id="bsDev" aria-label="Developer credit">
+    <div class="bd-by">A GAME BY</div>
+    <div class="bd-name" id="bdName"></div>
+    <p class="bd-msg" id="bdMsg"></p>
+</section>
+
+<section class="bs bs-atmos" id="bsLoad" aria-label="Loading">
+    <div class="bp-rings" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="bl-mark" aria-hidden="true"><span class="bp-a">ANIME</span><span class="bp-b">Arcade</span></div>
+    <div class="bl-spin" aria-hidden="true"></div>
+    <div class="bl-hud">
+        <div class="bl-head">LOADING ASSETS...</div>
+        <div class="bl-status" id="blStatus" role="status">Initializing game...</div>
+        <div class="bl-row">
+            <div class="bl-bar" id="blBar" role="progressbar" aria-label="Loading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+            <div class="bl-pct" id="blPct">0%</div>
+        </div>
+        <div class="bl-meta" id="blMeta"></div>
+    </div>
+</section>
+
+</div>
+<script>
+/* =========================================================
+   ANIME ARCADE — CONFIG  (edit this block, nothing else needed)
+========================================================= */
+window.ARCADE_CONFIG = {
+
+    /* ---- developer splash (stage 2) ---- */
+    developer: 'YOUR NAME HERE',                                   // shown as: A GAME BY <developer>
+    developerMessage: 'Created with a passion for anime and gaming.',
+    splashMs: 3600,            // total time from key press to the loading screen (includes the fades)
+
+    /* ---- loading screen (stage 3) ---- */
+    settleMs: 300,             // how long 100% stays on screen before the menu opens (not a fake delay: progress is real)
+    readyTimeoutMs: 12000,     // how long to wait for Firebase before opening the menu anyway
+    maxLoadMs: 40000,          // absolute cap: after this the menu opens with whatever is ready
+
+    /* ---- caching ---- */
+    assetVersion: 'v1',        // bump together with CACHE_VERSION in sw.js to re-download everything
+    cacheName: 'aa-assets-v1', // must match ASSET_CACHE in sw.js
+
+    /* ---- assets the MENU needs before it opens ---- */
+    assets: {
+        interface: ['images/bg-jump.jpg'],                         // required: the menu background
+        logos: ['onepiece', 'naruto', 'dragonball', 'jjk', 'demonslayer', 'bleach'],   // images/logos/<key>.png (files are optional)
+        fonts: [
+            ['Dela Gothic One', '400'], ['Teko', '600'], ['Inter', '400'], ['Inter', '700'],
+            ['Pirata One', '400'], ['Permanent Marker', '400'], ['JetBrains Mono', '700']
+        ],
+        glyphs: '海忍龍呪鬼霊炎星桜嵐影闘札友'                                      // series emblems used for avatars
+    },
+
+    /* ---- announcements: replace image / title / body whenever you publish an update ----
+       image: URL of a picture (leave '' to use the gradient art), art: fallback gradient, glyph: big background character */
+    announcements: [
+        { image: '', title: 'Season 1 is live', body: 'Welcome to ANIME ARCADE.\n\nFour party games, one lobby. Pick a mode, invite your friends with the link, and play.\n\nThis is placeholder text: edit it in ARCADE_CONFIG.announcements.', glyph: '闘', art: 'linear-gradient(135deg,#5b0d0d,#140707 70%)' },
+        { image: '', title: 'Anime UNO is here', body: 'Pick four series. They become the four colours.\n\nUp to 6 players per table.', glyph: '札', art: 'linear-gradient(135deg,#0d2a5b,#07090f 70%)' }
+    ]
+};
+
+
+/* =========================================================
+   ANIME ARCADE — startup sequence
+   stage 1 press to start → 2 developer splash → 3 loading → 4 menu
+========================================================= */
+(function () {
+    'use strict';
+
+    var CFG = window.ARCADE_CONFIG;
+    var $ = function (id) { return document.getElementById(id); };
+    var boot = $('boot');
+    if (!boot) return;
+
+    var reduceMotion = false;
+    try { reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+
+    var stages = { press: $('bsPress'), dev: $('bsDev'), load: $('bsLoad') };
+    var current = null;
+
+    function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+    function abs(url) { return new URL(url, location.href).href; }
+
+    /* -----------------------------------------------------
+       ASSET LOADER (Cache API + network, with real progress)
+       Exposed as window.ArcadeAssets for the menu to reuse.
+    ----------------------------------------------------- */
+    var cachePromise = null;
+    function openCache() {
+        if (!cachePromise) {
+            cachePromise = ('caches' in window)
+                ? caches.open(CFG.cacheName).catch(function () { return null; })
+                : Promise.resolve(null);
+        }
+        return cachePromise;
+    }
+
+    function keepHeaders(res) {
+        var h = {};
+        ['content-type', 'etag', 'last-modified', 'content-length'].forEach(function (k) {
+            var v = res.headers.get(k); if (v) h[k] = v;
+        });
+        return h;
+    }
+
+    /* Download with byte progress when the server reports a length. */
+    async function download(url, onProgress, timeoutMs) {
+        var ctl = ('AbortController' in window) ? new AbortController() : null;
+        var timer = ctl ? setTimeout(function () { ctl.abort(); }, timeoutMs || 15000) : null;
+        try {
+            var res = await fetch(url, ctl ? { signal: ctl.signal } : undefined);
+            if (!res.ok) { var err = new Error('HTTP ' + res.status); err.status = res.status; throw err; }
+            var total = parseInt(res.headers.get('content-length') || '0', 10);
+            var headers = keepHeaders(res);
+            if (!res.body || !res.body.getReader || !total) {
+                var blob = await res.blob();
+                onProgress && onProgress(1);
+                return new Response(blob, { status: 200, headers: headers });
+            }
+            var reader = res.body.getReader(), chunks = [], got = 0;
+            for (;;) {
+                var step = await reader.read();
+                if (step.done) break;
+                chunks.push(step.value); got += step.value.length;
+                onProgress && onProgress(Math.min(.98, got / total));
+            }
+            onProgress && onProgress(1);
+            return new Response(new Blob(chunks, { type: headers['content-type'] || '' }), { status: 200, headers: headers });
+        } finally { if (timer) clearTimeout(timer); }
+    }
+
+    /* Last resort when fetch/Cache API are unavailable (e.g. opened from file://):
+       an <img> still warms the browser's own HTTP cache. */
+    function warmWithImage(url) {
+        return new Promise(function (resolve, reject) {
+            var img = new Image();
+            img.onload = function () { resolve(); };
+            img.onerror = function () { reject(new Error('image failed')); };
+            img.src = url;
+        });
+    }
+
+    /* Load one asset. Resolves to {state:'cached'|'loaded'|'missing'|'failed'}. Never rejects. */
+    async function loadAsset(url, opts) {
+        opts = opts || {};
+        var key = abs(url);
+        var cache = await openCache();
+
+        if (cache) {
+            try {
+                var hit = await cache.match(key);
+                if (hit) { opts.onProgress && opts.onProgress(1); return { state: 'cached', key: key }; }
+            } catch (e) {}
+        }
+
+        var retries = opts.optional ? 0 : 2;
+        for (var attempt = 0; attempt <= retries; attempt++) {
+            try {
+                var res = await download(key, opts.onProgress, opts.timeoutMs);
+                if (cache) { try { await cache.put(key, res.clone()); } catch (e) {} }
+                return { state: 'loaded', key: key };
+            } catch (err) {
+                if (err && err.status === 404) return { state: 'missing', key: key };      // file simply isn't there: don't retry
+                if (!(err && err.status) && /\.(png|jpe?g|webp|gif|svg|avif)$/i.test(url)) {
+                    try { await warmWithImage(key); opts.onProgress && opts.onProgress(1); return { state: 'loaded', key: key }; } catch (e2) {}
+                }
+                if (attempt < retries) await sleep(350 * (attempt + 1));
+            }
+        }
+        return { state: 'failed', key: key };
+    }
+
+    /* Ask the server whether cached files changed (304 = nothing downloaded). */
+    async function revalidate(urls) {
+        var cache = await openCache();
+        if (!cache) return;
+        for (var i = 0; i < urls.length; i++) {
+            try {
+                var key = abs(urls[i]);
+                var old = await cache.match(key);
+                if (!old) continue;
+                var res = await fetch(key, { cache: 'no-cache' });
+                if (!res.ok) continue;
+                var oldTag = old.headers.get('etag') || old.headers.get('last-modified');
+                var newTag = res.headers.get('etag') || res.headers.get('last-modified');
+                if (newTag && newTag !== oldTag) {
+                    var blob = await res.blob();
+                    await cache.put(key, new Response(blob, { status: 200, headers: keepHeaders(res) }));
+                }
+            } catch (e) {}
+            await sleep(60);
+        }
+    }
+
+    /* Background prefetch at low priority (used by the menu after it opens). */
+    var prefetched = Object.create(null);
+    async function prefetch(urls, concurrency) {
+        try {
+            var c = navigator.connection;
+            if (c && (c.saveData || /(^|-)2g$/.test(c.effectiveType || ''))) return;
+        } catch (e) {}
+        var queue = urls.filter(function (u) { if (prefetched[u]) return false; prefetched[u] = 1; return true; });
+        var n = Math.max(1, concurrency || 2);
+        async function worker() {
+            while (queue.length) {
+                var u = queue.shift();
+                await loadAsset(u, { optional: true });
+                await sleep(30);
+            }
+        }
+        var ws = []; for (var i = 0; i < n; i++) ws.push(worker());
+        await Promise.all(ws);
+    }
+
+    window.ArcadeAssets = { load: loadAsset, prefetch: prefetch, revalidate: revalidate };
+
+
+    /* -----------------------------------------------------
+       STAGE HELPERS
+    ----------------------------------------------------- */
+    function showStage(name) {
+        Object.keys(stages).forEach(function (k) { stages[k].classList.toggle('on', k === name); });
+        current = name;
+    }
+    function hideAllStages() {
+        Object.keys(stages).forEach(function (k) { stages[k].classList.remove('on'); });
+    }
+
+    /* Developer splash text comes from the config. */
+    $('bdName').textContent = CFG.developer;
+    $('bdMsg').textContent = CFG.developerMessage;
+
+    /* -----------------------------------------------------
+       Skip the cinematic when the player is just reloading
+       (in the middle of a session, or already in a room).
+       Add ?intro to the address to force the full sequence.
+    ----------------------------------------------------- */
+    var qs = new URLSearchParams(location.search);
+    var hasSession = false, sameTab = false;
+    try { var s = JSON.parse(localStorage.getItem('gw_session') || 'null'); hasSession = !!(s && s.room); } catch (e) {}
+    try { sameTab = sessionStorage.getItem('aa_boot') === '1'; } catch (e) {}
+    var skipIntro = !qs.has('intro') && (hasSession || sameTab);
+
+
+    /* -----------------------------------------------------
+       STAGE 1 — particles + press-to-start input
+    ----------------------------------------------------- */
+    var fxRaf = 0;
+    function startParticles() {
+        var cv = $('bootFx');
+        if (!cv || reduceMotion || !cv.getContext) return;
+        var ctx = cv.getContext('2d'), W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2), P = [];
+        function size() {
+            W = cv.clientWidth; H = cv.clientHeight;
+            cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        function spawn(initial) {
+            return { x: Math.random() * W, y: initial ? Math.random() * H : H + 10, r: .6 + Math.random() * 1.8,
+                     v: 8 + Math.random() * 26, d: (Math.random() - .5) * 10, a: .15 + Math.random() * .55, red: Math.random() < .55 };
+        }
+        size(); window.addEventListener('resize', size);
+        var count = Math.round(Math.min(90, Math.max(36, W * H / 22000)));
+        for (var i = 0; i < count; i++) P.push(spawn(true));
+        var last = performance.now();
+        (function frame(now) {
+            var dt = Math.min(.05, (now - last) / 1000); last = now;
+            ctx.clearRect(0, 0, W, H);
+            for (var i = 0; i < P.length; i++) {
+                var p = P[i];
+                p.y -= p.v * dt; p.x += p.d * dt;
+                if (p.y < -10) P[i] = spawn(false);
+                ctx.globalAlpha = p.a * Math.min(1, p.y / (H * .25) + .2);
+                ctx.fillStyle = p.red ? '#ff3b2f' : '#ffffff';
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.2832); ctx.fill();
+            }
+            fxRaf = requestAnimationFrame(frame);
+        })(last);
+    }
+    function stopParticles() { cancelAnimationFrame(fxRaf); fxRaf = 0; }
+
+    /* a short low "thud" on the first press (respects the game's mute setting) */
+    function pressSound() {
+        try {
+            if (localStorage.getItem('gw_muted') === '1') return;
+            var A = window.AudioContext || window.webkitAudioContext; if (!A) return;
+            var c = new A(), t = c.currentTime;
+            var o = c.createOscillator(), g = c.createGain();
+            o.type = 'sine'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(42, t + .5);
+            g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.28, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + .7);
+            o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + .75);
+            var o2 = c.createOscillator(), g2 = c.createGain();
+            o2.type = 'triangle'; o2.frequency.setValueAtTime(660, t); o2.frequency.exponentialRampToValueAtTime(1320, t + .25);
+            g2.gain.setValueAtTime(.0001, t); g2.gain.exponentialRampToValueAtTime(.05, t + .03); g2.gain.exponentialRampToValueAtTime(.0001, t + .35);
+            o2.connect(g2); g2.connect(c.destination); o2.start(t); o2.stop(t + .4);
+            setTimeout(function () { try { c.close(); } catch (e) {} }, 1200);
+        } catch (e) {}
+    }
+
+    var started = false;
+    var IGNORED_KEYS = ['Shift', 'Control', 'Alt', 'AltGraph', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock', 'Tab', 'Escape', 'ContextMenu', 'Dead', 'Unidentified', 'OS'];
+
+    function isStartKey(e) {
+        if (e.ctrlKey || e.metaKey || e.altKey) return false;
+        if (IGNORED_KEYS.indexOf(e.key) >= 0) return false;
+        if (/^F\d{1,2}$/.test(e.key)) return false;
+        return true;
+    }
+    function onPressInput(e) {
+        if (started || current !== 'press') return;
+        if (e.type === 'keydown') {
+            if (e.repeat || !isStartKey(e)) return;
+            if (e.key === ' ' || e.key === 'Enter') e.preventDefault();
+        }
+        started = true;                                   // one input, one stage change — repeats are ignored from here on
+        stages.press.removeEventListener('pointerdown', onPressInput);
+        stages.press.removeEventListener('click', onPressInput);
+        window.removeEventListener('keydown', onPressInput, true);
+        pressSound();
+        beginLoading();                                   // real loading starts now and runs behind the splash
+        runSplash();
+    }
+
+    async function runSplash() {
+        hideAllStages();                                  // dip to black between stages
+        var total = Math.max(2200, CFG.splashMs || 3600);
+        await sleep(420);
+        stopParticles();
+        showStage('dev');
+        await sleep(total - 420 - 600);
+        stages.dev.classList.remove('on');                // fade the splash out
+        await sleep(600);
+        showStage('load');
+        loadShownAt = performance.now();
+        loadVisible = true;
+    }
+
+    function startPressStage() {
+        showStage('press');
+        startParticles();
+        stages.press.addEventListener('pointerdown', onPressInput);
+        stages.press.addEventListener('click', onPressInput);          // fallback for older browsers
+        window.addEventListener('keydown', onPressInput, true);
+    }
+
+
+    /* -----------------------------------------------------
+       STAGE 3 — real loading
+       Every task reports a real 0..1 progress. The bar is the
+       weighted average. The status line names the first phase
+       that still has work to do.
+    ----------------------------------------------------- */
+    var PHASES = ['Initializing game...', 'Loading interface...', 'Loading player assets...', 'Preparing game modes...', 'Finalizing...'];
+    var tasks = [], assetTasks = [];
+    var loadStarted = false, loadVisible = false, loadShownAt = 0, allDone = false, finished = false;
+    var shown = 0;
+    var barCells = [], barEl = $('blBar'), pctEl = $('blPct'), statusEl = $('blStatus'), metaEl = $('blMeta');
+
+    for (var ci = 0; ci < 20; ci++) { var cell = document.createElement('i'); barEl.appendChild(cell); barCells.push(cell); }
+
+    function addTask(phase, weight, run, isAsset) {
+        var t = { phase: phase, w: weight, p: 0, done: false, state: '', run: run, asset: !!isAsset };
+        tasks.push(t); if (isAsset) assetTasks.push(t);
+        return t;
+    }
+    function finishTask(t, state) { t.p = 1; t.done = true; t.state = state || t.state || 'ok'; }
+
+    function withTimeout(promise, ms, fallback) {
+        return Promise.race([promise, new Promise(function (r) { setTimeout(function () { r(fallback); }, ms); })]);
+    }
+
+    function buildTasks() {
+        var A = CFG.assets;
+
+        /* Phase 0 — initialise: fonts + offline cache worker */
+        addTask(0, 3, async function (t) {
+            var list = A.fonts || [], n = 0;
+            await Promise.all(list.map(function (f) {
+                return withTimeout(document.fonts.load(f[1] + ' 1em "' + f[0] + '"').catch(function () {}), 6000)
+                    .then(function () { n++; t.p = n / list.length; });
+            }));
+            finishTask(t);
+        });
+        addTask(0, 1, async function (t) {
+            try {
+                var secure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+                if ('serviceWorker' in navigator && secure) {
+                    await withTimeout(navigator.serviceWorker.register('sw.js').catch(function () {}), 2500);
+                }
+            } catch (e) {}
+            finishTask(t);
+        });
+
+        /* Phase 1 — interface images */
+        (A.interface || []).forEach(function (url, i) {
+            var t = addTask(1, 8, async function (t) {
+                var r = await loadAsset(url, { onProgress: function (p) { t.p = p; } });
+                t.url = url; finishTask(t, r.state);
+            }, true);
+            t.url = url; t.core = true;
+        });
+        (A.logos || []).forEach(function (key) {
+            var url = 'images/logos/' + key + '.png';
+            var t = addTask(1, 1.5, async function (t) {
+                var r = await loadAsset(url, { optional: true, onProgress: function (p) { t.p = p; } });
+                finishTask(t, r.state);
+            }, true);
+            t.url = url;
+        });
+
+        /* Phase 2 — player assets: saved profile, preferences and emblem glyphs */
+        addTask(2, 2, async function (t) {
+            try {
+                ['gw_session', 'gw_name', 'gw_arcade', 'gw_prefs'].forEach(function (k) { localStorage.getItem(k); });
+            } catch (e) {}
+            t.p = .4;
+            if (A.glyphs) await withTimeout(document.fonts.load('400 1em "Dela Gothic One"', A.glyphs).catch(function () {}), 6000);
+            finishTask(t);
+        });
+
+        /* Phase 3 — game modes: Firebase sign-in + session restore inside the game module */
+        addTask(3, 6, async function (t) {
+            if (!window.__gwReady) {
+                await new Promise(function (resolve) {
+                    var done = false;
+                    function ok() { if (!done) { done = true; resolve(); } }
+                    window.addEventListener('gw:ready', ok, { once: true });
+                    setTimeout(function () { if (!done) { window.__aaReadyTimedOut = true; ok(); } }, CFG.readyTimeoutMs || 12000);
+                });
+            }
+            finishTask(t);
+        });
+    }
+
+    function runWithLimit(list, limit) {
+        var i = 0;
+        async function worker() { while (i < list.length) { var t = list[i++]; try { await t.run(t); } catch (e) { finishTask(t, 'failed'); } } }
+        var ws = []; for (var k = 0; k < limit; k++) ws.push(worker());
+        return Promise.all(ws);
+    }
+
+    async function beginLoading() {
+        if (loadStarted) return; loadStarted = true;
+        buildTasks();
+        var first = tasks.slice();
+        var all = runWithLimit(first, 6);
+
+        /* Phase 4 — finalize, only once everything above has settled */
+        var fin = addTask(4, 1, async function (t) {
+            await all;
+            try {
+                var bg = first.filter(function (x) { return x.core; })[0];
+                if (bg && bg.state !== 'failed' && bg.state !== 'missing') {
+                    var img = new Image(); img.src = bg.url;
+                    if (img.decode) await withTimeout(img.decode().catch(function () {}), 3000);
+                } else {
+                    /* fallback artwork so the menu never looks broken */
+                    document.body.style.setProperty('--bg-image', 'radial-gradient(ellipse at 70% 30%, #3a0a0a 0%, #120606 55%, #050303 100%)');
+                }
+                await withTimeout(document.fonts.ready, 3000);
+            } catch (e) {}
+            finishTask(t);
+        });
+        fin.run(fin).then(function () { allDone = true; });
+
+        setTimeout(function () { if (!allDone) { tasks.forEach(function (t) { if (!t.done) finishTask(t, 'failed'); }); allDone = true; } }, CFG.maxLoadMs || 40000);
+        requestAnimationFrame(tick);
+    }
+
+    function currentPhase() {
+        for (var i = 0; i < tasks.length; i++) if (!tasks[i].done) return tasks[i].phase;
+        return 4;
+    }
+    function currentPhaseLowest() {
+        var m = 4;
+        tasks.forEach(function (t) { if (!t.done && t.phase < m) m = t.phase; });
+        return m;
+    }
+
+    function target() {
+        var sum = 0, w = 0;
+        tasks.forEach(function (t) { w += t.w; sum += t.w * (t.done ? 1 : Math.min(.99, t.p)); });
+        return w ? sum / w * 100 : 0;
+    }
+
+    function paint() {
+        var pct = Math.floor(shown);
+        pctEl.textContent = pct + '%';
+        barEl.setAttribute('aria-valuenow', String(pct));
+        var cells = Math.floor(shown / 5);
+        for (var i = 0; i < barCells.length; i++) {
+            barCells[i].className = i < cells ? (i === cells - 1 && shown < 100 ? 'f h' : 'f') : '';
+        }
+        statusEl.textContent = PHASES[currentPhaseLowest()];
+
+        var done = 0, cached = 0, bad = 0;
+        assetTasks.forEach(function (t) {
+            if (t.done) { done++; if (t.state === 'cached') cached++; if (t.state === 'failed') bad++; }
+        });
+        var txt = done + ' of ' + assetTasks.length + ' assets';
+        if (cached) txt += ' · ' + cached + ' from cache';
+        if (bad) txt += ' · ' + bad + ' unavailable';
+        metaEl.textContent = assetTasks.length ? txt : '';
+    }
+
+    function tick() {
+        if (finished) return;
+        var tg = target();
+        if (allDone) tg = 100;
+        /* Follow the real number: ease towards it, but never run ahead of it. */
+        if (shown < tg) shown = Math.min(tg, shown + Math.max((tg - shown) * .2, .7));
+        paint();
+
+        if (allDone && shown >= 99.99 && loadVisible) {
+            finished = true;
+            setTimeout(openMenu, CFG.settleMs || 0);
+            return;
+        }
+        if (allDone && shown >= 99.99 && skipIntro) {           // reload path: no cinematic, so nothing to wait for
+            finished = true;
+            openMenu();
+            return;
+        }
+        requestAnimationFrame(tick);
+    }
+
+
+    /* -----------------------------------------------------
+       STAGE 4 — hand over to the main menu
+    ----------------------------------------------------- */
+    function openMenu() {
+        try { sessionStorage.setItem('aa_boot', '1'); } catch (e) {}
+        window.__aaMenuShown = true;
+        boot.classList.add('out');
+        document.documentElement.classList.add('aa-booted');
+        window.dispatchEvent(new Event('aa:menu'));
+        setTimeout(function () { boot.style.display = 'none'; stopParticles(); }, 800);
+
+        /* cached files are checked for changes in the background; nothing blocks on it */
+        var urls = assetTasks.filter(function (t) { return t.state === 'cached'; }).map(function (t) { return t.url; });
+        if (urls.length) setTimeout(function () { revalidate(urls); }, 2500);
+
+        if (window.__aaReadyTimedOut && !window.__gwReady) {
+            var el = $('toast');
+            if (el) { el.textContent = 'Could not reach the game servers yet. Check your connection or refresh.'; el.classList.add('show'); setTimeout(function () { el.classList.remove('show'); }, 5000); }
+        }
+    }
+
+
+    /* -----------------------------------------------------
+       GO
+    ----------------------------------------------------- */
+    if (skipIntro) {
+        showStage('load');
+        loadVisible = false;
+        beginLoading();
+    } else {
+        startPressStage();
+    }
+})();
+
+</script>
+
 
 
 <!-- =========================================
      HOME
 ========================================= -->
 
-<div id="home"
-     class="screen center">
+<div id="home" class="screen hub" data-view="play">
 
-<div class="panel">
+<div class="pc-banner" id="pcBanner"><span>Changing the party's mode. Everyone in the lobby will see the new settings.</span><button type="button" id="pcCancel">Cancel</button></div>
 
-<h1 id="homeTitle"><span class="t-top">Guess Who</span><span class="t-big">Anime</span><span class="t-bot">Edition</span></h1>
+<header class="hub-top">
+    <div class="hub-brand"><span class="hb-a">ANIME ARCADE</span><span class="hb-b">SEASON 1</span></div>
+    <nav class="hub-nav" aria-label="Main menu">
+        <button type="button" class="hub-tab" data-view="play" aria-current="page">Play</button>
+        <button type="button" class="hub-tab" data-view="modes">Modes</button>
+        <button type="button" class="hub-tab" data-view="profile">Profile</button>
+        <button type="button" class="hub-tab locked" data-lock="Battle Pass">Battle Pass</button>
+        <button type="button" class="hub-tab locked" data-lock="Event">Event</button>
+        <button type="button" class="hub-tab locked" data-lock="Store">Store</button>
+    </nav>
+    <div class="hub-acct">
+        <span class="coin" title="Currency"><i aria-hidden="true"></i><b id="meCoins">0</b></span>
+        <span class="lv" id="meLv" title="Account level">1</span>
+        <span class="av" id="meAv" aria-hidden="true">海</span>
+        <span class="uname" id="meName">Player</span>
+        <button type="button" class="gear" id="gearBtn" aria-label="Settings" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></button>
+        <div class="settings hidden" id="settings" role="dialog" aria-label="Settings">
+            <label for="voiceVol">Voice volume <b id="voiceVal">100%</b></label>
+            <input type="range" id="voiceVol" min="0" max="100" step="1" value="100">
+            <p>Controls the character voice lines in Anime Uno.</p>
+        </div>
+    </div>
+</header>
 
-<div class="subtitle">
-Pick your series. Hide a character. Guess theirs first.
-</div>
+<div class="hub-main">
 
+<main class="hub-stage">
 
-<div class="field">
+    <div class="hub-show" id="showcase" aria-label="Your player card"></div>
 
-<label>Your Name</label>
+    <section class="hub-view view-play" aria-label="Play">
+        <div class="hub-title" id="hubTitle" role="heading" aria-level="1" aria-label="Guess Who!"><span class="ht-a">Guess</span><span class="ht-b">Who!</span></div>
+        <p class="anime-hint" id="modeHint">Classic board. Pick a secret, flip cards, guess theirs.</p>
+        <div class="hub-picked" id="hubPicked"></div>
+        <button type="button" class="hub-start" data-needs-name="create" onclick="createRoom()">Start</button>
+        <button type="button" class="hub-invite" data-needs-name="create" onclick="createRoom()">Invite a friend</button>
+        <div id="joinArea" class="join-area">
+            <input id="joinCode" maxlength="6" placeholder="FRIEND'S CODE" aria-label="Lobby code" autocomplete="off" style="text-transform:uppercase">
+            <button type="button" data-needs-name="join" onclick="joinRoom()">Join</button>
+        </div>
+    </section>
 
-<input
-    id="name"
-    maxlength="20"
-    placeholder="Enter your name">
+    <section class="hub-view view-modes" aria-label="Game modes">
+        <div class="hub-panel wide">
+            <h2>Modes</h2>
+            <p class="sub">Pick a game. You will set up the series and options next.</p>
+            <div class="mode-grid">
+                <button id="modeGW" class="modebtn mode-card selected" onclick="setGameType('gw')"><span class="mc-art" data-glyph="誰" style="--b1:#e11b1b;--b2:#2a0606"></span><span class="mc-name">Guess Who!</span><span class="mc-desc">Classic board. Pick a secret, flip cards, guess theirs.</span><span class="mc-pl">2 players</span></button><button id="modeHB" class="modebtn mode-card" onclick="setGameType('hb')"><span class="mc-art" data-glyph="頭" style="--b1:#2a6be0;--b2:#070b18"></span><span class="mc-name">Headbanz</span><span class="mc-desc">You see everyone else&#39;s character but not your own. Ask, then guess yours first.</span><span class="mc-pl">2 to 4 players</span></button><button id="modeIM" class="modebtn mode-card" onclick="setGameType('im')"><span class="mc-art" data-glyph="偽" style="--b1:#7a3cff;--b2:#0d0719"></span><span class="mc-name">Imposter</span><span class="mc-desc">Everyone sees the same character except the imposter. Give clues, vote, catch them.</span><span class="mc-pl">3 to 6 players</span></button><button id="modeUNO" class="modebtn mode-card" onclick="setGameType('uno')"><span class="mc-art" data-glyph="札" style="--b1:#1fb58f;--b2:#06120f"></span><span class="mc-name">Anime Uno</span><span class="mc-desc">Pick four series. They become the four colours.</span><span class="mc-pl">2 to 6 players</span></button>
+            </div>
+        </div>
+    </section>
 
-</div>
-
-
-<div class="field"><label>Game mode</label><div class="sizes"><button id="modeGW" class="modebtn selected" onclick="setGameType('gw')">Guess Who</button><button id="modeHB" class="modebtn" onclick="setGameType('hb')">Headbanz</button><button id="modeIM" class="modebtn" onclick="setGameType('im')">Imposter</button><button id="modeUNO" class="modebtn" onclick="setGameType('uno')">Anime UNO</button></div>
-<p class="anime-hint" id="modeHint">Classic board. Pick a secret, flip cards, guess theirs.</p></div>
-<div
+    <section class="hub-view view-setup hub-setup" aria-label="Mode setup">
+        <div class="hub-panel">
+            <h2 id="setupTitle">Set up your match</h2>
+            <p class="sub">Characters are drawn from every series you tick. Options depend on the mode you picked.</p>
+            <div
     id="animePoll" class="field series-pick">
 
 <label>Series in play</label>
@@ -1439,9 +2577,7 @@ Characters are drawn at random from every series you tick.
 </p>
 
 </div>
-
-
-<div class="field hidden" id="diffField"><label>Difficulty</label><div class="sizes"><button class="modebtn dbtn" data-d="easy" onclick="setDiff('easy')">Easy</button><button class="modebtn dbtn selected" data-d="normal" onclick="setDiff('normal')">Normal</button><button class="modebtn dbtn" data-d="hard" onclick="setDiff('hard')">Hard</button></div>
+            <div class="field hidden" id="diffField"><label>Difficulty</label><div class="sizes"><button class="modebtn dbtn" data-d="easy" onclick="setDiff('easy')">Easy</button><button class="modebtn dbtn selected" data-d="normal" onclick="setDiff('normal')">Normal</button><button class="modebtn dbtn" data-d="hard" onclick="setDiff('hard')">Hard</button></div>
 <p class="anime-hint">Easy = famous characters to guess. Hard = lesser-known ones. You can search any character when guessing, on every difficulty.</p>
 <div id="hbRoundsBox"><label style="margin-top:14px">Rounds (trio / squad)</label><div class="sizes"><button class="modebtn rbtn" data-r="3" onclick="setRounds(3)">3</button><button class="modebtn rbtn selected" data-r="5" onclick="setRounds(5)">5</button><button class="modebtn rbtn" data-r="7" onclick="setRounds(7)">7</button><button class="modebtn rbtn" data-r="10" onclick="setRounds(10)">10</button></div>
 <p class="anime-hint">2 players = duo, best of 3. 3 or 4 players = points per round (first to guess gets the most), highest total after the rounds wins.</p></div></div>
@@ -1475,38 +2611,77 @@ Characters are drawn at random from every series you tick.
 </div>
 
 </div>
+            <div class="hub-btnrow">
+                <button type="button" class="hub-back" data-go="play" data-confirm="1">Confirm</button>
+                <button type="button" class="hub-back ghost" data-go="modes">Back to modes</button>
+            </div>
+        </div>
+    </section>
 
+    <section class="hub-view view-profile" aria-label="Profile">
+        <div class="hub-panel wide">
+            <h2>Profile</h2>
+            <p class="sub">Your card is shown to everyone in your party. Changing your name never changes your sign-in.</p>
+            <div class="pf-grid">
+                <div class="pf-col-preview"><div id="pfPreview"></div>
+                    <div class="pf-stats">
+                        <div><b id="pfLevel">1</b><span>Level</span></div><div><b id="pfXp">0</b><span>Total XP</span></div>
+                        <div><b id="pfPlayed">0</b><span>Matches</span></div><div><b id="pfWins">0</b><span>Wins</span></div>
+                    </div>
+                </div>
+                <div class="pf-col-form">
+                    <div class="pf-row">
+                        <div class="pf-f grow"><label for="name">Username</label><input id="name" maxlength="20" placeholder="Your name" autocomplete="nickname"></div>
+                        <div class="pf-f tag"><label for="pfTag">Tag</label><div class="tagbox"><span>#</span><input id="pfTag" maxlength="5" autocomplete="off" aria-label="Player tag"></div></div>
+                    </div>
+                    <label class="lbl" id="pfColLbl">Username colour</label>
+                    <div class="pf-colors" id="pfColors" role="group" aria-labelledby="pfColLbl"></div>
+                    <div class="pf-custom"><label for="pfColorPick">Custom</label><input type="color" id="pfColorPick" value="#ffffff"></div>
+                    <label class="lbl" id="pfAvLbl">Avatar</label>
+                    <div class="pf-avatars" id="pfAvatars" role="group" aria-labelledby="pfAvLbl"></div>
+                    <label class="lbl" id="pfBnLbl">Banner</label>
+                    <div class="pf-banners" id="pfBanners" role="group" aria-labelledby="pfBnLbl"></div>
+                    <button type="button" class="hub-back" id="pfSave">Save profile</button>
+                </div>
+            </div>
+        </div>
+    </section>
 
-<div class="main-buttons">
+    <section class="hub-view view-locked" aria-label="Locked">
+        <div class="hub-panel lockbox">
+            <div class="lockicon" aria-hidden="true">&#128274;</div>
+            <h2 id="lockTitle">Locked</h2>
+            <p class="sub">Coming soon. This section will unlock in a future season.</p>
+            <button type="button" class="hub-back" data-go="play">Back to play</button>
+        </div>
+    </section>
 
-<button onclick="createRoom()">
-🏠 CREATE ROOM
-</button>
+</main>
 
+<aside class="hub-side" aria-label="News and progress">
+    <div class="hub-card ann" id="annBox" role="button" tabindex="0" aria-label="Open announcement"><div class="ann-dots" id="annDots"></div></div>
 
+    <section class="hub-card pad" aria-label="AA progress">
+        <div class="prog-top"><h2>AA Progress</h2><span class="lvl" id="pgLevel">Level 1</span></div>
+        <div class="bar"><i id="pgBar"></i><span id="pgText">0 / 200 XP</span></div>
+        <p class="hub-note" id="pgNext"></p>
+    </section>
+
+    <section class="hub-card pad" aria-label="Daily challenges">
+        <div class="daily-top"><h2>Daily challenges</h2><span class="daily-time" id="dailyTime" title="Time until new challenges"></span></div>
+        <div id="dailyList"></div>
+        <p class="hub-note">Progress is saved on this device.</p>
+    </section>
+</aside>
 
 </div>
 
-
-<div
-    id="joinArea" class="join-area">
-
-<input
-    id="joinCode"
-    maxlength="6"
-    placeholder="ROOM CODE"
-    style="text-transform:uppercase">
-
-<button
-    style="width:100%;margin-top:8px"
-    onclick="joinRoom()">
-
-JOIN ROOM
-
-</button>
-
-</div>
-
+<div class="am hidden" id="annModal" role="dialog" aria-modal="true" aria-labelledby="amTitle">
+    <div class="am-box">
+        <div class="am-img" id="amImg"></div>
+        <div class="am-txt"><h2 id="amTitle"></h2><p id="amBody"></p></div>
+        <button type="button" class="hub-back" id="amClose">Close</button>
+    </div>
 </div>
 
 </div>
@@ -1519,14 +2694,17 @@ JOIN ROOM
 
 <div id="lobby" class="screen center hidden">
 <div class="panel">
-<h1>Waiting room</h1>
+<h1>Party lobby</h1>
 <p class="lobby-label">Room code</p>
 <div id="roomCode" class="room-code">------</div>
 <div class="lobby-actions">
 <button class="pop" onclick="copyInviteLink()">🔗 Copy invite link</button>
 <button class="pop secondary" onclick="copyRoomCode()">📋 Copy code</button>
 </div>
-<div style="margin-top:25px">
+<p id="partyInfo" class="party-info"></p>
+<div class="party-actions"><button type="button" id="changeModeBtn" class="pop hidden">Change mode</button></div>
+<div id="partyGrid" class="party-grid"></div>
+<div class="old-players" style="margin-top:25px">
 <div class="player"><span id="p1Name">Player 1</span><span class="ready">● Ready</span></div>
 <div class="player"><span id="p2Name">Waiting...</span><span id="p2Status">○ Waiting</span></div>
 <div class="player hidden"><span id="p3Name">Waiting...</span><span id="p3Status">○ Waiting</span></div>
@@ -3879,7 +5057,7 @@ function unoVoiceLoad(key, wait) {                       // -> Promise of {src, 
         tryExt();
     });
 }
-function unoVoicePlay(info) { const a = new Audio(info.src); a.volume = 1; a.play().catch(() => {}); return a; }
+function unoVoicePlay(info) { const a = new Audio(info.src); a.volume = (typeof window.__aaVoice === "number" ? window.__aaVoice : 1); a.play().catch(() => {}); return a; }
 function unoVoiceStop(a) { const f = setInterval(() => { if (a.volume > .15) a.volume -= .15; else { a.pause(); clearInterval(f); } }, 30); }
 /* [template, ability title, caption under it, colour] */
 const UNO_FX_CFG = {
@@ -6230,6 +7408,7 @@ function listenToRoom() {
         // (matters most for the joining player, whose local button
         // clicks on the home screen shouldn't be the source of truth
         // once a real room with real data exists).
+        if (currentRoomData.cfgRev !== aaCfgRev) { aaCfgRev = currentRoomData.cfgRev; hbPackKey = ""; }
         applyTheme(); updatePresenceBanner(currentRoomData); winSoundPreload(currentRoomData.animes); musicSync(currentRoomData);
 
         // Keep the local board size synchronized with the room.
@@ -6237,7 +7416,7 @@ function listenToRoom() {
             boardSize = Number(currentRoomData.boardSize);
         }
 
-        updateLobby(currentRoomData); if (currentRoomData.gameType === "headbanz") updateLobbyHB(currentRoomData);
+        updateLobby(currentRoomData); window.dispatchEvent(new CustomEvent("aa:room", { detail: currentRoomData })); if (currentRoomData.gameType === "headbanz") updateLobbyHB(currentRoomData);
         if (currentRoomData.gameType === "imposter") updateLobbyIM(currentRoomData);
         if (currentRoomData.gameType === "uno") updateLobbyUNO(currentRoomData);
 
@@ -7204,6 +8383,53 @@ function() {
 /* =========================================
    START UP: rejoin or open invite link
 ========================================= */
+/* =========================================
+   ANIME ARCADE: change the party's mode / settings in place.
+   The room code, players, presence and shared profiles are kept; only the
+   mode-specific fields are replaced, using the same data each create* function writes.
+========================================= */
+let aaCfgRev;
+window.aaApplyPartyConfig = async function () {
+    if (hbBusy) return false;
+    if (!room || Number(myPlayer) !== 1) { toast("Only the party leader can change the mode."); return false; }
+    const d = currentRoomData;
+    if (!d || (d.status && d.status !== "waiting")) { toast("The mode can only be changed before the match starts."); return false; }
+    let keys = Array.from(document.querySelectorAll("#animePoll input[type=checkbox]:checked")).map(c => c.value);
+    if (!keys.length) { toast("Pick at least one anime series."); return false; }
+    const count = [1, 2, 3, 4, 5, 6].filter(i => d["player" + i]).length;
+    const LIM = { gw: [2, "Guess Who!"], hb: [4, "Headbanz"], im: [6, "Imposter"], uno: [6, "Anime Uno"] }[homeMode];
+    if (count > LIM[0]) { toast(LIM[1] + " allows " + LIM[0] + " players, but " + count + " are in the party."); return false; }
+    hbBusy = true;
+    try {
+        const f = { board: null, boardSize: null, uno: null, hb: null, im: null, guess: null, revealed: null, packs: null,
+            difficulty: null, rounds: null, laps: null, gameType: null, status: "waiting", turn: 1, winner: null, result: null,
+            mode: mode, cfgRev: Date.now() };
+        if (homeMode === "gw") {
+            const pool = keys.flatMap(k => ANIME_LIBRARY[k] || []);
+            if (pool.length < boardSize) { toast("You need at least " + boardSize + " images across the series you selected."); return false; }
+            f.board = pickBalanced(keys, boardSize).map((image, i) => ({ id: "c" + i, image: image }));
+            f.boardSize = boardSize;
+        } else if (homeMode === "hb") {
+            keys = hbVisibleKeys(keys); f.gameType = "headbanz"; f.difficulty = homeDiff; f.rounds = homeRounds;
+        } else if (homeMode === "im") {
+            keys = hbVisibleKeys(keys); f.gameType = "imposter"; f.difficulty = homeDiff; f.laps = homeLaps;
+        } else {
+            if (keys.length !== 4) { toast("Anime UNO needs exactly 4 series. You picked " + keys.length + "."); return false; }
+            toast("Loading characters...");
+            let pool = [];
+            try { pool = await hbBuildPool(keys, "normal"); } catch (e) { console.warn(e); toast("Couldn't load pictures. Cards will show names only."); }
+            const cards = unoBuildCards(keys, pool);
+            if (pool.length) await unoFetchMissing(cards.filter(c => !c.sp), keys, left => toast("Finding card pictures... " + left + " left"));
+            f.gameType = "uno";
+            f.uno = { cards: cards, anime: keys.map(k => HB_SERIES[k].label), phase: "lobby", n: 0, missing: cards.filter(c => !c.i && !c.sp).map(c => c.n) };
+        }
+        f.animes = keys;
+        await update(ref(db, "rooms/" + room), f);
+        return true;
+    } catch (e) { console.error(e); toast("Could not change the mode: " + (e.message || e)); return false; }
+    finally { hbBusy = false; }
+};
+
 async function initApp() {
     try { const n = sessionStorage.getItem("gw_notice"); if (n) { sessionStorage.removeItem("gw_notice"); setTimeout(() => toast(n), 400); } } catch (e) {}
     try { $("name").value = localStorage.getItem("gw_name") || ""; } catch (e) {}
@@ -7235,6 +8461,12 @@ async function initApp() {
 }
 await initApp();
 
+/* ANIME ARCADE: tell the startup screen the game is ready (and share the character lists for background caching) */
+window.__AA_DATA = { CHARACTER_LIBRARY, ANIME_LIBRARY };
+window.__AA = { uid: () => user && user.uid, room: () => room, me: () => myPlayer, data: () => currentRoomData, update: (path, val) => update(ref(db, path), val) };
+window.__gwReady = true;
+window.dispatchEvent(new Event("gw:ready"));
+
 </script>
 
 <script>
@@ -7253,6 +8485,539 @@ await initApp();
     }
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',addLogos); else addLogos();
 })();
+</script>
+
+<script>
+/* =========================================================
+   ANIME ARCADE — main menu, profile, party lobby
+   ---------------------------------------------------------
+   UI layer only. It calls the game's existing handlers
+   (setGameType, createRoom, joinRoom, startGame ...) and reads
+   the room through window.__AA (a read/update bridge exposed
+   by the game module). Game rules and room structure are
+   untouched; the only addition to a room is rooms/<code>/profiles/<uid>.
+========================================================= */
+(function () {
+    'use strict';
+
+    var CFG = window.ARCADE_CONFIG || {};
+    var $ = function (id) { return document.getElementById(id); };
+    var home = $('home');
+    if (!home) return;
+
+    var reduceMotion = false;
+    try { reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+
+    function store(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+    function fetchStore(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+    function hash(s) { var h = 7; s = String(s); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
+    function say(msg) {
+        var el = $('toast'); if (!el) return;
+        el.textContent = msg; el.classList.add('show');
+        clearTimeout(say._t); say._t = setTimeout(function () { el.classList.remove('show'); }, 3200);
+    }
+
+    /* ---------------------------------------------------------
+       PROFILE DATA  (avatars, banners, name colours)
+    --------------------------------------------------------- */
+    var AVATARS = [
+        { g: '海', c: '#ff4d6d' }, { g: '忍', c: '#ff9f1c' }, { g: '龍', c: '#3ea6ff' }, { g: '呪', c: '#b388ff' },
+        { g: '鬼', c: '#2ec4a6' }, { g: '霊', c: '#e8e8f4' }, { g: '炎', c: '#ff6b35' }, { g: '星', c: '#f2c94c' }
+    ];
+    var BANNERS = [
+        { n: 'Crimson Gate', a: '#e11b1b', b: '#2a0606', g: '闘' }, { n: 'Night Sakura', a: '#c23a7a', b: '#140714', g: '桜' },
+        { n: 'Storm Blue', a: '#2a6be0', b: '#070b18', g: '嵐' }, { n: 'Shadow Violet', a: '#7a3cff', b: '#0d0719', g: '影' },
+        { n: 'Jade Spirit', a: '#1fb58f', b: '#06120f', g: '霊' }, { n: 'Gold Flame', a: '#e0a526', b: '#150d04', g: '炎' }
+    ];
+    var NAME_COLORS = ['#ffffff', '#ff4d6d', '#ff9f1c', '#f2c94c', '#6fd36f', '#3ea6ff', '#b388ff', '#ff7bd5'];
+
+    function cleanTag(t) { return String(t || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 5).toUpperCase(); }
+    function cleanColor(c) { return /^#[0-9a-fA-F]{6}$/.test(c || '') ? c : '#ffffff'; }
+    function normProfile(p, seed) {
+        p = p || {}; var h = hash(seed || 'x');
+        return {
+            avatar: (p.avatar | 0) >= 0 && (p.avatar | 0) < AVATARS.length && p.avatar != null ? (p.avatar | 0) : h % AVATARS.length,
+            banner: (p.banner | 0) >= 0 && (p.banner | 0) < BANNERS.length && p.banner != null ? (p.banner | 0) : (h >> 3) % BANNERS.length,
+            tag: cleanTag(p.tag) || String(1000 + (h % 9000)),
+            color: cleanColor(p.color)
+        };
+    }
+
+    var profile = fetchStore('gw_profile');
+    if (!profile) { profile = normProfile({}, Math.random() + ''); store('gw_profile', profile); }
+    profile = normProfile(profile, 'me');
+    var nameEl = $('name');
+    function myName() { return ((nameEl && nameEl.value) || '').trim() || 'Player'; }
+
+    /* one player card, used by the showcase, the profile preview and the party lobby */
+    function cardHTML(p, name, role, cls) {
+        var b = BANNERS[p.banner], a = AVATARS[p.avatar];
+        return '<div class="pcard ' + (cls || '') + '" data-glyph="' + b.g + '" style="--b1:' + b.a + ';--b2:' + b.b + ';--nc:' + esc(p.color) + ';--ac:' + a.c + '">' +
+            (role ? '<span class="role ' + esc(role.toLowerCase().replace(/\s+/g, '-')) + '">' + esc(role) + '</span>' : '') +
+            '<div class="foot"><span class="av" aria-hidden="true">' + a.g + '</span><div class="id"><b class="nm">' + esc(name) + '</b><i class="tg">#' + esc(p.tag) + '</i></div></div></div>';
+    }
+
+    /* ---------------------------------------------------------
+       VIEWS / NAVIGATION
+    --------------------------------------------------------- */
+    var tabs = Array.prototype.slice.call(home.querySelectorAll('.hub-tab'));
+    var TAB_FOR_VIEW = { play: 'play', modes: 'modes', setup: 'modes', profile: 'profile', locked: null };
+    function setView(v, lockName) {
+        home.dataset.view = v;
+        var active = v === 'locked' ? lockName : TAB_FOR_VIEW[v];
+        tabs.forEach(function (t) { var on = (t.dataset.lock || t.dataset.view) === active; if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
+        if (v === 'locked') { $('lockTitle').textContent = lockName; }
+        if (v === 'profile') renderDraft();
+        if (v === 'setup') renderPicked();
+        closeSettings();
+    }
+    tabs.forEach(function (t) {
+        t.addEventListener('click', function () { if (t.dataset.lock) setView('locked', t.dataset.lock); else setView(t.dataset.view); });
+    });
+    home.addEventListener('click', function (e) {
+        var go = e.target.closest('[data-go]');
+        if (!go) return;
+        if (go.dataset.confirm) {
+            if (home.classList.contains('party-config')) {                 /* leader: push the new mode to the whole party */
+                if (typeof window.aaApplyPartyConfig !== 'function') return;
+                go.disabled = true;
+                window.aaApplyPartyConfig().then(function (ok) {
+                    go.disabled = false;
+                    if (ok) { exitPartyConfig(); say('Party switched to ' + MODES[currentMode()].name + '.'); }
+                });
+                return;
+            }
+            say(MODES[currentMode()].name + ' is ready.');
+        }
+        setView(go.dataset.go);
+    });
+
+    /* ---------------------------------------------------------
+       MODES
+    --------------------------------------------------------- */
+    var MODES = {
+        gw:  { a: 'Guess',  b: 'Who!',     name: 'Guess Who!' },
+        hb:  { a: 'Head',   b: 'Banz',     name: 'Headbanz' },
+        im:  { a: 'The',    b: 'Imposter', name: 'Imposter' },
+        uno: { a: 'Anime',  b: 'Uno',      name: 'Anime Uno' }
+    };
+    var titleEl = $('hubTitle');
+    function currentMode() {
+        var b = home.querySelector('.mode-grid .modebtn.selected');
+        return b ? b.id.replace('mode', '').toLowerCase() : 'gw';
+    }
+    var shownMode = null;
+    function renderTitle(animate) {
+        var m = currentMode(); if (m === shownMode) return; shownMode = m;
+        var d = MODES[m] || MODES.gw;
+        titleEl.querySelector('.ht-a').textContent = d.a;
+        titleEl.querySelector('.ht-b').textContent = d.b;
+        titleEl.querySelector('.ht-a').classList.toggle('long', d.a.length > 6);
+        titleEl.setAttribute('aria-label', d.name);
+        if (animate && !reduceMotion) { titleEl.classList.remove('swap'); void titleEl.offsetWidth; titleEl.classList.add('swap'); }
+    }
+    home.addEventListener('click', function (e) {
+        var card = e.target.closest('.mode-grid .modebtn');
+        if (!card) return;
+        /* the game's own onclick (setGameType) already ran */
+        renderTitle(true); renderPicked(); prefetchSelected(); savePrefs();
+        setView('setup');
+    });
+
+    var pickedEl = $('hubPicked');
+    function renderPicked() {
+        var boxes = home.querySelectorAll('#animePoll input[type=checkbox]:checked'), html = '', shown = 0;
+        Array.prototype.forEach.call(boxes, function (b) {
+            var label = b.closest('label'); if (!label || getComputedStyle(label).display === 'none') return;
+            if (shown < 4) { var n = label.querySelector('.name'); html += '<span class="chip" style="--c:' + esc(label.style.getPropertyValue('--c') || '#fff') + '">' + esc(n ? n.textContent : b.value) + '</span>'; }
+            shown++;
+        });
+        if (!shown) html = '<span>No series selected.</span>'; else if (shown > 4) html += '<span>+' + (shown - 4) + ' more</span>';
+        html += '<button type="button" data-go="setup">Change</button>';
+        pickedEl.innerHTML = html;
+    }
+    var poll = $('animePoll');
+    if (poll) poll.addEventListener('change', function () { renderPicked(); prefetchSelected(); savePrefs(); });
+
+    /* ---------------------------------------------------------
+       START / INVITE / JOIN  (all go through the game's own room code)
+    --------------------------------------------------------- */
+    function hasSession() { var s = fetchStore('gw_session'); return !!(s && s.room); }
+    function guard(e) {
+        var btn = e.target.closest('[data-needs-name]'); if (!btn) return;
+        if (!(nameEl.value || '').trim()) {
+            e.preventDefault(); e.stopImmediatePropagation();
+            setView('profile'); say('Choose a username first.');
+            setTimeout(function () { nameEl.focus(); }, 60);
+            return;
+        }
+        if (hasSession() && btn.dataset.needsName === 'create') {
+            e.preventDefault(); e.stopImmediatePropagation();
+            say('You already have a party. Opening it.'); setTimeout(function () { location.reload(); }, 600);
+        }
+    }
+    home.addEventListener('click', guard, true);
+
+    /* ---------------------------------------------------------
+       ANNOUNCEMENT  (click opens a modal)
+    --------------------------------------------------------- */
+    var annEl = $('annBox'), annDots = $('annDots');
+    var anns = CFG.announcements || [], annIdx = 0, annTimer = 0, annPaused = false;
+    function annArt(a) { return a.image ? 'background:#120606 url(' + JSON.stringify(a.image).replace(/"/g, "'") + ') center/cover no-repeat' : 'background:' + (a.art || 'linear-gradient(135deg,#3a0a0a,#0a0606)'); }
+    function renderAnn() {
+        if (!annEl || !anns.length) { if (annEl) annEl.classList.add('hidden'); return; }
+        annEl.querySelectorAll('.ann-slide').forEach(function (n) { n.remove(); });
+        anns.forEach(function (a, i) {
+            var s = document.createElement('div');
+            s.className = 'ann-slide' + (i === 0 ? ' on' : '');
+            s.setAttribute('style', annArt(a)); s.setAttribute('data-glyph', a.image ? '' : (a.glyph || ''));
+            s.innerHTML = '<div class="cap"><b>' + esc(a.title) + '</b></div>';
+            annEl.insertBefore(s, annDots);
+        });
+        annDots.innerHTML = '';
+        anns.forEach(function (a, i) {
+            var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', 'Show announcement ' + (i + 1));
+            if (i === 0) b.setAttribute('aria-current', 'true');
+            b.addEventListener('click', function (e) { e.stopPropagation(); showAnn(i); restartAnn(); });
+            annDots.appendChild(b);
+        });
+        restartAnn();
+    }
+    function showAnn(i) {
+        annIdx = (i + anns.length) % anns.length;
+        annEl.querySelectorAll('.ann-slide').forEach(function (s, k) { s.classList.toggle('on', k === annIdx); });
+        annDots.querySelectorAll('button').forEach(function (b, k) { if (k === annIdx) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+    }
+    function restartAnn() {
+        clearInterval(annTimer);
+        if (reduceMotion || anns.length < 2) return;
+        annTimer = setInterval(function () { if (!document.hidden && !annPaused) showAnn(annIdx + 1); }, 7000);
+    }
+    var modal = $('annModal'), lastFocus = null;
+    function openAnn() {
+        var a = anns[annIdx]; if (!a) return;
+        lastFocus = document.activeElement;
+        var img = $('amImg'); img.setAttribute('style', annArt(a)); img.setAttribute('data-glyph', a.image ? '' : (a.glyph || ''));
+        $('amTitle').textContent = a.title; $('amBody').textContent = a.body || '';
+        modal.classList.remove('hidden'); $('amClose').focus();
+    }
+    function closeAnn() { modal.classList.add('hidden'); if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+    if (annEl) {
+        annEl.addEventListener('click', openAnn);
+        annEl.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target === annEl) { e.preventDefault(); openAnn(); } });
+        annEl.addEventListener('mouseenter', function () { annPaused = true; });
+        annEl.addEventListener('mouseleave', function () { annPaused = false; });
+    }
+    $('amClose').addEventListener('click', closeAnn);
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeAnn(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { if (!modal.classList.contains('hidden')) closeAnn(); closeSettings(); } });
+
+    /* ---------------------------------------------------------
+       SETTINGS  (voice volume)
+       The slider drives window.__aaVoice, which the game's
+       voice-line player (Anime UNO special cards) reads.
+    --------------------------------------------------------- */
+    var gear = $('gearBtn'), panel = $('settings'), vol = $('voiceVol');
+    function closeSettings() { panel.classList.add('hidden'); gear.setAttribute('aria-expanded', 'false'); }
+    gear.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden', !open); gear.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    panel.addEventListener('click', function (e) { e.stopPropagation(); });
+    document.addEventListener('click', closeSettings);
+    var savedVol = fetchStore('gw_voice'); if (typeof savedVol !== 'number' || savedVol < 0 || savedVol > 100) savedVol = 100;
+    function applyVol(v) { window.__aaVoice = v / 100; $('voiceVal').textContent = v + '%'; vol.value = v; vol.style.setProperty('--p', v + '%'); }
+    applyVol(savedVol);
+    vol.addEventListener('input', function () { applyVol(+vol.value); });
+    vol.addEventListener('change', function () { store('gw_voice', +vol.value); });
+
+    /* ---------------------------------------------------------
+       PROGRESSION, CURRENCY, DAILY CHALLENGES  (this device)
+    --------------------------------------------------------- */
+    var KEY = 'gw_arcade';
+    function today() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+    var state = fetchStore(KEY) || {};
+    state.xp = state.xp || 0; state.coins = state.coins || 0;
+    state.totals = state.totals || { played: 0, wins: 0 };
+    function freshDay() { return { date: today(), played: 0, wins: 0, modes: {}, done: [] }; }
+    if (!state.day || state.day.date !== today() || Array.isArray(state.day.modes)) state.day = freshDay();
+
+    function xpNeeded(l) { return 150 + 50 * l; }
+    function levelOf(xp) { var l = 1, left = xp; while (left >= xpNeeded(l)) { left -= xpNeeded(l); l++; } return { level: l, into: left, need: xpNeeded(l) }; }
+    function modeCount(d, m) { return d.modes[m] || 0; }
+    function distinctModes(d) { return Object.keys(d.modes).length; }
+
+    /* Only things the game can genuinely report: finished matches, wins, and which mode was played. */
+    var CH_PLAY = [
+        { id: 'play1', t: 'Finish 1 match in any mode', goal: 1, xp: 100, coins: 0, v: function (d) { return d.played; } },
+        { id: 'play3', t: 'Finish 3 matches in any mode', goal: 3, xp: 250, coins: 10, v: function (d) { return d.played; } }
+    ];
+    var CH_WIN = [
+        { id: 'win1', t: 'Win 1 match', goal: 1, xp: 200, coins: 10, v: function (d) { return d.wins; } },
+        { id: 'win2', t: 'Win 2 matches', goal: 2, xp: 300, coins: 20, v: function (d) { return d.wins; } }
+    ];
+    var CH_MIX = [
+        { id: 'modes2', t: 'Play 2 different modes', goal: 2, xp: 150, coins: 5, v: distinctModes },
+        { id: 'gw2', t: 'Finish 2 Guess Who! matches', goal: 2, xp: 150, coins: 5, v: function (d) { return modeCount(d, 'gw'); } },
+        { id: 'hb2', t: 'Finish 2 Headbanz matches', goal: 2, xp: 150, coins: 5, v: function (d) { return modeCount(d, 'hb'); } },
+        { id: 'uno2', t: 'Finish 2 Anime Uno matches', goal: 2, xp: 150, coins: 5, v: function (d) { return modeCount(d, 'uno'); } }
+    ];
+    function dailySet() { var h = hash(state.day.date); return [CH_PLAY[h % 2], CH_WIN[(h >> 3) % 2], CH_MIX[(h >> 5) % CH_MIX.length]]; }
+    function save() { store(KEY, state); }
+
+    function renderProgress() {
+        var L = levelOf(state.xp);
+        $('pgLevel').textContent = 'Level ' + L.level;
+        $('pgBar').style.width = Math.round(L.into / L.need * 100) + '%';
+        $('pgText').textContent = L.into.toLocaleString() + ' / ' + L.need.toLocaleString() + ' XP';
+        $('pgNext').textContent = (L.need - L.into).toLocaleString() + ' XP to level ' + (L.level + 1);
+        $('meLv').textContent = L.level; $('meCoins').textContent = state.coins.toLocaleString();
+    }
+    function renderDaily() {
+        var box = $('dailyList'); box.innerHTML = '';
+        dailySet().forEach(function (c) {
+            var val = Math.min(c.goal, c.v(state.day)), done = state.day.done.indexOf(c.id) >= 0;
+            var row = document.createElement('div'); row.className = 'ch' + (done ? ' done' : '');
+            row.innerHTML = '<div class="ch-row"><span>' + esc(c.t) + '</span><span class="xp">' + c.xp + ' XP' + (c.coins ? ' <small>+' + c.coins + ' coins</small>' : '') + '</span></div>' +
+                '<div class="bar thin' + (done ? ' done' : '') + '" role="progressbar" aria-valuemin="0" aria-valuemax="' + c.goal + '" aria-valuenow="' + val + '" aria-label="' + esc(c.t) + '"><i style="width:' + (val / c.goal * 100) + '%"></i><span>' + (done ? 'Complete' : val + ' / ' + c.goal) + '</span></div>';
+            box.appendChild(row);
+        });
+    }
+    function tickClock() {
+        var now = new Date(), end = new Date(now); end.setHours(24, 0, 0, 0);
+        var mins = Math.max(0, Math.floor((end - now) / 60000));
+        $('dailyTime').textContent = Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm';
+        if (state.day.date !== today()) { state.day = freshDay(); save(); renderDaily(); }
+    }
+    function matchFinished(mode, won) {
+        if (state.day.date !== today()) state.day = freshDay();
+        var before = levelOf(state.xp).level;
+        state.totals.played++; state.day.played++; if (won) { state.totals.wins++; state.day.wins++; }
+        if (mode) state.day.modes[mode] = (state.day.modes[mode] || 0) + 1;
+        state.xp += 50 + (won ? 100 : 0);
+        dailySet().forEach(function (c) {          // each challenge pays out exactly once per day
+            if (state.day.done.indexOf(c.id) < 0 && c.v(state.day) >= c.goal) {
+                state.day.done.push(c.id); state.xp += c.xp; state.coins += c.coins || 0;
+                say('Challenge complete: ' + c.t + ' (+' + c.xp + ' XP' + (c.coins ? ', +' + c.coins + ' coins' : '') + ')');
+            }
+        });
+        save(); renderProgress(); renderDaily(); renderProfileStats();
+        var after = levelOf(state.xp).level;
+        if (after > before) setTimeout(function () { say('Level up! You are now level ' + after + '.'); }, 3400);
+    }
+    var PLAY_SCREENS = { game: 'gw', hb: 'hb', im: 'im', uno: 'uno' }, seen = {}, lastMode = 'gw';
+    function isShown(id) { var el = $(id); return !!el && !el.classList.contains('hidden'); }
+    function watchScreens() {
+        Object.keys(PLAY_SCREENS).forEach(function (id) { var v = isShown(id); if (v && !seen[id]) lastMode = PLAY_SCREENS[id]; seen[id] = v; });
+        var r = isShown('result');
+        if (r && !seen.result) matchFinished(lastMode, $('winnerText') && $('winnerText').textContent.trim() === 'VICTORY');
+        seen.result = r;
+        var o = isShown('unoOver');
+        if (o && !seen.unoOver) setTimeout(function () { matchFinished('uno', $('unoOver').classList.contains('win')); }, 160);
+        seen.unoOver = o;
+    }
+    var mo = new MutationObserver(watchScreens);
+    ['game', 'hb', 'im', 'uno', 'result', 'unoOver'].forEach(function (id) { var el = $(id); if (el) mo.observe(el, { attributes: true, attributeFilter: ['class'] }); });
+    watchScreens();
+
+    /* ---------------------------------------------------------
+       SHOWCASE + PROFILE EDITOR
+    --------------------------------------------------------- */
+    function renderShowcase() {
+        $('showcase').innerHTML = cardHTML(profile, myName(), 'Party leader', 'big');
+        $('meName').textContent = myName(); $('meName').style.color = profile.color;
+        var a = AVATARS[profile.avatar]; $('meAv').textContent = a.g; $('meAv').style.setProperty('--av', a.c);
+    }
+    var draft = null;
+    function renderDraft() {
+        if (!draft) draft = JSON.parse(JSON.stringify(profile));
+        $('pfPreview').innerHTML = cardHTML(draft, myName(), '', 'big');
+        $('pfAvatars').querySelectorAll('button').forEach(function (b, i) { b.setAttribute('aria-pressed', i === draft.avatar ? 'true' : 'false'); });
+        $('pfBanners').querySelectorAll('button').forEach(function (b, i) { b.setAttribute('aria-pressed', i === draft.banner ? 'true' : 'false'); });
+        $('pfColors').querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.c.toLowerCase() === draft.color.toLowerCase() ? 'true' : 'false'); });
+        $('pfColorPick').value = draft.color; $('pfTag').value = draft.tag;
+        renderProfileStats();
+    }
+    function renderProfileStats() {
+        var L = levelOf(state.xp), set = function (id, v) { var el = $(id); if (el) el.textContent = v; };
+        set('pfLevel', L.level); set('pfXp', state.xp.toLocaleString()); set('pfPlayed', state.totals.played); set('pfWins', state.totals.wins);
+    }
+    (function buildPickers() {
+        AVATARS.forEach(function (a, i) {
+            var b = document.createElement('button'); b.type = 'button'; b.textContent = a.g; b.style.setProperty('--c', a.c); b.setAttribute('aria-label', 'Avatar ' + (i + 1));
+            b.addEventListener('click', function () { draft.avatar = i; renderDraft(); }); $('pfAvatars').appendChild(b);
+        });
+        BANNERS.forEach(function (n, i) {
+            var b = document.createElement('button'); b.type = 'button'; b.title = n.n; b.setAttribute('aria-label', 'Banner: ' + n.n); b.setAttribute('data-glyph', n.g);
+            b.style.setProperty('--b1', n.a); b.style.setProperty('--b2', n.b);
+            b.addEventListener('click', function () { draft.banner = i; renderDraft(); }); $('pfBanners').appendChild(b);
+        });
+        NAME_COLORS.forEach(function (c) {
+            var b = document.createElement('button'); b.type = 'button'; b.dataset.c = c; b.style.background = c; b.setAttribute('aria-label', 'Name colour ' + c);
+            b.addEventListener('click', function () { draft.color = c; renderDraft(); }); $('pfColors').appendChild(b);
+        });
+        $('pfColorPick').addEventListener('input', function () { draft.color = cleanColor(this.value); renderDraft(); });
+        $('pfTag').addEventListener('input', function () { this.value = cleanTag(this.value); draft.tag = this.value; $('pfPreview').innerHTML = cardHTML(draft, myName(), '', 'big'); });
+    })();
+    nameEl.addEventListener('input', function () { if (home.dataset.view === 'profile' && draft) $('pfPreview').innerHTML = cardHTML(draft, myName(), '', 'big'); });
+    $('pfSave').addEventListener('click', function () {
+        var n = (nameEl.value || '').trim();
+        if (!n) { say('Choose a username first.'); nameEl.focus(); return; }
+        draft.tag = cleanTag($('pfTag').value) || profile.tag;
+        profile = normProfile(draft, 'me'); store('gw_profile', profile);
+        try { localStorage.setItem('gw_name', n); } catch (e) {}      // display name only; the sign-in identity (uid) is never touched
+        draft = null; renderShowcase(); renderDraft(); say('Profile saved.');
+    });
+    nameEl.addEventListener('change', function () { try { localStorage.setItem('gw_name', (nameEl.value || '').trim()); } catch (e) {} renderShowcase(); });
+
+    /* ---------------------------------------------------------
+       PARTY LOBBY  (the game's own waiting room, one card per player)
+       The room code, invite link, joining and START are the existing ones.
+    --------------------------------------------------------- */
+    var LIMITS = { classic: { max: 2, min: 2, label: 'Guess Who!' }, headbanz: { max: 4, min: 2, label: 'Headbanz' }, imposter: { max: 6, min: 3, label: 'Imposter' }, uno: { max: 6, min: 2, label: 'Anime Uno' } };
+    var lastSync = '';
+    function renderParty(d) {
+        var grid = $('partyGrid'), info = $('partyInfo'); if (!grid || !d) return;
+        var lim = LIMITS[d.gameType] || LIMITS.classic, profiles = d.profiles || {}, html = '', count = 0;
+        for (var i = 1; i <= lim.max; i++) {
+            var pl = d['player' + i];
+            if (pl) {
+                count++;
+                var p = normProfile(profiles[pl.uid], pl.uid || pl.name);
+                html += cardHTML(p, pl.name || ('Player ' + i), i === 1 ? 'Party leader' : 'Playing', 'small');
+            } else html += '<div class="pcard small empty"><span>Open slot</span></div>';
+        }
+        grid.innerHTML = html;
+        var need = count < lim.min ? ' Waiting for at least ' + lim.min + ' players to start.' : ' Ready: the party leader can start.';
+        info.textContent = lim.label + ': ' + count + ' / ' + lim.max + ' players.' + need;
+    }
+    function syncMyProfile(d) {
+        var A = window.__AA; if (!A || !d) return;
+        var uid = A.uid(), room = A.room(); if (!uid || !room) return;
+        var mine = { avatar: profile.avatar, banner: profile.banner, tag: profile.tag, color: profile.color };
+        var cur = d.profiles && d.profiles[uid], sig = JSON.stringify(mine);
+        if (cur && JSON.stringify({ avatar: cur.avatar, banner: cur.banner, tag: cur.tag, color: cur.color }) === sig) return;
+        if (lastSync === room + sig) return; lastSync = room + sig;
+        A.update('rooms/' + room + '/profiles/' + uid, mine).catch(function (e) { lastSync = ''; console.warn('Could not share profile with the party', e); });
+    }
+    /* ---------------------------------------------------------
+       PARTY: the leader changes the mode in place
+       Reuses the menu's own mode cards and setup screen; the game
+       module rewrites the mode fields of the live room (same code, same players).
+    --------------------------------------------------------- */
+    var TYPE_KEY = { headbanz: 'hb', imposter: 'im', uno: 'uno' };
+    var MAXP = { gw: 2, hb: 4, im: 6, uno: 6 };
+    var cfgSeen = {};
+    function roomMode(d) { return TYPE_KEY[d && d.gameType] || 'gw'; }
+    function partyCount(d) { var n = 0; for (var i = 1; i <= 6; i++) if (d['player' + i]) n++; return n; }
+    function updateModeBtn(d) {
+        var btn = $('changeModeBtn'), A = window.__AA; if (!btn || !A) return;
+        btn.classList.toggle('hidden', !(A.me() === 1 && (!d.status || d.status === 'waiting')));
+    }
+    function noticeChange(d) {
+        var A = window.__AA, r = A && A.room(); if (!r) return;
+        var prev = cfgSeen[r], cur = { rev: d.cfgRev || 0, type: roomMode(d) };
+        cfgSeen[r] = cur;
+        if (prev && prev.rev !== cur.rev && A.me() !== 1) say('The party leader switched to ' + MODES[cur.type].name + '.');
+    }
+    function enterPartyConfig() {
+        var A = window.__AA, d = A && A.data(); if (!d || typeof window.setGameType !== 'function') return;
+        restoring = true;
+        try {
+            var type = roomMode(d);
+            window.setGameType(type);
+            if (d.difficulty && window.setDiff) window.setDiff(d.difficulty);
+            if (d.rounds && window.setRounds) window.setRounds(+d.rounds);
+            if (d.laps && window.setLaps) window.setLaps(+d.laps);
+            if (type === 'gw' && d.boardSize && window.setSize) window.setSize(+d.boardSize);
+            var keys = Array.isArray(d.animes) ? d.animes : [];
+            Array.prototype.forEach.call(home.querySelectorAll('#animePoll input[type=checkbox]'), function (c) {
+                var l = c.closest('label'); if (l && getComputedStyle(l).display === 'none') return;
+                c.checked = keys.indexOf(c.value) >= 0;
+            });
+            poll.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (e) { console.warn(e); }
+        restoring = false;
+        var n = partyCount(d);
+        Array.prototype.forEach.call(home.querySelectorAll('.mode-grid .modebtn'), function (b) {
+            var m = b.id.replace('mode', '').toLowerCase(), over = n > MAXP[m];
+            b.disabled = over; if (over) b.setAttribute('data-over', 'Too many players (' + n + ')'); else b.removeAttribute('data-over');
+        });
+        var ok = home.querySelector('[data-confirm]'); if (ok) ok.textContent = 'Apply to party';
+        home.classList.add('party-config'); home.classList.remove('hidden'); $('lobby').classList.add('hidden');
+        shownMode = null; renderTitle(false); renderPicked(); setView('modes');
+    }
+    function exitPartyConfig() {
+        home.classList.remove('party-config'); home.classList.add('hidden'); $('lobby').classList.remove('hidden');
+        Array.prototype.forEach.call(home.querySelectorAll('.mode-grid .modebtn'), function (b) { b.disabled = false; b.removeAttribute('data-over'); });
+        var ok = home.querySelector('[data-confirm]'); if (ok) ok.textContent = 'Confirm';
+        setView('play');
+    }
+    $('changeModeBtn').addEventListener('click', enterPartyConfig);
+    $('pcCancel').addEventListener('click', exitPartyConfig);
+
+    window.addEventListener('aa:room', function (ev) { var d = ev.detail; renderParty(d); syncMyProfile(d); updateModeBtn(d); noticeChange(d); });
+
+    /* ---------------------------------------------------------
+       SAVED PREFERENCES  (mode, series, board size)
+    --------------------------------------------------------- */
+    var restoring = false;
+    function savePrefs() {
+        if (restoring || home.classList.contains('party-config')) return;
+        var series = Array.prototype.map.call(home.querySelectorAll('#animePoll input:checked'), function (c) { return c.value; });
+        var sizeBtn = home.querySelector('.size.selected');
+        store('gw_prefs', { mode: currentMode(), series: series, size: sizeBtn ? parseInt(sizeBtn.textContent, 10) : 24 });
+    }
+    home.addEventListener('click', function (e) { if (e.target.closest('.size')) setTimeout(savePrefs, 0); });
+    function restorePrefs() {
+        var p = fetchStore('gw_prefs'); if (!p) return;
+        restoring = true;
+        try {
+            if (/^(gw|hb|im|uno)$/.test(p.mode) && typeof window.setGameType === 'function') window.setGameType(p.mode);
+            if (p.mode !== 'uno' && Array.isArray(p.series) && p.series.length) {
+                var boxes = home.querySelectorAll('#animePoll input[type=checkbox]'), any = false;
+                Array.prototype.forEach.call(boxes, function (c) { var l = c.closest('label'); if (l && getComputedStyle(l).display !== 'none' && p.series.indexOf(c.value) >= 0) any = true; });
+                if (any) {
+                    Array.prototype.forEach.call(boxes, function (c) { var l = c.closest('label'); if (l && getComputedStyle(l).display === 'none') return; c.checked = p.series.indexOf(c.value) >= 0; });
+                    poll.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+            if (p.mode === 'gw' && [24, 48, 96].indexOf(p.size) >= 0 && typeof window.setSize === 'function') window.setSize(p.size);
+        } catch (err) { console.warn('Could not restore menu preferences', err); }
+        restoring = false; renderTitle(false); renderPicked();
+    }
+
+    function prefetchSelected() {
+        var D = window.__AA_DATA, A = window.ArcadeAssets;
+        if (!D || !A || !window.__aaMenuShown) return;
+        var urls = [];
+        Array.prototype.forEach.call(home.querySelectorAll('#animePoll input:checked'), function (c) {
+            var list = c.value === 'onepiece' ? D.CHARACTER_LIBRARY : (D.ANIME_LIBRARY || {})[c.value];
+            if (Array.isArray(list)) urls = urls.concat(list);
+        });
+        if (urls.length) { var run = function () { A.prefetch(urls, 2); }; if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 4000 }); else setTimeout(run, 1500); }
+    }
+
+    /* ---------------------------------------------------------
+       BOOT
+    --------------------------------------------------------- */
+    function onMenu() {
+        if (home.classList.contains('hidden')) return;
+        if (!reduceMotion) { home.classList.add('enter'); setTimeout(function () { home.classList.remove('enter'); }, 1400); }
+        prefetchSelected();
+    }
+    window.addEventListener('aa:menu', onMenu);
+    window.addEventListener('gw:ready', function () { restorePrefs(); renderShowcase(); renderTitle(false); renderPicked(); });
+    if (window.__gwReady) restorePrefs();
+    if (window.__aaMenuShown) onMenu();
+
+    renderAnn(); renderProgress(); renderDaily(); tickClock(); renderShowcase(); renderTitle(false); renderPicked();
+    setInterval(tickClock, 30000);
+    setView('play');
+})();
+
 </script>
 </body>
 
