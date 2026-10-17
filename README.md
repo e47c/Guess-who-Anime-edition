@@ -9,8 +9,6 @@ A browser party game for 2 to 6 friends with four anime modes in one room:
 | **Imposter** | 3–6 | *Shadow Trial*: interrogation spotlight, crimson |
 | **Anime UNO** | 2–6 | *Arena Clash*: card-battle arena tinted by the active colour |
 
-It is a static site: no build step and no server code. Realtime multiplayer runs on Firebase Realtime Database with anonymous auth, and character data comes from `packs.json` and AniList.
-
 ## Customising
 
 - **Series art and names:** `ANIME_LIBRARY` and `CHARACTER_NAMES` at the top of `js/game.js`.
