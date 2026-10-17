@@ -876,10 +876,17 @@ function startPresence() {
     presenceKey = key;
     const myRef = presenceRef = ref(db, "rooms/" + room + "/presence/p" + myPlayer);
     presenceUnsub = onValue(ref(db, ".info/connected"), snap => {
+        netState(snap.val() === true);
         if (snap.val() === true && !exiting && presenceRef === myRef) {
             onDisconnect(myRef).set(false).then(() => { if (!exiting && presenceRef === myRef) return set(myRef, true); }).catch(() => {});
         }
     });
+}
+let netWasDown = false, netTimer = 0;
+function netState(up) {
+    clearTimeout(netTimer);
+    if (up) { document.body.classList.remove("net-down"); if (netWasDown) toast("Reconnected"); netWasDown = false; return; }
+    netTimer = setTimeout(() => { if (exiting) return; netWasDown = true; document.body.classList.add("net-down"); }, 1500);   // brief blips are ignored
 }
 function stopPresence(cancelDisconnect) {
     if (presenceUnsub) { presenceUnsub(); presenceUnsub = null; }
@@ -3709,9 +3716,10 @@ UNO_FX_HOOKS.jojo_u = unoSceneHook("jojo_u", unoJotaro);
 
 
 const unoSpCache = {};
+const UNO_SP_KANJI = { f: "凍", t: "換", u: "極", e: "眼" };
 function unoSpArt(pic, c) {
     const base = UNO_SP_DIR + c.sk + "_" + UNO_SP[c.k].file;
-    const ph = () => { pic.classList.add("sp-ph"); pic.innerHTML = ""; pic.appendChild(hbEl("b", null, UNO_SP[c.k].emoji)); pic.appendChild(hbEl("small", null, "ART SOON")); };
+    const ph = () => { pic.classList.add("sp-ph"); pic.innerHTML = ""; pic.appendChild(hbEl("i", "sp-kj", UNO_SP_KANJI[c.k] || "")); pic.appendChild(hbEl("b", null, UNO_SP[c.k].emoji)); pic.appendChild(hbEl("small", null, UNO_SP[c.k].label)); };
     if (unoSpCache[base] === "") return ph();
     if (unoSpCache[base]) { const im = new Image(); im.alt = ""; im.draggable = false; im.src = unoSpCache[base]; pic.appendChild(im); return; }
     ph();                                   // placeholder right away, real art replaces it when it loads
@@ -4289,6 +4297,17 @@ const MODES = {
     imposter: { key: "im",  name: "Imposter", tag: "SHADOW TRIAL", kanji: "偽", min: 3, max: 6, color: "#ff3355", sub: "Someone here is lying.", blurb: "All but one know the character. Give clues, vote, unmask the fake.", art: ["images/anime/jjk/jk2.jpg", "images/anime/bleach/bc3.jpg", "images/anime/naruto/na9.jpg"] },
     uno:      { key: "uno", name: "Anime UNO", tag: "ARENA CLASH", kanji: "札", min: 2, max: 6, color: "#ffcf4a", sub: "Four anime. One deck. No mercy.", blurb: "4 anime become 4 colours. Special cards unleash signature moves.", art: ["images/special/jjk_vision.jpg", "images/special/onepiece_ultimate.jpg", "images/special/dragonball_ultimate.jpg"] }
 };
+const RULES = {
+    classic: ["Both players secretly pick a character from the same board.", "On your turn, ask one yes/no question out loud, then flip down every character it rules out.", "Press END TURN when you are done. Think you know it? Press ACCUSE and tap their character.", "A right accusation wins. A wrong one hands the win to your opponent."],
+    headbanz: ["Everyone gets a character card that all the others can see, except you.", "Take turns asking yes/no questions about your own card; the others answer.", "Guess your character whenever you like. Three wrong guesses and you sit out the round.", "2 players: best of 3. 3 to 4 players: points per round, the fastest guess scores most."],
+    imposter: ["Everyone sees the same secret character, except one imposter.", "Two clue rounds: on your call, say one clue out loud. Never say the name.", "Then vote. Catch the imposter and the crew scores; if they slip away, they score big.", "A caught imposter can still steal points by naming the character."],
+    uno: ["The 4 anime you pick are the 4 colours. Match the colour, or the attribute or action of the top card.", "Skip, Reverse, +2, Wild and Wild +4 work like classic UNO.", "Specials: Freeze (next player loses 2 turns), Swap Hands, Ultimate (+5) and Future Sight (peek at every hand).", "Down to one card? Hit UNO! before someone catches you, or draw 2."]
+};
+function showRules(t) {
+    const M = MODES[t] || MODES.classic;
+    uiConfirm({ title: M.name + ": how to play", text: RULES[t].map((r, i) => (i + 1) + ".  " + r).join("\n\n"), ok: "Got it", cancel: "", info: true });
+}
+window.showRules = () => showRules(currentRoomData && MODES[currentRoomData.gameType] ? currentRoomData.gameType : "classic");
 const pNode = (d, i) => (d && d["player" + i]) || null;
 const activeSlots = d => d ? SLOTS.filter(i => d["player" + i] && !d["player" + i].left) : [];
 function hostSlot(d) { const act = activeSlots(d), h = Number(d && d.host) || 1; return act.includes(h) ? h : (act[0] || h); }
@@ -4338,11 +4357,11 @@ function closeOverlay(id) {
 window.closeOverlay = closeOverlay;
 function closeAllOverlays() { ["pause", "settings", "profile", "confirm"].forEach(id => $(id).classList.add("hidden")); overlayStack.length = 0; $("emotePanel").classList.add("hidden"); }
 let confirmResolve = null;
-function uiConfirm({ title, text, ok = "OK", cancel = "Cancel", danger = false }) {
+function uiConfirm({ title, text, ok = "OK", cancel = "Cancel", danger = false, info = false }) {
     if (confirmResolve) confirmResolve(false);
     $("confirmTitle").textContent = title || ""; $("confirmText").textContent = text || "";
     const yes = $("confirmYes"), no = $("confirmNo");
-    yes.textContent = ok; no.textContent = cancel; yes.className = "btn" + (danger ? " danger" : "");
+    yes.textContent = ok; no.textContent = cancel; no.classList.toggle("hidden", !cancel); yes.className = "btn" + (danger ? " danger" : ""); $("confirm").classList.toggle("info", info);
     openOverlay("confirm");
     return new Promise(res => {
         confirmResolve = v => { confirmResolve = null; closeOverlay("confirm"); res(v); };
@@ -4460,12 +4479,17 @@ function lobbyPrefs() {
     return { gameType, animes: fixSeries(gameType, arr(p.animes).length ? arr(p.animes) : ["onepiece"]), boardSize: [24, 48, 96].includes(Number(p.boardSize)) ? Number(p.boardSize) : 24, difficulty: ["easy", "normal", "hard"].includes(p.difficulty) ? p.difficulty : "normal", rounds: [3, 5, 7, 10].includes(Number(p.rounds)) ? Number(p.rounds) : 5, laps: Number(p.laps) === 2 ? 2 : 1 };
 }
 function saveLobbyPrefs(d) { try { localStorage.setItem(PREF_KEY, JSON.stringify({ gameType: d.gameType, animes: arr(d.animes), boardSize: d.boardSize, difficulty: d.difficulty, rounds: d.rounds, laps: d.laps })); } catch (e) {} }
+function busy(sel, on, label) {
+    const b = document.querySelector(sel); if (!b) return;
+    if (on) { b.dataset.label = b.dataset.label || b.innerHTML; b.disabled = true; b.textContent = label; b.setAttribute("aria-busy", "true"); }
+    else { if (b.dataset.label) b.innerHTML = b.dataset.label; delete b.dataset.label; b.disabled = false; b.removeAttribute("aria-busy"); }
+}
 let creating = false;
 window.createRoom = async function () {
     if (creating) return;
     if (needName(() => createRoom())) return;
     if (!user) { toast("Still connecting to the server. Try again in a moment."); return; }
-    creating = true; sfx("click");
+    creating = true; sfx("click"); busy("#home .home-cta > .btn", true, "Creating…");
     try {
         let code = "";
         for (let t = 0; t < 5; t++) { code = generateCode(); const s = await get(ref(db, "rooms/" + code)); if (!s.exists()) break; }
@@ -4474,7 +4498,7 @@ window.createRoom = async function () {
         await set(ref(db, "rooms/" + room), Object.assign({ mode: mode, host: 1, status: "waiting", turn: 1, winner: null, result: null, createdAt: Date.now() }, pref, { player1: Object.assign({ uid: user.uid, ready: false }, profile.public()) }));
         saveSession(); sfx("join"); openLobby();
     } catch (e) { console.error(e); toast("Could not create the room: " + (e.message || e)); room = ""; myPlayer = null; }
-    finally { creating = false; }
+    finally { creating = false; busy("#home .home-cta > .btn", false); }
 };
 let joining = false;
 window.joinRoom = async function () {
@@ -4483,7 +4507,7 @@ window.joinRoom = async function () {
     if (needName(() => joinRoom())) return;
     if (code.length !== 6) { toast("Enter a 6-character room code."); $("joinCode").focus(); return; }
     if (!user) { toast("Still connecting to the server. Try again in a moment."); return; }
-    joining = true; sfx("click");
+    joining = true; sfx("click"); busy("#joinArea .btn", true, "…");
     try {
         const snapshot = await get(ref(db, "rooms/" + code));
         if (!snapshot.exists()) { toast("Room not found. Check the code."); return; }
@@ -4504,7 +4528,7 @@ window.joinRoom = async function () {
         }
         toast("This room is full.");
     } catch (e) { console.error(e); toast("Couldn't join: " + (e.message || e)); }
-    finally { joining = false; }
+    finally { joining = false; busy("#joinArea .btn", false); }
 };
 
 /* ---------- lobby ---------- */
@@ -4587,6 +4611,9 @@ function buildHomeModes() {
         const c = hbEl("div", "hm-card"); c.style.setProperty("--mc", M.color); c.style.setProperty("--i", i);
         const art = hbEl("div", "hm-art"); art.appendChild(makeImg(M.art[0]));
         c.append(art, hbEl("div", "hm-kanji", M.kanji), hbEl("small", null, M.tag), hbEl("b", null, M.name), hbEl("span", "hm-pl", M.min === M.max ? M.min + "P" : M.min + "–" + M.max + "P"));
+        const t = Object.keys(MODES).find(k => MODES[k] === M);
+        c.tabIndex = 0; c.setAttribute("role", "button"); c.setAttribute("aria-label", M.name + ": how to play");
+        c.onclick = () => { sfx("click"); showRules(t); }; c.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); c.click(); } };
         box.appendChild(c);
     });
 }
@@ -4651,7 +4678,7 @@ function lobbyRender(d) {
     homeDiff = d.difficulty || "normal"; document.querySelectorAll(".dbtn").forEach(b => { b.classList.toggle("selected", b.dataset.d === homeDiff); b.disabled = lock; });
     homeRounds = Number(d.rounds) || 5; document.querySelectorAll(".rbtn").forEach(b => { b.classList.toggle("selected", Number(b.dataset.r) === homeRounds); b.disabled = lock; });
     homeLaps = Number(d.laps) || 1; document.querySelectorAll(".lapbtn").forEach(b => { b.classList.toggle("selected", Number(b.dataset.l) === homeLaps); b.disabled = lock; });
-    applyModeUI(M.key);
+    applyModeUI(M.key);   // again, so the 4/4 counter reflects the boxes just ticked
     // background prep for the chosen mode
     if (!spectating && (t === "headbanz" || t === "imposter")) hbPrefetch(keys);
     if (!spectating && t === "uno" && host && keys.length === 4 && keys.every(k => UNO_DECKS[k]) && !(d.uno && d.uno.cards && d.uno.key === unoDeckKey(keys))) unoPrepDeck(keys);
@@ -5246,7 +5273,20 @@ window.showJoin = function () { $("joinCode").focus(); };
 /* =========================================
    START UP: profile, settings, rejoin or invite link
 ========================================= */
+const KONAMI = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
+let konami = 0, logoTaps = 0, logoTimer = 0;
+document.addEventListener("keydown", e => {
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    konami = (e.key.toLowerCase() === KONAMI[konami].toLowerCase()) ? konami + 1 : (e.key === KONAMI[0] ? 1 : 0);
+    if (konami === KONAMI.length) { konami = 0; secretPower("ULTRA INSTINCT"); achNow("secret"); }
+});
+function secretPower(text) {
+    sfx("impact"); setTimeout(() => sfx("levelup"), 250);
+    ring(innerWidth / 2, innerHeight * .4, "#cfe8ff", 900, 900); setTimeout(() => ring(innerWidth / 2, innerHeight * .4, "#7df3ff", 1400, 1100), 160);
+    burstText(text, innerWidth / 2, innerHeight * .42, "#7df3ff"); shake(document.querySelector(".screen:not(.hidden)"), 14, 520);
+}
 async function initApp() {
+    $("homeTitle").addEventListener("click", () => { clearTimeout(logoTimer); logoTimer = setTimeout(() => { logoTaps = 0; }, 900); if (++logoTaps >= 5) { logoTaps = 0; secretPower(["PLUS ULTRA!", "DATTEBAYO!", "BANKAI!", "KAMEHAMEHA!", "DOMAIN EXPANSION!"][(Math.random() * 5) | 0]); } else sfx("tick"); });
     initGallery(ANIME_LIBRARY, Object.fromEntries(Object.keys(HB_SERIES).filter(k => !HB_HIDDEN_SERIES.includes(k)).map(k => [k, HB_SERIES[k].label])));
     setProfileHooks({ sfx: sfx, toast: toast, onAchievement: achToast });
     bindUpload(); bindSettings(); syncDock(); renderProfileCard(); buildHomeModes();

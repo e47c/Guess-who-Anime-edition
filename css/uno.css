@@ -411,3 +411,10 @@ body.fx-lite .uno-hand > .ucard.ok, body.fx-lite .u-foil { animation: none !impo
     .uno-hand > .ucard { width: 84px; height: 126px; }
     .u-burst { width: 86px; height: 86px; font-size: 21px; }
 }
+
+/* special cards still waiting for their art: kanji + emblem + ability, no 'coming soon' */
+.u-pic.sp-ph { position: relative; }
+.u-pic.sp-ph .sp-kj { position: absolute; inset: 0; display: grid; place-items: center; font: 400 300%/1 var(--f-title); font-style: normal; color: rgba(255,255,255,.12); }
+.ucard.big .u-pic.sp-ph .sp-kj { font-size: 130px; }
+.u-pic.sp-ph b { position: relative; z-index: 1; }
+.u-pic.sp-ph small { position: relative; z-index: 1; }

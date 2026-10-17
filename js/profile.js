@@ -14,12 +14,14 @@ export const TITLES = [
     { id: "jonin", name: "Jonin", lvl: 6 }, { id: "captain", name: "Squad Captain", lvl: 8 }, { id: "hashira", name: "Hashira", lvl: 10 },
     { id: "yonko", name: "Yonko", lvl: 13 }, { id: "special", name: "Special Grade", lvl: 16 }, { id: "king", name: "Pirate King", lvl: 20 },
     { id: "detective", name: "Great Detective", ach: "gw_fast" }, { id: "mind", name: "Mind Reader", ach: "hb_flawless" },
-    { id: "liar", name: "Master of Lies", ach: "im_escape" }, { id: "shark", name: "Card Shark", ach: "uno_special" }, { id: "hype", name: "Hype Man", ach: "hype" }
+    { id: "liar", name: "Master of Lies", ach: "im_escape" }, { id: "shark", name: "Card Shark", ach: "uno_special" }, { id: "hype", name: "Hype Man", ach: "hype" },
+    { id: "ui", name: "Ultra Instinct", ach: "secret", hidden: true }
 ];
 export const FRAMES = [
     { id: "none", name: "Plain", lvl: 1 }, { id: "steel", name: "Steel", lvl: 2 }, { id: "crimson", name: "Crimson", lvl: 3 },
     { id: "gold", name: "Gold", lvl: 5 }, { id: "sakura", name: "Sakura", lvl: 7 }, { id: "void", name: "Six Eyes", lvl: 10 },
-    { id: "holo", name: "Holo", ach: "streak5" }, { id: "flame", name: "Flame", ach: "uno_special" }, { id: "shadow", name: "Shadow", ach: "im_escape" }
+    { id: "holo", name: "Holo", ach: "streak5" }, { id: "flame", name: "Flame", ach: "uno_special" }, { id: "shadow", name: "Shadow", ach: "im_escape" },
+    { id: "ui", name: "Ultra Instinct", ach: "secret", hidden: true }
 ];
 export const ACH = [
     { id: "first_win", icon: "🏅", name: "First Blood", desc: "Win your first match." },
@@ -37,7 +39,8 @@ export const ACH = [
     { id: "uno_special", icon: "💥", name: "Ultimate Finisher", desc: "Win UNO with a special card as your last card." },
     { id: "uno_villain", icon: "😈", name: "Villain Arc", desc: "Play a Wild +4." },
     { id: "hype", icon: "📣", name: "Hype Man", desc: "Send 25 reactions." },
-    { id: "new_look", icon: "🪞", name: "New Look", desc: "Pick a profile picture." }
+    { id: "new_look", icon: "🪞", name: "New Look", desc: "Pick a profile picture." },
+    { id: "secret", icon: "🌀", name: "Ultra Instinct", desc: "Found a hidden technique on the main menu.", hidden: true }
 ];
 const MODE_KEYS = ["gw", "hb", "im", "uno"];
 
@@ -165,10 +168,10 @@ function renderEditor() {
     card.appendChild(id); pv.appendChild(card);
     const sw = $("profColors"); sw.innerHTML = "";
     COLORS.forEach(c => { const b = mk("button", "swatch" + (c === draft.col ? " on" : "")); b.style.background = c; b.setAttribute("aria-label", "Colour " + c); b.onclick = () => { draft.col = c; if (draft.av.t === "g") draft.av.c = c; hooks.sfx("toggle"); renderEditor(); }; sw.appendChild(b); });
-    const pill = (box, list, key) => { box.innerHTML = ""; list.forEach(it => { const ok = isUnlocked(it), b = mk("button", "pill" + (draft[key] === it.id ? " on" : "") + (ok ? "" : " locked"), it.name); b.title = ok ? it.name : (it.ach ? "Unlock: " + (ACH.find(a => a.id === it.ach) || {}).name : "Reach level " + it.lvl); if (!ok) b.disabled = true; b.onclick = () => { draft[key] = it.id; hooks.sfx("toggle"); renderEditor(); }; box.appendChild(b); }); };
+    const pill = (box, list, key) => { box.innerHTML = ""; list.forEach(it => { const ok = isUnlocked(it); if (it.hidden && !ok) return; const b = mk("button", "pill" + (draft[key] === it.id ? " on" : "") + (ok ? "" : " locked"), it.name); b.title = ok ? it.name : (it.ach ? "Unlock: " + (ACH.find(a => a.id === it.ach) || {}).name : "Reach level " + it.lvl); if (!ok) b.disabled = true; b.onclick = () => { draft[key] = it.id; hooks.sfx("toggle"); renderEditor(); }; box.appendChild(b); }); };
     pill($("profTitles"), TITLES, "ttl"); pill($("profFrames"), FRAMES, "fr");
     const ach = $("profAch"); ach.innerHTML = "";
-    ACH.forEach(a => { const got = profile.has(a.id), d = mk("div", "ach" + (got ? " got" : "")); d.title = a.desc; d.append(mk("span", "ach-i", got ? a.icon : "🔒"), mk("b", null, a.name), mk("small", null, a.desc)); ach.appendChild(d); });
+    ACH.forEach(a => { const got = profile.has(a.id), secret = a.hidden && !got, d = mk("div", "ach" + (got ? " got" : "")); d.title = secret ? "A secret" : a.desc; d.append(mk("span", "ach-i", got ? a.icon : secret ? "❔" : "🔒"), mk("b", null, secret ? "???" : a.name), mk("small", null, secret ? "Hidden achievement" : a.desc)); ach.appendChild(d); });
 }
 function renderTabs() {
     const box = $("avaTabs"); box.innerHTML = "";
