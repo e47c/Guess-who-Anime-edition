@@ -27,46 +27,6 @@ packs.json        pre-built AniList character lists (Headbanz, Imposter, UNO pic
 images/ audio/ sounds/   art, special-card voice lines, per-series win sounds
 ```
 
-Stylesheets and the main script carry a `?v=` query in `index.html`. Bump it when you deploy so browsers fetch the new files.
-
-## How a room works
-
-1. **Create room** makes a party room in the lobby (`status: "waiting"`). Friends join with the 6-letter code or the invite link (`?room=CODE`).
-2. In the lobby the **host** picks the mode and its settings (series, board size, difficulty, rounds, laps). Everyone else can **vote** by tapping a mode card, and can mark themselves ready. The Start button only unlocks when the mode's requirements are met (player count, characters downloaded, UNO deck forged).
-3. After a match, players can rematch straight away or the host can take everyone **back to the lobby** to switch mode. The room and its per-room stats survive.
-4. **Leave room** only removes you. Mid-match you are marked `left` and the round treats you as gone. Hosting passes to the next player. **Close room** (host only), or the last player leaving, deletes the room.
-5. Anyone who joins while a match is running waits in the lobby (spectator banner) and is dealt into the next match.
-6. A refresh rejoins the same seat (`localStorage` session plus the same anonymous uid).
-
-### Room data (`rooms/<CODE>`)
-
-```
-host            slot number of the host (migrates when the host leaves)
-gameType        "classic" | "headbanz" | "imposter" | "uno"
-animes, boardSize, difficulty, rounds, laps     lobby settings
-status          "waiting" (lobby) | "selecting" | "playing" | "finished"
-matchId         timestamp of the current match (drives intro title cards and XP de-duplication)
-player1..6      { uid, name, av, col, fr, ttl, lvl, ready, lr (lobby ready), vote, left, wins, streak, best }
-presence/pN     online flag (onDisconnect -> false)
-packs/pN        character download progress (Headbanz / Imposter)
-emote/pN        { e, t } latest reaction, one slot per player, nothing to clean up
-gw              { seats: [a, b], first, tc: { pN: turns ended } }    Guess Who seats
-board, turn, guess, revealed, private/<uid>                           Guess Who state (unchanged)
-hb, im          Headbanz / Imposter state (unchanged structure)
-uno             Anime UNO state; also holds the forged deck (cards + key) between matches.
-                New fields: ev (last action, used for animations), wins, fin
-```
-
-> **Firebase rules:** the new fields live under `rooms/<CODE>` like the existing ones. If your database rules validate individual player fields, allow `av, col, fr, ttl, lvl, lr, vote, left` on players and `host, matchId, createdAt, emote, gw` on rooms.
-
-## Profiles and progression
-
-Profiles are stored per browser (`localStorage["gw_profile_v1"]`). The public part (name, avatar, colour, frame, title, level) is copied into the player's room node, so every client renders the same card.
-
-- **Avatars:** emblem glyphs, the repo's own character art, AniList portraits from `packs.json`, or an upload (square crop, about 10 KB). Remote avatar URLs are allow-listed when rendering (`images/…` and `s4.anilist.co` only).
-- **XP and levels:** 25 XP per match, plus 55 for a win, plus a streak bonus. Levels unlock titles and frames.
-- **Achievements:** 16 plus 1 hidden. Each match is recorded once per browser, so a refresh never double-counts.
-
 ## Customising
 
 - **Series art and names:** `ANIME_LIBRARY` and `CHARACTER_NAMES` at the top of `js/game.js`.
