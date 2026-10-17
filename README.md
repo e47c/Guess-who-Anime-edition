@@ -11,22 +11,6 @@ A browser party game for 2 to 6 friends with four anime modes in one room:
 
 It is a static site: no build step and no server code. Realtime multiplayer runs on Firebase Realtime Database with anonymous auth, and character data comes from `packs.json` and AniList.
 
-## Project layout
-
-```
-index.html        markup only (screens, overlays, dock)
-css/base.css      design system: tokens, buttons, sheets, main menu, lobby, avatars, results, scene backgrounds
-css/modes.css     Guess Who, Headbanz, Imposter screens
-css/uno.css       Anime UNO (original card styles + the arena/card overhaul layered at the end)
-js/game.js        the game: Firebase, rooms and lobby, routing, all four modes, UNO special-card cinematics
-js/audio.js       one AudioContext: synthesized SFX, procedural music per scene, volume settings
-js/fx.js          ambient particles per scene, title cards, shake/ring/burst helpers, reduced-effects switch
-js/profile.js     player profile, avatars, XP/levels, titles, frames, achievements, profile editor
-js/results.js     the shared cinematic victory/defeat sequence
-packs.json        pre-built AniList character lists (Headbanz, Imposter, UNO pictures, avatar gallery)
-images/ audio/ sounds/   art, special-card voice lines, per-series win sounds
-```
-
 ## Customising
 
 - **Series art and names:** `ANIME_LIBRARY` and `CHARACTER_NAMES` at the top of `js/game.js`.
