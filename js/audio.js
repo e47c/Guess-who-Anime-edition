@@ -129,7 +129,27 @@ const FX = {
     heartbeat(o, t) { V.kick(o, t, .55); V.kick(o, t + .22, .4); },
     whoosh(o, t) { V.sweep(o, t, 300, 3500, .3, .8, 1.5); },
     impact(o, t) { V.kick(o, t, 1.3); V.tom(o, t, 60, 1); V.sweep(o, t, 3000, 200, .5, .7, 1); V.pad(o, t, [33, 40], .6, 1.8, 300); },
-    tick(o, t) { V.hat(o, t, .7); }
+    tick(o, t) { V.hat(o, t, .7); },
+    // cinematic layer for the special-card scenes
+    boom(o, t) { V.kick(o, t, 1.5); V.tom(o, t, 48, 1.3); V.sweep(o, t, 1800, 120, .9, .9, 1); V.pad(o, t, [28, 35], .9, 2.4, 260); },
+    shing(o, t) { V.sweep(o, t, 5200, 9000, .5, .7, 8); V.bell(o, t + .02, 100, .5, 1.2); },
+    crack(o, t) { V.sweep(o, t, 6000, 1800, .5, 1, 2); V.snare(o, t, .8, .3); V.hat(o, t + .06, .9, true); },
+    chime(o, t) { [88, 95, 100, 107].forEach((m, i) => V.bell(o, t + i * .07, m, .7, 2.8)); V.sweep(o, t, 8000, 1200, 1.4, .4, 3); },
+    freeze(o, t) { [96, 103, 99, 106, 110].forEach((m, i) => V.pluck(o, t + i * .05, m, .25, .5, "sine", 9000, .7)); V.sweep(o, t, 9000, 3000, .8, .6, 5); },
+    wind(o, t) { V.sweep(o, t, 300, 1400, 1.4, .8, 1.2); V.sweep(o, t + .4, 1400, 500, 1.2, .5, 1.2); },
+    roar(o, t) { V.sweep(o, t, 180, 900, .9, 1, 1.4); V.bass(o, t, 30, .9, 1, "sawtooth", 300); V.pad(o, t, [42, 49, 54], .8, 1.4, 700); },
+    rumble(o, t) { V.pad(o, t, [24, 31, 36], 1, 2.8, 220, "sawtooth"); V.sweep(o, t, 80, 400, 2.4, .7, 1); },
+    charge(o, t) { V.sweep(o, t, 200, 6000, 1.6, .7, 6); [60, 67, 72, 79, 84].forEach((m, i) => V.pluck(o, t + i * .22, m, .3, .4, "sawtooth", 3000, .3)); },
+    skip2(o, t) { V.sweep(o, t, 8000, 400, .12, 1, 3); V.pluck(o, t, 40, .08, 1, "square", 2000, 0); V.hat(o, t + .03, .9); },
+    chain(o, t) { [0, .05, .1, .16, .22].forEach((d, i) => V.pluck(o, t + d, 92 - i * 2, .06, .55, "square", 7000, .2)); },
+    clap(o, t) { V.snare(o, t, 1.3, .12); V.kick(o, t, .6); V.sweep(o, t, 7000, 2000, .1, .9, 1); },
+    zap(o, t) { V.sweep(o, t, 9000, 600, .25, .9, 9); V.pluck(o, t, 30, .2, .9, "sawtooth", 5000, 0); V.hat(o, t + .05, .8, true); },
+    biwa(o, t) { V.pluck(o, t, 50, 1.2, 1.2, "sawtooth", 2400, .6); V.pluck(o, t + .01, 57, 1.2, .8, "sawtooth", 2400, .6); V.snare(o, t, .4, .05); },
+    rewind(o, t) { V.sweep(o, t, 4000, 200, .7, .9, 4); V.sweep(o, t + .2, 4000, 200, .7, .8, 4); V.sweep(o, t + .4, 200, 4000, .5, .7, 4); },
+    rush(o, t) { for (let i = 0; i < 10; i++) { V.kick(o, t + i * .07, .7); V.snare(o, t + i * .07 + .02, .45, .05); } },
+    slash(o, t) { V.sweep(o, t, 1200, 7000, .18, 1, 2); V.sweep(o, t + .12, 4000, 500, .3, .7, 1); },
+    warp(o, t) { V.sweep(o, t, 200, 3000, .4, .8, 7); V.sweep(o, t + .3, 3000, 150, .4, .7, 7); V.bell(o, t + .35, 84, .5, 1.4); },
+    drum(o, t) { V.tom(o, t, 90, 1.3); V.tom(o, t + .25, 70, 1.1); V.kick(o, t, 1); }
 };
 // the old two-oscillator "tone" helper, now routed through the sfx bus so volume settings apply
 function tone(f1, f2, dur, type = "square", vol = .06, delay = 0) {

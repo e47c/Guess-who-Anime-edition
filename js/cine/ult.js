@@ -1,0 +1,334 @@
+/* =====================================================================
+   ULTIMATE CARDS · nine finishing moves (the next player draws 5)
+   Each one is aimed at the target (staged at centre, gliding home at the end). The engine's ending then breaks the
+   last picture away (tailFx: shatter | split | hole | burn | fade) and throws 5 cards from the real deck into the
+   target's real plate.
+   ===================================================================== */
+import * as K from "./kit.js";
+import { hand, fist, fistMini } from "./hands.js";
+const { lin, ss, hit, hs, TAU, mid } = K;
+
+const back = t => 1 - ss(.86, .97, t);
+const plate = (g, X, r, a, lit) => K.plateGhost(g, X, r, X.env.toName, X.col, a, lit);
+const HS = X => X.M * (X.h > X.w ? .0036 : .003);
+const boom = (g, X, c, p, col, big = 1) => { if (p <= 0 || p >= 1) return; const M = X.M; K.glow(g, c.x, c.y, M * .5 * big * (1 - p * .5), col, 1 - p); K.shock(g, c.x, c.y, p, M * .8 * big, col, 40); K.shock(g, c.x, c.y, lin(.1, 1, p), M * 1.2 * big, "#ffffff", 14); K.sparks(g, c.x, c.y, p, 40, 5, { speed: M * 1.1 * big, col, grav: M * .4 }); K.debris(g, c.x, c.y, p, 24, 9, { speed: M * .9 * big, size: M * .02 }); };
+
+/* ---------- LUFFY · Gear 5: drums of liberation, the Sun God laughs, a giant rubber fist inflates and crashes down ---------- */
+function toonFist(g, x, y, R, sq, ang) {                                 // Gear 5's cartoon fist: white, puffy, steam rising
+    g.save(); g.translate(x, y); g.rotate(ang); g.scale(1 + sq * .25, 1 - sq * .2);
+    const gr = g.createRadialGradient(-R * .3, -R * .3, R * .1, 0, 0, R); gr.addColorStop(0, "#ffffff"); gr.addColorStop(.7, "#f4f0ea"); gr.addColorStop(1, "#c9c0b6");
+    g.lineWidth = Math.max(3, R * .05); g.strokeStyle = "#1a1410";
+    [[-.5, -.42, .34], [-.15, -.5, .36], [.2, -.48, .35], [.52, -.36, .3]].forEach(([a, b, r]) => { g.beginPath(); g.arc(R * a, R * b, R * r, 0, TAU); g.fillStyle = gr; g.fill(); g.stroke(); });   // four knuckle puffs
+    g.beginPath(); g.ellipse(0, R * .1, R * .9, R * .66, 0, 0, TAU); g.fillStyle = gr; g.fill(); g.stroke();
+    g.beginPath(); g.ellipse(-R * .55, R * .2, R * .38, R * .26, -.5, 0, TAU); g.fill(); g.stroke();           // thumb
+    g.strokeStyle = "rgba(26,20,16,.5)"; g.lineWidth = R * .03; for (let i = -1; i <= 1; i++) { g.beginPath(); g.arc(R * i * .35, -R * .1, R * .18, .4, 2.7); g.stroke(); }
+    g.restore();
+}
+const luffy = {
+    col: "#ffd23f", trail: "#ffffff", ms: 7400, tailFx: "shatter",
+    main(g, X, T) {
+        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r), DR = [.02, .1, .18, .26];
+        DR.forEach(a => X.cue(a, "drum", t)); X.cue(.4, "charge", t); X.cue(.66, "whoosh", t); X.cue(.72, "boom", t);
+        const beat = DR.reduce((m, a) => Math.max(m, hit(t, a, .05)), 0);
+        if (t < .34) {                                                       // DON-DOTT! the Sun God's heartbeat and that laugh
+            K.sky(g, w, h, ["#fff8e6", "#ffe6a6", "#ffd27a"]); K.focus(g, w / 2, h / 2, w, h, s, { col: "rgba(120,80,0,.25)", n: 80, r0: M * .3 });
+            g.save(); g.translate(w / 2, h / 2); g.scale(1 + beat * .05, 1 + beat * .05); g.translate(-w / 2, -h / 2); g.beginPath(); g.arc(w / 2, h * .48, M * .36, 0, TAU); g.clip(); K.still(g, X, lin(0, .34, t), { z0: 1.1, dz: .1, dy: .06 }); g.restore();
+            g.strokeStyle = "#1a1410"; g.lineWidth = M * .012; g.beginPath(); g.arc(w / 2, h * .48, M * .36, 0, TAU); g.stroke();
+            for (let i = 0; i < 12; i++) { const an = i / 12 * TAU + s * .3, R1 = M * (.4 + .06 * Math.sin(s * 6 + i)); g.save(); g.translate(w / 2 + Math.cos(an) * R1, h * .48 + Math.sin(an) * R1); g.rotate(an); g.fillStyle = "#fff"; g.strokeStyle = "#1a1410"; g.lineWidth = 3; g.beginPath(); g.ellipse(0, 0, M * .06, M * .035, 0, 0, TAU); g.fill(); g.stroke(); g.restore(); }   // clouds of steam round the god
+            DR.forEach((a, i) => { const q = lin(a, a + .1, t); if (q > 0 && q < 1) K.txt(g, i % 2 ? "ドット" : "ドン", w * (.18 + (i % 2) * .64), h * (.24 + i * .14), M * .13 * (1.3 - q * .3), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#1a1410", sw: M * .01, rot: (i % 2 ? .2 : -.2) }); });
+            K.slam(g, "ニカ", w / 2, h * .9, M * .08, lin(.2, .36, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#1a1410", from: 1.2 });
+            X.fx.flash = ["#ffffff", beat * .35]; return;
+        }
+        // the fist: an arm stretched way back, the fist puffing up to fill the sky, then launched
+        g.save(); K.cam(g, X, { shake: hit(t, .72, .14) * 30 + (t > .4 && t < .66 ? 2 : 0), z: 1 + lin(.66, .72, t) * .08 });
+        K.sky(g, w, h, ["#9fd8ff", "#dff2ff", "#ffffff"]); for (let i = 0; i < 7; i++) { const x = ((hs(i) * w * 1.4 + s * 30) % (w * 1.4)) - w * .2, y = h * (.15 + .6 * hs(i + 5)); g.fillStyle = "#fff"; g.strokeStyle = "#1a1410"; g.lineWidth = 3; g.beginPath(); for (let k = 0; k < 4; k++) g.arc(x + k * M * .06, y + Math.sin(k) * M * .02, M * .05, 0, TAU); g.fill(); g.stroke(); }
+        plate(g, X, r, 1, lin(.66, .74, t));
+        const inf = K.oElastic(lin(.38, .58, t)), fly = K.iExpo(lin(.62, .72, t)), sq = Math.sin(s * 9) * (1 - lin(.58, .62, t)) * .4;
+        const sx = w * .76, sy = h * 1.1, R = M * (.08 + .26 * inf) * (1 - fly * .55), fx = K.mix(w * .62, c.x, fly), fy = K.mix(h * .5, c.y, fly);
+        g.save(); g.strokeStyle = "#1a1410"; g.lineWidth = M * .05 * (1 - fly * .4) + 6; g.lineCap = "round"; g.beginPath(); g.moveTo(sx, sy); g.quadraticCurveTo(w * .95, h * .6, fx, fy); g.stroke(); g.strokeStyle = "#f2c9a0"; g.lineWidth = M * .05 * (1 - fly * .4); g.stroke(); g.restore();   // the rubber arm
+        if (t < .74) { toonFist(g, fx, fy, R, sq, -.3); K.drift(g, w, h, s, 20, 5, { up: 1, speed: .3, col: "#ffffff", size: 6 }); }
+        if (fly > 0 && t < .74) K.streaks(g, w, h, s, Math.atan2(c.y - h * .5, c.x - w * .62), { n: 60, col: "#1a1410", a: .4, speed: 6 });
+        boom(g, X, c, lin(.72, .9, t), "#ffd23f", 1.2);
+        g.restore();
+        if (t > .4 && t < .66) K.slam(g, "ゴムゴムの…", w / 2, h * .18, M * .1, lin(.4, .66, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#1a1410", from: 1.3 });
+        if (t > .7) K.title(g, X, lin(.7, 1, t), { en: "BAJRANG GUN", kj: "猿神銃", sub: "GEAR 5 · " + X.who, y: .84 });
+        if (hit(t, .72, .03)) X.fx.inv = true; X.fx.rgb = hit(t, .72, .1) * 18;
+        K.bars(g, w, h, lin(.36, .4, t) * (1 - lin(.92, 1, t)));
+    }
+};
+
+/* ---------- NARUTO · Rasengan: a shadow clone shapes it, the spiral grows in your palm, the charge, a drilling spiral into the target ---------- */
+function rasengan(g, x, y, R, s, wind) {
+    K.glow(g, x, y, R * 2.4, "#4cc9f0", .7); g.save(); g.translate(x, y); g.beginPath(); g.arc(0, 0, R, 0, TAU); const og = g.createRadialGradient(-R * .2, -R * .2, 0, 0, 0, R); og.addColorStop(0, "#ffffff"); og.addColorStop(.45, "#bff0ff"); og.addColorStop(1, "#1a7fe0"); g.fillStyle = og; g.fill(); g.clip();
+    g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = Math.max(2, R * .06); for (let k = 0; k < 10; k++) { g.save(); g.rotate(s * (10 + k) + k * .7); g.beginPath(); g.ellipse(0, 0, R * (.25 + k * .08), R * (.12 + k * .05), k, 0, 2.6); g.stroke(); g.restore(); } g.restore();
+    if (wind > 0) { g.save(); g.translate(x, y); g.rotate(s * 14); g.strokeStyle = K.rgba("#dff8ff", wind * .7); g.lineWidth = 2; for (let k = 0; k < 4; k++) { g.rotate(1.5708); g.beginPath(); g.ellipse(R * 1.4, 0, R * 1.1, R * .18, 0, 0, TAU); g.stroke(); } g.restore(); }
+}
+const naruto = {
+    col: "#4cc9f0", trail: "#7fe0ff", ms: 7600, tailFx: "hole",
+    main(g, X, T) {
+        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r);
+        X.cue(.02, "whoosh", t); X.cue(.22, "charge", t); X.cue(.5, "whoosh", t); X.cue(.7, "boom", t);
+        if (t < .18) { K.eyes(g, X, lin(0, .18, t), { tint: "#ff9a3a", ta: .25 }); K.column(g, "螺旋丸", w * .9, h * .16, M * .07, lin(.02, .16, t), { fill: "#fff", stroke: "#06304f", glow: "#4cc9f0", sw: 3 }); K.bars(g, w, h, 1); return; }
+        const run = lin(.5, .7, t), hx = w * .52, hy = h * (1.06 - .1 * ss(.18, .26, t)) + Math.sin(s * 30) * 4 * run, grow = lin(.2, .48, t), R = M * (.03 + .13 * K.oCub(grow));
+        g.save(); K.cam(g, X, { z: 1 + run * .25, cx: c.x, cy: c.y, shake: (2 + run * 8) + hit(t, .7, .14) * 26 });
+        K.sky(g, w, h, ["#02060f", "#08203f", "#03060f"]);
+        if (run > 0) K.focus(g, c.x, c.y, w, h, s, { col: "rgba(160,230,255,.5)", n: 120, r0: M * .1, a: run });            // charging forward
+        g.strokeStyle = "rgba(127,224,255,.35)"; g.lineWidth = 2; for (let i = 0; i < 80; i++) { const ph = (s * (.5 + grow) + hs(i + 9)) % 1, a = hs(i) * TAU, d = (1 - ph) * M * .8 + R; g.globalAlpha = ph * grow; g.beginPath(); g.moveTo(hx + Math.cos(a) * d, hy - M * .22 + Math.sin(a) * d); g.lineTo(hx + Math.cos(a) * (d + 24), hy - M * .22 + Math.sin(a) * (d + 24)); g.stroke(); } g.globalAlpha = 1;   // chakra pulled in
+        plate(g, X, r, ss(.46, .54, t), lin(.62, .7, t));
+        const ox = K.mix(hx, c.x, K.iCub(run)), oy = K.mix(hy - M * .22, c.y, K.iCub(run));
+        if (t < .7) {
+            if (t < .5) { const cl = K.oBack(lin(.2, .28, t)) * (1 - lin(.44, .5, t)); hand(g, hx - M * .3, hy + M * .02, HS(X), .6, "claw", { flip: 1, view: "palm", skin: "tan", sleeve: { c: "#e8781e", s: "#a84c0c", cuff: "#1a1a22", len: 240 } }); g.save(); g.globalAlpha = cl; hand(g, hx + M * .28, hy - M * .05, HS(X), -.9, "claw", { skin: "tan", sleeve: { c: "#e8781e", s: "#a84c0c", cuff: "#1a1a22", len: 240 } }); g.restore(); }   // a shadow clone's hands shape the chakra
+            hand(g, ox, oy + M * .26, HS(X) * (1 - run * .4), 0, "cup", { view: "palm", skin: "tan", sleeve: { c: "#e8781e", s: "#a84c0c", cuff: "#1a1a22", len: 240 } });
+            rasengan(g, ox, oy, R * (1 - run * .3), s, lin(.36, .5, t));
+        }
+        if (t >= .7) { const q = lin(.7, .95, t); for (let k = 0; k < 5; k++) { const p = (q * 1.6 - k * .15); if (p > 0 && p < 1) { g.save(); g.translate(c.x, c.y); g.rotate(s * 6 + k); g.strokeStyle = K.rgba("#bff0ff", 1 - p); g.lineWidth = 8 * (1 - p) + 1; g.beginPath(); g.arc(0, 0, M * .1 + p * M * .7, 0, 4.5); g.stroke(); g.restore(); } } rasengan(g, c.x, c.y, M * .1 * (1 - q), s, 1 - q); }
+        boom(g, X, c, lin(.7, .9, t), "#4cc9f0");
+        g.restore();
+        K.cutIn(g, X, lin(.26, .48, t), { y: .3, hh: .24, dir: 1, ang: -.06, kj: "影分身", name: "NARUTO" });
+        if (t > .56 && t < .74) K.slam(g, "螺旋丸!!", w / 2, h * .2, M * .14, lin(.56, .74, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#06304f", glow: "#4cc9f0", ghost: 1 });
+        if (t > .74) K.title(g, X, lin(.74, 1, t), { en: "RASENGAN", kj: "螺旋丸", y: .84 });
+        if (hit(t, .7, .03)) X.fx.inv = "#bff0ff"; X.fx.rgb = hit(t, .7, .1) * 14;
+        K.vignette(g, w, h, .6, "#00040c"); K.bars(g, w, h, 1 - lin(.92, 1, t));
+    }
+};
+
+/* ---------- GOKU · Kamehameha: cupped hands at the hip, KA-ME-HA-ME, the light gathers, HA!!, the beam ---------- */
+const goku = {
+    col: "#59c8ff", trail: "#9fe0ff", ms: 7600, tailFx: "burn",
+    main(g, X, T) {
+        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r), SY = [[.14, "か"], [.22, "め"], [.3, "は"], [.38, "め"], [.5, "波ーッ!!"]];
+        SY.forEach(([a]) => X.cue(a, "stamp", t)); X.cue(.14, "charge", t); X.cue(.5, "boom", t); X.cue(.52, "roar", t);
+        if (t < .12) { K.eyes(g, X, lin(0, .14, t), { tint: "#ff9a3a", ta: .2 }); K.bars(g, w, h, 1); return; }
+        const ch = lin(.12, .5, t), bt = K.oExpo(lin(.5, .6, t)), bx = w * .5, by = h * .8;
+        g.save(); K.cam(g, X, { z: 1.08 - .08 * ch + bt * .1, shake: 2 + ch * 8 + (t > .5 && t < .82 ? 14 : 0) });
+        K.sky(g, w, h, ["#030a22", "#0c2a5a", "#02040c"]); K.stars(g, w, h, s, 60, "#cfe9ff", 1);
+        for (let i = 0; i < 6; i++) { const yy = h * (.9 + .02 * i), q = ch * (1 + i * .2); g.fillStyle = "#1a2030"; for (let k = 0; k < 6; k++) { const x = hs(i * 7 + k) * w, up = q * M * .05 * hs(k + i) * Math.abs(Math.sin(s * 3 + k)); g.fillRect(x, yy - up - M * .01, M * .02, M * .02); } }   // rocks lifting off the ground
+        for (let i = 0; i < 60; i++) { const u = 1 - ((s * 1.2 + hs(i)) % 1), an = hs(i + 4) * TAU, d = M * (.08 + .7 * u); K.glow(g, bx + Math.cos(an) * d, by + Math.sin(an) * d * .6, M * .012, "#9fe0ff", ch * (1 - u)); }   // the ki gathers
+        plate(g, X, r, ss(.4, .5, t), lin(.56, .66, t));
+        const rd = M * (.02 + .12 * K.oCub(ch)) * (1 + .06 * Math.sin(s * 30));
+        if (t < .5) { [-1, 1].forEach(sd => hand(g, bx + sd * M * (.1 - .02 * ch), by + M * .16, HS(X), sd * .5, "cup", { view: "palm", flip: sd > 0, skin: "tan", sleeve: { c: "#e8781e", s: "#a84c0c", cuff: "#2a4fd0", len: 240 } })); K.glow(g, bx, by, rd * 3, "#59c8ff", .9); K.radial(g, bx, by, rd, ["#ffffff", "#bff0ff", "rgba(80,180,255,0)"]); for (let k = 0; k < 6; k++) K.bolt(g, bx, by, bx + (hs(k + Math.floor(s * 20)) - .5) * rd * 5, by + (hs(k * 3 + Math.floor(s * 20)) - .5) * rd * 4, Math.floor(s * 20) + k, "#bff0ff", 1.5, .3); }
+        if (bt > 0 && t < .86) {                                             // the beam: a white core, turbulent blue sheath, spiralling edges
+            const ex = K.mix(bx, c.x, bt), ey = K.mix(by, c.y, bt), ang = Math.atan2(c.y - by, c.x - bx), L = Math.hypot(ex - bx, ey - by), Wd = M * (.12 + .015 * Math.sin(s * 40));
+            g.save(); g.translate(bx, by); g.rotate(ang); g.globalCompositeOperation = "lighter";
+            [[1.6, "rgba(40,120,255,.25)"], [1.15, "rgba(80,180,255,.6)"], [.7, "rgba(170,230,255,.9)"], [.35, "#ffffff"]].forEach(([k, col]) => { g.fillStyle = col; g.beginPath(); g.moveTo(0, -Wd * k * .5); for (let x = 0; x <= L; x += 20) g.lineTo(x, -Wd * k * (.5 + .08 * Math.sin(x * .05 - s * 40))); g.arc(L, 0, Wd * k * .55, -1.5708, 1.5708); for (let x = L; x >= 0; x -= 20) g.lineTo(x, Wd * k * (.5 + .08 * Math.sin(x * .05 + s * 40))); g.closePath(); g.fill(); });
+            g.strokeStyle = "rgba(255,255,255,.6)"; g.lineWidth = 2; for (let k = 0; k < 2; k++) { g.beginPath(); for (let x = 0; x <= L; x += 10) g.lineTo(x, Math.sin(x * .03 - s * 30 + k * Math.PI) * Wd * .55); g.stroke(); } g.restore();
+        }
+        boom(g, X, c, lin(.6, .86, t), "#59c8ff", 1.3);
+        g.restore();
+        SY.forEach(([a, tx], i) => { const q = lin(a, a + (i === 4 ? .2 : .08), t); if (q > 0 && q < 1) K.slam(g, tx, w * (i === 4 ? .5 : .2 + i * .2), h * (i === 4 ? .22 : .25 + (i % 2) * .1), M * (i === 4 ? .15 : .12), q, { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#0a3a7a", glow: "#59c8ff", from: 1.6, in: .2 }); });
+        if (t > .2 && t < .48) K.cutIn(g, X, lin(.2, .44, t), { y: .56, hh: .2, dir: -1, ang: .06, kj: "かめはめ波", name: "SON GOKU" });
+        if (t > .72) K.title(g, X, lin(.72, 1, t), { en: "KAMEHAMEHA", kj: "かめはめ波", y: .84 });
+        if (hit(t, .5, .03)) X.fx.inv = "#bff0ff"; X.fx.rgb = hit(t, .5, .12) * 16;
+        K.vignette(g, w, h, .55, "#00040c"); K.bars(g, w, h, 1 - lin(.92, 1, t));
+    }
+};
+
+/* ---------- SUKUNA · Malevolent Shrine: four eyes open, the hand sign, the shrine rises from a sea of blood, Dismantle cuts everything ---------- */
+function shrine(g, gx, gy, sc, glow) {
+    g.save(); g.translate(gx, gy); g.scale(sc, sc); g.lineJoin = "round";
+    const rim = () => { g.strokeStyle = "rgba(255,70,55,.9)"; g.lineWidth = 3; g.stroke(); }, dark = () => { g.fillStyle = "#07000a"; g.fill(); };
+    g.beginPath(); g.rect(-340, -34, 680, 34); dark(); rim(); g.beginPath(); g.rect(-290, -66, 580, 34); dark(); rim(); g.beginPath(); g.rect(-240, -250, 480, 184); dark();
+    K.radial(g, 0, -150, 110, ["rgba(255,200,120," + .9 * glow + ")", "rgba(255,50,30," + .8 * glow + ")", "rgba(80,0,0,0)"]);
+    [-230, -110, 90, 210].forEach(x => { g.beginPath(); g.rect(x, -250, 24, 190); dark(); rim(); });
+    g.beginPath(); g.moveTo(-410, -232); g.bezierCurveTo(-330, -250, -270, -292, -210, -340); g.lineTo(210, -340); g.bezierCurveTo(270, -292, 330, -250, 410, -232); g.closePath(); dark(); rim();
+    g.beginPath(); g.rect(-170, -420, 340, 80); dark(); rim(); g.beginPath(); g.moveTo(-270, -408); g.bezierCurveTo(-210, -420, -180, -452, -120, -500); g.lineTo(120, -500); g.bezierCurveTo(180, -452, 210, -420, 270, -408); g.closePath(); dark(); rim();
+    g.fillStyle = "#e9ddc6"; g.beginPath(); g.arc(0, -380, 30, 0, TAU); g.fill(); g.fillStyle = "#12020a"; g.beginPath(); g.arc(-11, -383, 7, 0, TAU); g.arc(11, -383, 7, 0, TAU); g.fill();
+    g.strokeStyle = "#e9ddc6"; g.lineWidth = 6; g.lineCap = "round"; for (let i = 0; i < 5; i++) { g.beginPath(); g.arc(-300, -180 + i * 6, 30 + i * 18, 4.2, 5.6); g.stroke(); g.beginPath(); g.arc(300, -180 + i * 6, 30 + i * 18, 3.8, 5.2); g.stroke(); }   // the ribs and horns
+    g.restore();
+}
+const sukuna = {
+    col: "#e0182a", trail: "#ff2a2a", ms: 7800, tailFx: "shatter",
+    main(g, X, T) {
+        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r);
+        X.cue(.02, "heartbeat", t); X.cue(.2, "rumble", t); X.cue(.3, "boom", t); for (let i = 0; i < 8; i++) X.cue(.56 + i * .04, "slash", t);
+        if (t < .2) { K.eyes(g, X, lin(0, .2, t), { tint: "#ff1a1a", ta: .3 }); K.drift(g, w, h, s, 40, 3, { up: 1, speed: .08, col: "#ff5a3a", size: 2 }); K.column(g, "両面宿儺", w * .08, h * .18, M * .065, lin(.02, .18, t), { fill: "#fff", stroke: "#4a0508", glow: "#ff2a1a", sw: 3 }); K.bars(g, w, h, 1); return; }
+        g.save(); K.cam(g, X, { shake: 3 + hit(t, .3, .1) * 20 + (t > .56 && t < .9 ? 6 : 0) });
+        K.sky(g, w, h, ["#000000", "#4a070b", "#a8141a", "#2a0306"]);
+        const my = h * .36; K.radial(g, w / 2, my, M * .28, ["#ff7a60", "#b01a1f", "#40050a"]); g.save(); g.translate(w / 2, my); g.rotate(s * .08); g.fillStyle = "rgba(255,60,40,.1)"; for (let i = 0; i < 16; i++) { const an = i / 16 * TAU; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(an - .05) * w, Math.sin(an - .05) * w); g.lineTo(Math.cos(an + .05) * w, Math.sin(an + .05) * w); g.fill(); } g.restore();
+        const gy = h * .88; g.fillStyle = "#1a0205"; g.fillRect(-w, gy, w * 3, h);                         // the blood sea
+        g.strokeStyle = "rgba(255,70,55,.35)"; g.lineWidth = 2; for (let i = 0; i < 26; i++) { const yy = gy + 6 + hs(i) * (h - gy), xx = hs(i + 3) * w; g.beginPath(); g.moveTo(xx, yy); g.lineTo(xx + 40 + hs(i + 5) * 120, yy); g.stroke(); }
+        const rise = K.oCub(lin(.26, .5, t)), sc = Math.min(w / 900, h / 760) * (1 - lin(.56, .7, t) * .3);
+        shrine(g, w / 2, gy + (1 - rise) * h * .6, sc, 1 + .25 * Math.sin(s * 5));
+        if (t < .3) [-1, 1].forEach(sd => hand(g, w / 2 + sd * M * .12, h * 1.12 - lin(.2, .26, t) * h * .1, HS(X), sd * -.2, sd < 0 ? "two" : "cross", { flip: sd < 0, skin: "base", sleeve: { c: "#f2ece0", s: "#c9bfae", cuff: "#1a1a1a", len: 240 } }));   // the shrine's hand sign
+        if (t > .5) plate(g, X, r, ss(.5, .56, t), lin(.56, .64, t));
+        if (t > .54) {                                                        // DISMANTLE / CLEAVE: the whole picture is cut
+            const cq = lin(.54, .92, t), N = 42; g.lineCap = "round"; let live = 0;
+            for (let k = 0; k < N; k++) { const tk = Math.pow(k / N, 1.3), lt = (cq - tk) / .1; if (lt < 0) continue; const L = K.randLine(k + 3, w, h), e = Math.min(1, lt * 3), hx = K.mix(L[0], L[2], K.oCub(e)), hy = K.mix(L[1], L[3], K.oCub(e));
+                g.globalAlpha = Math.max(.12, .5 - (cq - tk) * .5); g.strokeStyle = "#ff2a2a"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(L[0], L[1]); g.lineTo(hx, hy); g.stroke();
+                if (lt < 1) { live++; g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 3 + (1 - lt) * 12; g.beginPath(); g.moveTo(L[0], L[1]); g.lineTo(hx, hy); g.stroke(); } }
+            g.globalAlpha = 1; if (live) { g.fillStyle = "rgba(255,40,30," + Math.min(.28, live * .06) + ")"; g.fillRect(0, 0, w, h); }
+            K.sparks(g, c.x, c.y, lin(.6, .8, t), 30, 7, { speed: M * .7, col: "#ff4a3a" });
+        }
+        g.restore();
+        if (t > .3 && t < .56) { "領域展開".split("").forEach((ch, i) => { const p = lin(.3 + i * .02, .36 + i * .02, t); g.globalAlpha = p; K.txt(g, ch, w * .09, h * .18 + i * M * .115, M * .1, { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#b10e18", glow: "#ff2a1a" }); });
+            "伏魔御廚子".split("").forEach((ch, i) => { const p = lin(.38 + i * .02, .44 + i * .02, t); g.globalAlpha = p; K.txt(g, ch, w * .91, h * .12 + i * M * .115, M * .1, { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#b10e18", glow: "#ff2a1a" }); }); g.globalAlpha = 1;
+            K.title(g, X, lin(.36, .58, t), { en: "MALEVOLENT SHRINE", kj: "伏魔御廚子", sub: "DOMAIN EXPANSION", y: .94 }); }
+        if (t > .56 && t < .76) K.slam(g, "解", w * .32, h * .5, M * .32, lin(.56, .76, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#c5121e", glow: "#ff2a1a", rot: -.12 });
+        if (t > .7 && t < .9) K.slam(g, "捌", w * .7, h * .32, M * .26, lin(.7, .9, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#c5121e", glow: "#ff2a1a", rot: .1 });
+        if (hit(t, .3, .03)) X.fx.inv = "#ff8a7a"; X.fx.rgb = (t > .56 && t < .9 ? 6 : 0) + hit(t, .3, .1) * 14;
+        K.vignette(g, w, h, .5, "#000"); K.bars(g, w, h, 1 - lin(.92, 1, t));
+    }
+};
+
+/* ---------- TANJIRO · Hinokami Kagura: the scars burn, the blade catches fire, a sun-halo dragon of flame coils and dives ---------- */
+function flameRibbon(g, P, u0, u1, W, s) {                               // a woodblock-print flame ribbon along path P from u0 to u1
+    const n = 40, pts = []; for (let i = 0; i <= n; i++) { const u = K.mix(u0, u1, i / n), p = P(u), q = P(Math.min(1, u + .005)), an = Math.atan2(q[1] - p[1], q[0] - p[0]); pts.push([p[0], p[1], an, Math.sin(i / n * Math.PI) * W]); }
+    g.save(); g.globalCompositeOperation = "lighter";
+    [[1, "rgba(255,70,20,.55)"], [.65, "rgba(255,160,40,.85)"], [.3, "rgba(255,245,200,.95)"]].forEach(([k, col]) => { g.fillStyle = col; g.beginPath(); pts.forEach(([x, y, an, ww], i) => { const o = ww * k * (1 + .25 * Math.sin(i * .9 - s * 18)); i ? g.lineTo(x + Math.cos(an - 1.5708) * o, y + Math.sin(an - 1.5708) * o) : g.moveTo(x, y); }); for (let i = pts.length - 1; i >= 0; i--) { const [x, y, an, ww] = pts[i], o = ww * k * (1 + .25 * Math.cos(i * .8 - s * 16)); g.lineTo(x + Math.cos(an + 1.5708) * o, y + Math.sin(an + 1.5708) * o); } g.closePath(); g.fill(); });
+    g.restore();
+    g.save(); g.strokeStyle = "rgba(90,10,0,.55)"; g.lineWidth = 2; for (let i = 4; i < pts.length - 4; i += 4) { const [x, y, an, ww] = pts[i]; g.beginPath(); g.arc(x + Math.cos(an - 1.5708) * ww * .9, y + Math.sin(an - 1.5708) * ww * .9, ww * .3, an, an + 2.4); g.stroke(); } g.restore();   // ukiyo-e curls
+}
+const tanjiro = {
+    col: "#ff6a2a", trail: "#ff9a3a", ms: 7600, tailFx: "burn",
+    main(g, X, T) {
+        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r);
+        X.cue(.02, "heartbeat", t); X.cue(.18, "shing", t); X.cue(.3, "roar", t); X.cue(.6, "slash", t); X.cue(.72, "boom", t);
+        if (t < .18) { K.eyes(g, X, lin(0, .18, t), { tint: "#ff6a2a", ta: .2 }); K.drift(g, w, h, s, 40, 5, { up: 1, speed: .1, col: "#ffb060", size: 3, glow: 1, add: 1 }); K.bars(g, w, h, 1); return; }
+        g.save(); K.cam(g, X, { shake: 2 + hit(t, .72, .14) * 24, r: Math.sin(s * .8) * .02 });
+        K.sky(g, w, h, ["#120204", "#3a0806", "#0a0102"]); K.radial(g, w / 2, h * .42, M * .5, ["rgba(255,120,40,.35)", "rgba(255,60,20,0)"]);
+        K.drift(g, w, h, s, 90, 3, { up: 1, speed: .12, col: "#ff9a3a", size: 3, glow: 1, add: 1 });
+        const halo = K.oBack(lin(.26, .4, t)); if (halo > 0) { g.save(); g.translate(w / 2, h * .42); g.rotate(s * .4); g.globalCompositeOperation = "lighter"; g.strokeStyle = "#ff8a2a"; g.lineWidth = M * .02; g.beginPath(); g.arc(0, 0, M * .34 * halo, 0, TAU); g.stroke(); for (let i = 0; i < 24; i++) { const an = i / 24 * TAU; g.beginPath(); g.moveTo(Math.cos(an) * M * .34 * halo, Math.sin(an) * M * .34 * halo); g.lineTo(Math.cos(an) * M * (.4 + .04 * Math.sin(s * 9 + i)) * halo, Math.sin(an) * M * (.4 + .04 * Math.sin(s * 9 + i)) * halo); g.stroke(); } g.restore(); }   // the sun halo
+        plate(g, X, r, ss(.5, .56, t), lin(.62, .72, t));
+        const hx = w * .74, hy = h * 1.04, sw = K.ioCub(lin(.56, .66, t)), ang = -2.0 + sw * 2.2, bl = M * .8;    // first person: the black blade, burning
+        const P = u => { const a = u * TAU * 1.3; return [K.mix(w / 2, c.x, u) + Math.cos(a) * M * .4 * (1 - u), K.mix(h * .45, c.y, u) + Math.sin(a) * M * .28 * (1 - u)]; };
+        const dr = K.ioCub(lin(.3, .72, t)); if (dr > 0 && t < .8) { flameRibbon(g, P, Math.max(0, dr - .45), dr, M * .07, s); const hd = P(dr); K.glow(g, hd[0], hd[1], M * .12, "#ffd27a", .9); }   // the fire dragon
+        if (t < .74) { K.katana(g, hx, hy, ang, bl, { blade: ["#3a3a40", "#141418", "#000000"], guard: "#2a2a2a", wrap: "#1a0f08", glow: t > .2 ? "#ff6a2a" : null, s }); hand(g, hx - Math.cos(ang) * M * .1, hy - Math.sin(ang) * M * .1, HS(X), ang + 1.5708, "fist", { skin: "base", sleeve: { c: "#1e5a3c", s: "#123a26", cuff: "#111", len: 240 } });
+            if (t > .2) for (let i = 0; i < 10; i++) { const q = .2 + i * .08; K.glow(g, hx + Math.cos(ang) * bl * q, hy + Math.sin(ang) * bl * q, M * .04, "#ff8a2a", .5 + .3 * Math.sin(s * 20 + i)); } }
+        if (sw > 0 && sw < 1) { g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = "rgba(255,200,120,.9)"; g.lineWidth = M * .04 * (1 - sw); g.beginPath(); g.arc(hx, hy, bl * .9, -2, -2 + sw * 2.2); g.stroke(); g.restore(); }
+        boom(g, X, c, lin(.72, .92, t), "#ff6a2a", 1.2);
+        g.restore();
+        K.cutIn(g, X, lin(.36, .56, t), { y: .72, hh: .22, dir: 1, ang: -.05, kj: "ヒノカミ神楽", name: "TANJIRO" });
+        if (t > .56 && t < .76) K.slam(g, "日暈の龍 頭舞い", w / 2, h * .16, M * .08, lin(.56, .76, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#5a0a00", glow: "#ff6a2a" });
+        if (t > .74) K.title(g, X, lin(.74, 1, t), { en: "SUN HALO DRAGON HEAD DANCE", kj: "ヒノカミ神楽", y: .84 });
+        if (hit(t, .72, .03)) X.fx.inv = "#ffb37a"; X.fx.rgb = hit(t, .72, .1) * 14;
+        K.vignette(g, w, h, .6, "#0a0000"); K.bars(g, w, h, 1 - lin(.92, 1, t));
+    }
+};
+
+/* ---------- ICHIGO · Getsuga Tensho: BANKAI, black reiatsu with a red edge, the blade raised, a black crescent splits the world ---------- */
+const ichigo = {
+    col: "#ff3050", trail: "#ff3050", ms: 7600, tailFx: "split",
+    main(g, X, T) {
+        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r);
+        X.cue(.02, "rumble", t); X.cue(.2, "boom", t); X.cue(.5, "slash", t); X.cue(.52, "roar", t); X.cue(.74, "boom", t);
+        if (t < .2) { const p = lin(0, .2, t); K.still(g, X, p, { z0: 1.1, dz: .2, grade: "#ff3050", dy: .08 }); K.focus(g, w / 2, h / 2, w, h, s, { col: "rgba(0,0,0,.6)", n: 90, r0: M * .3 }); K.slam(g, "卍解", w / 2, h * .5, M * .28, lin(.06, .26, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#000", glow: "#ff1030", ghost: 1 }); K.bars(g, w, h, 1); return; }
+        g.save(); K.cam(g, X, { shake: 3 + hit(t, .2, .1) * 22 + (t > .5 && t < .74 ? 8 : 0) + hit(t, .74, .12) * 24 });
+        K.sky(g, w, h, ["#000000", "#140006", "#000000"]);
+        for (let i = 0; i < 26; i++) { const x = w * (.1 + .8 * hs(i)), L = h * (.4 + .6 * hs(i + 3)), sway = Math.sin(s * 3 + i) * M * .03; g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = i % 4 ? "rgba(140,0,20,.35)" : "rgba(255,40,70,.5)"; g.lineWidth = M * (.02 + .04 * hs(i + 7)); g.beginPath(); g.moveTo(x, h); g.quadraticCurveTo(x + sway, h - L * .5, x - sway, h - L * lin(.18, .36, t)); g.stroke(); g.restore(); }   // the reiatsu pillar
+        plate(g, X, r, ss(.46, .52, t), lin(.56, .7, t));
+        const lift = K.oBack(lin(.26, .46, t)), swing = K.ioCub(lin(.48, .56, t)), hx = w * .62, hy = h * (1.12 - .14 * lift), ang = -1.9 + .6 * lift - 1.8 * swing, bl = M * .9;
+        K.katana(g, hx, hy, ang, bl, { blade: ["#2a2a30", "#0c0c10", "#000000"], guard: "#1a1a1a", wrap: "#160606", wrapLine: "#7a1020", glow: "#ff2a4a", s });   // Tensa Zangetsu
+        g.save(); g.strokeStyle = "#1a1a1a"; g.lineWidth = 3; g.beginPath(); g.moveTo(hx - Math.cos(ang) * M * .18, hy - Math.sin(ang) * M * .18); for (let i = 0; i < 8; i++) g.lineTo(hx - Math.cos(ang) * M * .18 - i * M * .02 + Math.sin(s * 4 + i) * 8, hy - Math.sin(ang) * M * .18 + i * M * .03); g.stroke(); g.restore();   // the broken chain on the hilt
+        [-1, 1].forEach((sd, i) => hand(g, hx - Math.cos(ang) * M * (.08 + i * .07), hy - Math.sin(ang) * M * (.08 + i * .07), HS(X), ang + 1.5708, "fist", { flip: sd < 0, skin: "tan", sleeve: { c: "#0a0a0c", s: "#000", cuff: "#ff3050", len: 240 } }));
+        const q = K.oExpo(lin(.54, .76, t));                                    // the black crescent with a red rim, sweeping at the target
+        if (q > 0 && t < .8) { const x = K.mix(w * .45, c.x, q), y = K.mix(h * .7, c.y, q), Rr = M * (.5 - .2 * q); g.save(); g.translate(x, y); g.rotate(-.5 + q * .4);
+            for (let k = 6; k >= 0; k--) { g.globalAlpha = k ? .08 : 1; g.beginPath(); g.arc(-k * 14, k * 10, Rr, Math.PI * 1.1, Math.PI * 1.9); g.arc(-k * 14, k * 10 + Rr * .35, Rr * 1.05, Math.PI * 1.85, Math.PI * 1.15, true); g.closePath(); g.fillStyle = "#050005"; g.fill(); if (!k) { g.strokeStyle = "rgba(255,0,48,.25)"; g.lineWidth = 34; g.stroke(); g.strokeStyle = "#ff1a3a"; g.lineWidth = 10; g.stroke(); g.strokeStyle = "#fff"; g.lineWidth = 3; g.stroke(); } } g.restore(); }
+        boom(g, X, c, lin(.74, .92, t), "#ff3050", 1.2);
+        g.restore();
+        K.cutIn(g, X, lin(.26, .46, t), { y: .3, hh: .26, dir: -1, ang: .07, kj: "天鎖斬月", name: "ICHIGO" });
+        if (t > .5 && t < .76) K.slam(g, "月牙天衝", w / 2, h * .18, M * .15, lin(.5, .76, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#c5122a", glow: "#ff1030", ghost: 1 });
+        if (t > .76) K.title(g, X, lin(.76, 1, t), { en: "GETSUGA TENSHO", kj: "月牙天衝", y: .84 });
+        if (hit(t, .5, .03)) X.fx.inv = "#ff6a7a"; X.fx.rgb = hit(t, .5, .1) * 14 + hit(t, .74, .1) * 14;
+        K.vignette(g, w, h, .5, "#000"); K.bars(g, w, h, 1 - lin(.92, 1, t));
+    }
+};
+
+/* ---------- NETERO · 100-Type Guanyin Bodhisattva: a prayer of gratitude, the golden statue rises with its hundred hands, the barrage, ZERO HAND ---------- */
+function guanyin(g, x, y, R, p, s, a) {
+    if (p <= 0) return; g.save(); g.translate(x, y); g.globalAlpha *= a;
+    g.save(); g.rotate(s * .05); for (let i = 0; i < 60; i++) { const an = i / 60 * TAU, L = R * (1.1 + .1 * Math.sin(s * 3 + i)) * p; g.strokeStyle = "rgba(255,210,74,.35)"; g.lineWidth = 2; g.beginPath(); g.moveTo(Math.cos(an) * R * .5, Math.sin(an) * R * .5); g.lineTo(Math.cos(an) * L, Math.sin(an) * L); g.stroke(); } g.restore();
+    for (let i = 0; i < 26; i++) { const an = Math.PI + (i + .5) / 26 * Math.PI, L = R * (.62 + .06 * Math.sin(s * 5 + i)) * p, ex = Math.cos(an) * L, ey = Math.sin(an) * L * .9 - R * .1; g.strokeStyle = "#c98a1e"; g.lineWidth = R * .03; g.beginPath(); g.moveTo(0, -R * .12); g.quadraticCurveTo(ex * .5, ey * .3 - R * .1, ex, ey); g.stroke(); fistMini(g, ex, ey, R * .045, an + 1.5708, "gold", "#ffd24a"); }   // the hundred arms
+    const body = g.createLinearGradient(0, -R * .5, 0, R * .6); body.addColorStop(0, "#fff0b0"); body.addColorStop(.5, "#e6b33a"); body.addColorStop(1, "#7a4a08");
+    g.beginPath(); g.moveTo(-R * .34, R * .7); g.quadraticCurveTo(-R * .3, -R * .1, 0, -R * .24); g.quadraticCurveTo(R * .3, -R * .1, R * .34, R * .7); g.closePath(); g.fillStyle = body; g.fill(); g.strokeStyle = "#4a2a00"; g.lineWidth = 3; g.stroke();
+    g.beginPath(); g.arc(0, -R * .36, R * .13, 0, TAU); g.fillStyle = body; g.fill(); g.stroke(); g.beginPath(); g.arc(0, -R * .36, R * .22, 0, TAU); g.strokeStyle = "#ffd24a"; g.lineWidth = 4; g.stroke();
+    g.fillStyle = "#4a2a00"; g.fillRect(-R * .07, -R * .37, R * .05, R * .01); g.fillRect(R * .02, -R * .37, R * .05, R * .01); g.restore();
+}
+const netero = {
+    col: "#ffd24a", trail: "#ffd24a", ms: 7600, tailFx: "shatter",
+    main(g, X, T) {
+        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r), Y = "#ffd24a";
+        X.cue(.02, "chime", t); X.cue(.26, "rumble", t); X.cue(.42, "rush", t); X.cue(.56, "rush", t); X.cue(.74, "boom", t);
+        if (t < .24) {                                                        // the prayer: palms together, a slow bow
+            const p = lin(0, .24, t); K.sky(g, w, h, ["#0a0600", "#1e1404", "#050300"]); K.radial(g, w / 2, h * .5, M * .5, ["rgba(255,210,74,.3)", "rgba(255,210,74,0)"]);
+            [-1, 1].forEach(sd => hand(g, w / 2 + sd * M * .035, h * (1.02 - .12 * ss(0, .4, p)), HS(X) * 1.2, sd * -.06, "blade", { view: "palm", flip: sd > 0, skin: "base", sleeve: { c: "#f4f0e6", s: "#c9c0aa", cuff: "#d9b23a", len: 240 } }));
+            K.column(g, "感謝", w * .2, h * .3, M * .1, lin(.1, .6, p), { fill: "#fff", stroke: "#5a3a00", glow: Y, sw: 3 }); K.cutIn(g, X, lin(.3, 1, p), { y: .22, hh: .22, dir: -1, ang: .05, kj: "百式観音", name: "ISAAC NETERO" }); K.bars(g, w, h, 1); return;
+        }
+        g.save(); K.cam(g, X, { shake: (t > .4 && t < .7 ? 7 : 2) + hit(t, .74, .14) * 26, z: 1 + lin(.24, .4, t) * .04 });
+        K.sky(g, w, h, ["#140c02", "#3a2604", "#0a0600"]);
+        plate(g, X, r, ss(.38, .44, t), lin(.44, .7, t));
+        guanyin(g, w / 2, h * .62, M * .62, K.oBack(lin(.24, .4, t)), s, 1 - lin(.88, .96, t));
+        for (let i = 0; i < 60; i++) {                                       // the barrage: golden palms faster than sound
+            const st = .4 + i * .0045, q = K.oExpo(lin(st, st + .06, t)); if (q <= 0 || q >= 1 || t > .72) continue; const a0 = Math.PI + ((i * 7) % 26 + .5) / 26 * Math.PI, x0 = w / 2 + Math.cos(a0) * M * .38, y0 = h * .62 + Math.sin(a0) * M * .34, tx = c.x + (hs(i) - .5) * r.w, ty = c.y + (hs(i + 3) - .5) * r.h, x = K.mix(x0, tx, q), y = K.mix(y0, ty, q);
+            g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = "rgba(255,210,74,.45)"; g.lineWidth = M * .02; g.beginPath(); g.moveTo(K.mix(x0, tx, Math.max(0, q - .3)), K.mix(y0, ty, Math.max(0, q - .3))); g.lineTo(x, y); g.stroke(); g.restore(); fistMini(g, x, y, M * .03 * (1 + q * .5), Math.atan2(ty - y0, tx - x0) + 1.5708, "gold", Y);
+            if (q > .9) K.sparks(g, tx, ty, (q - .9) * 10, 6, i, { speed: M * .2, col: "#fff2b0" }); }
+        if (t > .7 && t < .86) { const q = lin(.7, .86, t), sc = K.mix(.4, 2.2, K.oExpo(q)); g.save(); g.globalAlpha = 1 - lin(.6, 1, q); hand(g, K.mix(w / 2, c.x, q * .6), K.mix(h * .9, c.y + M * .3, q * .6), HS(X) * sc, 0, "open", { view: "palm", skin: "gold", aura: Y }); g.restore(); }   // ZERO HAND
+        boom(g, X, c, lin(.74, .94, t), Y, 1.4);
+        g.restore();
+        if (t > .4 && t < .7) K.slam(g, "百式観音", w / 2, h * .14, M * .11, lin(.4, .7, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#5a3a00", glow: Y });
+        if (t > .72) K.title(g, X, lin(.72, 1, t), { en: "ZERO HAND", kj: "零の掌", y: .84 });
+        if (hit(t, .74, .03)) X.fx.inv = "#ffe9a0"; X.fx.rgb = hit(t, .74, .1) * 14;
+        K.vignette(g, w, h, .55, "#0a0600"); K.bars(g, w, h, 1 - lin(.92, 1, t));
+    }
+};
+
+/* ---------- YAMI · Dark Cloaked Dimension Slash: smoke and dark magic, "push past your limits", a cut that slices space itself ---------- */
+const yami = {
+    col: "#a06bff", trail: "#a06bff", ms: 7400, tailFx: "split",
+    main(g, X, T) {
+        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r), V = "#a06bff", cutAt = .62;
+        X.cue(.02, "rumble", t); X.cue(.3, "shing", t); X.cue(cutAt, "slash", t); X.cue(cutAt + .01, "boom", t);
+        if (t < .2) { K.eyes(g, X, lin(0, .2, t), { tint: "#a06bff", ta: .2 }); for (let i = 0; i < 6; i++) { const q = (s * .3 + i / 6) % 1; K.pool(g, w * (.6 + .3 * hs(i)), h * (.6 - q * .3), M * (.1 + q * .2), "#d9d0e6", .15 * Math.sin(q * Math.PI)); } K.bars(g, w, h, 1); return; }   // cigarette smoke drifting over the stare
+        g.save(); K.cam(g, X, { shake: 2 + hit(t, cutAt, .14) * 26 });
+        K.sky(g, w, h, ["#06020e", "#14082a", "#020006"]);
+        for (let i = 0; i < 10; i++) { const x = ((hs(i + 2) * w * 1.4 + s * 24 * (.5 + hs(i))) % (w * 1.4)) - w * .2, y = h * (.2 + .6 * hs(i + 8)); K.pool(g, x, y, M * (.4 + .2 * hs(i)), "#2a0a50", .5); }   // dark magic fog
+        plate(g, X, r, ss(.4, .46, t), lin(.5, .62, t));
+        const draw = K.oCub(lin(.24, .4, t)), hx = w * .7, hy = h * 1.08, ang = -2.3 + .4 * draw + 1.6 * K.ioCub(lin(cutAt - .04, cutAt + .02, t)), bl = M * .95;
+        if (t < cutAt + .06) { K.katana(g, hx, hy, ang, bl, { blade: ["#ece6ff", "#7a6aa8", "#1a1030"], guard: "#2a2a2a", glow: t > .4 ? V : null, s }); hand(g, hx - Math.cos(ang) * M * .1, hy - Math.sin(ang) * M * .1, HS(X), ang + 1.5708, "fist", { skin: "tan", sleeve: { c: "#141414", s: "#000", cuff: "#d9d0b8", len: 240 } });
+            if (t > .4) { g.save(); g.globalCompositeOperation = "lighter"; for (let i = 0; i < 18; i++) { const q = (s * 1.5 + i / 18) % 1, d = bl * (.15 + .85 * hs(i)); K.pool(g, hx + Math.cos(ang) * d + (hs(i + 4) - .5) * 30, hy + Math.sin(ang) * d - q * 50, M * .05, "#3a1070", .6 * (1 - q)); } g.restore(); } }   // dark magic coating the blade
+        if (t >= cutAt) {                                                    // THE CUT: a diagonal through the target, the picture slides apart along it
+            const q = K.oExpo(lin(cutAt, cutAt + .1, t)), sl = K.oCub(lin(cutAt + .04, .9, t)) * M * .06, an = -.45, L = Math.hypot(w, h);
+            g.save(); g.translate(c.x, c.y); g.rotate(an); g.globalCompositeOperation = "lighter"; g.fillStyle = "rgba(160,107,255,.5)"; g.fillRect(-L * q, -sl - 4, L * 2 * q, sl * 2 + 8); g.fillStyle = "#000"; g.globalCompositeOperation = "source-over"; g.fillRect(-L * q, -sl, L * 2 * q, sl * 2); g.strokeStyle = "#fff"; g.lineWidth = 3; g.beginPath(); g.moveTo(-L * q, -sl); g.lineTo(L * q, -sl); g.moveTo(-L * q, sl); g.lineTo(L * q, sl); g.stroke();
+            for (let i = 0; i < 30; i++) { const x = (hs(i) - .5) * L * q * 1.6, y = (hs(i + 5) - .5) * sl * 2; g.fillStyle = "rgba(200,170,255," + (.8 * hs(i + 9)) + ")"; g.fillRect(x, y, 3, 3); } g.restore();
+            X.fx.glitch = hit(t, cutAt, .1) * .8; K.sparks(g, c.x, c.y, lin(cutAt, cutAt + .2, t), 30, 2, { speed: M * .7, col: V, ang: an, spread: .4 }); K.sparks(g, c.x, c.y, lin(cutAt, cutAt + .2, t), 30, 6, { speed: M * .7, col: V, ang: an + Math.PI, spread: .4 });
+        }
+        g.restore();
+        K.cutIn(g, X, lin(.22, .44, t), { y: .3, hh: .26, dir: 1, ang: -.07, kj: "闇魔法", name: "YAMI SUKEHIRO" });
+        if (t > .44 && t < .62) K.slam(g, "限界を超えろ", w / 2, h * .62, M * .08, lin(.44, .64, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#2a0a5a", glow: V });
+        if (t > cutAt) K.title(g, X, lin(cutAt + .04, 1, t), { en: "DARK CLOAKED DIMENSION SLASH", kj: "闇纏・次元斬り", y: .84 });
+        if (hit(t, cutAt, .03)) X.fx.inv = "#c9b0ff"; X.fx.rgb = hit(t, cutAt, .12) * 16;
+        K.vignette(g, w, h, .55, "#000"); K.bars(g, w, h, 1 - lin(.92, 1, t));
+    }
+};
+
+/* ---------- JOTARO · Star Platinum: "Yare yare daze", the Stand appears behind, ORA ORA ORA ORA, one last punch through the screen ---------- */
+const jotaro = {
+    col: "#b388ff", trail: "#c9a6ff", ms: 7600, tailFx: "shatter",
+    main(g, X, T) {
+        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r), P = "#b388ff";
+        X.cue(.02, "rumble", t); X.cue(.26, "rush", t); X.cue(.38, "rush", t); X.cue(.5, "rush", t); X.cue(.66, "punch", t); X.cue(.72, "boom", t);
+        if (t < .22) {                                                        // ゴゴゴ: the cap, the stare, the menace
+            K.still(g, X, lin(0, .22, t), { z0: 1.05, dz: .12, dy: -.02 }); K.halftone(g, w, h, "rgba(60,0,90,.4)", .6, 8);
+            "ゴゴゴゴ".split("").forEach((ch, i) => { const q = lin(.02 + i * .03, .1 + i * .03, t); if (q > 0) K.txt(g, ch, w * (.12 + i * .25), h * (.18 + (i % 2) * .62), M * .12, { font: K.F_JP, weight: "400", fill: "#d9a6ff", stroke: "#1a0030", rot: (i - 1.5) * .1, sw: 4 }); });
+            K.slam(g, "やれやれだぜ", w / 2, h * .86, M * .07, lin(.08, .24, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#1a0030", glow: P }); K.bars(g, w, h, 1); return;
+        }
+        g.save(); K.cam(g, X, { shake: 4 + (t > .26 && t < .66 ? 8 : 0) + hit(t, .72, .14) * 30 });
+        K.sky(g, w, h, ["#22104a", "#3a1a74", "#10062a"]); K.halftone(g, w, h, "rgba(255,255,255,.07)", 1, 10); K.focus(g, c.x, c.y, w, h, s, { col: "rgba(255,255,255,.25)", n: 100, r0: M * .14 });
+        plate(g, X, r, 1, lin(.3, .6, t));
+        const br = lin(.26, .66, t), n = Math.floor(br * 46);                // the rush: fists from both sides, faster and faster
+        for (let i = Math.max(0, n - 14); i < n; i++) { const side = i % 2 ? -1 : 1, q = (br * 46 - i) / 1.4, x0 = w / 2 + side * w * (.25 + .1 * hs(i)), y0 = h * 1.1, k = Math.min(1, q), tx = c.x + (hs(i) - .5) * r.w * .7, ty = c.y + (hs(i + 2) - .5) * r.h * .6, x = K.mix(x0, tx, K.oExpo(k)), y = K.mix(y0, ty, K.oExpo(k)), sz = M * (.0026 - .0014 * k);
+            g.save(); g.globalAlpha = 1 - Math.max(0, q - 1) * .8; g.globalCompositeOperation = "lighter"; g.strokeStyle = "rgba(190,150,255,.4)"; g.lineWidth = sz * 38; g.lineCap = "round"; g.beginPath(); g.moveTo(K.mix(x0, x, .4), K.mix(y0, y, .4)); g.lineTo(x, y); g.stroke(); g.restore();
+            g.save(); g.globalAlpha = 1 - Math.max(0, q - 1) * .8; fist(g, x, y, sz, (hs(i + 5) - .5) * .4, { skin: "stp", aura: k < 1 ? null : P }); g.restore();
+            if (q > 1 && q < 1.4) K.sparks(g, tx, ty, (q - 1) / .4, 6, i, { speed: M * .2, col: "#e6d9ff" }); }
+        for (let i = 0; i < 12; i++) { const a = .27 + i * .033, q = lin(a, a + .09, t); if (q > 0 && q < 1) K.txt(g, "オラ", w * (.12 + hs(i + 4) * .76), h * (.14 + hs(i + 9) * .6), M * (.07 + .07 * hs(i + 2)) * (1 + q * .3), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#1a0030", glow: P, rot: (hs(i) - .5) * .5 }); }
+        if (t > .64 && t < .76) { const q = lin(.64, .74, t), sc = M * K.mix(.003, .013, K.oExpo(q)); fist(g, K.mix(w / 2, c.x, q * .4), K.mix(h * .9, c.y, q * .5), sc, 0, { skin: "stp", aura: P }); }   // the last one, right through the screen
+        boom(g, X, c, lin(.72, .92, t), P, 1.3);
+        g.restore();
+        K.cutIn(g, X, lin(.22, .44, t), { y: .74, hh: .22, dir: -1, ang: .05, kj: "スタープラチナ", name: "JOTARO KUJO" });
+        if (t > .5 && t < .76) K.slam(g, "オラオラオラァ!!", w / 2, h * .2, M * .1, lin(.5, .76, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#1a0030", glow: P, ghost: 1 });
+        if (t > .76) K.title(g, X, lin(.76, 1, t), { en: "ORA ORA RUSH", kj: "スタープラチナ", y: .84 });
+        if (hit(t, .72, .03)) X.fx.inv = "#d9c6ff"; X.fx.rgb = hit(t, .72, .1) * 16;
+        K.vignette(g, w, h, .5, "#0a0418"); K.bars(g, w, h, 1 - lin(.92, 1, t));
+    }
+};
+
+export const ULT = { onepiece_u: luffy, naruto_u: naruto, dragonball_u: goku, jjk_u: sukuna, demonslayer_u: tanjiro, bleach_u: ichigo, hxh_u: netero, blackclover_u: yami, jojo_u: jotaro };
