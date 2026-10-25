@@ -24,6 +24,7 @@ import { profile, avatarEl, initGallery, openProfileEditor, commitProfileEditor,
 import { showResults, closeResults } from "./results.js";
 import { initCine, cineHook, cineHas } from "./cine/engine.js";
 import { hand as cineHand } from "./cine/hands.js";
+import { vyInit, vyShow, vyReset, vyStart, vyHost, vySeats, vyMatchOver, vyMusic, VY_MODE, VY_RULES } from "./voyage/ui.js";
 
 
 /* =========================================
@@ -722,6 +723,7 @@ function musicWanted(d) {
     if (d.gameType === "imposter") return "im";
     if (d.gameType === "headbanz") return "hb";
     if (d.gameType === "uno") return d.uno && d.uno.phase === "over" ? "lobby" : "uno";
+    if (d.gameType === "voyage") return vyMusic(d);
     return d.status === "finished" ? "lobby" : "gw";
 }
 function musicSync(d) { audio.music.play(musicWanted(d)); }
@@ -928,10 +930,10 @@ let rematchSize = 24;
    HELPERS
 ========================================= */
 
-const SCENE_OF = { home: "home", lobby: "lobby", secret: "gw", game: "gw", result: "gw", hb: "hb", im: "im", uno: "uno" };
+const SCENE_OF = { home: "home", lobby: "lobby", secret: "gw", game: "gw", result: "gw", hb: "hb", im: "im", uno: "uno", vy: "vy" };
 let currentScreen = "home";
 function showOnly(id) {
-    document.querySelectorAll("#home,#lobby,#secret,#game,#hb,#im,#uno,#result").forEach(el => el.classList.add("hidden"));
+    document.querySelectorAll("#home,#lobby,#secret,#game,#hb,#im,#uno,#vy,#result").forEach(el => el.classList.add("hidden"));
     const element = document.getElementById(id);
     element.classList.remove("hidden");
     if (currentScreen !== id) {
@@ -1135,18 +1137,20 @@ const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$searc
 function applyModeUI(t) {
     homeMode = t;
     const multi = t === "hb" || t === "im";
-    document.body.classList.toggle("hb-mode", multi || t === "uno");
+    document.body.classList.toggle("hb-mode", multi || t === "uno" || t === "vy");
     document.body.classList.toggle("uno-mode", t === "uno");
     $("sizeField").classList.toggle("hidden", t !== "gw");
     $("diffField").classList.toggle("hidden", !multi);
     $("hbRoundsBox").classList.toggle("hidden", t !== "hb");
     $("imBox").classList.toggle("hidden", t !== "im");
+    $("vyBox").classList.toggle("hidden", t !== "vy");
     const picked = document.querySelectorAll("#animePoll input:checked").length;
     $("modeHint").textContent = {
         gw: "Classic board: characters are drawn from every series you tick.",
         hb: "Characters are drawn at random from every series you tick.",
         im: "The secret character comes from one of the series you tick.",
-        uno: "Pick exactly 4 series (" + picked + "/4): they become the 4 colours of the deck."
+        uno: "Pick exactly 4 series (" + picked + "/4): they become the 4 colours of the deck.",
+        vy: "The enemies and bosses you meet come from the series you tick."
     }[t] || "";
 }
 window.setGameType = function (t) { pickMode(MODE_OF_KEY[t] || "classic"); };
@@ -1637,6 +1641,7 @@ function hbRenderRound(data) {
    Clues (2 rounds, spoken on your call) -> vote -> result.
 ========================================================= */
 let homeLaps = 1, imSig = "", imSeen = { phase: "", round: 0 }, imSkipKey = "";
+window.setVoyageLen = function (n) { document.querySelectorAll(".vylbtn").forEach(b => b.classList.toggle("selected", Number(b.dataset.v) === n)); lobbySet({ vyLen: n }); };
 window.setLaps = function (n) { homeLaps = n; document.querySelectorAll(".lapbtn").forEach(b => b.classList.toggle("selected", Number(b.dataset.l) === n)); lobbySet({ laps: n }); };
 
 /* ---------- rounds (host only) ---------- */
@@ -2579,17 +2584,19 @@ function unoPeekShow(u, me) {
    or the last player leaving, deletes the room and its data.
    ===================================================================== */
 const SLOTS = [1, 2, 3, 4, 5, 6];
-const MODE_OF_KEY = { gw: "classic", hb: "headbanz", im: "imposter", uno: "uno" };
+const MODE_OF_KEY = { gw: "classic", hb: "headbanz", im: "imposter", uno: "uno", vy: "voyage" };
 const MODES = {
     classic:  { key: "gw",  name: "Guess Who", tag: "CASE FILE", kanji: "探", min: 2, max: 2, color: "#f2b33d", sub: "Hide. Ask. Accuse.", blurb: "1v1 deduction duel. Hide a character, ask yes/no questions, accuse first.", art: ["images/anime/naruto/na3.jpg", "images/character12.jpg", "images/anime/jjk/jk5.jpg"] },
     headbanz: { key: "hb",  name: "Headbanz", tag: "MIND LINK", kanji: "心", min: 2, max: 4, color: "#b06bff", sub: "Read the room. Read yourself.", blurb: "Everyone sees your character but you. Ask, deduce, name yourself first.", art: ["images/anime/demonslayer/ds2.jpg", "images/anime/dragonball/db4.jpg", "images/anime/bleach/bc6.jpg"] },
     imposter: { key: "im",  name: "Imposter", tag: "SHADOW TRIAL", kanji: "偽", min: 3, max: 6, color: "#ff3355", sub: "Someone here is lying.", blurb: "All but one know the character. Give clues, vote, unmask the fake.", art: ["images/anime/jjk/jk2.jpg", "images/anime/bleach/bc3.jpg", "images/anime/naruto/na9.jpg"] },
-    uno:      { key: "uno", name: "Anime UNO", tag: "ARENA CLASH", kanji: "札", min: 2, max: 6, color: "#ffcf4a", sub: "Four anime. One deck. No mercy.", blurb: "4 anime become 4 colours. Special cards unleash signature moves.", art: ["images/special/jjk_vision.jpg", "images/special/onepiece_ultimate.jpg", "images/special/dragonball_ultimate.jpg"] }
+    uno:      { key: "uno", name: "Anime UNO", tag: "ARENA CLASH", kanji: "札", min: 2, max: 6, color: "#ffcf4a", sub: "Four anime. One deck. No mercy.", blurb: "4 anime become 4 colours. Special cards unleash signature moves.", art: ["images/special/jjk_vision.jpg", "images/special/onepiece_ultimate.jpg", "images/special/dragonball_ultimate.jpg"] },
+    voyage:   VY_MODE
 };
 const RULES = {
     classic: ["Both players secretly pick a character from the same board.", "On your turn, ask one yes/no question out loud, then flip down every character it rules out.", "Press END TURN when you are done. Think you know it? Press ACCUSE and tap their character.", "A right accusation wins. A wrong one hands the win to your opponent."],
     headbanz: ["Everyone gets a character card that all the others can see, except you.", "Take turns asking yes/no questions about your own card; the others answer.", "Guess your character whenever you like. Three wrong guesses and you sit out the round.", "2 players: best of 3. 3 to 4 players: points per round, the fastest guess scores most."],
     imposter: ["Everyone sees the same secret character, except one imposter.", "Two clue rounds: on your call, say one clue out loud. Never say the name.", "Then vote. Catch the imposter and the crew scores; if they slip away, they score big.", "A caught imposter can still steal points by naming the character."],
+    voyage: VY_RULES,
     uno: ["The 4 anime you pick are the 4 colours. Match the colour, or the attribute or action of the top card.", "Skip, Reverse, +2, Wild and Wild +4 work like classic UNO.", "Specials: Freeze (next player loses 2 turns), Swap Hands, Ultimate (+5) and Future Sight (peek at every hand).", "Down to one card? Hit UNO! before someone catches you, or draw 2."]
 };
 function showRules(t) {
@@ -2617,6 +2624,7 @@ function matchSeats(d) {
         case "uno": return arr(d.uno && d.uno.seats).map(Number);
         case "headbanz": return arr(d.hb && d.hb.players).map(Number);
         case "imposter": return arr(d.im && d.im.players).map(Number);
+        case "voyage": return vySeats(d);
         default: return gwSeats(d);
     }
 }
@@ -2626,6 +2634,7 @@ function matchOver(d) {
     if (d.gameType === "uno") return !d.uno || d.uno.phase === "over";
     if (d.gameType === "headbanz") return !d.hb || d.hb.phase === "match";
     if (d.gameType === "imposter") return !d.im || d.im.phase === "match";
+    if (d.gameType === "voyage") return vyMatchOver(d);
     return d.status === "finished";
 }
 let vxKey = "", introSeen = null;
@@ -2765,9 +2774,9 @@ const PREF_KEY = "gw_lobby_prefs";
 function lobbyPrefs() {
     let p = {}; try { p = JSON.parse(localStorage.getItem(PREF_KEY) || "{}") || {}; } catch (e) {}
     const gameType = MODES[p.gameType] ? p.gameType : "classic";
-    return { gameType, animes: fixSeries(gameType, arr(p.animes).length ? arr(p.animes) : ["onepiece"]), boardSize: [24, 48, 96].includes(Number(p.boardSize)) ? Number(p.boardSize) : 24, difficulty: ["easy", "normal", "hard"].includes(p.difficulty) ? p.difficulty : "normal", rounds: [3, 5, 7, 10].includes(Number(p.rounds)) ? Number(p.rounds) : 5, laps: Number(p.laps) === 2 ? 2 : 1 };
+    return { gameType, animes: fixSeries(gameType, arr(p.animes).length ? arr(p.animes) : ["onepiece"]), boardSize: [24, 48, 96].includes(Number(p.boardSize)) ? Number(p.boardSize) : 24, difficulty: ["easy", "normal", "hard"].includes(p.difficulty) ? p.difficulty : "normal", rounds: [3, 5, 7, 10].includes(Number(p.rounds)) ? Number(p.rounds) : 5, laps: Number(p.laps) === 2 ? 2 : 1, vyLen: [4, 6, 8].includes(Number(p.vyLen)) ? Number(p.vyLen) : 6 };
 }
-function saveLobbyPrefs(d) { try { localStorage.setItem(PREF_KEY, JSON.stringify({ gameType: d.gameType, animes: arr(d.animes), boardSize: d.boardSize, difficulty: d.difficulty, rounds: d.rounds, laps: d.laps })); } catch (e) {} }
+function saveLobbyPrefs(d) { try { localStorage.setItem(PREF_KEY, JSON.stringify({ gameType: d.gameType, animes: arr(d.animes), boardSize: d.boardSize, difficulty: d.difficulty, rounds: d.rounds, laps: d.laps, vyLen: d.vyLen })); } catch (e) {} }
 function busy(sel, on, label) {
     const b = document.querySelector(sel); if (!b) return;
     if (on) { b.dataset.label = b.dataset.label || b.innerHTML; b.disabled = true; b.textContent = label; b.setAttribute("aria-busy", "true"); }
@@ -2875,7 +2884,7 @@ function modeReq(d) {
         const packs = d.packs || {}, missing = activeSlots(d).filter(i => Number(packs["p" + i]) < 100 || packs["p" + i] == null);
         if (missing.length) return { ok: false, wait: true, msg: "Loading characters for " + missing.map(i => pName(d, i)).join(", ") + "…" };
     }
-    const extra = t === "headbanz" ? (n === 2 ? " · duo, best of 3" : " · " + (d.rounds || 5) + " rounds") : t === "imposter" ? " · " + n * (Number(d.laps) || 1) + " rounds" : t === "classic" ? " · " + (d.boardSize || 24) + " cards" : " · " + arr(d.uno && d.uno.anime).join(" · ");
+    const extra = t === "headbanz" ? (n === 2 ? " · duo, best of 3" : " · " + (d.rounds || 5) + " rounds") : t === "imposter" ? " · " + n * (Number(d.laps) || 1) + " rounds" : t === "classic" ? " · " + (d.boardSize || 24) + " cards" : t === "voyage" ? " · " + (Number(d.vyLen) || 6) + " legs + the boss" : " · " + arr(d.uno && d.uno.anime).join(" · ");
     return { ok: true, msg: M.name + extra };
 }
 let modeCardsBuilt = false, seatSig = "";
@@ -2967,6 +2976,7 @@ function lobbyRender(d) {
     homeDiff = d.difficulty || "normal"; document.querySelectorAll(".dbtn").forEach(b => { b.classList.toggle("selected", b.dataset.d === homeDiff); b.disabled = lock; });
     homeRounds = Number(d.rounds) || 5; document.querySelectorAll(".rbtn").forEach(b => { b.classList.toggle("selected", Number(b.dataset.r) === homeRounds); b.disabled = lock; });
     homeLaps = Number(d.laps) || 1; document.querySelectorAll(".lapbtn").forEach(b => { b.classList.toggle("selected", Number(b.dataset.l) === homeLaps); b.disabled = lock; });
+    const vyLen = Number(d.vyLen) || 6; document.querySelectorAll(".vylbtn").forEach(b => { b.classList.toggle("selected", Number(b.dataset.v) === vyLen); b.disabled = lock; });
     applyModeUI(M.key);   // again, so the 4/4 counter reflects the boxes just ticked
     // background prep for the chosen mode
     if (!spectating && (t === "headbanz" || t === "imposter")) hbPrefetch(keys);
@@ -3002,6 +3012,7 @@ window.startGame = async function () {
         if (d.gameType === "headbanz") return await hbStart();
         if (d.gameType === "imposter") return await imBegin("first");
         if (d.gameType === "uno") return await unoStart();
+        if (d.gameType === "voyage") return await vyStart(d);
         return await gwStart();
     } finally { setTimeout(() => { if (sb) sb.disabled = false; }, 800); }
 };
@@ -3015,7 +3026,7 @@ async function gwStart() {
     try { await update(ref(db, "rooms/" + room), upd); } catch (e) { console.error(e); toast("Could not start: " + (e.message || e)); }
 }
 function lobbyResetPatch(d, exclude) {
-    const upd = { status: "waiting", board: null, gw: null, guess: null, revealed: null, private: null, winner: null, result: null, guessedCharacter: null, finishedAt: null, hb: null, im: null, turn: 1, matchId: null };
+    const upd = { status: "waiting", board: null, gw: null, guess: null, revealed: null, private: null, winner: null, result: null, guessedCharacter: null, finishedAt: null, hb: null, im: null, vy: null, turn: 1, matchId: null };
     if (d.uno) upd.uno = d.uno.cards ? { cards: d.uno.cards, anime: d.uno.anime || null, phase: "lobby", n: 0, key: d.uno.key || null, missing: d.uno.missing || null } : null;
     SLOTS.forEach(i => {
         const p = d["player" + i]; if (!p || i === exclude) return;
@@ -3151,6 +3162,7 @@ function hostDuties(d) {
         update(ref(db, "rooms/" + room), lobbyResetPatch(d)).catch(() => {});
         return;
     }
+    if (t === "voyage") vyHost(d);
     if (t === "uno" && d.uno && d.uno.phase === "play") {
         const tp = Number(d.uno.turn);
         if (d["player" + tp] && d["player" + tp].left) unoTx(u => { if (u.phase !== "play" || u.turn !== tp) return false; u.drew = null; u.msg = u.names["p" + tp] + " left, turn skipped."; u.turn = unoAdv(u, tp, 1); u.n++; });
@@ -3164,7 +3176,7 @@ function resetMatchState() {
     ["hbPicker", "imPicker", "unoColor", "unoTarget", "unoOver"].forEach(id => $(id).classList.add("hidden"));
     ["unoFx", "unoPeek"].forEach(id => { const e = $(id); if (e) e.remove(); });
     $("rematchPanel").classList.add("hidden"); $("oppBanner").classList.add("hidden");
-    closeResults(); vxKey = "";
+    closeResults(); vxKey = ""; vyReset();
 }
 function matchIntro(d) {
     if (!d.matchId || introSeen === d.matchId) return;
@@ -3188,6 +3200,7 @@ function route(d) {
     if (d.gameType === "uno") { showUNO(d); return; }
     if (d.gameType === "headbanz") { showHB(d); return; }
     if (d.gameType === "imposter") { showIM(d); return; }
+    if (d.gameType === "voyage") { vyShow(d); return; }
     if (st === "selecting") {
         if (!$("result").classList.contains("hidden")) { closeResults(); resultShown = false; }
         if ($("secret").classList.contains("hidden")) showSecretScreen(d);
@@ -3574,6 +3587,15 @@ function secretPower(text) {
     ring(innerWidth / 2, innerHeight * .4, "#cfe8ff", 900, 900); setTimeout(() => ring(innerWidth / 2, innerHeight * .4, "#7df3ff", 1400, 1100), 160);
     burstText(text, innerWidth / 2, innerHeight * .42, "#7df3ff"); shake(document.querySelector(".screen:not(.hidden)"), 14, 520);
 }
+/* Grand Voyage lives in js/voyage/. It gets the room plumbing it needs from here. */
+vyInit({
+    tx: fn => runTransaction(ref(db, "rooms/" + room + "/vy"), cur => cur ? fn(cur) : cur),
+    update: patch => update(ref(db, "rooms/" + room), patch),
+    me: () => Number(myPlayer), data: () => currentRoomData, amHost: () => amHost(),
+    activeSlots: d => activeSlots(d), pName: (d, p) => pName(d, p), pPub: (d, p) => pPub(d, p),
+    toast: m => toast(m), showOnly: id => showOnly(id),
+    recordOnce: (k, m, w, x) => recordOnce(k, m, w, x), matchActions: o => matchActions(o)
+});
 async function initApp() {
     $("homeTitle").addEventListener("click", () => { clearTimeout(logoTimer); logoTimer = setTimeout(() => { logoTaps = 0; }, 900); if (++logoTaps >= 5) { logoTaps = 0; secretPower(["PLUS ULTRA!", "DATTEBAYO!", "BANKAI!", "KAMEHAMEHA!", "DOMAIN EXPANSION!"][(Math.random() * 5) | 0]); } else sfx("tick"); });
     initGallery(ANIME_LIBRARY, Object.fromEntries(Object.keys(HB_SERIES).filter(k => !HB_HIDDEN_SERIES.includes(k)).map(k => [k, HB_SERIES[k].label])));

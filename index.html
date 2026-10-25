@@ -4,14 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#07060a">
-<meta name="description" content="Anime party games with friends: Guess Who, Headbanz, Imposter and Anime UNO in one room.">
+<meta name="description" content="Anime party games with friends: Guess Who, Headbanz, Imposter, Anime UNO and Grand Voyage in one room.">
 <title>Guess Who: Anime Edition</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/base.css?v=4">
+<link rel="stylesheet" href="css/base.css?v=5">
 <link rel="stylesheet" href="css/modes.css?v=4">
 <link rel="stylesheet" href="css/uno.css?v=4">
+<link rel="stylesheet" href="css/voyage.css?v=1">
 </head>
 <body class="anime-theme" data-scene="home">
 
@@ -29,7 +30,7 @@
 <main class="home-main">
 <section class="home-hero">
 <h1 id="homeTitle" class="logo"><span class="logo-top">Guess Who</span><span class="logo-big" data-text="ANIME">ANIME</span><span class="logo-bot">Edition</span></h1>
-<p class="tagline">Four anime party games. One room. Infinite bragging rights.</p>
+<p class="tagline">Five anime party games. One room. Infinite bragging rights.</p>
 <div class="home-cta">
 <button class="btn xl" onclick="createRoom()"><span class="btn-k">作</span>Create room</button>
 <div id="joinArea" class="join-box">
@@ -111,6 +112,8 @@
 </div>
 <div id="imBox" class="field hidden"><label class="field-label">Laps</label><div class="sizes"><button class="modebtn lapbtn selected" data-l="1" onclick="setLaps(1)">1 lap</button><button class="modebtn lapbtn" data-l="2" onclick="setLaps(2)">2 laps</button></div>
 <p class="anime-hint">In one lap everyone is the imposter once, so 5 players on 1 lap = 5 rounds.</p></div>
+<div id="vyBox" class="field hidden"><label class="field-label">Voyage length</label><div class="sizes"><button class="modebtn vylbtn" data-v="4" onclick="setVoyageLen(4)">Short</button><button class="modebtn vylbtn selected" data-v="6" onclick="setVoyageLen(6)">Standard</button><button class="modebtn vylbtn" data-v="8" onclick="setVoyageLen(8)">Epic</button></div>
+<p class="anime-hint">Legs before the final boss. Short ≈ 10 min, Standard ≈ 15 min, Epic ≈ 20 min. Every player gets a hidden objective; crews of 3+ may hide a mutineer.</p></div>
 </div>
 </section>
 </div>
@@ -206,6 +209,11 @@
 <div id="unoTarget" class="hb-picker hidden" role="dialog" aria-label="Swap hands with"><div style="text-align:center"><h1>SWAP HANDS WITH...</h1><div class="uno-colors" id="unoTargetBtns"></div><button class="pop ghost" style="margin-top:18px" onclick="unoTargetCancel()">Cancel</button></div></div>
 <div id="unoOver" class="hb-picker hidden"><canvas id="unoWinCv"></canvas><div class="u-over"><div class="u-win-k" id="unoWinK"></div><div class="stars">★ ★ ★</div><h1 id="unoOverTitle"></h1><p id="unoOverSub"></p><div class="u-win-card" id="unoWinCard"></div><div class="u-win-chips" id="unoWinChips"></div><div class="u-win-btns" id="unoOverBtns"><button class="u-btn" onclick="unoRematch()">PLAY AGAIN</button></div></div></div>
 </div>
+
+<!-- =========================================
+     GRAND VOYAGE (built by js/voyage/ui.js)
+========================================= -->
+<div id="vy" class="hidden"></div>
 
 <!-- =========================================
      GUESS WHO RESULT (filled by the results sequence)
@@ -310,7 +318,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=4"></script>
+<script type="module" src="js/game.js?v=5"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){
