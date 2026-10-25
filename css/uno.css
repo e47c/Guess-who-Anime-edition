@@ -56,7 +56,7 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 .u-name{position:absolute;left:-6px;right:-6px;bottom:30px;z-index:3;padding:2px 10px;background:#000;border-top:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-3deg);text-align:center;font-weight:900;font-size:clamp(10px,1vw,12.5px);line-height:1.15;font-style:italic;text-transform:uppercase}
 .u-sub{position:absolute;left:0;right:0;bottom:15px;z-index:3;font-size:9.5px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;text-shadow:0 1px 2px #000;text-align:center}
 .u-anime{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:2px;background:#000;font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-bright);text-align:center}
-.ucard.wild{border-color:transparent;background:linear-gradient(#0d0d12,#0d0d12) padding-box,conic-gradient(from 45deg,#e11b1b,#f2c200,#2e9e5b,#2f6fe4,#e11b1b) border-box}
+.ucard.wild{border-color:transparent;background:linear-gradient(#0d0d12,#0d0d12) padding-box,conic-gradient(from 45deg,#e11b1b,#2e9e5b,#f2c200,#1f3fae,#e11b1b) border-box}
 .u-foil{position:absolute;inset:0;z-index:4;pointer-events:none;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.35) 45%,rgba(120,200,255,.3) 52%,rgba(255,120,200,.3) 58%,transparent 70%) 0 0/250% 100%;mix-blend-mode:screen;animation:uFoil 3.4s linear infinite}
 @keyframes uFoil{to{background-position:-250% 0}}
 .k-x .u-sub{color:#ff6b6b}
@@ -418,3 +418,79 @@ body.fx-lite .uno-hand > .ucard.ok, body.fx-lite .u-foil { animation: none !impo
 .ucard.big .u-pic.sp-ph .sp-kj { font-size: 130px; }
 .u-pic.sp-ph b { position: relative; z-index: 1; }
 .u-pic.sp-ph small { position: relative; z-index: 1; }
+
+/* =========================================================
+   ANIME UNO · 8 seats, finishing order, Draw-2 stacks
+========================================================= */
+.uno-opps.many { gap: 8px 10px; }
+.uno-opps.many .u-opp { min-width: clamp(104px, 11vw, 150px); padding: 5px 12px 5px 14px; }
+.uno-opps.many .u-oname { font-size: clamp(15px, 1.6vw, 19px); }
+.uno-opps.many .u-fan { height: 20px; margin: 3px 0 2px; } .uno-opps.many .u-fan i { width: 13px; height: 19px; margin-left: -7px; }
+.uno-opps.many .u-otop .ava { width: 30px; height: 30px; }
+.u-opp.done { opacity: .9; border-color: #ffe14d88; background: linear-gradient(120deg, rgba(40,30,4,.92), rgba(90,70,10,.6)); }
+.u-place { display: flex; align-items: baseline; justify-content: center; gap: 6px; margin: 4px 0 2px; }
+.u-place b { font: 400 26px/1 var(--f-title); color: #ffe14d; text-shadow: 2px 2px 0 #000, 0 0 14px #ffcf4a; }
+.u-place small { font: 700 10px/1 var(--f-mono); letter-spacing: .1em; color: #fff3c8; }
+.u-place.p2 b { color: #e6e9f0; text-shadow: 2px 2px 0 #000, 0 0 12px #cfd6e6; } .u-place.p3 b { color: #e9a066; text-shadow: 2px 2px 0 #000, 0 0 12px #c2703a; } .u-place.p4 b { color: #bdb3a2; text-shadow: 2px 2px 0 #000; }
+.uno-me.done { box-shadow: inset 0 0 0 2px #ffe14d, 0 0 22px #ffcf4a66; }
+.u-watch { display: flex; align-items: center; gap: 16px; max-width: 560px; margin: 0 auto; padding: 16px 24px; border: 3px solid #ffe14d; background: linear-gradient(110deg, rgba(60,44,4,.92), rgba(10,6,2,.88)); transform: skewX(-8deg); box-shadow: 6px 6px 0 #000, 0 0 40px #ffcf4a55; animation: uDrop .6s var(--e-pop) both; }
+.u-watch > * { transform: skewX(8deg); }
+.u-watch b { font: 400 54px/1 var(--f-title); color: #ffe14d; text-shadow: 3px 3px 0 #000; }
+.u-watch span { font: 700 16px/1.35 var(--f-ui); color: #fff3c8; text-align: left; }
+#uno.watching .uno-hand { align-items: center; }
+.u-stack { position: relative; width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px 16px; border: 3px solid #fff; background: repeating-linear-gradient(-45deg, #b5121b 0 12px, #6d070d 12px 24px); transform: skewX(-8deg); box-shadow: 5px 5px 0 #000, 0 0 30px #ff2a2a99; animation: uStackPulse .9s ease-in-out infinite; }
+.u-stack > * { transform: skewX(8deg); }
+.u-stack b { font: 400 40px/1 var(--f-title); color: #fff; text-shadow: 3px 3px 0 #000; }
+.u-stack small { font: 800 11px/1.3 var(--f-mono); letter-spacing: .06em; color: #fff; text-align: left; }
+@keyframes uStackPulse { 50% { box-shadow: 5px 5px 0 #000, 0 0 46px #ff2a2a; } }
+#unoDraw.stack:not(:disabled) { background: radial-gradient(circle at 50% 38%, #ff5a3b 0, #d4141b 40%, #2a0508 100%); animation: drawGlow .7s ease-in-out infinite; }
+#unoDraw.stack b { font-size: 19px; }
+.u-rank { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; max-width: 260px; }
+.u-rank span { --pc: #ffe14d; padding: 2px 8px; background: #000a; border: 1px solid var(--pc); color: var(--pc); font: 700 11px/1.4 var(--f-mono); transform: skewX(-8deg); }
+@media (max-width: 760px) { .u-stack { width: auto; padding: 4px 12px; } .u-stack b { font-size: 26px; } .u-stack small { display: none; } .u-watch { padding: 10px 14px; } .u-watch b { font-size: 38px; } .u-watch span { font-size: 13px; } .uno-opps.many .u-opp { min-width: 0; } .u-rank { display: none; } }
+
+/* =========================================================
+   ANIME UNO · wild card colour wheel (4 to 8 equal slices)
+========================================================= */
+.uw-ov { display: grid; place-items: center; background: radial-gradient(circle at 50% 50%, rgba(40,20,10,.86), rgba(3,2,6,.95) 70%); }
+.uw-ov:not(.hidden) .uw-wrap { animation: uwIn .5s var(--e-pop) both; }
+.uw-wrap { text-align: center; max-width: none !important; width: 100%; }
+.uw-kicker { font: 700 12px/1 var(--f-mono); letter-spacing: .4em; color: var(--gold-bright); margin-bottom: 4px; }
+#unoColor h1 { margin: 0 0 6px; font: 400 clamp(26px, 5vw, 46px)/1.1 var(--f-title); letter-spacing: .02em; color: #fff; text-shadow: 4px 4px 0 var(--luffy-red); -webkit-text-stroke: 2px #000; }
+.uw { --c: #ffcf4a; position: relative; width: min(92vw, 68vh, 500px); aspect-ratio: 1; margin: 0 auto; }
+.uw::before { content: ""; position: absolute; inset: 8%; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--c) 45%, transparent), transparent 70%); filter: blur(24px); transition: background .35s ease; pointer-events: none; }
+.uw-svg { position: relative; width: 100%; height: 100%; overflow: visible; }
+.uw-rim { animation: uSpin 30s linear infinite; transform-origin: 0 0; pointer-events: none; }
+.uw-rim-a { fill: none; stroke: rgba(232,204,148,.55); stroke-width: 2; stroke-dasharray: 3 9; }
+.uw-rim-b { fill: none; stroke: rgba(232,204,148,.25); stroke-width: 1; stroke-dasharray: 40 14 4 14; }
+.uw-slice { cursor: pointer; outline: none; transition: transform .28s var(--e-pop), filter .28s ease; -webkit-tap-highlight-color: transparent; }
+.uw-slice .uw-in { transform-origin: 0 0; animation: uwSlice .55s var(--e-pop) both; animation-delay: calc(var(--i) * 55ms + .1s); }
+.uw-art { filter: saturate(1.1) contrast(1.05) brightness(.92); transition: filter .28s ease, transform .4s var(--e-out); transform-box: fill-box; transform-origin: 50% 40%; }
+.uw-tint { transition: opacity .28s ease; }
+.uw-band { transition: filter .28s ease; }
+.uw-edge { fill: none; stroke: rgba(255,255,255,.75); stroke-width: 2.5; transition: stroke .2s, stroke-width .2s; }
+.uw-line { fill: none; stroke: #fff; stroke-width: 1.5; stroke-dasharray: 6 18; opacity: 0; }
+.uw-kj { fill: #fff; font-family: var(--f-title); text-anchor: middle; dominant-baseline: central; paint-order: stroke fill; stroke: #000; stroke-width: 6px; stroke-linejoin: round; pointer-events: none; filter: drop-shadow(0 0 8px var(--c)); }
+.uw-nm { fill: #fff; font-family: var(--f-head); font-weight: 700; letter-spacing: .08em; text-anchor: middle; dominant-baseline: central; paint-order: stroke fill; stroke: #000; stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+.uw-cn { fill: var(--c); font-family: var(--f-mono); font-weight: 700; letter-spacing: .14em; text-anchor: middle; dominant-baseline: central; paint-order: stroke fill; stroke: #000; stroke-width: 3px; pointer-events: none; }
+.uw-slice:hover, .uw-slice:focus-visible, .uw-slice.on { transform: translate(var(--dx), var(--dy)); }
+.uw-slice:hover .uw-art, .uw-slice:focus-visible .uw-art, .uw-slice.on .uw-art { filter: saturate(1.25) contrast(1.1) brightness(1.02); transform: scale(1.06); }
+.uw-slice:hover .uw-tint, .uw-slice:focus-visible .uw-tint, .uw-slice.on .uw-tint { opacity: .55; }
+.uw-slice:hover .uw-band, .uw-slice:focus-visible .uw-band, .uw-slice.on .uw-band { filter: brightness(1.25) drop-shadow(0 0 12px var(--c)); }
+.uw-slice:hover .uw-edge, .uw-slice:focus-visible .uw-edge, .uw-slice.on .uw-edge { stroke: #fff; stroke-width: 5; filter: drop-shadow(0 0 10px var(--c)); }
+.uw-slice:hover .uw-line, .uw-slice:focus-visible .uw-line, .uw-slice.on .uw-line { opacity: .55; animation: uwLine .8s linear infinite; animation-delay: calc(var(--j) * -.25s); }
+.uw-svg:hover .uw-slice:not(:hover) { filter: brightness(.6) saturate(.7); }
+.uw-slice.pick { animation: uwPick .3s ease both; }
+.uw-hub { --c: #ffcf4a; pointer-events: none; }
+.uw-hub-bg { fill: #0b0710; stroke: #000; stroke-width: 4; }
+.uw-hub-ring { fill: none; stroke: var(--c); stroke-width: 4; filter: drop-shadow(0 0 10px var(--c)); transition: stroke .3s; }
+.uw-hk { fill: var(--c); font-family: var(--f-title); font-size: 34px; text-anchor: middle; dominant-baseline: central; transition: fill .3s; }
+.uw-hn { fill: #fff; font-family: var(--f-head); font-weight: 700; font-size: 11px; letter-spacing: .06em; text-anchor: middle; dominant-baseline: central; }
+.uw-hc { fill: var(--c); font-family: var(--f-mono); font-weight: 700; font-size: 8px; letter-spacing: .2em; text-anchor: middle; dominant-baseline: central; transition: fill .3s; }
+.uw-cancel { margin-top: 10px; }
+@keyframes uwIn { from { opacity: 0; transform: scale(.82) rotate(-8deg); } }
+@keyframes uwSlice { from { opacity: 0; transform: scale(.35) rotate(-30deg); } }
+@keyframes uwLine { to { stroke-dashoffset: -48; } }
+@keyframes uwPick { 50% { transform: translate(calc(var(--dx) * 2), calc(var(--dy) * 2)) scale(1.04); } }
+@media (prefers-reduced-motion: reduce) { .uw-slice .uw-in, .uw-rim, .uw-ov:not(.hidden) .uw-wrap { animation: none; } }
+body.fx-lite .uw-rim, body.fx-lite .uw-line { animation: none !important; }

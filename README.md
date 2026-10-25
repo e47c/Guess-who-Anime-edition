@@ -1,13 +1,27 @@
 # Guess Who: Anime Edition
 
-A browser party game for 2 to 6 friends with four anime modes in one room:
+A browser party game for a squad of up to 8 friends with four anime modes in one room:
 
 | Mode | Players | Identity |
 |---|---|---|
-| **Guess Who** | 2 | *Case File*: detective-noir board, amber and teal, swing soundtrack |
-| **Headbanz** | 2–4 | *Mind Link*: psychic synthwave, violet and cyan |
-| **Imposter** | 3–6 | *Shadow Trial*: interrogation spotlight, crimson |
-| **Anime UNO** | 2–6 | *Arena Clash*: card-battle arena tinted by the active colour |
+| **Guess Who** | 1v1 (2–8 in the room) | *Case File*: detective-noir board, amber and teal, swing soundtrack |
+| **Headbanz** | 2–8 | *Mind Link*: psychic synthwave, violet and cyan |
+| **Imposter** | 3–8 | *Shadow Trial*: interrogation spotlight, crimson |
+| **Anime UNO** | 2–8 | *Arena Clash*: card-battle arena tinted by the active colour |
+
+## How the modes scale
+
+- **Guess Who** stays a duel. With more than 2 in the room the host taps the two duelists in the lobby, and everyone else spectates. Spectators see both boards live (`gw/elim/p<slot>` holds each duelist's crossed-out cards) but never a secret character. They don't read `private/`, they get no end-of-match reveal, and the accused card isn't marked for them.
+- **Headbanz:** everyone guesses at once. With N players the 1st right guess scores N points, the next N-1, and so on (8 players: 8, 7, 6 … 1). Giving up or three strikes scores 0. A 2-player game uses the same rule (2 / 1 / 0) over the chosen number of rounds.
+- **Imposter:** 3–8 players. One lap = everyone is the imposter once, so the round count follows the table size.
+- **Anime UNO:**
+  - **Classic deck:** exactly 4 series (red, green, yellow, dark blue), 124 cards.
+  - **Chaos deck:** 4–8 series. It adds pink, orange, purple and light blue, and every series adds its 31 cards (248 at 8).
+  - **Draw-2s stack:** answer a +2 with a +2 to pass on +4, +6, +8 … or take the whole stack and lose the turn.
+  - **Finishing:** a player who empties their hand takes the next place and watches the table, seeing card counts but never hands. The round goes on until every place is decided, then shows the full ranking.
+  - **Wilds** open a colour wheel with one slice per deck colour, showing each series' hero, kanji and name. It works with mouse, touch, and keyboard (arrow keys, then Enter).
+
+**Firebase rules note:** the current rules let any signed-in client read a whole room, `private/` included. The clients listen to the whole room, so Guess Who secrets reach every browser, the opponent's included. Spectator secrecy is therefore enforced by the client. Realtime Database read rules cascade, so a room-level `.read` can't be narrowed for `private/`. Enforcing it on the server would mean moving secrets to their own top-level path (for example `secrets/$room/$uid`, readable only by `auth.uid === $uid`).
 
 ## Customising
 

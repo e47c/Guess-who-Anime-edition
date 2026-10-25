@@ -292,6 +292,8 @@ body.is-host .btn.host-only, body.is-host .pop.host-only { display: inline-flex 
 .tag.off { background: #444; color: #ddd; }
 .tag.dl { background: #2a3550; color: #bcd2ff; }
 .tag.vote { background: color-mix(in srgb, var(--mc) 30%, #000); color: var(--mc); box-shadow: inset 0 0 0 1px var(--mc); }
+.tag.duel { background: #f2b33d; color: #120b02; }
+.tag.spec { background: rgba(246,239,227,.08); color: var(--muted); box-shadow: inset 0 0 0 1px var(--line-2); }
 .seat.me { box-shadow: inset 0 0 0 1px var(--pc), inset 5px 0 0 var(--pc), 0 0 22px color-mix(in srgb, var(--pc) 30%, transparent); }
 .seat.off { filter: grayscale(.8); opacity: .65; }
 .seat.rdy .ava { box-shadow: 0 0 0 3px #3ddc84, 0 0 16px rgba(61,220,132,.55); }

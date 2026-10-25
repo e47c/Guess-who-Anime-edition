@@ -69,7 +69,7 @@
 <div id="lobbyMatch" class="lobby-match hidden"></div>
 <div class="lobby-grid">
 <section class="lobby-col seats-col">
-<h2 class="sec-title"><span>01</span>Squad <em id="seatCount">1/6</em></h2>
+<h2 class="sec-title"><span>01</span>Squad <em id="seatCount">1/8</em></h2>
 <div id="lobbySeats" class="seats"></div>
 </section>
 <section class="lobby-col modes-col">
@@ -100,17 +100,23 @@
 </div>
 <p class="anime-hint" id="modeHint">Characters are drawn at random from every series you tick.</p>
 </div>
+<div class="field hidden" id="gwDuelBox"><label class="field-label">Duelists · 1v1, everyone else spectates</label>
+<div class="duel-pick" id="gwDuelPick"></div>
+<p class="anime-hint">The host taps two players. Spectators follow both boards live but never see a secret character.</p>
+</div>
 <div class="field" id="sizeField"><label class="field-label">Board size</label>
 <div class="sizes"><button id="size24" class="size selected" onclick="setSize(24)">24</button><button id="size48" class="size" onclick="setSize(48)">48</button><button id="size96" class="size" onclick="setSize(96)">96</button></div>
 </div>
 <div class="field hidden" id="diffField"><label class="field-label">Difficulty</label>
 <div class="sizes"><button class="modebtn dbtn" data-d="easy" onclick="setDiff('easy')">Easy</button><button class="modebtn dbtn selected" data-d="normal" onclick="setDiff('normal')">Normal</button><button class="modebtn dbtn" data-d="hard" onclick="setDiff('hard')">Hard</button></div>
 <p class="anime-hint">Easy = famous characters. Hard = deep cuts. Any character can be searched when guessing.</p>
-<div id="hbRoundsBox"><label class="field-label" style="margin-top:14px">Rounds (trio / squad)</label><div class="sizes"><button class="modebtn rbtn" data-r="3" onclick="setRounds(3)">3</button><button class="modebtn rbtn selected" data-r="5" onclick="setRounds(5)">5</button><button class="modebtn rbtn" data-r="7" onclick="setRounds(7)">7</button><button class="modebtn rbtn" data-r="10" onclick="setRounds(10)">10</button></div>
-<p class="anime-hint">2 players = duo, best of 3. 3 or 4 players = points per round, highest total wins.</p></div>
+<div id="hbRoundsBox"><label class="field-label" style="margin-top:14px">Rounds</label><div class="sizes"><button class="modebtn rbtn" data-r="3" onclick="setRounds(3)">3</button><button class="modebtn rbtn selected" data-r="5" onclick="setRounds(5)">5</button><button class="modebtn rbtn" data-r="7" onclick="setRounds(7)">7</button><button class="modebtn rbtn" data-r="10" onclick="setRounds(10)">10</button></div>
+<p class="anime-hint">Everyone guesses at once. The 1st right guess scores as many points as there are players (8 at a full table), the next one less, and so on. Giving up = 0.</p></div>
 </div>
 <div id="imBox" class="field hidden"><label class="field-label">Laps</label><div class="sizes"><button class="modebtn lapbtn selected" data-l="1" onclick="setLaps(1)">1 lap</button><button class="modebtn lapbtn" data-l="2" onclick="setLaps(2)">2 laps</button></div>
 <p class="anime-hint">In one lap everyone is the imposter once, so 5 players on 1 lap = 5 rounds.</p></div>
+<div id="unoBox" class="field hidden"><label class="field-label">Deck</label><div class="sizes"><button class="modebtn unobtn selected" data-k="classic" onclick="setUnoDeck('classic')">Classic · 4 series</button><button class="modebtn unobtn" data-k="chaos" onclick="setUnoDeck('chaos')">Chaos · 4–8 series</button></div>
+<p class="anime-hint">Classic: red, green, yellow, dark blue. Chaos adds pink, orange, purple and light blue: one colour per series, and every extra series adds its 31 cards to the deck.</p></div>
 </div>
 </section>
 </div>
@@ -154,6 +160,21 @@
 </div>
 </div>
 <div id="board" class="board"></div>
+</div>
+
+<!-- =========================================
+     GUESS WHO: SPECTATORS (both boards, no secrets)
+========================================= -->
+<div id="gwSpec" class="hidden">
+<div class="game-header">
+<div class="game-header-inner">
+<div class="gw-duel" id="gwSpecDuel"></div>
+<div class="gw-turnbox"><div id="gwSpecTurn" class="turn"></div><div id="gwSpecStatus" class="status"></div></div>
+<div class="gw-actions"><span class="spec-badge">👁 SPECTATING</span><button class="pop ghost menu-btn" onclick="openPause()" aria-label="Menu">☰</button></div>
+</div>
+</div>
+<div id="gwSpecBoards" class="spec-boards"></div>
+<div id="gwSpecFoot" class="spec-foot"></div>
 </div>
 
 <!-- =========================================
@@ -202,7 +223,7 @@
 <div class="uno-hand" id="unoHand"></div>
 </div>
 <canvas id="unoFxCv" class="uno-fxcv" aria-hidden="true"></canvas>
-<div id="unoColor" class="hb-picker hidden" role="dialog" aria-label="Choose the anime"><div style="text-align:center"><h1>CHOOSE THE ANIME</h1><div class="uno-colors" id="unoColorBtns"></div><button class="pop ghost" style="margin-top:18px" onclick="unoColorCancel()">Cancel</button></div></div>
+<div id="unoColor" class="hb-picker uw-ov hidden" role="dialog" aria-label="Choose the anime"><div class="uw-wrap"><div class="uw-kicker">WILD CARD</div><h1>CHOOSE THE ANIME</h1><div class="uw" id="unoColorBtns"></div><button class="pop ghost uw-cancel" onclick="unoColorCancel()">Cancel</button></div></div>
 <div id="unoTarget" class="hb-picker hidden" role="dialog" aria-label="Swap hands with"><div style="text-align:center"><h1>SWAP HANDS WITH...</h1><div class="uno-colors" id="unoTargetBtns"></div><button class="pop ghost" style="margin-top:18px" onclick="unoTargetCancel()">Cancel</button></div></div>
 <div id="unoOver" class="hb-picker hidden"><canvas id="unoWinCv"></canvas><div class="u-over"><div class="u-win-k" id="unoWinK"></div><div class="stars">★ ★ ★</div><h1 id="unoOverTitle"></h1><p id="unoOverSub"></p><div class="u-win-card" id="unoWinCard"></div><div class="u-win-chips" id="unoWinChips"></div><div class="u-win-btns" id="unoOverBtns"><button class="u-btn" onclick="unoRematch()">PLAY AGAIN</button></div></div></div>
 </div>

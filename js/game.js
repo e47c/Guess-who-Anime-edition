@@ -699,7 +699,6 @@ function hbWinSound(hb) {
     let w = null;
     if (hb.phase === "match") w = hb.tie ? null : Number(hb.winner);
     else if (order.length) w = order[0];
-    else if (players.length === 2) w = players.find(p => !out.includes(p)) || null;
     const c = w && hb.chars && hb.chars["p" + w];
     if (!c) return;
     const key = Object.keys(HB_SERIES).find(k => HB_SERIES[k].label === c.s);
@@ -718,6 +717,7 @@ document.addEventListener("pointerdown", () => {
    lobby = lo-fi shonen groove · gw = detective noir swing · hb = psychic synthwave
    im = interrogation tension · uno = arena battle drums. Starts after the first tap (autoplay rules). */
 function musicWanted(d) {
+    if (gwSpectating(d)) return d.status === "finished" ? "lobby" : "gw";
     if (!d || !d.status || d.status === "waiting" || !inMatch(d)) return "lobby";
     if (d.gameType === "imposter") return "im";
     if (d.gameType === "headbanz") return "hb";
@@ -928,10 +928,10 @@ let rematchSize = 24;
    HELPERS
 ========================================= */
 
-const SCENE_OF = { home: "home", lobby: "lobby", secret: "gw", game: "gw", result: "gw", hb: "hb", im: "im", uno: "uno" };
+const SCENE_OF = { home: "home", lobby: "lobby", secret: "gw", game: "gw", gwSpec: "gw", result: "gw", hb: "hb", im: "im", uno: "uno" };
 let currentScreen = "home";
 function showOnly(id) {
-    document.querySelectorAll("#home,#lobby,#secret,#game,#hb,#im,#uno,#result").forEach(el => el.classList.add("hidden"));
+    document.querySelectorAll("#home,#lobby,#secret,#game,#gwSpec,#hb,#im,#uno,#result").forEach(el => el.classList.add("hidden"));
     const element = document.getElementById(id);
     element.classList.remove("hidden");
     if (currentScreen !== id) {
@@ -1141,12 +1141,14 @@ function applyModeUI(t) {
     $("diffField").classList.toggle("hidden", !multi);
     $("hbRoundsBox").classList.toggle("hidden", t !== "hb");
     $("imBox").classList.toggle("hidden", t !== "im");
-    const picked = document.querySelectorAll("#animePoll input:checked").length;
+    $("unoBox").classList.toggle("hidden", t !== "uno");
+    const picked = document.querySelectorAll("#animePoll input:checked").length, chaos = unoDeckType(currentRoomData) === "chaos";
     $("modeHint").textContent = {
         gw: "Classic board: characters are drawn from every series you tick.",
         hb: "Characters are drawn at random from every series you tick.",
         im: "The secret character comes from one of the series you tick.",
-        uno: "Pick exactly 4 series (" + picked + "/4): they become the 4 colours of the deck."
+        uno: chaos ? "Chaos deck: pick 4 to 8 series (" + picked + "/8). Each one becomes a colour: red, green, yellow, dark blue, then pink, orange, purple, light blue."
+                   : "Classic deck: pick exactly 4 series (" + picked + "/4). They become red, green, yellow and dark blue."
     }[t] || "";
 }
 window.setGameType = function (t) { pickMode(MODE_OF_KEY[t] || "classic"); };
@@ -1237,7 +1239,7 @@ async function hbSeriesChars(key, maxPages, onPage) {
     return [...merged.values()].sort((x, y) => y.f - x.f).slice(0, HB_MAX_CHARS).map((c, i) => Object.assign(c, { r: i }));
 }
 
-const HB_COLORS = ["#ff4d6d", "#3ea6ff", "#ffd23f", "#2ec4a6", "#b388ff", "#ff9f1c"];
+const HB_COLORS = ["#ff4d6d", "#3ea6ff", "#ffd23f", "#2ec4a6", "#b388ff", "#ff9f1c", "#8be04e", "#ff7ad9"];   // one per seat (8)
 const HB_IMG = "https://s4.anilist.co/file/anilistcdn/character/large/";
 const hbImg = c => !c || !c.i ? "" : (/^http/.test(c.i) ? c.i : HB_IMG + c.i);
 const nz = s => String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
@@ -1392,7 +1394,7 @@ async function hbBegin(kind) {
         // a new match seats everyone in the room; the next round of the same match keeps the same table
         const players = (kind === "first" || kind === "new") ? activeSlots(d) : arr(d.hb && d.hb.players).map(Number);
         if (players.length < 2) throw new Error("Need at least 2 players.");
-        if (players.length > 4) throw new Error("Headbanz seats up to 4 players.");
+        if (players.length > 8) throw new Error("Headbanz seats up to 8 players.");
         if (kind === "first" && !players.every(i => Number((d.packs || {})["p" + i]) >= 100)) throw new Error("Some players are still downloading the characters.");
         const pool = await hbBuildPool(keys, "hard", (pct, msg) => { const t = document.querySelector("#hbLoading div"); if (t) t.textContent = msg; });   // always the full list; difficulty is applied when dealing
         if (pool.length < players.length) throw new Error("Not enough characters in those series.");
@@ -1401,7 +1403,7 @@ async function hbBegin(kind) {
         const upd = { animes: keys, status: "playing" };
         if (kind === "first" || kind === "new") {
             upd.matchId = Date.now();
-            upd.hb = Object.assign(base, { players, n: players.length, round: 1, rounds: Number(d.rounds) || 5, scores: zeros(), firsts: zeros(), wins: zeros() });
+            upd.hb = Object.assign(base, { players, n: players.length, round: 1, rounds: Number(d.rounds) || 5, scores: zeros(), firsts: zeros() });
         } else {
             Object.entries(base).forEach(([k, v]) => { upd["hb/" + k] = v; });
             upd["hb/round"] = (Number(d.hb.round) || 0) + 1;
@@ -1412,9 +1414,9 @@ async function hbBegin(kind) {
     $("hbLoading").classList.add("hidden");
 }
 function hbStandings(hb) {
-    const players = arr(hb.players).map(Number), duo = players.length === 2;
-    const sc = hb.scores || {}, fi = hb.firsts || {}, wi = hb.wins || {};
-    return players.map(p => ({ p, score: Number((duo ? wi : sc)["p" + p]) || 0, firsts: Number(fi["p" + p]) || 0 }))
+    const players = arr(hb.players).map(Number);
+    const sc = hb.scores || {}, fi = hb.firsts || {};
+    return players.map(p => ({ p, score: Number(sc["p" + p]) || 0, firsts: Number(fi["p" + p]) || 0 }))
         .sort((a, b) => b.score - a.score || b.firsts - a.firsts || a.p - b.p);
 }
 const hbTie = r => r.length > 1 && r[0].score === r[1].score && r[0].firsts === r[1].firsts;
@@ -1423,23 +1425,20 @@ window.hbShowFinal = async function () {
     await update(ref(db, "rooms/" + room), { "hb/phase": "match", "hb/tie": tie, "hb/winner": tie ? null : rows[0].p });
 };
 
-/* ---------- player actions (atomic) ---------- */
+/* ---------- player actions (atomic) ----------
+   Everyone guesses at once. The round ends when every player has either named their character or is out
+   (gave up / three strikes). Points follow the guessing order and scale to the table: with N players the
+   1st correct guess scores N, the 2nd N-1 ... (8 players: 8, 7, 6 ... 1). Out = 0. */
+const hbPointsFor = (N, i) => Math.max(0, N - i);
 function hbCheckEnd(hb) {
     const players = arr(hb.players).map(Number), N = players.length;
-    const end = N === 2 ? (hb.order.length >= 1 || hb.out.length >= 1) : (hb.order.length + hb.out.length >= N);
-    if (!end) return;
+    if (hb.order.length + hb.out.length < N) return;
     hb.phase = "round";
     const pts = {}; players.forEach(p => { pts["p" + p] = 0; });
-    hb.scores = hb.scores || {}; hb.firsts = hb.firsts || {}; hb.wins = hb.wins || {};
-    if (N === 2) {
-        const w = hb.order.length ? hb.order[0] : players.find(p => !hb.out.includes(p));
-        pts["p" + w] = 1; hb.wins["p" + w] = (Number(hb.wins["p" + w]) || 0) + 1; hb.firsts["p" + w] = (Number(hb.firsts["p" + w]) || 0) + 1;
-        hb.matchDone = hb.wins["p" + w] >= 2;
-    } else {
-        hb.order.forEach((p, i) => { pts["p" + p] = N - i; hb.scores["p" + p] = (Number(hb.scores["p" + p]) || 0) + N - i; });
-        if (hb.order.length) hb.firsts["p" + hb.order[0]] = (Number(hb.firsts["p" + hb.order[0]]) || 0) + 1;
-        hb.matchDone = Number(hb.round) >= Number(hb.rounds);
-    }
+    hb.scores = hb.scores || {}; hb.firsts = hb.firsts || {};
+    hb.order.forEach((p, i) => { pts["p" + p] = hbPointsFor(N, i); hb.scores["p" + p] = (Number(hb.scores["p" + p]) || 0) + hbPointsFor(N, i); });
+    if (hb.order.length) hb.firsts["p" + hb.order[0]] = (Number(hb.firsts["p" + hb.order[0]]) || 0) + 1;
+    hb.matchDone = Number(hb.round) >= Number(hb.rounds);
     hb.lastPts = pts;
 }
 async function hbAct(fn) {
@@ -1510,7 +1509,7 @@ function hbCard(data, p, hb, opts) {
     const who = hbEl("div", "hb-who"); who.appendChild(avatarEl(pPub(data, p), { size: 40 }));
     who.appendChild(hbEl("div", "hb-pname", nm + (p === Number(myPlayer) ? " (you)" : "")));
     card.appendChild(who);
-    if (order.includes(p)) card.appendChild(hbEl("div", "hb-badge", "#" + (order.indexOf(p) + 1) + (arr(hb.players).length > 2 ? "  +" + (arr(hb.players).length - order.indexOf(p)) : "  ✔")));
+    if (order.includes(p)) card.appendChild(hbEl("div", "hb-badge", "#" + (order.indexOf(p) + 1) + "  +" + hbPointsFor(arr(hb.players).length, order.indexOf(p))));
     else if (out.includes(p)) card.appendChild(hbEl("div", "hb-badge out", "OUT"));
     if (opts.hidden) { card.appendChild(hbEl("div", "hb-q", "?")); card.appendChild(hbEl("div", "hb-series", "Only you can't see this card")); return card; }
     if (c.i) { const w = hbEl("div", "hb-pic"); w.appendChild(makeImg(hbImg(c))); card.appendChild(w); }
@@ -1522,7 +1521,7 @@ function showHB(data) {
     document.body.classList.add("hb-mode");
     showOnly("hb"); resultShown = false; awaitingGuess = false;
     const hb = data.hb; if (!hb || !hb.chars) return;
-    const me = Number(myPlayer), players = arr(hb.players).map(Number), duo = players.length === 2;
+    const me = Number(myPlayer), players = arr(hb.players).map(Number);
     const order = arr(hb.order).map(Number), out = arr(hb.out).map(Number), wrong = arr(hb.wrong);
     const nm = n => (data["player" + n] || {}).name || "Player " + n;
     const key = hb.round + ":" + Object.values(hb.chars).map(c => c.id).join(",");
@@ -1530,14 +1529,14 @@ function showHB(data) {
 
     const mineDone = order.includes(me) || out.includes(me), playing = hb.phase === "play";
     const sc = hbStandings(hb).map(r => nm(r.p) + " " + r.score).join("  ·  ");
-    $("hbTurn").textContent = "Round " + hb.round + (duo ? " · Best of 3" : " of " + hb.rounds);
-    $("hbStatus").textContent = (duo ? "Wins: " : "Points: ") + sc;
+    $("hbTurn").textContent = "Round " + hb.round + " of " + hb.rounds;
+    $("hbStatus").textContent = "Points: " + sc + (playing ? "  ·  " + order.length + "/" + players.length + " solved" : "");
     $("hbGuessBtn").disabled = !playing || mineDone; $("hbGiveBtn").disabled = !playing || mineDone;
 
     const sig = key + "|" + order.join() + "|" + out.join() + "|" + hb.phase;
     if (sig !== hbSig) {
         hbSig = sig;
-        const box = $("hbCards"); box.innerHTML = "";
+        const box = $("hbCards"); box.innerHTML = ""; box.classList.toggle("many", players.length > 4);
         players.filter(p => p !== me).forEach(p => box.appendChild(hbCard(data, p, hb, {})));
         box.appendChild(hbCard(data, me, hb, { hidden: !(mineDone || hb.phase !== "play") }));
         if (hb.phase === "play") { $("hbRound").classList.add("hidden"); } else hbRenderRound(data);
@@ -1557,7 +1556,7 @@ function showHB(data) {
     if (hb.phase !== hbSeen.phase && hbSeen.phase) {
         if (hb.phase === "match") { if (Number(hb.winner) !== me) sfx("lose"); }
         else if (hb.phase === "round") { sfx(order.includes(me) ? "win" : "lose"); if (order.includes(me) && !strikes) achNow("hb_flawless"); }
-        else if (hb.phase === "play") titleCard({ kicker: "MIND LINK", title: "ROUND " + hb.round, sub: duo ? "First to 2 wins" : hb.round + " of " + hb.rounds, kanji: "心", color: "#b06bff", ms: 1300 });
+        else if (hb.phase === "play") titleCard({ kicker: "MIND LINK", title: "ROUND " + hb.round, sub: hb.round + " of " + hb.rounds + " · first guess +" + players.length, kanji: "心", color: "#b06bff", ms: 1300 });
         if (hb.phase === "round") hbWinSound(hb);
     }
     if (hb.phase === "match") hbFinalSequence(data); else if (vxKey && vxKey.startsWith("hb:")) { closeResults(); vxKey = ""; }
@@ -1573,13 +1572,13 @@ function showHB(data) {
 function hbFinalSequence(data) {
     const hb = data.hb, me = Number(myPlayer), key = "hb:" + (data.matchId || "") + ":" + hb.round + ":" + (hb.tie ? "t" : hb.winner);
     if (vxKey === key) return; vxKey = key;
-    const rows = hbStandings(hb), duo = arr(hb.players).length === 2, won = !hb.tie && Number(hb.winner) === me;
+    const rows = hbStandings(hb), won = !hb.tie && Number(hb.winner) === me;
     const prog = recordOnce(key, "hb", hb.tie ? null : won, { ach: won ? ["hb_win"] : [] });
     showResults({
         outcome: hb.tie ? "draw" : won ? "win" : "lose", mode: "hb", color: "#b06bff", kicker: "HEADBANZ · FINAL",
         title: hb.tie ? "DEAD HEAT" : won ? "VICTORY" : "DEFEAT", kanji: hb.tie ? "引分" : won ? "勝利" : "敗北",
         subtitle: hb.tie ? "Tied at the top. Sudden death decides it." : won ? "You read the room better than anyone." : pName(data, hb.winner) + " wins the match.",
-        podium: rows.map(r => ({ player: pPub(data, r.p), score: r.score + (duo ? " W" : " pts"), label: r.firsts + " first" + (r.firsts === 1 ? "" : "s"), me: r.p === me, win: !hb.tie && r.p === Number(hb.winner) })),
+        podium: rows.map(r => ({ player: pPub(data, r.p), score: r.score + " pts", label: r.firsts + " first" + (r.firsts === 1 ? "" : "s"), me: r.p === me, win: !hb.tie && r.p === Number(hb.winner) })),
         progress: prog,
         actions: matchActions({ again: amHost() ? { label: hb.tie ? "⚡ Sudden death" : "New match", fn: () => { closeResults(); hbBegin(hb.tie ? "sudden" : "new"); } } : null, details: true }),
         note: amHost() ? "" : "Waiting for " + pName(data, hostSlot(data)) + " (host) to pick what's next…"
@@ -1588,7 +1587,7 @@ function hbFinalSequence(data) {
 }
 function hbRenderRound(data) {
     const hb = data.hb, box = $("hbRound"); box.textContent = ""; box.classList.remove("hidden");
-    const players = arr(hb.players).map(Number), duo = players.length === 2, host = amHost();
+    const players = arr(hb.players).map(Number), host = amHost();
     const order = arr(hb.order).map(Number), pts = hb.lastPts || {};
     const nm = n => (data["player" + n] || {}).name || "Player " + n;
     const final = hb.phase === "match";
@@ -1600,14 +1599,14 @@ function hbRenderRound(data) {
         rows.forEach((p, i) => {
             const tr = hbEl("tr"), pl = hbEl("td", "", ""); pl.appendChild(playerChip(data, p, (order.includes(p) ? "#" + (i + 1) : "—") + " "));
             const ch = hbEl("td", "", (hb.chars["p" + p] || {}).n || "");
-            const pt = hbEl("td", "hb-pts", duo ? (order.includes(p) || (pts["p" + p] > 0) ? "WINS ROUND" : "") : "+" + (pts["p" + p] || 0));
+            const pt = hbEl("td", "hb-pts", "+" + (pts["p" + p] || 0));
             tr.append(pl, ch, pt); t.appendChild(tr);
         });
         box.appendChild(t);
     }
-    box.appendChild(hbEl("h3", "hb-ptitle small", duo ? "Match score (first to 2)" : "Total points"));
+    box.appendChild(hbEl("h3", "hb-ptitle small", "Total points"));
     const st = hbEl("table", "hb-table");
-    hbStandings(hb).forEach((r, i) => { const tr = hbEl("tr"), a = hbEl("td"); a.appendChild(playerChip(data, r.p, (i + 1) + ". ")); tr.append(a, hbEl("td", "hb-pts", String(r.score) + (duo ? " win" + (r.score === 1 ? "" : "s") : " pts")), hbEl("td", "", r.firsts + " first" + (r.firsts === 1 ? "" : "s"))); st.appendChild(tr); });
+    hbStandings(hb).forEach((r, i) => { const tr = hbEl("tr"), a = hbEl("td"); a.appendChild(playerChip(data, r.p, (i + 1) + ". ")); tr.append(a, hbEl("td", "hb-pts", r.score + " pts"), hbEl("td", "", r.firsts + " first" + (r.firsts === 1 ? "" : "s"))); st.appendChild(tr); });
     box.appendChild(st);
 
     if (!host) { box.appendChild(hbEl("p", "hb-wait", "Waiting for " + nm(hostSlot(data)) + " (host) to continue...")); }
@@ -1632,11 +1631,16 @@ function hbRenderRound(data) {
 }
 
 /* =========================================================
-   IMPOSTER MODE (3 to 6 players)
+   IMPOSTER MODE (3 to 8 players)
    Everyone sees the same character except the imposter.
    Clues (2 rounds, spoken on your call) -> vote -> result.
 ========================================================= */
 let homeLaps = 1, imSig = "", imSeen = { phase: "", round: 0 }, imSkipKey = "";
+window.setUnoDeck = function (k) {
+    const d = currentRoomData; if (!d || !amHost() || d.status !== "waiting") return;
+    document.querySelectorAll(".unobtn").forEach(b => b.classList.toggle("selected", b.dataset.k === k));
+    sfx("pick"); lobbySet({ unoDeck: k, animes: fixSeries("uno", arr(d.animes), k) });
+};
 window.setLaps = function (n) { homeLaps = n; document.querySelectorAll(".lapbtn").forEach(b => b.classList.toggle("selected", Number(b.dataset.l) === n)); lobbySet({ laps: n }); };
 
 /* ---------- rounds (host only) ---------- */
@@ -1943,15 +1947,22 @@ function imRenderPanel(data) {
 }
 
 /* =========================================================
-   ANIME UNO (2 to 6 players)
-   4 anime = the 4 colours. 108 cards: 76 attribute cards (0-9), 8 Skip, 8 Reverse,
-   8 Draw Two, 4 Wild (main characters), 4 Wild Draw Four (villains).
-   + 16 SPECIAL cards (4 per anime): Freeze, Swap Hands, Ultimate (+5), Future Sight. 124 cards total.
+   ANIME UNO (2 to 8 players)
+   Every anime = one colour. Per anime: 19 attribute cards (0-9), 2 Skip, 2 Reverse, 2 Draw Two,
+   1 Wild (main character), 1 Wild Draw Four (villain) + 4 SPECIAL cards (Freeze, Swap Hands,
+   Ultimate (+5), Future Sight) = 31 cards.
+   Classic deck: exactly 4 anime (red, green, yellow, dark blue) = 124 cards.
+   Chaos deck: 4 to 8 anime, adding pink, orange, purple and light blue = up to 248 cards.
+   Players who empty their hand take the next place and watch; the round goes on until every place is decided.
    Each deck string: attributes 0..9 (| between values, a comma between the two characters)
    ; skip ; reverse ; draw two ; wild (hero) ; wild +4 (villain)
 ========================================================= */
 const UNO_ATTR = ["Luck", "Defense", "Accuracy", "Stamina", "Intellect", "Technique", "Speed", "Spirit", "Strength", "Power"];
-const UNO_SUIT = ["#e11b1b", "#2f6fe4", "#f2c200", "#2e9e5b"];
+/* deck colours in the order the series are ticked: the classic four, then the chaos extras */
+const UNO_SUIT = ["#e11b1b", "#2e9e5b", "#f2c200", "#1f3fae", "#ff5fae", "#ff8a1f", "#8b3dff", "#4cc9ff"];
+const UNO_SUIT_NAME = ["RED", "GREEN", "YELLOW", "DARK BLUE", "PINK", "ORANGE", "PURPLE", "LIGHT BLUE"];
+const UNO_DECK_RANGE = { classic: [4, 4], chaos: [4, 8] };
+const unoDeckType = d => d && d.unoDeck === "chaos" ? "chaos" : "classic";
 const UNO_DECKS = {
     onepiece: "Buggy|Franky,Jinbe|Usopp,Brook|Tony Tony Chopper,Rob Lucci|Nico Robin,Crocodile|Sabo,Portgas D. Ace|Sanji,Donquixote Doflamingo|Dracule Mihawk,Shanks|Roronoa Zoro,Kaido|Edward Newgate,Gol D. Roger;Aokiji,Boa Hancock;Trafalgar Law,Bartholomew Kuma;Nami,Charlotte Linlin;Monkey D. Luffy;Marshall D. Teach",
     naruto: "Konohamaru Sarutobi|Choji Akimichi,Hinata Hyuga|Tenten,Sakura Haruno|Kiba Inuzuka,Temari|Jiraiya,Orochimaru|Neji Hyuga,Gaara|Rock Lee,Might Guy|Tsunade,Kakashi Hatake|Sasuke Uchiha,Tobi|Pain,Tobirama Senju;Shikamaru Nara,Hashirama Senju;Minato Namikaze,Itachi Uchiha;Kakuzu,Hidan;Naruto Uzumaki;Madara Uchiha",
@@ -2022,10 +2033,7 @@ function unoSpArt(pic, c) {
     tryExt(0);
 }
 document.querySelectorAll("#animePoll input").forEach(i => { if (UNO_DECKS[i.value]) i.closest("label").classList.add("uno-ok"); });
-$("animePoll").addEventListener("change", () => {
-    if (homeMode !== "uno") return;
-    $("modeHint").textContent = "Anime UNO: pick exactly 4 series (" + document.querySelectorAll("#animePoll input:checked").length + "/4 picked).";
-});
+$("animePoll").addEventListener("change", () => { if (homeMode === "uno") applyModeUI("uno"); });
 
 /* AniList spells names its own way (Yuuji, Uryuu, Ryuu...). Fold doubled vowels / "ou" so spellings compare equal. */
 const nzf = s => nz(s).replace(/([aeiou])\1+/g, "$1").replace(/ou/g, "o");
@@ -2106,11 +2114,11 @@ function unoBuildCards(keys, pool) {
         const sp = UNO_SPECIAL[k] || {};
         ["f", "t", "u", "e"].forEach(kd => { if (sp[kd]) out.push({ k: kd, s: s, v: -1, n: sp[kd][0], i: "", sp: 1, sk: k, ab: sp[kd][1] || "" }); });
     });
-    return out;   // 4 x (27 + 4 special) = 124
+    return out;   // per series 27 + 4 special: 124 cards for 4 series, 248 for 8
 }
-/* The host forges the 124-card deck while everyone sits in the lobby (pictures from packs.json, gaps
-   filled from AniList). It is stored as uno.cards with uno.key = the 4 series, so a rematch or a later
-   UNO match with the same series starts instantly. */
+/* The host forges the deck while everyone sits in the lobby (pictures from packs.json, gaps
+   filled from AniList). It is stored as uno.cards with uno.key = the series in colour order, so a rematch
+   or a later UNO match with the same series starts instantly. */
 let unoDeckBusy = "", unoDeckPct = 0;
 const unoDeckKey = keys => keys.join(",");
 async function unoPrepDeck(keys) {
@@ -2130,10 +2138,13 @@ async function unoPrepDeck(keys) {
     finally { if (unoDeckBusy === key) unoDeckBusy = ""; unoDeckPct = 0; lobbyRefresh(); }
 }
 
-/* ---------- rules (all moves run inside a transaction so two taps can never clash) ---------- */
+/* ---------- rules (all moves run inside a transaction so two taps can never clash) ----------
+   The moves themselves (unoDoPlay / unoDoDraw / ...) are pure: they only change the state they are given,
+   so the same code runs in the transaction and in the offline fuzz test. */
 const unoShuf = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 function unoNorm(u) {
-    u.cards = arr(u.cards); u.seats = arr(u.seats); u.draw = arr(u.draw); u.disc = arr(u.disc); u.anime = arr(u.anime);
+    u.cards = arr(u.cards); u.seats = arr(u.seats).map(Number); u.draw = arr(u.draw); u.disc = arr(u.disc); u.anime = arr(u.anime);
+    u.out = arr(u.out).map(Number); u.pend = Number(u.pend) || 0;
     u.hands = u.hands || {}; u.names = u.names || {}; u.seats.forEach(p => { u.hands["p" + p] = arr(u.hands["p" + p]); });
     return u;
 }
@@ -2142,15 +2153,25 @@ function unoDealState(cards, anime, seats, names, round) {
     seats.forEach(p => { hands["p" + p] = draw.splice(0, 7); });
     const first = draw.splice(draw.findIndex(i => cards[i].k === "a"), 1)[0];   // the opening card is always an attribute card
     return { cards: cards, anime: anime, seats: seats, names: names, hands: hands, draw: draw, disc: [first], turn: seats[0], dir: 1,
-        color: cards[first].s, drew: null, call: null, frozen: {}, fzk: null, fx: null, peek: null, ev: null, fin: null, winner: null, phase: "play", round: round, n: 1, msg: "Game on! " + names["p" + seats[0]] + " starts." };
+        color: cards[first].s, drew: null, call: null, frozen: {}, fzk: null, fx: null, peek: null, ev: null, fin: null, winner: null, out: [], places: null, pend: 0,
+        phase: "play", round: round, n: 1, msg: "Game on! " + names["p" + seats[0]] + " starts." };
 }
 const unoTop = u => u.cards[u.disc[u.disc.length - 1]];
-const unoNext = (u, p, k) => { const n = u.seats.length, i = u.seats.indexOf(p); return u.seats[(((i + u.dir * k) % n) + n) % n]; };
+const unoIsOut = (u, p) => arr(u.out).map(Number).includes(Number(p));
+const unoLive = u => u.seats.filter(p => !unoIsOut(u, p));
+/* k seats after p in the current direction. Players who already finished are not at the table any more. */
+const unoNext = (u, p, k) => {
+    const n = u.seats.length, out = arr(u.out).map(Number);
+    if (u.seats.every(s => out.includes(s))) return p;
+    let i = u.seats.indexOf(p), t = p;
+    for (let s = 0; s < k; s++) { let g = 0; do { i = (((i + u.dir) % n) + n) % n; t = u.seats[i]; } while (out.includes(t) && ++g < n); }
+    return t;
+};
 /* Who plays next: k seats after p, but a FROZEN player is skipped and loses one of their frozen turns each time. */
 function unoAdv(u, p, k, notes) {
     u.frozen = u.frozen || {};
     let t = unoNext(u, p, k), guard = 0;
-    while ((u.frozen["p" + t] || 0) > 0 && guard++ < 40) {
+    while ((u.frozen["p" + t] || 0) > 0 && guard++ < 40 && unoLive(u).length > 1) {
         u.frozen["p" + t]--;
         const m = u.names["p" + t] + " is frozen and loses a turn!" + (u.frozen["p" + t] > 0 ? " (" + u.frozen["p" + t] + " more)" : "");
         if (notes) notes.push(m); else u.msg = (u.msg || "") + " " + m;
@@ -2160,6 +2181,7 @@ function unoAdv(u, p, k, notes) {
 }
 function unoCan(u, hand, ci) {
     const c = u.cards[ci], t = unoTop(u);
+    if (u.pend > 0) return c.k === "d";       // a Draw-2 stack is running: only another +2 passes it on
     if (c.k === "w") return true;
     if (c.k === "x") return !hand.some(h => { const o = u.cards[h]; return o.k !== "w" && o.k !== "x" && o.s === u.color; });   // +4 only when you hold no card of the active colour
     if (c.sp && t.k === c.k) return false;   // a special card can't be countered by the same kind of special (by anyone, even the same player)
@@ -2173,6 +2195,86 @@ function unoDraw(u, p, n) {
         h.push(u.draw.pop());
     }
 }
+/* The round is over once at most one player still holds cards: the last one takes the last place. */
+function unoEnd(u, tail) {
+    unoLive(u).sort((a, b) => (tail || []).indexOf(a) - (tail || []).indexOf(b)).forEach(p => u.out.push(p));
+    u.phase = "over"; u.places = u.out.slice(); u.winner = u.places[0]; u.pend = 0; u.call = null; u.drew = null; u.fx = null;
+    u.wins = u.wins || {}; u.wins["p" + u.winner] = (Number(u.wins["p" + u.winner]) || 0) + 1;
+    u.msg = u.names["p" + u.winner] + " wins the round! Final ranking: " + u.places.map((p, i) => (i + 1) + ". " + u.names["p" + p]).join("  ");
+}
+/* players who left during the round can never finish: the host settles the ranking when only one present player is still in */
+function unoSettle(u, gone) {
+    gone = (gone || []).map(Number);
+    const live = unoLive(u), stay = live.filter(p => !gone.includes(p));
+    if (u.phase !== "play" || stay.length > 1 || live.length < 2) return false;
+    const left = live.filter(p => gone.includes(p)).sort((a, b) => u.hands["p" + a].length - u.hands["p" + b].length);
+    unoEnd(u, stay.concat(left)); u.n++; u.ev = { id: u.n, t: "o" };
+}
+function unoDoPlay(u, p, ci, col, tg) {
+    const h = u.hands["p" + p] || [];
+    if (u.phase !== "play" || u.turn !== p || unoIsOut(u, p) || !h.includes(ci) || (u.drew != null && u.drew !== ci) || !unoCan(u, h, ci)) return false;
+    const c = u.cards[ci], wild = c.k === "w" || c.k === "x", sp = !!UNO_SP[c.k], nm = u.names["p" + p], nx = unoNext(u, p, 1), notes = [];
+    tg = Number(tg) || 0;
+    if (c.k === "t" && h.length > 1 && (tg === p || !unoLive(u).includes(tg))) return false;      // swap needs a valid target still in the round
+    const duel = unoLive(u).length === 2;
+    h.splice(h.indexOf(ci), 1); u.disc.push(ci); u.drew = null;
+    u.color = wild ? Math.max(0, Math.min(u.anime.length - 1, Number(col) || 0)) : c.s;
+    const finished = !h.length;
+    if (finished) { u.out.push(p); u.call = null; if (u.out.length === 1) u.fin = { ci: ci, sp: sp ? 1 : 0 }; }
+    let msg = nm + " played " + c.n, victim = 0;
+    if (c.k === "s") { victim = nx; msg += ". " + u.names["p" + nx] + " is skipped!"; u.turn = unoAdv(u, p, 2, notes); }
+    else if (c.k === "r") { u.dir *= -1; msg += ". Direction reversed!"; u.turn = duel && !finished ? p : unoAdv(u, p, 1, notes); }
+    else if (c.k === "d") {
+        u.pend += 2; u.turn = unoAdv(u, p, 1, notes); victim = u.turn;
+        msg += ". Draw-2 stack is now +" + u.pend + "! " + u.names["p" + u.turn] + " must stack a +2 or draw " + u.pend + ".";
+    }
+    else if (c.k === "x") { victim = nx; unoDraw(u, nx, 4); msg += ". " + u.names["p" + nx] + " draws 4!"; u.turn = unoAdv(u, p, 2, notes); }
+    else if (c.k === "f") { victim = nx; u.frozen = u.frozen || {}; u.frozen["p" + nx] = (u.frozen["p" + nx] || 0) + 2; u.fzk = u.fzk || {}; u.fzk["p" + nx] = c.sk + "_" + c.k; msg += (c.ab ? " (" + c.ab + ")" : "") + ". " + u.names["p" + nx] + " is FROZEN for 2 turns!"; u.turn = unoAdv(u, p, 1, notes); }
+    else if (c.k === "u") { victim = nx; unoDraw(u, nx, 5); msg += (c.ab ? " (" + c.ab + ")" : "") + ". " + u.names["p" + nx] + " draws 5!"; u.turn = unoAdv(u, p, 2, notes); }
+    else if (c.k === "t") {
+        if (h.length) { victim = tg; const mine = h; u.hands["p" + p] = u.hands["p" + tg]; u.hands["p" + tg] = mine; msg += (c.ab ? " (" + c.ab + ")" : "") + ". Hands swapped with " + u.names["p" + tg] + "!"; }
+        u.turn = unoAdv(u, p, 1, notes);
+    }
+    else if (c.k === "e") { msg += (c.ab ? " (" + c.ab + ")" : "") + ". " + nm + " sees every hand!"; u.turn = unoAdv(u, p, 1, notes); }
+    else u.turn = unoAdv(u, p, 1, notes);
+    if (wild) msg += " Colour: " + u.anime[u.color] + ".";
+    if (notes.length) msg += " " + notes.join(" ");
+    const fh = u.hands["p" + p];
+    if (!finished) u.call = fh.length === 1 ? { p: p, safe: false, t: Date.now() } : null;
+    if (finished) msg += " " + nm + " is out of cards and finishes #" + u.out.length + "!";
+    u.n++; u.msg = msg;
+    u.ev = { id: u.n, t: "p", p: p, ci: ci, k: c.k, to: victim, dc: ({ x: 4, u: 5 })[c.k] || 0, stk: c.k === "d" ? u.pend : 0, col: u.color, fin: finished ? u.out.length : 0 };
+    if (finished && unoLive(u).length <= 1) { unoEnd(u); return; }
+    if (finished && u.turn === p) u.turn = unoAdv(u, p, 1);
+    const id = (u.round || 1) + ":" + u.n;
+    if (sp) u.fx = { id: id, ci: ci, p: p, to: nx, sw: c.k === "t" ? tg : 0 };
+    if (c.k === "e") u.peek = { id: id, p: p, t: Date.now() };
+}
+function unoDoDraw(u, p) {
+    const h = u.hands["p" + p];
+    if (u.phase !== "play" || u.turn !== p || unoIsOut(u, p) || u.drew != null) return false;
+    if (u.call && u.call.p !== p) u.call = null;
+    const before = h.length;
+    if (u.pend > 0) {               // can't (or won't) stack: take the whole stack and lose the turn
+        const n = u.pend; unoDraw(u, p, n); u.pend = 0;
+        u.msg = u.names["p" + p] + " takes the Draw-2 stack: +" + n + " cards!"; u.n++; u.ev = { id: u.n, t: "d", p: p, dc: h.length - before, stk: n };
+        u.turn = unoAdv(u, p, 1); return;
+    }
+    unoDraw(u, p, 1);
+    u.msg = u.names["p" + p] + " drew a card."; u.n++; u.ev = { id: u.n, t: "d", p: p, dc: h.length - before };
+    if (h.length === before || !unoCan(u, h, h[h.length - 1])) u.turn = unoAdv(u, p, 1); else u.drew = h[h.length - 1];
+}
+function unoDoPass(u, p) {
+    if (u.phase !== "play" || u.turn !== p || u.drew == null) return false;
+    u.drew = null; u.msg = u.names["p" + p] + " passed."; u.turn = unoAdv(u, p, 1); u.n++;
+}
+/* an away / departed player's turn is skipped; a running Draw-2 stack lands on them */
+function unoSkipTurn(u, p, why) {
+    if (u.phase !== "play" || u.turn !== p) return false;
+    u.drew = null; let extra = "";
+    if (u.pend > 0) { unoDraw(u, p, u.pend); extra = " They take the +" + u.pend + " stack."; u.pend = 0; }
+    u.msg = u.names["p" + p] + why + extra; u.turn = unoAdv(u, p, 1); u.n++; u.ev = { id: u.n, t: "s", p: 0, to: p };
+}
 async function unoTx(fn) {
     try { await runTransaction(ref(db, "rooms/" + room + "/uno"), cur => { if (!cur) return cur; const u = unoNorm(cur); if (fn(u) === false) return; return u; }); }
     catch (e) { console.error(e); toast("That move didn't go through. Try again."); }
@@ -2182,67 +2284,22 @@ async function unoStart() {
     if (seats.length < 2) { toast("Need at least 2 players."); return; }
     if (!d.uno || !d.uno.cards || d.uno.key !== unoDeckKey(arr(d.animes))) { toast("The deck is still being prepared."); return; }
     const names = {}; seats.forEach(i => { names["p" + i] = d["player" + i].name; });
-    const st = unoDealState(arr(d.uno.cards), arr(d.uno.anime), seats, names, 1); st.key = d.uno.key; st.missing = d.uno.missing || null;
+    const st = unoDealState(arr(d.uno.cards), arr(d.uno.anime), seats, names, 1); st.key = d.uno.key; st.missing = d.uno.missing || null; st.deck = unoDeckType(d);
     try { await update(ref(db, "rooms/" + room), { status: "playing", matchId: Date.now(), uno: st }); }
     catch (e) { toast("Could not start the game."); }
 }
-window.unoPlay = (ci, col, tg) => unoTx(u => {
-    const p = Number(myPlayer), h = u.hands["p" + p] || [];
-    if (u.phase !== "play" || u.turn !== p || !h.includes(ci) || (u.drew != null && u.drew !== ci) || !unoCan(u, h, ci)) return false;
-    const c = u.cards[ci], wild = c.k === "w" || c.k === "x", sp = !!UNO_SP[c.k], nm = u.names["p" + p], nx = unoNext(u, p, 1), notes = [];
-    tg = Number(tg) || 0;
-    if (c.k === "t" && h.length > 1 && (tg === p || !u.seats.includes(tg))) return false;      // swap needs a valid target
-    h.splice(h.indexOf(ci), 1); u.disc.push(ci); u.drew = null;
-    u.color = wild ? (Number(col) || 0) : c.s;
-    let msg = nm + " played " + c.n;
-    if (c.k === "s") { msg += ". " + u.names["p" + nx] + " is skipped!"; u.turn = unoAdv(u, p, 2, notes); }
-    else if (c.k === "r") { u.dir *= -1; msg += ". Direction reversed!"; u.turn = u.seats.length === 2 ? p : unoAdv(u, p, 1, notes); }
-    else if (c.k === "d") { unoDraw(u, nx, 2); msg += ". " + u.names["p" + nx] + " draws 2!"; u.turn = unoAdv(u, p, 2, notes); }
-    else if (c.k === "x") { unoDraw(u, nx, 4); msg += ". " + u.names["p" + nx] + " draws 4!"; u.turn = unoAdv(u, p, 2, notes); }
-    else if (c.k === "f") { u.frozen = u.frozen || {}; u.frozen["p" + nx] = (u.frozen["p" + nx] || 0) + 2; u.fzk = u.fzk || {}; u.fzk["p" + nx] = c.sk + "_" + c.k; msg += (c.ab ? " (" + c.ab + ")" : "") + ". " + u.names["p" + nx] + " is FROZEN for 2 turns!"; u.turn = unoAdv(u, p, 1, notes); }
-    else if (c.k === "u") { unoDraw(u, nx, 5); msg += (c.ab ? " (" + c.ab + ")" : "") + ". " + u.names["p" + nx] + " draws 5!"; u.turn = unoAdv(u, p, 2, notes); }
-    else if (c.k === "t") {
-        if (h.length) { const mine = h; u.hands["p" + p] = u.hands["p" + tg]; u.hands["p" + tg] = mine; msg += (c.ab ? " (" + c.ab + ")" : "") + ". Hands swapped with " + u.names["p" + tg] + "!"; }
-        u.turn = unoAdv(u, p, 1, notes);
-    }
-    else if (c.k === "e") { msg += (c.ab ? " (" + c.ab + ")" : "") + ". " + nm + " sees every hand!"; u.turn = unoAdv(u, p, 1, notes); }
-    else u.turn = unoAdv(u, p, 1, notes);
-    if (wild) msg += " Colour: " + u.anime[u.color] + ".";
-    if (notes.length) msg += " " + notes.join(" ");
-    const fh = u.hands["p" + p];
-    u.call = fh.length === 1 ? { p: p, safe: false, t: Date.now() } : null;
-    if (!fh.length) { u.phase = "over"; u.winner = p; msg = nm + " wins the round!"; u.wins = u.wins || {}; u.wins["p" + p] = (Number(u.wins["p" + p]) || 0) + 1; u.fin = { ci: ci, sp: sp ? 1 : 0 }; }
-    u.n++; u.msg = msg;
-    const victim = c.k === "t" ? tg : ({ s: 1, d: 1, x: 1, u: 1, f: 1 })[c.k] ? nx : 0;
-    u.ev = { id: u.n, t: "p", p: p, ci: ci, k: c.k, to: victim, dc: ({ d: 2, x: 4, u: 5 })[c.k] || 0, col: u.color };
-    const id = (u.round || 1) + ":" + u.n;
-    if (sp && u.phase === "play") u.fx = { id: id, ci: ci, p: p, to: nx, sw: c.k === "t" ? tg : 0 };
-    if (c.k === "e" && u.phase === "play") u.peek = { id: id, p: p, t: Date.now() };
-});
-window.unoDrawClick = () => unoTx(u => {
-    const p = Number(myPlayer), h = u.hands["p" + p];
-    if (u.phase !== "play" || u.turn !== p || u.drew != null) return false;
-    if (u.call && u.call.p !== p) u.call = null;
-    const before = h.length; unoDraw(u, p, 1);
-    u.msg = u.names["p" + p] + " drew a card."; u.n++; u.ev = { id: u.n, t: "d", p: p, dc: h.length - before };
-    if (h.length === before || !unoCan(u, h, h[h.length - 1])) u.turn = unoAdv(u, p, 1); else u.drew = h[h.length - 1];
-});
-window.unoPass = () => unoTx(u => {
-    const p = Number(myPlayer); if (u.phase !== "play" || u.turn !== p || u.drew == null) return false;
-    u.drew = null; u.msg = u.names["p" + p] + " passed."; u.turn = unoAdv(u, p, 1); u.n++;
-});
+window.unoPlay = (ci, col, tg) => unoTx(u => unoDoPlay(u, Number(myPlayer), ci, col, tg));
+window.unoDrawClick = () => unoTx(u => unoDoDraw(u, Number(myPlayer)));
+window.unoPass = () => unoTx(u => unoDoPass(u, Number(myPlayer)));
 window.unoCall = () => unoTx(u => {
     const p = Number(myPlayer); if (!u.call || u.call.p !== p || u.call.safe) return false;
     u.call.safe = true; u.msg = u.names["p" + p] + " shouts UNO!"; u.n++; u.ev = { id: u.n, t: "u", p: p };
 });
 window.unoCatch = () => unoTx(u => {
-    const p = Number(myPlayer); if (!u.call || u.call.safe || u.call.p === p || Date.now() - u.call.t < 2500) return false;
+    const p = Number(myPlayer); if (!u.call || u.call.safe || u.call.p === p || unoIsOut(u, p) || !u.seats.includes(p) || Date.now() - u.call.t < 2500) return false;
     const caught = u.call.p; unoDraw(u, caught, 2); u.msg = u.names["p" + p] + " caught " + u.names["p" + caught] + " forgetting UNO! +2 cards."; u.call = null; u.n++; u.ev = { id: u.n, t: "c", p: p, to: caught, dc: 2 };
 });
-window.unoSkipAbsent = () => unoTx(u => {
-    if (u.phase !== "play") return false;
-    const p = u.turn; u.drew = null; u.msg = u.names["p" + p] + " is away, turn skipped."; u.turn = unoAdv(u, p, 1); u.n++; u.ev = { id: u.n, t: "s", p: 0, to: p };
-});
+window.unoSkipAbsent = () => unoTx(u => unoSkipTurn(u, u.turn, " is away, turn skipped."));
 window.unoRematch = () => {
     const d = currentRoomData, seats = activeSlots(d), names = {};
     if (seats.length < 2) { toast("Need at least 2 players for another round."); return; }
@@ -2252,7 +2309,9 @@ window.unoRematch = () => {
 
 /* ---------- screen ---------- */
 let unoSeen = { n: -1, over: "", hl: -1, top: -1, round: -1, ev: null, turn: 0 }, unoPick = null;
-const UNO_KANJI = { onepiece: "海賊", naruto: "忍", bleach: "死神", jjk: "呪", dragonball: "龍", demonslayer: "鬼", aot: "巨", mha: "英" };
+const UNO_KANJI = { onepiece: "海賊", naruto: "忍", bleach: "死神", jjk: "呪", dragonball: "龍", demonslayer: "鬼", aot: "巨", mha: "英", hxh: "狩", jojo: "奇", blackclover: "黒" };
+const UNO_SHORT = { onepiece: "One Piece", naruto: "Naruto", bleach: "Bleach", jjk: "Jujutsu Kaisen", dragonball: "Dragon Ball", demonslayer: "Demon Slayer", hxh: "Hunter x Hunter", jojo: "JoJo", blackclover: "Black Clover" };
+const UNO_PLACE = n => n + (n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th");
 const UNO_ABBR = ["LCK", "DEF", "ACC", "STA", "INT", "TEC", "SPD", "SPR", "STR", "PWR"];   // abbreviation shown on the card (matching still works by attribute)
 function unoCardEl(u, ci, cls) {
     const c = u.cards[ci], wild = c.k === "w" || c.k === "x", sp = !!c.sp, el = hbEl("div", "ucard k-" + c.k + " " + (wild ? "wild " : "") + (sp ? "sp " : "") + (cls || ""));
@@ -2298,13 +2357,19 @@ $("unoHand").addEventListener("pointermove", e => {
 });
 $("unoHand").addEventListener("pointerleave", () => { if (unoHoverCard) ["--rx", "--ry", "--mx", "--my"].forEach(v => unoHoverCard.style.removeProperty(v)); unoHoverCard = null; });
 function unoPlateEl(data, u, p, me, play, pres) {
-    const n = (u.hands["p" + p] || []).length, frozen = u.frozen && u.frozen["p" + p] > 0, left = data["player" + p] && data["player" + p].left;
-    const box = hbEl("div", "u-opp" + (play && u.turn === p ? " turn" : "") + (pres["p" + p] === false || left ? " gone" : "") + (frozen ? " frozen fxk-" + ((u.fzk || {})["p" + p] || "") : ""));
+    const n = (u.hands["p" + p] || []).length, left = data["player" + p] && data["player" + p].left, place = u.out.indexOf(p) + 1;
+    const frozen = !place && u.frozen && u.frozen["p" + p] > 0;
+    const box = hbEl("div", "u-opp" + (play && u.turn === p ? " turn" : "") + (pres["p" + p] === false || left ? " gone" : "") + (frozen ? " frozen fxk-" + ((u.fzk || {})["p" + p] || "") : "") + (place && play ? " done" : ""));
     box.dataset.p = p; box.dataset.emote = "p" + p; box.style.setProperty("--pc", HB_COLORS[p - 1]);
     const top = hbEl("div", "u-otop"); top.appendChild(avatarEl(pPub(data, p), { size: 38 }));
     const nm = hbEl("div", "u-oname", u.names["p" + p]); nm.style.color = HB_COLORS[p - 1]; top.appendChild(nm);
     const w = Number((u.wins || {})["p" + p]) || 0; if (w) top.appendChild(hbEl("span", "u-owins", "★" + w));
     box.appendChild(top);
+    if (place && play) {
+        const medal = hbEl("div", "u-place p" + Math.min(place, 4)); medal.append(hbEl("b", null, "#" + place), hbEl("small", null, UNO_PLACE(place).toUpperCase() + " · FINISHED")); box.appendChild(medal);
+        box.appendChild(hbEl("div", "u-ocount", "👁 watching"));
+        return box;
+    }
     const fan = hbEl("div", "u-fan"); for (let i = 0; i < Math.min(n, 7); i++) { const c = hbEl("i"); c.style.setProperty("--k", i * 6 / Math.max(1, Math.min(n, 7) - 1 || 1)); fan.appendChild(c); } box.appendChild(fan);
     box.appendChild(hbEl("div", "u-ocount" + (n === 1 ? " uno" : ""), (left ? "LEFT · " : "") + (n === 1 ? "UNO! · 1 card" : n + " cards") + (frozen ? "  ❄ x" + u.frozen["p" + p] : "")));
     return box;
@@ -2322,7 +2387,7 @@ function showUNO(data) {
     showOnly("uno");
     const u = unoNorm(JSON.parse(JSON.stringify(data.uno))), me = Number(myPlayer), pres = data.presence || {}, keys = arr(data.animes);
     if (!u.disc.length) return;
-    const play = u.phase === "play", myTurn = play && u.turn === me, hand = u.hands["p" + me] || [];
+    const play = u.phase === "play", myTurn = play && u.turn === me, hand = u.hands["p" + me] || [], myPlace = u.out.indexOf(me) + 1, stack = play ? u.pend : 0;
     const firstRender = unoSeen.n < 0;
     const newEv = u.ev && u.ev.id !== unoSeen.ev && !firstRender ? u.ev : null;
     if (u.ev) unoSeen.ev = u.ev.id;
@@ -2332,18 +2397,19 @@ function showUNO(data) {
     const actCol = UNO_SUIT[u.color] || "#ffcf4a";
     $("uno").classList.toggle("myturn", myTurn); $("uno").style.setProperty("--ac", actCol); ambient.accent(actCol);
     $("unoArenaKj").textContent = UNO_KANJI[keys[u.color]] || "札";
-    $("unoTurn").textContent = !play ? "ROUND OVER" : myTurn ? "YOUR TURN!" : (u.names["p" + u.turn] || "?") + "'s turn";
+    $("unoTurn").textContent = !play ? "ROUND OVER" : myTurn ? (stack ? "STACK +" + stack + "!" : "YOUR TURN!") : (u.names["p" + u.turn] || "?") + "'s turn";
     $("unoStatus").textContent = u.msg || "";
+    $("uno").classList.toggle("watching", play && myPlace > 0);
     // opponents
-    const op = $("unoOpps"); op.innerHTML = "";
+    const op = $("unoOpps"); op.innerHTML = ""; op.classList.toggle("many", u.seats.length > 5);
     u.seats.filter(p => p !== me).forEach(p => op.appendChild(unoPlateEl(data, u, p, me, play, pres)));
     // my own plate (avatar, name, wins), so I see myself the way the others see me
     const mine = $("unoMe"); mine.innerHTML = "";
     if (u.seats.includes(me)) {
-        mine.className = "uno-me" + (myTurn ? " turn" : "") + (u.frozen && u.frozen["p" + me] > 0 ? " frozen" : "");
+        mine.className = "uno-me" + (myTurn ? " turn" : "") + (!myPlace && u.frozen && u.frozen["p" + me] > 0 ? " frozen" : "") + (myPlace && play ? " done" : "");
         mine.dataset.emote = "p" + me;
         mine.appendChild(avatarEl(pPub(data, me), { size: 44, badge: true }));
-        const id = hbEl("div", "u-meid"); id.appendChild(hbEl("b", null, pName(data, me))); id.appendChild(hbEl("small", null, hand.length + " card" + (hand.length === 1 ? "" : "s") + ((u.wins || {})["p" + me] ? " · ★" + u.wins["p" + me] + " wins" : "") + (u.frozen && u.frozen["p" + me] > 0 ? " · ❄ frozen" : "")));
+        const id = hbEl("div", "u-meid"); id.appendChild(hbEl("b", null, pName(data, me))); id.appendChild(hbEl("small", null, (myPlace ? "Finished " + UNO_PLACE(myPlace) : hand.length + " card" + (hand.length === 1 ? "" : "s")) + ((u.wins || {})["p" + me] ? " · ★" + u.wins["p" + me] + " wins" : "") + (!myPlace && u.frozen && u.frozen["p" + me] > 0 ? " · ❄ frozen" : "")));
         mine.appendChild(id);
     }
     const topIdx = u.disc[u.disc.length - 1], tp = $("unoTop"); tp.innerHTML = "";
@@ -2353,13 +2419,16 @@ function showUNO(data) {
     const info = $("unoInfo"); info.innerHTML = "";
     const slab = hbEl("div", "u-active"); slab.style.setProperty("--c", actCol);
     slab.appendChild(hbEl("small", null, "ACTIVE ANIME")); slab.appendChild(hbEl("b", null, u.anime[u.color])); slab.appendChild(hbEl("span", "u-kj", UNO_KANJI[keys[u.color]] || "")); info.appendChild(slab);
+    if (stack) { const sk = hbEl("div", "u-stack"); sk.append(hbEl("b", null, "+" + stack), hbEl("small", null, "DRAW-2 STACK · " + (myTurn ? "stack a +2 or take it" : (u.names["p" + u.turn] || "?") + " must answer"))); info.appendChild(sk); }
     info.appendChild(hbEl("div", "u-dir", u.dir > 0 ? "↻ CLOCKWISE" : "↺ COUNTER-CLOCKWISE"));
     info.appendChild(hbEl("div", "u-pile", "DRAW PILE · " + u.draw.length));
-    const dr = $("unoDraw"); dr.innerHTML = ""; dr.appendChild(hbEl("b", null, "DRAW")); dr.appendChild(hbEl("em", null, String(u.draw.length)));
+    if (u.out.length && play) { const rk = hbEl("div", "u-rank"); u.out.forEach((p, i) => { const r = hbEl("span", null, "#" + (i + 1) + " " + (u.names["p" + p] || "?")); r.style.setProperty("--pc", HB_COLORS[(p - 1) % HB_COLORS.length]); rk.appendChild(r); }); info.appendChild(rk); }
+    const dr = $("unoDraw"); dr.innerHTML = ""; dr.appendChild(hbEl("b", null, stack && myTurn ? "TAKE +" + stack : "DRAW")); dr.appendChild(hbEl("em", null, String(u.draw.length)));
+    dr.classList.toggle("stack", !!(stack && myTurn)); dr.setAttribute("aria-label", stack && myTurn ? "Take the Draw-2 stack: draw " + stack + " cards" : "Draw a card");
     dr.disabled = !(myTurn && u.drew == null); dr.classList.toggle("glow", myTurn && u.drew == null && !hand.some(ci => unoCan(u, hand, ci)));
     $("unoBtnPass").classList.toggle("hidden", !(myTurn && u.drew != null));
     $("unoBtnUno").classList.toggle("hidden", !(u.call && u.call.p === me && !u.call.safe));
-    const canCatch = u.call && !u.call.safe && u.call.p !== me, wait = canCatch ? 2500 - (Date.now() - u.call.t) : 0;
+    const canCatch = u.call && !u.call.safe && u.call.p !== me && !myPlace && u.seats.includes(me), wait = canCatch ? 2500 - (Date.now() - u.call.t) : 0;
     $("unoBtnCatch").classList.toggle("hidden", !canCatch); $("unoBtnCatch").disabled = wait > 0;
     clearTimeout(unoCatchTimer);
     if (wait > 0) unoCatchTimer = setTimeout(() => { if (currentRoomData && currentRoomData.gameType === "uno" && currentRoomData.status === "playing") showUNO(currentRoomData); }, wait + 60);
@@ -2382,8 +2451,12 @@ function showUNO(data) {
         el.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); } };
         hd.appendChild(el);
     });
+    if (myPlace && play) {
+        const w = hbEl("div", "u-watch"); w.append(hbEl("b", null, "#" + myPlace), hbEl("span", null, "You finished " + UNO_PLACE(myPlace) + "! Watch the rest of the table fight for the other places."));
+        hd.appendChild(w);
+    }
     hd.classList.toggle("deal", hand.length !== unoSeen.hl && (firstRender || u.round !== unoSeen.round)); unoSeen.hl = hand.length; unoSeen.round = u.round;
-    unoFitHand();
+    if (!myPlace || !play) unoFitHand();
     if (newEv) { try { unoAnimate(u, newEv, snap, data); } catch (e) { console.warn(e); } }
     $("unoOver").classList.add("hidden");
     if (!play && u.winner) unoOverSequence(u, data); else if (vxKey && vxKey.startsWith("uno:")) { closeResults(); vxKey = ""; }
@@ -2436,6 +2509,7 @@ function unoAnimate(u, ev, snap, data) {
             sfx(c.k === "a" ? "slam" : "card"); ring(center.x, center.y, col, 260, 600); shake($("unoTop"), c.k === "a" ? 4 : 8, 300);
             if (ev.p === me && c.k === "x") achNow("uno_villain");
             unoAction(u, ev, c, col, center);
+            if (ev.fin && u.phase === "play") setTimeout(() => { const r = unoPlateRect(ev.p); unoStamp(r, "#" + ev.fin + " FINISHED!", "#ffe14d", "big"); ring(ctr(r).x, ctr(r).y, "#ffe14d", 300, 800); sfx(ev.p === me ? "win" : "reveal"); }, 700);
         };
         if (snap && top && motionOK()) {
             const dst = top.getBoundingClientRect();
@@ -2444,7 +2518,7 @@ function unoAnimate(u, ev, snap, data) {
             if (src) { top.style.visibility = "hidden"; flyCard(unoCardEl(u, ev.ci, "big"), src, dst, 430, (Math.random() - .5) * 50).then(() => { top.style.visibility = ""; impact(); }); return; }
         }
         impact();
-    } else if (ev.t === "d") { unoDrawFly(u, ev.p, ev.dc || 1, 0); }
+    } else if (ev.t === "d") { unoDrawFly(u, ev.p, ev.dc || 1, 0); if (ev.stk) { unoStamp(unoPlateRect(ev.p), "+" + ev.stk, "#ff2a2a", ev.stk >= 6 ? "big" : ""); sfx("punch"); } }
     else if (ev.t === "u") { const r = unoPlateRect(ev.p); unoStamp(r, "UNO!", "#ffe14d", "big"); sfx("uno"); ring(ctr(r).x, ctr(r).y, "#ffe14d", 240, 700); }
     else if (ev.t === "c") { const r = unoPlateRect(ev.to); unoStamp(r, "CAUGHT!", "#ff3b3b"); sfx("catch"); unoDrawFly(u, ev.to, 2, 300); }
     else if (ev.t === "s") { unoStamp(unoPlateRect(ev.to), "AWAY", "#bbbbbb"); sfx("skip"); }
@@ -2460,8 +2534,8 @@ function unoAction(u, ev, c, col, center) {
         burstText("REVERSE", center.x, center.y - 120, col); return;
     }
     if (k === "w") {
-        sfx("wild"); const cols = UNO_SUIT;
-        unoFx.add(1100, (g, t) => { const e = t < .45 ? t / .45 : 1, back = t > .45 ? (t - .45) / .55 : 0; for (let i = 0; i < 28; i++) { const a = i / 28 * 6.283 + t * 2, r = 30 + 260 * e * (1 - back * .9); g.globalAlpha = 1 - back; g.fillStyle = back > 0 ? col : cols[i % 4]; g.save(); g.translate(center.x + Math.cos(a) * r, center.y + Math.sin(a) * r); g.rotate(a); g.fillRect(-14, -5, 28, 10); g.restore(); } if (back > 0) { g.globalAlpha = (1 - back) * .6; g.fillStyle = col; g.beginPath(); g.arc(center.x, center.y, 60 + back * 400, 0, 6.283); g.fill(); } });
+        sfx("wild"); const cols = UNO_SUIT.slice(0, Math.max(4, u.anime.length));
+        unoFx.add(1100, (g, t) => { const e = t < .45 ? t / .45 : 1, back = t > .45 ? (t - .45) / .55 : 0; for (let i = 0; i < 28; i++) { const a = i / 28 * 6.283 + t * 2, r = 30 + 260 * e * (1 - back * .9); g.globalAlpha = 1 - back; g.fillStyle = back > 0 ? col : cols[i % cols.length]; g.save(); g.translate(center.x + Math.cos(a) * r, center.y + Math.sin(a) * r); g.rotate(a); g.fillRect(-14, -5, 28, 10); g.restore(); } if (back > 0) { g.globalAlpha = (1 - back) * .6; g.fillStyle = col; g.beginPath(); g.arc(center.x, center.y, 60 + back * 400, 0, 6.283); g.fill(); } });
         burstText("WILD · " + (u.anime[ev.col] || ""), center.x, center.y - 130, col); return;
     }
     if (k === "d" || k === "x") {
@@ -2485,7 +2559,7 @@ function unoAction(u, ev, c, col, center) {
                 g.globalAlpha = (1 - q) * .8; g.strokeStyle = heavy ? "#ff2a2a" : col; g.lineWidth = 8 * (1 - q) + 1; g.beginPath(); g.arc(to.x, to.y, 40 + q * (heavy ? 420 : 260), 0, 6.283); g.stroke();
             }
         });
-        setTimeout(() => { sfx("punch"); unoStamp(vr, heavy ? "+4" : "+2", heavy ? "#ff2a2a" : col, heavy ? "big" : ""); shake(heavy ? $("uno") : (document.querySelector('#unoOpps .u-opp[data-p="' + victim + '"]') || $("unoMe")), heavy ? 16 : 9, heavy ? 520 : 360); unoDrawFly(u, victim, ev.dc, 160); }, hitAt);
+        setTimeout(() => { sfx("punch"); unoStamp(vr, heavy ? "+4" : "+" + (ev.stk || 2) + (ev.stk > 2 ? " STACK" : ""), heavy ? "#ff2a2a" : col, heavy || ev.stk >= 6 ? "big" : ""); shake(heavy ? $("uno") : (document.querySelector('#unoOpps .u-opp[data-p="' + victim + '"]') || $("unoMe")), heavy ? 16 : 9, heavy ? 520 : 360); unoDrawFly(u, victim, ev.dc, 160); }, hitAt);
         return;
     }
     // special cards: their own cinematic plays (unoSpecialFx); the +5 cards still fly afterwards
@@ -2496,26 +2570,107 @@ function unoOverSequence(u, data) {
     const key = "uno:" + (data.matchId || "") + ":" + u.round + ":" + u.winner;
     if (vxKey === key) return; vxKey = key;
     const me = Number(myPlayer), win = u.winner === me, seated = u.seats.includes(me);
+    // full ranking: the finishing order (older rounds without one fall back to fewest cards left)
+    const places = arr(u.places).map(Number).length === u.seats.length ? arr(u.places).map(Number)
+        : u.seats.slice().sort((a, b) => (a === u.winner ? -1 : b === u.winner ? 1 : (u.hands["p" + a] || []).length - (u.hands["p" + b] || []).length));
+    const myPlace = places.indexOf(me) + 1, last = myPlace === places.length;
     const fin = u.fin && u.cards[u.fin.ci] ? u.fin.ci : u.disc[u.disc.length - 1];
     const ach = win ? ["uno_win"].concat(u.fin && u.fin.sp ? ["uno_special"] : []) : [];
     const prog = seated ? recordOnce(key, "uno", win, { ach }) : null;
     const reveal = hbEl("div", "vx-card"); reveal.appendChild(unoCardEl(u, fin, "big"));
-    const others = u.seats.filter(p => p !== u.winner).reduce((a, p) => a + (u.hands["p" + p] || []).length, 0);
+    const lastP = places[places.length - 1], lastCards = (u.hands["p" + lastP] || []).length;
     showResults({
-        outcome: !seated ? "neutral" : win ? "win" : "lose", mode: "uno", color: UNO_SUIT[u.color] || "#ffcf4a", kicker: "ANIME UNO · ROUND " + u.round,
-        title: win ? "VICTORY!" : (u.names["p" + u.winner] || "?").toUpperCase() + " WINS", kanji: win ? "勝利" : "敗北",
-        subtitle: win ? (u.fin && u.fin.sp ? "Finished with a special card. Legendary." : "You got rid of every card.") : "Finishing card: " + ((u.cards[fin] || {}).n || "?"),
+        outcome: !seated ? "neutral" : win ? "win" : last ? "lose" : "neutral", mode: "uno", color: UNO_SUIT[u.color] || "#ffcf4a", kicker: "ANIME UNO · ROUND " + u.round + " · FINAL RANKING",
+        title: win ? "VICTORY!" : seated ? UNO_PLACE(myPlace).toUpperCase() + " PLACE" : (u.names["p" + u.winner] || "?").toUpperCase() + " WINS",
+        kanji: win ? "勝利" : last ? "敗北" : "順位",
+        subtitle: win ? (u.fin && u.fin.sp ? "First out, with a special card. Legendary." : "First to get rid of every card.")
+            : seated ? (u.names["p" + u.winner] || "?") + " went out first with " + ((u.cards[fin] || {}).n || "?") + "." + (last ? " You were the last one holding cards." : "")
+            : "Finishing card: " + ((u.cards[fin] || {}).n || "?"),
         reveal: reveal,
-        podium: u.seats.slice().sort((a, b) => (a === u.winner ? -1 : b === u.winner ? 1 : (u.hands["p" + a] || []).length - (u.hands["p" + b] || []).length)).map(p => ({ player: pPub(data, p), score: p === u.winner ? "0 cards" : (u.hands["p" + p] || []).length + " cards", label: "★ " + (Number((u.wins || {})["p" + p]) || 0) + " round win" + ((Number((u.wins || {})["p" + p]) || 0) === 1 ? "" : "s"), me: p === me, win: p === u.winner })),
-        chips: [["ROUND", u.round], ["CARDS LEFT IN PLAY", others], ["YOUR ROUND WINS", Number((u.wins || {})["p" + me]) || 0]],
+        podium: places.map((p, i) => ({ player: pPub(data, p), score: "#" + (i + 1), label: (i === places.length - 1 ? (u.hands["p" + p] || []).length + " card" + ((u.hands["p" + p] || []).length === 1 ? "" : "s") + " left" : UNO_PLACE(i + 1) + " out") + " · ★" + (Number((u.wins || {})["p" + p]) || 0), me: p === me, win: i === 0 })),
+        chips: [["ROUND", u.round], ["YOUR PLACE", seated ? myPlace + " / " + places.length : "-"], ["LAST PLACE LEFT WITH", lastCards + " card" + (lastCards === 1 ? "" : "s")], ["YOUR ROUND WINS", Number((u.wins || {})["p" + me]) || 0]],
         progress: prog,
         actions: matchActions({ again: { label: "Play again", fn: () => { closeResults(); vxKey = "uno-wait"; unoRematch(); } } })
     });
 }
 
+/* ---------- wild card: the colour wheel ----------
+   One equal slice per colour in the deck (4 in Classic, 4 to 8 in Chaos). Each slice is tinted with its colour
+   and shows the series' hero (the art of that series' Wild card) behind its kanji and name. Hover / focus lifts a
+   slice out and names it in the hub; a click, tap, Enter or Space plays the wild with that colour at once. */
+const SVGNS = "http://www.w3.org/2000/svg";
+const svgEl = (tag, at) => { const e = document.createElementNS(SVGNS, tag); Object.entries(at || {}).forEach(([k, v]) => e.setAttribute(k, v)); return e; };
+function unoWheelArc(r0, r1, a0, a1) {
+    const P = (r, a) => (r * Math.cos(a)).toFixed(2) + " " + (r * Math.sin(a)).toFixed(2), big = a1 - a0 > Math.PI ? 1 : 0;
+    return "M" + P(r1, a0) + " A" + r1 + " " + r1 + " 0 " + big + " 1 " + P(r1, a1) + " L" + P(r0, a1) + " A" + r0 + " " + r0 + " 0 " + big + " 0 " + P(r0, a0) + " Z";
+}
 function unoBuildColors(u, keys) {
-    const b = $("unoColorBtns"); b.innerHTML = "";
-    u.anime.forEach((a, s) => { const x = hbEl("button", "u-pickbtn"); x.style.setProperty("--c", UNO_SUIT[s]); x.appendChild(hbEl("span", null, UNO_KANJI[keys[s]] || "")); x.appendChild(hbEl("b", null, a)); x.onclick = () => unoColorPick(s); b.appendChild(x); });
+    const box = $("unoColorBtns"); box.innerHTML = "";
+    const N = u.anime.length, R = 200, R0 = 64, step = Math.PI * 2 / N, gap = N > 6 ? .012 : .018, now = Date.now();
+    const svg = svgEl("svg", { viewBox: "-230 -230 460 460", class: "uw-svg", role: "group", "aria-label": "Choose the anime colour" });
+    const defs = svgEl("defs"); svg.appendChild(defs);
+    const glow = svgEl("filter", { id: "uwGlow", x: "-50%", y: "-50%", width: "200%", height: "200%" });
+    glow.appendChild(svgEl("feGaussianBlur", { stdDeviation: "7" })); defs.appendChild(glow);
+    const rim = svgEl("g", { class: "uw-rim" });
+    rim.appendChild(svgEl("circle", { r: R + 16, class: "uw-rim-a" })); rim.appendChild(svgEl("circle", { r: R + 24, class: "uw-rim-b" }));
+    svg.appendChild(rim);
+    const hub = svgEl("g", { class: "uw-hub" }), hubText = () => hub.querySelectorAll("text");
+    const slices = [];
+    u.anime.forEach((label, s) => {
+        const a0 = -Math.PI / 2 - step / 2 + s * step + gap, a1 = a0 + step - gap * 2, mid = (a0 + a1) / 2, col = UNO_SUIT[s], k = keys[s];
+        const d = unoWheelArc(R0, R, a0, a1), id = "uw" + now + "_" + s;
+        const cp = svgEl("clipPath", { id: id + "c" }); cp.appendChild(svgEl("path", { d })); defs.appendChild(cp);
+        const gr = svgEl("radialGradient", { id: id + "g", cx: "0", cy: "0", r: String(R), gradientUnits: "userSpaceOnUse" });
+        [["0", .9], [String(R0 / R + .04), .78], [".62", .3], [".9", .55]].forEach(([o, a]) => gr.appendChild(svgEl("stop", { offset: o, "stop-color": col, "stop-opacity": a })));
+        defs.appendChild(gr);
+        const lift = N > 6 ? 12 : 16;
+        const g = svgEl("g", { class: "uw-slice", tabindex: "0", role: "button", "aria-label": UNO_SUIT_NAME[s] + ": " + label });
+        g.style.setProperty("--c", col); g.style.setProperty("--dx", (Math.cos(mid) * lift).toFixed(1) + "px"); g.style.setProperty("--dy", (Math.sin(mid) * lift).toFixed(1) + "px"); g.style.setProperty("--i", s);
+        const inner = svgEl("g", { class: "uw-in" });
+        const art = svgEl("g", { "clip-path": "url(#" + id + "c)" });
+        art.appendChild(svgEl("path", { d, fill: "#0b0710" }));
+        const hero = u.cards.find(c => c.k === "w" && c.s === s && c.i);
+        if (hero) {
+            const cx = Math.cos(mid) * (R0 + R) / 2, cy = Math.sin(mid) * (R0 + R) / 2, sz = N > 6 ? 190 : 230;
+            const im = svgEl("image", { x: (cx - sz / 2).toFixed(1), y: (cy - sz * .42).toFixed(1), width: sz, height: sz, preserveAspectRatio: "xMidYMin slice", class: "uw-art" });
+            im.setAttributeNS("http://www.w3.org/1999/xlink", "href", HB_IMG + hero.i); im.setAttribute("href", HB_IMG + hero.i);
+            art.appendChild(im);
+        }
+        art.appendChild(svgEl("path", { d, fill: "url(#" + id + "g)", class: "uw-tint" }));
+        art.appendChild(svgEl("path", { d: unoWheelArc(R - 15, R, a0, a1), fill: col, class: "uw-band" }));      // the colour itself, solid, round the rim
+        // speed lines that sweep across the slice on hover
+        for (let j = 0; j < 3; j++) { const ra = R0 + 26 + j * 38; art.appendChild(svgEl("path", { d: "M" + (ra * Math.cos(a0)).toFixed(1) + " " + (ra * Math.sin(a0)).toFixed(1) + " A" + ra + " " + ra + " 0 0 1 " + (ra * Math.cos(a1)).toFixed(1) + " " + (ra * Math.sin(a1)).toFixed(1), class: "uw-line", style: "--j:" + j })); }
+        inner.appendChild(art);
+        inner.appendChild(svgEl("path", { d, class: "uw-edge" }));
+        const kr = R0 + (R - R0) * .5, tx = Math.cos(mid) * kr, ty = Math.sin(mid) * kr;
+        const kj = svgEl("text", { x: tx.toFixed(1), y: ty.toFixed(1), class: "uw-kj", "font-size": N > 6 ? 34 : N > 4 ? 42 : 52 }); kj.textContent = UNO_KANJI[k] || "札"; inner.appendChild(kj);
+        // series name (outer) and colour name (inner) follow the slice's arc; on the lower half the arc runs the other way so the text stays upright
+        const flip = Math.sin(mid) > .3, onArc = (r, cls, size, txt, pid) => {
+            const pa = flip ? "M" + (r * Math.cos(a1)).toFixed(1) + " " + (r * Math.sin(a1)).toFixed(1) + " A" + r + " " + r + " 0 0 0 " + (r * Math.cos(a0)).toFixed(1) + " " + (r * Math.sin(a0)).toFixed(1)
+                : "M" + (r * Math.cos(a0)).toFixed(1) + " " + (r * Math.sin(a0)).toFixed(1) + " A" + r + " " + r + " 0 0 1 " + (r * Math.cos(a1)).toFixed(1) + " " + (r * Math.sin(a1)).toFixed(1);
+            defs.appendChild(svgEl("path", { id: pid, d: pa }));
+            const t = svgEl("text", { class: cls, "font-size": size }), tp = svgEl("textPath", { href: "#" + pid, startOffset: "50%" });
+            tp.setAttributeNS("http://www.w3.org/1999/xlink", "href", "#" + pid); tp.textContent = txt; t.appendChild(tp); inner.appendChild(t);
+        };
+        onArc(R - 32, "uw-nm", N > 6 ? 12.5 : N > 4 ? 14 : 17, (UNO_SHORT[k] || label).toUpperCase(), id + "n");
+        onArc(R0 + 17, "uw-cn", N > 6 ? 8 : 9.5, UNO_SUIT_NAME[s], id + "k");
+        g.appendChild(inner);
+        const focus = () => { slices.forEach(x => x.classList.toggle("on", x === g)); const [t1, t2, t3] = hubText(); t1.textContent = UNO_KANJI[k] || "札"; t2.textContent = (UNO_SHORT[k] || label).toUpperCase(); t3.textContent = UNO_SUIT_NAME[s]; hub.style.setProperty("--c", col); box.style.setProperty("--c", col); sfx("hover"); };
+        g.addEventListener("pointerenter", focus); g.addEventListener("focus", focus);
+        g.addEventListener("click", () => { g.classList.add("pick"); unoColorPick(s); });
+        g.addEventListener("keydown", e => {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); g.dispatchEvent(new MouseEvent("click")); }
+            else if (/^Arrow/.test(e.key)) { e.preventDefault(); const dir = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : -1; slices[(s + dir + N) % N].focus(); }
+        });
+        slices.push(g); svg.appendChild(g);
+    });
+    hub.appendChild(svgEl("circle", { r: R0 - 6, class: "uw-hub-bg" }));
+    hub.appendChild(svgEl("circle", { r: R0 - 6, class: "uw-hub-ring" }));
+    [["uw-hk", "-6", "札"], ["uw-hn", "18", "PICK A COLOUR"], ["uw-hc", "32", "WILD"]].forEach(([c, y, t]) => { const e = svgEl("text", { class: c, y }); e.textContent = t; hub.appendChild(e); });
+    svg.appendChild(hub);
+    box.appendChild(svg);
+    box.style.setProperty("--n", N);
+    setTimeout(() => { if (!$("unoColor").classList.contains("hidden") && slices[0]) slices[0].focus({ preventScroll: true }); }, 60);
 }
 window.unoColorPick = s => { $("unoColor").classList.add("hidden"); if (unoPick != null) unoPlay(unoPick, s); unoPick = null; };
 window.unoColorCancel = () => { $("unoColor").classList.add("hidden"); unoPick = null; };
@@ -2523,7 +2678,7 @@ window.unoColorCancel = () => { $("unoColor").classList.add("hidden"); unoPick =
 /* ---------- special cards: swap target picker, banner, future sight ---------- */
 function unoBuildTargets(u, me) {
     const b = $("unoTargetBtns"); b.innerHTML = "";
-    u.seats.filter(p => p !== me).forEach(p => {
+    unoLive(u).filter(p => p !== me).forEach(p => {
         const x = hbEl("button", "u-pickbtn"); x.style.setProperty("--c", HB_COLORS[p - 1]);
         x.appendChild(hbEl("span", null, "🌀"));
         x.appendChild(hbEl("b", null, u.names["p" + p] || "?"));
@@ -2554,7 +2709,7 @@ function unoPeekShow(u, me) {
     const fxk = u.fx && u.cards[u.fx.ci] ? u.cards[u.fx.ci].sk + "_e" : "";
     if (UNO_PK[fxk]) box.classList.add("pk", "pk-" + fxk);
     box.appendChild(hbEl("h2", null, UNO_PK[fxk] || "👁️ FUTURE SIGHT"));
-    const opp = u.seats.filter(p => p !== me), n = opp.reduce((s, p) => s + (u.hands["p" + p] || []).length, 0) || 1;
+    const opp = unoLive(u).filter(p => p !== me), n = opp.reduce((s, p) => s + (u.hands["p" + p] || []).length, 0) || 1;
     const S = Math.min(innerWidth * .92, innerHeight * .72, 800), table = hbEl("div", "u-peek-table");      // a square, see-through table
     table.style.width = table.style.height = S + "px"; box.appendChild(table);
     const sc = Math.max(.36, Math.min(1.3, S * Math.sqrt(.78 / (n + opp.length * 2.5)) / 176)), ix = { i: 0 };   // cards as big as the table allows, never a thin line
@@ -2578,19 +2733,20 @@ function unoPeekShow(u, me) {
    lobby for a rematch or another mode. Only an explicit "Close room" (host),
    or the last player leaving, deletes the room and its data.
    ===================================================================== */
-const SLOTS = [1, 2, 3, 4, 5, 6];
+const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8];          // the squad: up to 8 players per room
+const ROOM_MAX = SLOTS.length;
 const MODE_OF_KEY = { gw: "classic", hb: "headbanz", im: "imposter", uno: "uno" };
 const MODES = {
-    classic:  { key: "gw",  name: "Guess Who", tag: "CASE FILE", kanji: "探", min: 2, max: 2, color: "#f2b33d", sub: "Hide. Ask. Accuse.", blurb: "1v1 deduction duel. Hide a character, ask yes/no questions, accuse first.", art: ["images/anime/naruto/na3.jpg", "images/character12.jpg", "images/anime/jjk/jk5.jpg"] },
-    headbanz: { key: "hb",  name: "Headbanz", tag: "MIND LINK", kanji: "心", min: 2, max: 4, color: "#b06bff", sub: "Read the room. Read yourself.", blurb: "Everyone sees your character but you. Ask, deduce, name yourself first.", art: ["images/anime/demonslayer/ds2.jpg", "images/anime/dragonball/db4.jpg", "images/anime/bleach/bc6.jpg"] },
-    imposter: { key: "im",  name: "Imposter", tag: "SHADOW TRIAL", kanji: "偽", min: 3, max: 6, color: "#ff3355", sub: "Someone here is lying.", blurb: "All but one know the character. Give clues, vote, unmask the fake.", art: ["images/anime/jjk/jk2.jpg", "images/anime/bleach/bc3.jpg", "images/anime/naruto/na9.jpg"] },
-    uno:      { key: "uno", name: "Anime UNO", tag: "ARENA CLASH", kanji: "札", min: 2, max: 6, color: "#ffcf4a", sub: "Four anime. One deck. No mercy.", blurb: "4 anime become 4 colours. Special cards unleash signature moves.", art: ["images/special/jjk_vision.jpg", "images/special/onepiece_ultimate.jpg", "images/special/dragonball_ultimate.jpg"] }
+    classic:  { key: "gw",  name: "Guess Who", tag: "CASE FILE", kanji: "探", min: 2, max: 8, seats: "1v1 · rest spectate", short: "1v1", color: "#f2b33d", sub: "Hide. Ask. Accuse.", blurb: "1v1 deduction duel. Hide a character, ask yes/no questions, accuse first.", art: ["images/anime/naruto/na3.jpg", "images/character12.jpg", "images/anime/jjk/jk5.jpg"] },
+    headbanz: { key: "hb",  name: "Headbanz", tag: "MIND LINK", kanji: "心", min: 2, max: 8, color: "#b06bff", sub: "Read the room. Read yourself.", blurb: "Everyone sees your character but you. Ask, deduce, name yourself first.", art: ["images/anime/demonslayer/ds2.jpg", "images/anime/dragonball/db4.jpg", "images/anime/bleach/bc6.jpg"] },
+    imposter: { key: "im",  name: "Imposter", tag: "SHADOW TRIAL", kanji: "偽", min: 3, max: 8, color: "#ff3355", sub: "Someone here is lying.", blurb: "All but one know the character. Give clues, vote, unmask the fake.", art: ["images/anime/jjk/jk2.jpg", "images/anime/bleach/bc3.jpg", "images/anime/naruto/na9.jpg"] },
+    uno:      { key: "uno", name: "Anime UNO", tag: "ARENA CLASH", kanji: "札", min: 2, max: 8, color: "#ffcf4a", sub: "Every anime a colour. No mercy.", blurb: "Classic: 4 anime, 4 colours. Chaos: up to 8. Stack +2s, special moves.", art: ["images/special/jjk_vision.jpg", "images/special/onepiece_ultimate.jpg", "images/special/dragonball_ultimate.jpg"] }
 };
 const RULES = {
-    classic: ["Both players secretly pick a character from the same board.", "On your turn, ask one yes/no question out loud, then flip down every character it rules out.", "Press END TURN when you are done. Think you know it? Press ACCUSE and tap their character.", "A right accusation wins. A wrong one hands the win to your opponent."],
-    headbanz: ["Everyone gets a character card that all the others can see, except you.", "Take turns asking yes/no questions about your own card; the others answer.", "Guess your character whenever you like. Three wrong guesses and you sit out the round.", "2 players: best of 3. 3 to 4 players: points per round, the fastest guess scores most."],
+    classic: ["Two players duel 1v1 (with more people in the room, the host picks the duelists and everyone else spectates). Both secretly pick a character from the same board.", "On your turn, ask one yes/no question out loud, then flip down every character it rules out.", "Press END TURN when you are done. Think you know it? Press ACCUSE and tap their character.", "A right accusation wins. A wrong one hands the win to your opponent."],
+    headbanz: ["Everyone gets a character card that all the others can see, except you.", "Take turns asking yes/no questions about your own card; the others answer.", "Guess your character whenever you like. Three wrong guesses and you sit out the round.", "2 to 8 players, everyone at once. Points per round follow the guessing order: with N players the 1st right guess scores N, the next N-1 and so on (8 players: 8, 7, 6 ... 1). Giving up or three strikes scores 0."],
     imposter: ["Everyone sees the same secret character, except one imposter.", "Two clue rounds: on your call, say one clue out loud. Never say the name.", "Then vote. Catch the imposter and the crew scores; if they slip away, they score big.", "A caught imposter can still steal points by naming the character."],
-    uno: ["The 4 anime you pick are the 4 colours. Match the colour, or the attribute or action of the top card.", "Skip, Reverse, +2, Wild and Wild +4 work like classic UNO.", "Specials: Freeze (next player loses 2 turns), Swap Hands, Ultimate (+5) and Future Sight (peek at every hand).", "Down to one card? Hit UNO! before someone catches you, or draw 2."]
+    uno: ["Classic deck: pick exactly 4 anime (red, green, yellow, dark blue). Chaos deck: pick 4 to 8 (adds pink, orange, purple, light blue). Match the colour, or the attribute or action of the top card.", "Skip, Reverse, Wild and Wild +4 work like classic UNO. Draw-2s stack: answer a +2 with a +2 to pass on +4, +6, +8... or take the whole stack.", "Specials: Freeze (next player loses 2 turns), Swap Hands, Ultimate (+5) and Future Sight (peek at every hand).", "Down to one card? Hit UNO! before someone catches you, or draw 2. Empty your hand to take the next place; the round goes on until every place is decided."]
 };
 function showRules(t) {
     const M = MODES[t] || MODES.classic;
@@ -2604,13 +2760,22 @@ const amHost = () => !!currentRoomData && hostSlot(currentRoomData) === Number(m
 const pName = (d, i) => (pNode(d, i) || {}).name || "Player " + i;
 const pPub = (d, i) => pNode(d, i) || { name: "Player " + i };
 function playerChip(d, p, prefix) {
-    const s = hbEl("span", "pchip"); s.style.setProperty("--pc", HB_COLORS[(p - 1) % 6]);
+    const s = hbEl("span", "pchip"); s.style.setProperty("--pc", HB_COLORS[(p - 1) % HB_COLORS.length]);
     if (prefix) s.appendChild(hbEl("i", "pchip-pre", prefix));
     s.appendChild(avatarEl(pPub(d, p), { size: 26 })); s.appendChild(hbEl("b", null, pName(d, p)));
     return s;
 }
 function gwSeats(d) { const s = arr(d && d.gw && d.gw.seats).map(Number); return s.length === 2 ? s : [1, 2]; }
 const gwOther = (d, p) => { const s = gwSeats(d); return s[0] === Number(p) ? s[1] : s[0]; };
+/* Guess Who stays a 1v1 duel; with more than 2 in the room the host picks the duelists (d.gwDuel) and the rest spectate.
+   Until the host picks, the host and the next player duel. [-1] = the host cleared both picks. */
+function gwDuelists(d) {
+    const act = activeSlots(d);
+    if (act.length <= 2) return act.slice();
+    if (!d.gwDuel) return [hostSlot(d), act.find(i => i !== hostSlot(d))];
+    return arr(d.gwDuel).map(Number).filter((x, i, a) => act.includes(x) && a.indexOf(x) === i).slice(0, 2);
+}
+const gwSpectating = d => !!d && (d.gameType || "classic") === "classic" && !!d.status && d.status !== "waiting" && !!(d.gw && d.gw.seats) && !gwSeats(d).includes(Number(myPlayer));
 function matchSeats(d) {
     if (!d) return [];
     switch (d.gameType) {
@@ -2752,7 +2917,7 @@ function emotesSync(d) {
 }
 function showEmote(d, i, e) {
     const b = hbEl("div", "emote-bubble" + (e.length > 2 ? " txt" : ""));
-    b.style.setProperty("--pc", HB_COLORS[(i - 1) % 6]);
+    b.style.setProperty("--pc", HB_COLORS[(i - 1) % HB_COLORS.length]);
     b.appendChild(avatarEl(pPub(d, i), { size: 28 })); b.appendChild(hbEl("span", "emote-e", e));
     const anchor = [...document.querySelectorAll('[data-emote="p' + i + '"]')].find(el => { const r = el.getBoundingClientRect(); return r.width && r.height && r.bottom > 0 && r.top < innerHeight; });
     if (anchor) { const r = anchor.getBoundingClientRect(); b.style.left = Math.min(innerWidth - 90, Math.max(10, r.left + r.width / 2)) + "px"; b.style.top = Math.max(60, r.top) + "px"; b.classList.add("anchored"); }
@@ -2765,9 +2930,9 @@ const PREF_KEY = "gw_lobby_prefs";
 function lobbyPrefs() {
     let p = {}; try { p = JSON.parse(localStorage.getItem(PREF_KEY) || "{}") || {}; } catch (e) {}
     const gameType = MODES[p.gameType] ? p.gameType : "classic";
-    return { gameType, animes: fixSeries(gameType, arr(p.animes).length ? arr(p.animes) : ["onepiece"]), boardSize: [24, 48, 96].includes(Number(p.boardSize)) ? Number(p.boardSize) : 24, difficulty: ["easy", "normal", "hard"].includes(p.difficulty) ? p.difficulty : "normal", rounds: [3, 5, 7, 10].includes(Number(p.rounds)) ? Number(p.rounds) : 5, laps: Number(p.laps) === 2 ? 2 : 1 };
+    return { gameType, animes: fixSeries(gameType, arr(p.animes).length ? arr(p.animes) : ["onepiece"], p.unoDeck), boardSize: [24, 48, 96].includes(Number(p.boardSize)) ? Number(p.boardSize) : 24, difficulty: ["easy", "normal", "hard"].includes(p.difficulty) ? p.difficulty : "normal", rounds: [3, 5, 7, 10].includes(Number(p.rounds)) ? Number(p.rounds) : 5, laps: Number(p.laps) === 2 ? 2 : 1, unoDeck: p.unoDeck === "chaos" ? "chaos" : "classic" };
 }
-function saveLobbyPrefs(d) { try { localStorage.setItem(PREF_KEY, JSON.stringify({ gameType: d.gameType, animes: arr(d.animes), boardSize: d.boardSize, difficulty: d.difficulty, rounds: d.rounds, laps: d.laps })); } catch (e) {} }
+function saveLobbyPrefs(d) { try { localStorage.setItem(PREF_KEY, JSON.stringify({ gameType: d.gameType, animes: arr(d.animes), boardSize: d.boardSize, difficulty: d.difficulty, rounds: d.rounds, laps: d.laps, unoDeck: unoDeckType(d) })); } catch (e) {} }
 function busy(sel, on, label) {
     const b = document.querySelector(sel); if (!b) return;
     if (on) { b.dataset.label = b.dataset.label || b.innerHTML; b.disabled = true; b.textContent = label; b.setAttribute("aria-busy", "true"); }
@@ -2809,7 +2974,7 @@ window.joinRoom = async function () {
                 saveSession(); openLobby(); toast("Welcome back!"); return;
             }
         }
-        if (activeSlots(data).length >= 6) { toast("This room is full (6 players)."); return; }
+        if (activeSlots(data).length >= ROOM_MAX) { toast("This room is full (" + ROOM_MAX + " players)."); return; }
         for (const slot of SLOTS) {
             if (data["player" + slot]) continue;
             const res = await runTransaction(ref(db, "rooms/" + code + "/player" + slot), cur => cur ? undefined : Object.assign({ uid: user.uid, ready: false }, profile.public()));
@@ -2832,10 +2997,10 @@ function lobbySet(patch) {
     if (!room || !currentRoomData || currentRoomData.status !== "waiting" || !amHost()) return;
     update(ref(db, "rooms/" + room), patch).catch(e => { console.error(e); toast("Couldn't save that setting."); });
 }
-function fixSeries(t, keys) {
+function fixSeries(t, keys, deck) {
     keys = arr(keys);
     if (t === "classic") { keys = keys.filter(k => ANIME_LIBRARY[k]); if (!keys.length) keys = ["onepiece"]; }
-    else if (t === "uno") { keys = keys.filter(k => UNO_DECKS[k]).slice(0, 4); for (const k of ["onepiece", "naruto", "dragonball", "jjk", "demonslayer", "bleach"]) { if (keys.length >= 4) break; if (!keys.includes(k)) keys.push(k); } }
+    else if (t === "uno") { keys = keys.filter(k => UNO_DECKS[k]).slice(0, UNO_DECK_RANGE[deck === "chaos" ? "chaos" : "classic"][1]); for (const k of ["onepiece", "naruto", "dragonball", "jjk", "demonslayer", "bleach"]) { if (keys.length >= 4) break; if (!keys.includes(k)) keys.push(k); } }
     else { keys = hbVisibleKeys(keys).filter(k => HB_SERIES[k]); if (!keys.length) keys = ["onepiece"]; }
     return keys;
 }
@@ -2848,7 +3013,7 @@ function pickMode(t) {
     }
     if (d.gameType === t) return;
     sfx("pick");
-    lobbySet({ gameType: t, animes: fixSeries(t, arr(d.animes)) });
+    lobbySet({ gameType: t, animes: fixSeries(t, arr(d.animes), unoDeckType(d)) });
 }
 window.toggleReady = function () {
     if (!room || !currentRoomData) return;
@@ -2867,19 +3032,22 @@ function modeReq(d) {
     if (n > M.max) return { ok: false, msg: M.name + " seats up to " + M.max + " players (" + n + " here). Pick another mode." };
     if (!keys.length) return { ok: false, msg: "Pick at least one series." };
     if (t === "classic") { const tot = keys.reduce((s, k) => s + (ANIME_LIBRARY[k] || []).length, 0), size = Number(d.boardSize) || 24; if (tot < size) return { ok: false, msg: "Those series only have " + tot + " pictures. Tick more series or pick a smaller board." }; }
+    if (t === "classic" && n > 2 && gwDuelists(d).length !== 2) return { ok: false, msg: "Guess Who is a 1v1 duel: pick the 2 duelists (" + gwDuelists(d).length + "/2). Everyone else spectates." };
     if (t === "uno") {
-        if (keys.length !== 4) return { ok: false, msg: "Anime UNO needs exactly 4 series (" + keys.length + "/4 ticked)." };
+        const deck = unoDeckType(d), [lo, hi] = UNO_DECK_RANGE[deck];
+        if (keys.length < lo || keys.length > hi) return { ok: false, msg: deck === "chaos" ? "Chaos deck needs 4 to 8 series (" + keys.length + " ticked)." : "Classic deck needs exactly 4 series (" + keys.length + "/4 ticked)." };
         if (!d.uno || !d.uno.cards || d.uno.key !== unoDeckKey(keys)) return { ok: false, wait: true, msg: amHost() ? "Forging the deck… " + (unoDeckPct || 1) + "%" : "The host is forging the deck…" };
     }
     if (t === "headbanz" || t === "imposter") {
         const packs = d.packs || {}, missing = activeSlots(d).filter(i => Number(packs["p" + i]) < 100 || packs["p" + i] == null);
         if (missing.length) return { ok: false, wait: true, msg: "Loading characters for " + missing.map(i => pName(d, i)).join(", ") + "…" };
     }
-    const extra = t === "headbanz" ? (n === 2 ? " · duo, best of 3" : " · " + (d.rounds || 5) + " rounds") : t === "imposter" ? " · " + n * (Number(d.laps) || 1) + " rounds" : t === "classic" ? " · " + (d.boardSize || 24) + " cards" : " · " + arr(d.uno && d.uno.anime).join(" · ");
+    const extra = t === "headbanz" ? " · " + (d.rounds || 5) + " rounds, everyone at once" : t === "imposter" ? " · " + n * (Number(d.laps) || 1) + " rounds" : t === "classic" ? " · " + (d.boardSize || 24) + " cards" + (n > 2 ? " · " + gwDuelists(d).map(i => pName(d, i)).join(" vs ") + ", " + (n - 2) + " spectating" : "") : " · " + (unoDeckType(d) === "chaos" ? "Chaos" : "Classic") + " deck · " + arr(d.uno && d.uno.anime).join(" · ");
     return { ok: true, msg: M.name + extra };
 }
 let modeCardsBuilt = false, seatSig = "";
 const seatSeen = new Set();
+const modePlayers = M => (M.min === M.max ? M.min : M.min + "–" + M.max) + " players" + (M.seats ? " · " + M.seats : "");
 function buildModeCards() {
     if (modeCardsBuilt) return; modeCardsBuilt = true;
     const box = $("lobbyModes");
@@ -2887,7 +3055,7 @@ function buildModeCards() {
         const b = hbEl("button", "mode-card"); b.dataset.mode = t; b.style.setProperty("--mc", M.color);
         const art = hbEl("div", "mc-art"); M.art.forEach((src, i) => { const im = makeImg(src); im.style.setProperty("--i", i); art.appendChild(im); });
         b.append(art, hbEl("div", "mc-kanji", M.kanji), hbEl("div", "mc-tag", M.tag), hbEl("b", "mc-name", M.name), hbEl("p", "mc-blurb", M.blurb));
-        const foot = hbEl("div", "mc-foot"); foot.append(hbEl("span", "mc-players", M.min === M.max ? M.min + " players" : M.min + "–" + M.max + " players"), hbEl("span", "mc-votes"));
+        const foot = hbEl("div", "mc-foot"); foot.append(hbEl("span", "mc-players", modePlayers(M)), hbEl("span", "mc-votes"));
         b.append(foot, hbEl("div", "mc-sel", "SELECTED"));
         b.onclick = () => pickMode(t);
         b.onmouseenter = () => sfx("hover");
@@ -2899,7 +3067,7 @@ function buildHomeModes() {
     Object.values(MODES).forEach((M, i) => {
         const c = hbEl("div", "hm-card"); c.style.setProperty("--mc", M.color); c.style.setProperty("--i", i);
         const art = hbEl("div", "hm-art"); art.appendChild(makeImg(M.art[0]));
-        c.append(art, hbEl("div", "hm-kanji", M.kanji), hbEl("small", null, M.tag), hbEl("b", null, M.name), hbEl("span", "hm-pl", M.min === M.max ? M.min + "P" : M.min + "–" + M.max + "P"));
+        c.append(art, hbEl("div", "hm-kanji", M.kanji), hbEl("small", null, M.tag), hbEl("b", null, M.name), hbEl("span", "hm-pl", M.min + "–" + M.max + "P" + (M.short ? " · " + M.short : "")));
         const t = Object.keys(MODES).find(k => MODES[k] === M);
         c.tabIndex = 0; c.setAttribute("role", "button"); c.setAttribute("aria-label", M.name + ": how to play");
         c.onclick = () => { sfx("click"); showRules(t); }; c.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); c.click(); } };
@@ -2919,7 +3087,8 @@ function lobbyRender(d) {
     const lm = $("lobbyMatch"); lm.classList.toggle("hidden", !spectating);
     if (spectating) { const G = MODES[d.gameType] || MODES.classic; lm.innerHTML = ""; lm.style.setProperty("--mc", G.color); lm.append(hbEl("span", "lm-k", G.kanji), hbEl("b", null, G.name + " match in progress"), hbEl("span", null, "You're in the room. You'll be dealt into the next match.")); }
     // seats
-    const sig = JSON.stringify([act.map(i => { const p = d["player" + i]; return [i, p.name, p.av && (p.av.u || p.av.g || (p.av.d || "").length), p.col, p.fr, p.ttl, p.lvl, p.lr, p.vote, pres["p" + i], packs["p" + i]]; }), hostSlot(d), me, t, spectating]);
+    const duelists = t === "classic" && act.length > 2 ? gwDuelists(d) : null;
+    const sig = JSON.stringify([act.map(i => { const p = d["player" + i]; return [i, p.name, p.av && (p.av.u || p.av.g || (p.av.d || "").length), p.col, p.fr, p.ttl, p.lvl, p.lr, p.vote, pres["p" + i], packs["p" + i]]; }), hostSlot(d), me, t, spectating, duelists]);
     if (sig !== seatSig) {
         seatSig = sig;
         const box = $("lobbySeats"); box.innerHTML = "";
@@ -2927,13 +3096,14 @@ function lobbyRender(d) {
             const p = d["player" + i], isHost = i === hostSlot(d), off = pres["p" + i] === false;
             const s = hbEl("div", "seat" + (i === me ? " me" : "") + (off ? " off" : "") + (p.lr ? " rdy" : "") + (isHost ? " hosting" : "") + (seatSeen.has(p.uid) ? "" : " enter"));
             seatSeen.add(p.uid);
-            s.style.setProperty("--pc", p.col || HB_COLORS[(i - 1) % 6]); s.dataset.emote = "p" + i;
+            s.style.setProperty("--pc", p.col || HB_COLORS[(i - 1) % HB_COLORS.length]); s.dataset.emote = "p" + i;
             s.appendChild(avatarEl(p, { size: 60, badge: true }));
             const id = hbEl("div", "seat-id"); id.append(hbEl("b", null, p.name || "Player " + i), hbEl("small", null, (p.ttl || "Rookie") + (p.lvl ? " · LV " + p.lvl : "")));
             s.appendChild(id);
             const tags = hbEl("div", "seat-tags");
             if (isHost) tags.appendChild(hbEl("span", "tag host", "👑 HOST"));
             if (i === me) tags.appendChild(hbEl("span", "tag you", "YOU"));
+            if (duelists) tags.appendChild(duelists.includes(i) ? hbEl("span", "tag duel", "⚔ DUELIST") : hbEl("span", "tag spec", "👁 SPECTATOR"));
             if (off) tags.appendChild(hbEl("span", "tag off", "OFFLINE"));
             else if ((t === "headbanz" || t === "imposter") && Number(packs["p" + i]) < 100) tags.appendChild(hbEl("span", "tag dl", "⬇ " + (Number(packs["p" + i]) || 0) + "%"));
             else if (p.lr) tags.appendChild(hbEl("span", "tag rdy", "✔ READY"));
@@ -2942,9 +3112,9 @@ function lobbyRender(d) {
             if (host && i !== me && !spectating) { const k = hbEl("button", "seat-kick", "✕"); k.setAttribute("aria-label", "Remove " + (p.name || "player")); k.onclick = () => kickPlayer(i); s.appendChild(k); }
             box.appendChild(s);
         });
-        const want = Math.min(6, Math.max(M.max, act.length + 1));
+        const want = Math.min(ROOM_MAX, Math.max(Math.min(M.max, 6), act.length + 1));
         for (let k = act.length; k < want; k++) { const e = hbEl("button", "seat empty"); e.append(hbEl("span", "seat-plus", "+"), hbEl("span", null, k === act.length ? "Invite a friend" : "Open seat")); e.onclick = () => copyInviteLink(); box.appendChild(e); }
-        $("seatCount").textContent = act.length + "/6";
+        $("seatCount").textContent = act.length + "/" + ROOM_MAX;
     }
     // modes
     buildModeCards();
@@ -2952,7 +3122,7 @@ function lobbyRender(d) {
         const mt = b.dataset.mode, MM = MODES[mt], fits = act.length >= MM.min && act.length <= MM.max;
         b.classList.toggle("selected", mt === t); b.classList.toggle("unfit", !fits); b.disabled = spectating;
         b.setAttribute("aria-pressed", String(mt === t));
-        b.querySelector(".mc-players").textContent = (MM.min === MM.max ? MM.min + " players" : MM.min + "–" + MM.max + " players") + (fits ? " ✓" : "");
+        b.querySelector(".mc-players").textContent = modePlayers(MM) + (fits ? " ✓" : "");
         const vb = b.querySelector(".mc-votes"); vb.innerHTML = "";
         act.filter(i => (d["player" + i] || {}).vote === mt).forEach(i => vb.appendChild(avatarEl(d["player" + i], { size: 22 })));
     });
@@ -2967,10 +3137,13 @@ function lobbyRender(d) {
     homeDiff = d.difficulty || "normal"; document.querySelectorAll(".dbtn").forEach(b => { b.classList.toggle("selected", b.dataset.d === homeDiff); b.disabled = lock; });
     homeRounds = Number(d.rounds) || 5; document.querySelectorAll(".rbtn").forEach(b => { b.classList.toggle("selected", Number(b.dataset.r) === homeRounds); b.disabled = lock; });
     homeLaps = Number(d.laps) || 1; document.querySelectorAll(".lapbtn").forEach(b => { b.classList.toggle("selected", Number(b.dataset.l) === homeLaps); b.disabled = lock; });
+    document.querySelectorAll(".unobtn").forEach(b => { b.classList.toggle("selected", b.dataset.k === unoDeckType(d)); b.disabled = lock; });
+    gwDuelRenderPick(d, lock || t !== "classic");
     applyModeUI(M.key);   // again, so the 4/4 counter reflects the boxes just ticked
     // background prep for the chosen mode
     if (!spectating && (t === "headbanz" || t === "imposter")) hbPrefetch(keys);
-    if (!spectating && t === "uno" && host && keys.length === 4 && keys.every(k => UNO_DECKS[k]) && !(d.uno && d.uno.cards && d.uno.key === unoDeckKey(keys))) unoPrepDeck(keys);
+    const [ulo, uhi] = UNO_DECK_RANGE[unoDeckType(d)];
+    if (!spectating && t === "uno" && host && keys.length >= ulo && keys.length <= uhi && keys.every(k => UNO_DECKS[k]) && !(d.uno && d.uno.cards && d.uno.key === unoDeckKey(keys))) unoPrepDeck(keys);
     // status + start
     const req = modeReq(d), meNode = pNode(d, me) || {};
     $("lobbyStatus").textContent = spectating ? "Hang tight: the current match has to finish first." : req.ok ? (host ? "Ready: " + req.msg + ". Hit START when your squad is set." : "Ready: " + req.msg + ". Waiting for " + pName(d, hostSlot(d)) + " to start.") : req.msg;
@@ -2986,7 +3159,7 @@ $("animePoll").addEventListener("change", e => {
     const d = currentRoomData;
     if (!d || !amHost() || d.status !== "waiting") { if (d) { seatSig = ""; lobbyRender(d); } return; }
     const keys = [...document.querySelectorAll("#animePoll input:checked")].map(c => c.value);
-    if (d.gameType === "uno" && keys.length > 4) { inp.checked = false; toast("Anime UNO uses exactly 4 series. Untick one first."); return; }
+    if (d.gameType === "uno" && keys.length > UNO_DECK_RANGE[unoDeckType(d)][1]) { inp.checked = false; toast(unoDeckType(d) === "chaos" ? "The Chaos deck takes up to 8 series. Untick one first." : "The Classic deck uses exactly 4 series. Untick one first, or switch to the Chaos deck."); return; }
     if (!keys.length) { inp.checked = true; toast("Keep at least one series."); return; }
     sfx("toggle");
     lobbySet({ animes: keys });
@@ -3006,8 +3179,8 @@ window.startGame = async function () {
     } finally { setTimeout(() => { if (sb) sb.disabled = false; }, 800); }
 };
 async function gwStart() {
-    const d = currentRoomData, seats = activeSlots(d).slice(0, 2), keys = arr(d.animes), size = Number(d.boardSize) || 24;
-    if (seats.length !== 2) { toast("Guess Who needs exactly 2 players."); return; }
+    const d = currentRoomData, seats = gwDuelists(d), keys = arr(d.animes), size = Number(d.boardSize) || 24;
+    if (seats.length !== 2) { toast("Pick the 2 duelists first."); return; }
     const first = seats[(Math.random() * 2) | 0];
     const upd = { gw: { seats: seats, first: first }, board: pickBalanced(keys, size).map((image, i) => ({ id: "c" + i, image })), boardSize: size, status: "selecting", turn: first,
         guess: null, revealed: null, private: null, winner: null, result: null, guessedCharacter: null, finishedAt: null, matchId: Date.now() };
@@ -3152,15 +3325,23 @@ function hostDuties(d) {
         return;
     }
     if (t === "uno" && d.uno && d.uno.phase === "play") {
-        const tp = Number(d.uno.turn);
-        if (d["player" + tp] && d["player" + tp].left) unoTx(u => { if (u.phase !== "play" || u.turn !== tp) return false; u.drew = null; u.msg = u.names["p" + tp] + " left, turn skipped."; u.turn = unoAdv(u, tp, 1); u.n++; });
+        // (deferred: a transaction started inside the room listener would re-fire it with an older snapshot)
+        const tp = Number(d.uno.turn), gone = arr(d.uno.seats).map(Number).filter(p => d["player" + p] && d["player" + p].left);
+        const out = arr(d.uno.out).map(Number), stillIn = arr(d.uno.seats).map(Number).filter(p => !out.includes(p));
+        if (gone.length && stillIn.filter(p => !gone.includes(p)).length <= 1 && stillIn.length > 1) {
+            const k = "s" + d.matchId + ":" + d.uno.n; if (unoDutyKey !== k) { unoDutyKey = k; setTimeout(() => unoTx(u => unoSettle(u, gone)), 0); }
+        } else if (gone.includes(tp)) {
+            const k = "l" + d.matchId + ":" + d.uno.n; if (unoDutyKey !== k) { unoDutyKey = k; setTimeout(() => unoTx(u => unoSkipTurn(u, tp, " left, turn skipped.")), 0); }
+        }
     }
+    if (t === "classic" && d.status === "selecting" && gwSeats(d).every(s => pNode(d, s) && pNode(d, s).ready === true)) setTimeout(beginPlaying, 0);
 }
+let unoDutyKey = "";
 function resetMatchState() {
     guessMode = false; awaitingGuess = false; resultShown = false; gameScreenWasShown = false; renderedBoardSignature = ""; lastSfxTurn = null;
     if (unsubReveal) { unsubReveal(); unsubReveal = null; }
     unoSeen = { n: -1, over: "", hl: -1, top: -1, round: -1, ev: null, turn: 0 }; unoPick = null; unoFx.clear();
-    hbRoundKey = ""; hbSig = ""; imSig = ""; hbSeen = { wrong: 0, order: 0, done: false, phase: "" }; imSeen = { phase: "", round: 0 };
+    hbRoundKey = ""; hbSig = ""; imSig = ""; specSig = ""; hbSeen = { wrong: 0, order: 0, done: false, phase: "" }; imSeen = { phase: "", round: 0 };
     ["hbPicker", "imPicker", "unoColor", "unoTarget", "unoOver"].forEach(id => $(id).classList.add("hidden"));
     ["unoFx", "unoPeek"].forEach(id => { const e = $(id); if (e) e.remove(); });
     $("rematchPanel").classList.add("hidden"); $("oppBanner").classList.add("hidden");
@@ -3177,13 +3358,14 @@ function matchIntro(d) {
 }
 let lastStatus = "";
 function route(d) {
-    const st = d.status || "waiting";
-    if (st === "waiting" || !inMatch(d)) {
+    const st = d.status || "waiting", spec = gwSpectating(d);
+    if (st === "waiting" || (!inMatch(d) && !spec)) {
         if ($("lobby").classList.contains("hidden")) { resetMatchState(); showOnly("lobby"); seatSig = ""; }
         lastStatus = st; lobbyRender(d); return;
     }
     if (lastStatus === "waiting" || lastStatus === "") { resetMatchState(); }
     lastStatus = st;
+    if (spec) { showGwSpec(d); return; }
     matchIntro(d);
     if (d.gameType === "uno") { showUNO(d); return; }
     if (d.gameType === "headbanz") { showHB(d); return; }
@@ -3192,9 +3374,7 @@ function route(d) {
         if (!$("result").classList.contains("hidden")) { closeResults(); resultShown = false; }
         if ($("secret").classList.contains("hidden")) showSecretScreen(d);
         else secretWaitUpdate(d);
-        const seats = gwSeats(d);
-        if (amHost() && seats.every(s => pNode(d, s) && pNode(d, s).ready === true)) beginPlaying();
-        return;
+        return;      // (the host starts the case once both secrets are locked in: hostDuties)
     }
     if (st === "playing") { showGameScreen(d); return; }
     if (st === "finished") showResultScreen(d);
@@ -3310,12 +3490,22 @@ function applyPrank(card) {
     }
 }
 function suspectsLeft() { return document.querySelectorAll("#board .card:not(.eliminated)").length; }
+/* each duelist's crossed-out cards go to gw/elim/p<slot> so spectators can follow both boards live (secrets never leave private/) */
+let gwElimT = 0;
+function gwElimPush() {
+    clearTimeout(gwElimT);
+    gwElimT = setTimeout(() => {
+        const d = currentRoomData; if (!room || !d || d.status !== "playing" || !gwSeats(d).includes(Number(myPlayer))) return;
+        const list = [...document.querySelectorAll("#board .card")].map((c, i) => c.classList.contains("eliminated") ? i : -1).filter(i => i >= 0);
+        update(ref(db, "rooms/" + room + "/gw/elim"), { ["p" + myPlayer]: list.length ? list : null }).catch(() => {});
+    }, 150);
+}
 function flipCard(card) {
     if (card.classList.contains("flipping")) return;
     card.classList.add("flipping");
     const out = !card.classList.contains("eliminated");
     sfx(out ? "stamp" : "flip");
-    setTimeout(() => { card.classList.toggle("eliminated"); applyPrank(card); saveElim(); gwDuelRender(currentRoomData); }, 150);
+    setTimeout(() => { card.classList.toggle("eliminated"); applyPrank(card); saveElim(); gwElimPush(); gwDuelRender(currentRoomData); }, 150);
     setTimeout(() => card.classList.remove("flipping"), 360);
 }
 window.toggleNames = function () {
@@ -3347,6 +3537,7 @@ function renderBoard() {
         card.onclick = act; card.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act(); } };
         element.appendChild(card);
     });
+    if (elim.length) gwElimPush();      // restored after a refresh: make sure the spectators have it too
 }
 function gwDuelRender(data) {
     const box = $("gwDuel"); if (!box || !data) return;
@@ -3354,7 +3545,7 @@ function gwDuelRender(data) {
     const seats = gwSeats(data), turn = Number(data.turn), tc = (data.gw && data.gw.tc) || {};
     seats.forEach((s, k) => {
         const c = hbEl("div", "duel" + (turn === s ? " on" : "") + (s === Number(myPlayer) ? " me" : "")); c.dataset.emote = "p" + s;
-        c.style.setProperty("--pc", (pNode(data, s) || {}).col || HB_COLORS[(s - 1) % 6]);
+        c.style.setProperty("--pc", (pNode(data, s) || {}).col || HB_COLORS[(s - 1) % HB_COLORS.length]);
         c.appendChild(avatarEl(pPub(data, s), { size: 42, badge: true }));
         const id = hbEl("div", "duel-id"); id.appendChild(hbEl("b", null, pName(data, s)));
         id.appendChild(hbEl("small", null, s === Number(myPlayer) ? suspectsLeft() + " suspects left" : "turns: " + ((Number(tc["p" + s]) || 0) + (turn === s ? 1 : 0))));
@@ -3362,6 +3553,78 @@ function gwDuelRender(data) {
         if (k === 0) box.appendChild(hbEl("i", "duel-vs", "VS"));
     });
 }
+/* ---------- lobby: the host picks the two duelists when more than 2 are in the room ---------- */
+function gwDuelRenderPick(d, lock) {
+    const act = activeSlots(d), box = $("gwDuelBox"), show = (d.gameType || "classic") === "classic" && act.length > 2;
+    box.classList.toggle("hidden", !show); if (!show) return;
+    const pick = gwDuelists(d), wrap = $("gwDuelPick"), sig = JSON.stringify([act.map(i => [i, pName(d, i)]), pick, lock]);
+    if (wrap.dataset.sig === sig) return; wrap.dataset.sig = sig; wrap.innerHTML = "";
+    act.forEach(i => {
+        const on = pick.includes(i), b = hbEl("button", "duel-opt" + (on ? " on" : "")); b.disabled = lock;
+        b.style.setProperty("--pc", (pNode(d, i) || {}).col || HB_COLORS[(i - 1) % HB_COLORS.length]);
+        b.setAttribute("aria-pressed", String(on)); b.appendChild(avatarEl(pPub(d, i), { size: 30 }));
+        const t = hbEl("span", "duel-opt-t"); t.append(hbEl("b", null, pName(d, i)), hbEl("small", null, on ? "⚔ DUELIST " + (pick.indexOf(i) + 1) : "👁 spectator")); b.appendChild(t);
+        b.onclick = () => gwPickDuelist(i); wrap.appendChild(b);
+    });
+}
+window.gwPickDuelist = function (i) {
+    const d = currentRoomData; if (!d || !amHost() || d.status !== "waiting") return;
+    let cur = gwDuelists(d);
+    if (cur.includes(i)) cur = cur.filter(x => x !== i); else { cur.push(i); if (cur.length > 2) cur.shift(); }
+    sfx("pick"); lobbySet({ gwDuel: cur.length ? cur : [-1] });
+};
+
+/* ---------- spectators: both boards live, never a secret ----------
+   Spectators only read the public board and each duelist's crossed-out list (gw/elim). They never fetch
+   private/, never get the end-of-match reveal and the accused card is not marked for them. */
+let specSig = "", specIntro = null;
+function showGwSpec(d) {
+    const wasHidden = $("gwSpec").classList.contains("hidden");
+    showOnly("gwSpec");
+    const seats = gwSeats(d), st = d.status, brd = arr(d.board), elim = (d.gw && d.gw.elim) || {}, turn = Number(d.turn);
+    if (specIntro !== d.matchId) {
+        specIntro = d.matchId;
+        if (wasHidden) titleCard({ kicker: "CASE FILE · SPECTATING", title: "WATCH THE DUEL", sub: pName(d, seats[0]) + " vs " + pName(d, seats[1]), kanji: "観", color: "#f2b33d", ms: 1700 });
+    }
+    const left = s => brd.length - arr(elim["p" + s]).length;
+    const duel = $("gwSpecDuel"); duel.innerHTML = "";
+    seats.forEach((s, k) => {
+        const c = hbEl("div", "duel" + (st === "playing" && turn === s ? " on" : "") + (st === "finished" && Number(d.winner) === s ? " on" : "")); c.dataset.emote = "p" + s;
+        c.style.setProperty("--pc", (pNode(d, s) || {}).col || HB_COLORS[(s - 1) % HB_COLORS.length]);
+        c.appendChild(avatarEl(pPub(d, s), { size: 42, badge: true }));
+        const id = hbEl("div", "duel-id"); id.appendChild(hbEl("b", null, pName(d, s)));
+        id.appendChild(hbEl("small", null, st === "selecting" ? ((pNode(d, s) || {}).ready ? "🔒 locked in" : "choosing…") : left(s) + " suspects left"));
+        c.appendChild(id); duel.appendChild(c);
+        if (k === 0) duel.appendChild(hbEl("i", "duel-vs", "VS"));
+    });
+    const w = Number(d.winner);
+    $("gwSpecTurn").textContent = st === "selecting" ? "Picking secrets" : st === "playing" ? pName(d, turn) + "'s turn" : "🏆 " + pName(d, w) + " wins";
+    $("gwSpecStatus").textContent = st === "selecting" ? "Both duelists are choosing their secret character. You'll never see who they pick."
+        : st === "playing" ? pName(d, turn) + " is asking a question. Watch the boards change live."
+        : d.result === "correct" ? pName(d, w) + " named " + pName(d, gwOther(d, w)) + "'s character. Case closed." : pName(d, gwOther(d, w)) + " made a wrong accusation, so " + pName(d, w) + " takes it.";
+    // boards: built once per board, then only the crossed-out marks change
+    const boards = $("gwSpecBoards"), bsig = brd.map(c => c.id + c.image).join("|") + "#" + seats.join(",");
+    if (specSig !== bsig) {
+        specSig = bsig; boards.innerHTML = "";
+        const cols = brd.length > 48 ? 12 : brd.length > 24 ? 8 : 6;
+        seats.forEach(s => {
+            const sec = hbEl("section", "spec-board"); sec.dataset.p = s; sec.style.setProperty("--pc", (pNode(d, s) || {}).col || HB_COLORS[(s - 1) % HB_COLORS.length]);
+            const head = hbEl("header", "spec-head"); head.append(playerChip(d, s), hbEl("span", "spec-left")); sec.appendChild(head);
+            const grid = hbEl("div", "spec-grid"); grid.style.setProperty("--cols", cols);
+            brd.forEach((ch, i) => { const c = hbEl("div", "card spec-card"); c.dataset.i = i; c.style.setProperty("--i", i % 24); c.appendChild(makeImg(ch.image)); c.appendChild(hbEl("span", "elim-stamp", "OUT")); addName(c, ch.image); grid.appendChild(c); });
+            sec.appendChild(grid); boards.appendChild(sec);
+        });
+    }
+    boards.querySelectorAll(".spec-board").forEach(sec => {
+        const s = Number(sec.dataset.p), out = new Set(arr(elim["p" + s]).map(Number));
+        sec.classList.toggle("on", st === "playing" && turn === s); sec.classList.toggle("champ", st === "finished" && w === s);
+        sec.querySelector(".spec-left").textContent = (brd.length - out.size) + " / " + brd.length + " still possible";
+        sec.querySelectorAll(".spec-card").forEach(c => c.classList.toggle("eliminated", out.has(Number(c.dataset.i))));
+    });
+    const foot = $("gwSpecFoot"); foot.innerHTML = "";
+    if (st === "finished") foot.appendChild(endButtons(true));
+}
+
 function updateGameHeader(data) {
     const turnPlayer = Number(data.turn);
     $("turnText").textContent = turnPlayer === Number(myPlayer) ? "Your turn" : pName(data, turnPlayer) + "'s turn";
@@ -3478,7 +3741,7 @@ async function showResultScreen(data) {
     // reveal: both secret characters, face down until each player reveals theirs
     const rev = hbEl("div", "versus");
     [me, opp].forEach((s, k) => {
-        const f = hbEl("div", "fighter" + (s === w ? " champ" : "")); f.style.setProperty("--pc", (pNode(data, s) || {}).col || HB_COLORS[(s - 1) % 6]);
+        const f = hbEl("div", "fighter" + (s === w ? " champ" : "")); f.style.setProperty("--pc", (pNode(data, s) || {}).col || HB_COLORS[(s - 1) % HB_COLORS.length]);
         const who = hbEl("div", "who"); who.appendChild(avatarEl(pPub(data, s), { size: 34 })); who.appendChild(hbEl("b", null, (s === me ? "Your" : pName(data, s) + "'s") + " secret"));
         const por = hbEl("div", "portrait"); const img = new Image(); img.alt = ""; img.id = "resultImg_" + s; por.appendChild(img);
         f.append(who, por, Object.assign(hbEl("div", "cap", "???"), { id: "resultCap_" + s }));
@@ -3538,7 +3801,7 @@ window.rematch = async function (quick) {
     if (seats.some(s => !pNode(d, s) || pNode(d, s).left)) { toast("Your opponent left. Head back to the lobby to pick a new match."); return; }
     const first = Number(d.winner) ? gwOther(d, d.winner) : seats[0];      // the loser opens the next case
     const upd = { status: "selecting", board: pickBalanced(keys, size).map((image, i) => ({ id: "c" + i, image })), boardSize: size, animes: keys,
-        winner: null, result: null, guessedCharacter: null, finishedAt: null, guess: null, revealed: null, turn: first, "gw/first": first, "gw/tc": null, matchId: Date.now() };
+        winner: null, result: null, guessedCharacter: null, finishedAt: null, guess: null, revealed: null, turn: first, "gw/first": first, "gw/tc": null, "gw/elim": null, matchId: Date.now() };
     seats.forEach(s => { upd["player" + s + "/ready"] = false; });
     try { await update(ref(db, "rooms/" + room), upd); } catch (e) { console.error(e); toast("Could not start the rematch."); }
 };

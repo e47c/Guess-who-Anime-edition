@@ -187,3 +187,40 @@
     .duel b { max-width: 8ch; }
     .versus { grid-template-columns: 1fr 1fr; } .vs { display: none; }
 }
+
+/* ===== Guess Who: duelist picker (lobby, more than 2 players) ===== */
+.duel-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.duel-opt { --pc: var(--accent); display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 6px; border: 0; border-radius: 99px; cursor: pointer; text-align: left; color: var(--paper); background: rgba(246,239,227,.05); box-shadow: inset 0 0 0 1px var(--line); transition: transform .2s var(--e-out), box-shadow .2s, background .2s; }
+.duel-opt .ava { --ac: var(--pc); flex: none; }
+.duel-opt-t { min-width: 0; }
+.duel-opt b { display: block; font: 700 15px/1.05 var(--f-ui); max-width: 11ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.duel-opt small { display: block; font: 600 10px/1.2 var(--f-mono); letter-spacing: .06em; color: var(--muted); }
+.duel-opt:hover:not(:disabled) { transform: translateY(-2px); background: rgba(246,239,227,.1); }
+.duel-opt.on { background: linear-gradient(100deg, color-mix(in srgb, var(--pc) 34%, #000), rgba(0,0,0,.5)); box-shadow: inset 0 0 0 2px var(--pc), 0 0 18px color-mix(in srgb, var(--pc) 35%, transparent); }
+.duel-opt.on small { color: #f2b33d; }
+.duel-opt:disabled { cursor: default; }
+
+/* ===== Guess Who: spectator view ===== */
+#gwSpec { min-height: 100vh; padding-bottom: 40px; }
+.spec-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 99px; background: rgba(0,0,0,.5); box-shadow: inset 0 0 0 1px var(--accent); color: var(--accent); font: 700 12px/1 var(--f-mono); letter-spacing: .12em; animation: specPulse 2.4s ease-in-out infinite; }
+@keyframes specPulse { 50% { box-shadow: inset 0 0 0 1px var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); } }
+.spec-boards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 18px; width: 97%; max-width: 1450px; margin: 16px auto 0; }
+.spec-board { --pc: var(--accent); padding: 12px; border-radius: 10px; background: rgba(8,6,10,.72); box-shadow: inset 0 0 0 1px var(--line), 0 18px 40px rgba(0,0,0,.45); transition: box-shadow .35s var(--e-out), transform .35s var(--e-out); }
+.spec-board.on { box-shadow: inset 0 0 0 2px var(--pc), 0 0 30px color-mix(in srgb, var(--pc) 35%, transparent), 0 18px 40px rgba(0,0,0,.45); transform: translateY(-2px); }
+.spec-board.champ { box-shadow: inset 0 0 0 3px #ffd45a, 0 0 40px rgba(255,212,90,.4); }
+.spec-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.spec-left { font: 700 12px/1 var(--f-mono); letter-spacing: .08em; color: var(--muted); }
+.spec-board.on .spec-left { color: var(--pc); }
+.spec-grid { display: grid; grid-template-columns: repeat(var(--cols, 6), 1fr); gap: 5px; }
+.spec-card { cursor: default; border-radius: 4px; }
+.spec-card:hover { transform: none; }
+.spec-card .elim-stamp { font-size: 9px; }
+.spec-foot { display: flex; justify-content: center; margin-top: 18px; }
+@media (max-width: 760px) { .spec-grid { grid-template-columns: repeat(min(var(--cols, 6), 6), 1fr); gap: 3px; } .spec-badge { display: none; } }
+
+/* ===== Headbanz: 5 to 8 players at the table ===== */
+.hb-cards.many { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 18px 12px; }
+.hb-cards.many .hb-pic { max-height: 24vh; }
+.hb-cards.many .hb-name { font-size: 19px; }
+.hb-cards.many .hb-q { font-size: clamp(72px, 11vw, 110px); }
+.hb-pcard:nth-child(5) { animation-delay: .32s; } .hb-pcard:nth-child(6) { animation-delay: .4s; } .hb-pcard:nth-child(7) { animation-delay: .48s; } .hb-pcard:nth-child(8) { animation-delay: .56s; }
