@@ -24,8 +24,6 @@ const PRESETS = {
     hb:    { n: 26, kinds: [["orb", 1]], cols: ["#b06bff", "#3ee8ff", "#ff6bd6"], links: true },
     im:    { n: 40, kinds: [["ash", .85], ["spark", .15]], cols: ["#9a8f86", "#c9bfb4", "#ff3355"] },
     uno:   { n: 44, kinds: [["ember", .7], ["spark", .3]], cols: ["#ffcf4a", "#ff6a1a", "#ffffff"] },
-    vy:    { n: 34, kinds: [["mote", .75], ["orb", .25]], cols: ["#7ff6e6", "#f4c76a", "#bfe9ff"] },
-    vyb:   { n: 40, kinds: [["ember", .7], ["spark", .3]], cols: ["#ff5a5a", "#ff9f1c", "#7ff6e6"] },
     none:  { n: 0, kinds: [], cols: [] }
 };
 const ambient = (() => {

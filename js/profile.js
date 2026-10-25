@@ -15,7 +15,6 @@ export const TITLES = [
     { id: "yonko", name: "Yonko", lvl: 13 }, { id: "special", name: "Special Grade", lvl: 16 }, { id: "king", name: "Pirate King", lvl: 20 },
     { id: "detective", name: "Great Detective", ach: "gw_fast" }, { id: "mind", name: "Mind Reader", ach: "hb_flawless" },
     { id: "liar", name: "Master of Lies", ach: "im_escape" }, { id: "shark", name: "Card Shark", ach: "uno_special" }, { id: "hype", name: "Hype Man", ach: "hype" },
-    { id: "legend", name: "Sea Legend", ach: "vy_win" }, { id: "mutineer", name: "Mutineer", ach: "vy_mutiny" },
     { id: "ui", name: "Ultra Instinct", ach: "secret", hidden: true }
 ];
 export const FRAMES = [
@@ -39,15 +38,11 @@ export const ACH = [
     { id: "uno_win", icon: "🃏", name: "Clean Hands", desc: "Win a round of Anime UNO." },
     { id: "uno_special", icon: "💥", name: "Ultimate Finisher", desc: "Win UNO with a special card as your last card." },
     { id: "uno_villain", icon: "😈", name: "Villain Arc", desc: "Play a Wild +4." },
-    { id: "vy_win", icon: "🏴‍☠️", name: "Legend of the Seas", desc: "Claim the Legendary Treasure in Grand Voyage." },
-    { id: "vy_secret", icon: "📜", name: "Secret Ambition", desc: "Complete your hidden objective on a voyage." },
-    { id: "vy_mutiny", icon: "🗡️", name: "Mutiny!", desc: "Succeed as the mutineer." },
-    { id: "vy_unmask", icon: "🔥", name: "Truth by Firelight", desc: "Unmask the real mutineer at the campfire." },
     { id: "hype", icon: "📣", name: "Hype Man", desc: "Send 25 reactions." },
     { id: "new_look", icon: "🪞", name: "New Look", desc: "Pick a profile picture." },
     { id: "secret", icon: "🌀", name: "Ultra Instinct", desc: "Found a hidden technique on the main menu.", hidden: true }
 ];
-const MODE_KEYS = ["gw", "hb", "im", "uno", "vy"];
+const MODE_KEYS = ["gw", "hb", "im", "uno"];
 
 /* ---------------- storage ---------------- */
 function blank() {

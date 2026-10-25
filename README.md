@@ -1,6 +1,6 @@
 # Guess Who: Anime Edition
 
-A browser party game for 2 to 6 friends with five anime modes in one room:
+A browser party game for 2 to 6 friends with four anime modes in one room:
 
 | Mode | Players | Identity |
 |---|---|---|
@@ -8,19 +8,6 @@ A browser party game for 2 to 6 friends with five anime modes in one room:
 | **Headbanz** | 2–4 | *Mind Link*: psychic synthwave, violet and cyan |
 | **Imposter** | 3–6 | *Shadow Trial*: interrogation spotlight, crimson |
 | **Anime UNO** | 2–6 | *Arena Clash*: card-battle arena tinted by the active colour |
-| **Grand Voyage** | 2–6 | *Uncharted Route*: night-ocean chart, sea-shanty soundtrack, war drums in battle |
-
-## Grand Voyage
-
-A shared adventure with a secret agenda. The crew sails one hidden map together (4, 6 or 8 legs, then a boss):
-
-- **Route votes.** Each leg everyone votes on the next node (battle, elite, mystery, treasure, market, shrine). The helm rotates and breaks ties. Fog hides nodes more than 2 legs ahead unless a Navigator is aboard.
-- **Battles.** Everyone secretly picks Attack, Guard or Hold back, and the choices are revealed together. Guards shield the crew, fighters split the spoils, and the top fighter gets a relic. Hold back and you stay safe but get nothing.
-- **Social play.** Between fights you can give, trade (offer/accept) or steal from crewmates. Thieves may be seen. Treasure chests are split-or-grab: if exactly one player grabs, they take it all.
-- **Hidden objectives.** Each player has a secret ambition (hoard gold, never attack, out-earn a rival, …). In crews of 3+ there may be a **Mutineer**. The campfire before the boss is the one chance to unmask them.
-- **The Legendary Treasure** goes to the player with the most renown (gold, relics, deeds, completed objective), even if the crew is shipwrecked.
-
-Code: `js/voyage/data.js` (roles, relics, objectives, events, enemies per series), `js/voyage/logic.js` (pure rules engine, seeded RNG, every move is one RTDB transaction on `rooms/<code>/vy`), `js/voyage/ui.js` (screen and cinematics), `css/voyage.css`. New events, relics or enemies are table entries in `data.js`.
 
 ## Customising
 

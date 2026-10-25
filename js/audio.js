@@ -149,11 +149,7 @@ const FX = {
     rush(o, t) { for (let i = 0; i < 10; i++) { V.kick(o, t + i * .07, .7); V.snare(o, t + i * .07 + .02, .45, .05); } },
     slash(o, t) { V.sweep(o, t, 1200, 7000, .18, 1, 2); V.sweep(o, t + .12, 4000, 500, .3, .7, 1); },
     warp(o, t) { V.sweep(o, t, 200, 3000, .4, .8, 7); V.sweep(o, t + .3, 3000, 150, .4, .7, 7); V.bell(o, t + .35, 84, .5, 1.4); },
-    drum(o, t) { V.tom(o, t, 90, 1.3); V.tom(o, t + .25, 70, 1.1); V.kick(o, t, 1); },
-    // Grand Voyage
-    coin(o, t) { V.bell(o, t, 88, .6, .6); V.bell(o, t + .07, 95, .5, .7); V.hat(o, t, .4); },
-    sail(o, t) { V.sweep(o, t, 260, 1100, 1.1, .7, 1.1); V.bell(o, t + .15, 74, .5, 2); V.bell(o, t + .45, 81, .4, 2); },
-    heal(o, t) { [79, 83, 86, 91].forEach((m, i) => V.bell(o, t + i * .08, m, .55, 1.8)); V.sweep(o, t, 1200, 5000, .6, .35, 3); }
+    drum(o, t) { V.tom(o, t, 90, 1.3); V.tom(o, t + .25, 70, 1.1); V.kick(o, t, 1); }
 };
 // the old two-oscillator "tone" helper, now routed through the sfx bus so volume settings apply
 function tone(f1, f2, dur, type = "square", vol = .06, delay = 0) {
@@ -190,15 +186,7 @@ const THEMES = {
     // Anime UNO: arena battle drums
     uno: { bpm: 140, swing: 0, root: 55, prog: [[0, 7, 12], [-4, 3, 8], [-2, 5, 10], [-7, 0, 5]], scale: [0, 3, 5, 7, 10, 12, 15],
         kick: P("o...x...o...x.x."), snare: P("....o.......o..."), hat: P("x.x.x.x.x.x.x.x."), toms: true, bassPat: [0, null, 0, 12, 0, null, 0, 10, 0, null, 0, 12, 0, 7, 10, 12],
-        bassWave: "sawtooth", bassCut: 650, chords: "stab", chordHits: [0, 3, 10], lead: "pluck", leadEvery: 2, leadWave: "sawtooth", leadVol: .55 },
-    // Grand Voyage: a rolling sea shanty in D dorian
-    vy: { bpm: 96, swing: .22, root: 50, prog: [[0, 3, 7], [-2, 2, 5], [-4, 0, 3], [-2, 2, 5]], scale: [0, 2, 3, 5, 7, 9, 10, 12],
-        kick: P("o.....x.o.....x."), snare: P("....x.......x..."), hat: P("x.xx.xx.xx.xx.x."), hatVol: .32, bassPat: [0, null, null, 7, null, null, 0, null, null, 7, null, null, 12, null, 7, null],
-        bassWave: "triangle", bassCut: 800, chords: "keys", chordHits: [0, 6, 12], lead: "pluck", leadEvery: 2, leadWave: "triangle", leadVol: .65 },
-    // Grand Voyage battles: war drums on deck
-    vyb: { bpm: 128, swing: 0, root: 45, prog: [[0, 7, 12], [1, 8, 13], [0, 7, 12], [-2, 5, 10]], scale: [0, 1, 3, 5, 7, 8, 10, 12],
-        kick: P("o..xo..xo..xo.x."), snare: P("....o.......o..o"), hat: P("x.x.x.x.x.x.x.x."), toms: true, bassPat: [0, null, 0, null, 0, null, 0, 1, 0, null, 0, null, 0, 12, 10, 7],
-        bassWave: "sawtooth", bassCut: 520, chords: "stab", chordHits: [0, 6, 12], lead: "pluck", leadEvery: 2, leadWave: "square", leadVol: .45 }
+        bassWave: "sawtooth", bassCut: 650, chords: "stab", chordHits: [0, 3, 10], lead: "pluck", leadEvery: 2, leadWave: "sawtooth", leadVol: .55 }
 };
 let rngSeed = 7; const rnd = () => (rngSeed = (rngSeed * 16807) % 2147483647) / 2147483647;
 const music = {

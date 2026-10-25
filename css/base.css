@@ -32,7 +32,6 @@ body[data-scene="gw"]  { --accent: #f2b33d; --accent-2: #2fb3a4; --on-accent: #1
 body[data-scene="hb"]  { --accent: #b06bff; --accent-2: #3ee8ff; --on-accent: #fff; }
 body[data-scene="im"]  { --accent: #ff3355; --accent-2: #e8dcc8; --on-accent: #fff; }
 body[data-scene="uno"] { --accent: #ffcf4a; --accent-2: #e11b1b; --on-accent: #1a0a00; }
-body[data-scene="vy"]  { --accent: #3ee6c8; --accent-2: #f4c76a; --on-accent: #032421; }
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
