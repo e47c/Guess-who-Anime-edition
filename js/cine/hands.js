@@ -2,7 +2,7 @@
    CINE HANDS · anime-style hands for the special-card scenes
    hand(g, x, y, s, ang, pose, o)   a whole hand + forearm/sleeve. Wrist at (x, y), fingers point along -y rotated by ang.
    fist(g, x, y, s, ang, o)          a fist seen from the knuckles (punching AT the camera)
-   s = scale (1 = a hand about 210 px tall). o: { skin, sleeve, flip, view: "back" | "palm", rim, aura, line, haki, tattoo }
+   s = scale (1 = a hand about 210 px tall). o: { skin, sleeve, flip, view: "back" | "palm", rim, aura, line, haki, tattoo, mark }
    Drawn the way TV anime draws hands: long tapered fingers, a squarish palm, one even ink line, a flat base colour with ONE
    hard-edged shadow on the side away from the light (top-left of the screen, whichever way the hand turns), short crease
    strokes at the joints, simple nails. Curled fingers are drawn folded: knuckle caps from the back, fingers lying over the
@@ -164,8 +164,21 @@ export function hand(g, x, y, s, ang, pose, o = {}) {
         if (thumb[2]) crease(thumb[2], .55, 1);
         folds.forEach(fd => { if (fd) crease(fd[1], .6, 1); });
     }
-    if (o.tattoo) { const L = o.tattoo; g.save(); g.fillStyle = rgba(P.ink, .9); g.font = "900 10px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
-        FING.forEach((F, i) => { const sg = fingers[i][0]; if (!sg || !L[i]) return; g.save(); g.translate((sg.x0 + sg.x1) / 2, (sg.y0 + sg.y1) / 2); g.rotate(sg.a); g.scale(fl, 1); g.fillText(L[i], 0, 0); g.restore(); }); g.restore(); }
+    if (o.tattoo && !palm) {      // finger tattoos (back of the hand only): 5 letters = thumb + four fingers in reading order (Law's D E A T H), 4 = fingers only
+        const L = o.tattoo, five = L.length >= 5, ink = "#15121c";
+        const put = (sg, ch, k) => { if (!sg || !ch) return; const mx = sg.x0 + (sg.x1 - sg.x0) * .55, my = sg.y0 + (sg.y1 - sg.y0) * .55, sz = (sg.r0 + sg.r1) * k;
+            g.save(); g.translate(mx, my); g.rotate(sg.a * .4); g.scale(fl, 1); g.font = "900 " + sz.toFixed(1) + "px 'Arial Black', 'Segoe UI Black', Impact, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+            g.lineJoin = "round"; g.strokeStyle = rgba(P.l, .35); g.lineWidth = sz * .12; g.strokeText(ch, 0, 0); g.fillStyle = rgba(ink, .92); g.fillText(ch, 0, 0); g.restore(); };
+        FING.forEach((F, i) => { const sg = fingers[i][0]; put(sg, L[five ? i + 1 : i], sg && sg.knuckle ? .8 : 1.02); });
+        if (five && !Q.thF) put(thumb[1] || thumb[0], L[0], .92);       // a thumb folded behind the fingers hides its letter, as it would
+    }
+    if (o.mark && !palm) {        // Law's mark on the back of the hand: a solid black cross with flared arms
+        g.save(); g.translate(-2, -48); g.scale(fl, 1); g.fillStyle = "#15121c"; g.beginPath();
+        for (let k = 0; k < 4; k++) { const a0 = k * Math.PI / 2, c0 = Math.cos(a0), s0 = Math.sin(a0), P2 = (u, v) => [u * c0 - v * s0, u * s0 + v * c0];
+            const p1 = P2(-3.2, -3.2), p2 = P2(-7.5, -16), p3 = P2(0, -13.5), p4 = P2(7.5, -16), p5 = P2(3.2, -3.2);
+            if (!k) g.moveTo(p1[0], p1[1]); else g.lineTo(p1[0], p1[1]); g.lineTo(p2[0], p2[1]); g.quadraticCurveTo(p3[0], p3[1], p4[0], p4[1]); g.lineTo(p5[0], p5[1]); }
+        g.closePath(); g.fill(); g.restore();
+    }
     // 5) haki coat lightning, rim light, aura
     if (o.haki) { g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = o.haki; g.lineWidth = lw * 1.4; const fr = Math.floor((o.t || 0) * 18);
         for (let i = 0; i < 6; i++) { let bx = -36 + hs(i + fr) * 72, by = -100 + hs(i * 3 + fr) * 100; g.beginPath(); g.moveTo(bx, by); for (let k = 0; k < 4; k++) { bx += (hs(i * 7 + k + fr) - .5) * 28; by += 8 + hs(i * 5 + k + fr) * 13; g.lineTo(bx, by); } g.stroke(); } g.restore(); }

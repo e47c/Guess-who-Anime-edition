@@ -6,7 +6,7 @@
    ===================================================================== */
 import * as K from "./kit.js";
 import { hand, fist, handTips } from "./hands.js";
-const { lin, hit, hs, TAU, mid } = K;
+const { lin, hit, hs, TAU, mid, ss } = K;
 
 const HS = X => X.M * (X.h > X.w ? .0036 : .003);
 const lerpR = (a, b, k) => ({ x: K.mix(a.x, b.x, k), y: K.mix(a.y, b.y, k), w: K.mix(a.w, b.w, k), h: K.mix(a.h, b.h, k) });
@@ -22,23 +22,28 @@ function labels(g, X, a) {
     K.txt(g, X.env.toName.toUpperCase(), B.x + B.w / 2, B.y + B.h + M * .035, M * .028, { font: K.F_UI, fill: "#fff", sw: 3, glow: X.col }); g.restore();
 }
 
-/* ---------- LAW · ROOM, Shambles: "DEATH" fingers, a blue sphere swallows the table, Kikoku cuts both hands out, they swap places ---------- */
+/* ---------- LAW · ROOM, Shambles: the tattooed hand (D E A T H, the cross on its back) grips the air and the blue ROOM dome grows out of
+   the palm until it swallows the table, Kikoku cuts both hands out, then the raised index finger twists: Shambles, they swap places ---------- */
+const LAW_INK = ["D", "E", "A", "T", "H"];   // one letter per digit, thumb first
 const law = {
     col: "#4cc9f0", ms: 7600, fg: 1,
     main(g, X, T) {
         const { w, h, M, gf } = X, t = T.t, s = T.s, A = X.env.A, B = X.env.B, C = "#4cc9f0", R = Math.hypot(w, h) * .6;
         X.cue(.03, "warp", t); X.cue(.22, "boom", t); X.cue(.5, "slash", t); X.cue(.56, "slash", t); X.cue(.72, "warp", t);
         if (t < .2) { K.cutIn(g, X, lin(0, .22, t), { y: .48, hh: .36, dir: 1, ang: -.08, kj: "オペオペの実", name: "TRAFALGAR LAW" }); return; }
-        const room = K.oExpo(lin(.2, .4, t)) * (1 - lin(.92, 1, t)), rad = R * room;
+        const room = K.oExpo(lin(.24, .42, t)) * (1 - lin(.92, 1, t)), rad = R * room, ra = K.oBack(lin(.2, .27, t)) * (1 - lin(.4, .46, t)), hx = w * .66, hy = h * (1.3 - .46 * ra), hs2 = HS(X) * 1.35;
+        const ox = K.mix(hx, w / 2, ss(.24, .4, t)), oy = K.mix(hy - hs2 * 70, h / 2, ss(.24, .4, t));   // the dome is born under his palm, then centres on the table
         K.sky(g, w, h, ["#020c18", "#062238", "#01060c"]);
         if (room > 0) {                                                       // ROOM: a translucent operating sphere over the whole table
-            g.save(); g.beginPath(); g.arc(w / 2, h / 2, rad, 0, TAU); g.clip(); K.radial(g, w / 2, h / 2, rad, ["rgba(20,90,160,.25)", "rgba(40,150,230,.45)"]);
+            g.save(); g.beginPath(); g.arc(ox, oy, rad, 0, TAU); g.clip(); K.radial(g, ox, oy, rad, ["rgba(20,90,160,.25)", "rgba(40,150,230,.45)"]);
             g.strokeStyle = "rgba(140,220,255,.3)"; g.lineWidth = 1; for (let i = -10; i <= 10; i++) { g.beginPath(); g.moveTo(w / 2 + i * M * .1, h); g.lineTo(w / 2 + i * M * .02, h * .55); g.stroke(); } for (let j = 1; j < 10; j++) { const y = h * .55 + Math.pow(j / 10, 2) * h * .5; g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
-            g.restore(); g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = C; g.lineWidth = 3; g.beginPath(); g.arc(w / 2, h / 2, rad, 0, TAU); g.stroke(); g.lineWidth = 1.2;
-            for (let i = 0; i < 7; i++) { g.beginPath(); g.ellipse(w / 2, h / 2, rad * Math.abs(Math.cos(i * .45 + s * .4)), rad, 0, 0, TAU); g.stroke(); } for (let i = 1; i < 6; i++) { g.beginPath(); g.ellipse(w / 2, h / 2, rad, rad * i / 6, 0, 0, TAU); g.stroke(); } g.restore();
+            g.restore(); g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = C; g.lineWidth = 3; g.beginPath(); g.arc(ox, oy, rad, 0, TAU); g.stroke(); g.lineWidth = 1.2;
+            for (let i = 0; i < 7; i++) { g.beginPath(); g.ellipse(ox, oy, rad * Math.abs(Math.cos(i * .45 + s * .4)), rad, 0, 0, TAU); g.stroke(); } for (let i = 1; i < 6; i++) { g.beginPath(); g.ellipse(ox, oy, rad, rad * i / 6, 0, 0, TAU); g.stroke(); } g.restore();
         }
-        if (t < .36) { const a = K.oBack(lin(.2, .28, t)); hand(g, w * .5, h * (1.18 - .22 * a), HS(X) * 1.1, 0, "spread", { view: "back", skin: "tan", tattoo: ["D", "E", "A", "T"], sleeve: { c: "#f4e6b8", s: "#c9b27a", cuff: "#1a1a22", len: 260 } }); K.glow(g, w / 2, h * (1.18 - .22 * a) - HS(X) * 160, M * .1, C, a); }
-        if (t > .22 && t < .44) K.slam(g, "ROOM", w / 2, h * .45, M * .2, lin(.22, .44, t), { fill: "#fff", stroke: "#06304a", glow: C, ghost: 1 });
+        if (t > .2 && t < .46) {                                             // ROOM: fingers spread and bent as if gripping a ball; the sphere starts in that grip
+            const seed = 1 - ss(.22, .3, t); if (seed > 0) { K.glow(g, hx, hy - hs2 * 70, M * .14, C, ra); g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = K.rgba(C, ra * .9); g.lineWidth = 2; g.beginPath(); g.arc(hx, hy - hs2 * 70, M * (.03 + .05 * (1 - seed)), 0, TAU); g.stroke(); g.restore(); }
+            hand(g, hx, hy, hs2, Math.sin(s * 1.6) * .03, "claw", { view: "back", skin: "tan", tattoo: LAW_INK, mark: 1, sleeve: { c: "#f4e6b8", s: "#c9b27a", cuff: "#1a1a22", len: 300 } });
+        }
         const cut = lin(.46, .6, t), sw = K.ioCub(lin(.64, .8, t)), lift = Math.sin(lin(.58, .86, t) * Math.PI) * .6;   // the two hands are cut out and exchanged
         const pa = lerpR(A, B, sw), pb = lerpR(B, A, sw), arc = Math.sin(sw * Math.PI) * M * .18;
         X.place(0, { x: pa.x, y: pa.y - arc, w: pa.w, h: pa.h }, t > .4 ? 1 : 0, lift, sw * 360); X.place(1, { x: pb.x, y: pb.y + arc, w: pb.w, h: pb.h }, t > .4 ? 1 : 0, lift, -sw * 360);
@@ -46,11 +51,12 @@ const law = {
         if (cut > 0 && cut < 1) [A, B].forEach((r, i) => { const L = Math.hypot(r.w, r.h) * 1.6, c = mid(r), an = i ? -.5 : .4, e = K.oExpo(lin(i * .3, i * .3 + .5, cut)); gf.save(); gf.translate(c.x, c.y); gf.rotate(an); gf.globalCompositeOperation = "lighter"; gf.strokeStyle = "#ffffff"; gf.lineWidth = 4 * (1 - cut) + 1; gf.shadowColor = C; gf.shadowBlur = 20; gf.beginPath(); gf.moveTo(-L / 2, 0); gf.lineTo(-L / 2 + L * e, 0); gf.stroke(); gf.restore(); });
         if (sw > 0 && sw < 1) [pa, pb].forEach(p => { const c = mid(p); K.glow(gf, c.x, c.y, M * .2, C, .5); });
         K.katana(g, w * .08, h * 1.1, -1.1 + 1.6 * K.ioCub(cut), M * 1.1, { blade: ["#f4f7ff", "#9aa6c0", "#3a4258"], guard: "#d9b44a", wrap: "#16141a", wrapLine: "#f2f2f2", tsuba: "cross", hilt: 1.45, glow: cut > 0 && cut < 1 ? C : null, s });   // Kikoku, the nodachi: cross guard, long black-and-white hilt
+        if (t > .24 && t < .44) K.slam(g, "ROOM", w * .34, h * .44, M * .2, lin(.24, .44, t), { fill: "#fff", stroke: "#06304a", glow: C, ghost: 1 });
         labels(g, X, lin(.42, .5, t) * (1 - lin(.62, .66, t)));
-        if (t > .6 && t < .8) {                                              // SHAMBLES: the hand flips over, index and middle raised, and the two hands trade places
+        if (t > .6 && t < .8) {                                              // SHAMBLES: index finger raised, the wrist twists over, and the two hands trade places
             const q = lin(.6, .66, t), a = K.oBack(lin(.6, .64, t)) * (1 - lin(.74, .8, t)), turn = K.ioCub(q), hx = w * .8, hy = h * (1.12 - .2 * a);
-            g.save(); g.translate(hx, hy); g.scale(Math.cos(turn * Math.PI) || .01, 1); hand(g, 0, 0, HS(X) * 1.1, -.3, "two", { view: turn > .5 ? "palm" : "back", skin: "tan", rim: C, tattoo: turn > .5 ? null : ["D", "E", "A", "T"], sleeve: { c: "#f4e6b8", s: "#c9b27a", cuff: "#1a1a22", len: 260 } }); g.restore();
-            const tp = handTips("two")[1], sx = Math.cos(turn * Math.PI), k2 = HS(X) * 1.1, lx = (tp[0] * Math.cos(-.3) - tp[1] * Math.sin(-.3)) * k2 * sx, ly = (tp[0] * Math.sin(-.3) + tp[1] * Math.cos(-.3)) * k2; K.glow(gf, hx + lx, hy + ly, M * .08, C, a); }
+            g.save(); g.translate(hx, hy); g.scale(Math.cos(turn * Math.PI) || .01, 1); hand(g, 0, 0, HS(X) * 1.1, -.3, "point", { view: turn > .5 ? "palm" : "back", skin: "tan", rim: C, tattoo: LAW_INK, mark: 1, sleeve: { c: "#f4e6b8", s: "#c9b27a", cuff: "#1a1a22", len: 260 } }); g.restore();
+            const tp = handTips("point")[0], sx = Math.cos(turn * Math.PI), k2 = HS(X) * 1.1, lx = (tp[0] * Math.cos(-.3) - tp[1] * Math.sin(-.3)) * k2 * sx, ly = (tp[0] * Math.sin(-.3) + tp[1] * Math.cos(-.3)) * k2; K.glow(gf, hx + lx, hy + ly, M * .08, C, a); }
         if (t > .64 && t < .9) K.slam(g, "SHAMBLES", w / 2, h * .5, M * .14, lin(.64, .9, t), { fill: "#fff", stroke: "#06304a", glow: C, ghost: 1 });
         if (hit(t, .64, .02)) X.fx.flash = ["#bff0ff", .8];
         K.vignette(g, w, h, .6, "#000810"); K.bars(g, w, h, 1 - lin(.9, 1, t));
