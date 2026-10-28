@@ -13,47 +13,112 @@ const plate = (g, X, r, a, lit) => K.plateGhost(g, X, r, X.env.toName, X.col, a,
 const HS = X => X.M * (X.h > X.w ? .0036 : .003);
 const boom = (g, X, c, p, col, big = 1) => { if (p <= 0 || p >= 1) return; const M = X.M; K.glow(g, c.x, c.y, M * .5 * big * (1 - p * .5), col, 1 - p); K.shock(g, c.x, c.y, p, M * .8 * big, col, 40); K.shock(g, c.x, c.y, lin(.1, 1, p), M * 1.2 * big, "#ffffff", 14); K.sparks(g, c.x, c.y, p, 40, 5, { speed: M * 1.1 * big, col, grav: M * .4 }); K.debris(g, c.x, c.y, p, 24, 9, { speed: M * .9 * big, size: M * .02 }); };
 
-/* ---------- LUFFY · Gear 5: drums of liberation, the Sun God laughs, a giant rubber fist inflates and crashes down ---------- */
-function toonFist(g, x, y, R, sq, ang) {                                 // Gear 5's cartoon fist: white, puffy, steam rising
-    g.save(); g.translate(x, y); g.rotate(ang); g.scale(1 + sq * .25, 1 - sq * .2);
-    const gr = g.createRadialGradient(-R * .3, -R * .3, R * .1, 0, 0, R); gr.addColorStop(0, "#ffffff"); gr.addColorStop(.7, "#f4f0ea"); gr.addColorStop(1, "#c9c0b6");
-    g.lineWidth = Math.max(3, R * .05); g.strokeStyle = "#1a1410";
-    [[-.5, -.42, .34], [-.15, -.5, .36], [.2, -.48, .35], [.52, -.36, .3]].forEach(([a, b, r]) => { g.beginPath(); g.arc(R * a, R * b, R * r, 0, TAU); g.fillStyle = gr; g.fill(); g.stroke(); });   // four knuckle puffs
-    g.beginPath(); g.ellipse(0, R * .1, R * .9, R * .66, 0, 0, TAU); g.fillStyle = gr; g.fill(); g.stroke();
-    g.beginPath(); g.ellipse(-R * .55, R * .2, R * .38, R * .26, -.5, 0, TAU); g.fill(); g.stroke();           // thumb
-    g.strokeStyle = "rgba(26,20,16,.5)"; g.lineWidth = R * .03; for (let i = -1; i <= 1; i++) { g.beginPath(); g.arc(R * i * .35, -R * .1, R * .18, .4, 2.7); g.stroke(); }
+/* ---------- LUFFY · Gomu Gomu no Hawk Gatling (鷹銃乱打): Gear Second steam, Armament Haki blackens both fists, the fists twist and
+   catch fire (HAWK), then a gatling of burning black fists hammers the target until one last flaming haymaker ---------- */
+const G2 = { l: "#ffe4e0", b: "#f6a89c", s: "#d9776c", d: "#a54840", ink: "#3d1012", nail: "#ffe2dc" };   // Gear Second: flushed pink, steaming
+/* flames streaming behind something moving along ang (or rising, for ang = +PI/2) */
+function flameTail(g, x, y, ang, L, W, s, sd) {
+    g.save(); g.translate(x, y); g.rotate(ang + Math.PI); g.globalCompositeOperation = "lighter";
+    [[1, "rgba(255,60,10,.5)"], [.72, "rgba(255,140,30,.75)"], [.4, "rgba(255,238,180,.95)"]].forEach(([k, col]) => {
+        g.fillStyle = col;
+        for (let i = 0; i < 3; i++) {
+            const len = L * k * (.7 + .45 * hs(i + sd) + .25 * Math.sin(s * 21 + i * 2.1 + sd)), wob = W * k * .55 * Math.sin(s * 15 + i * 3 + sd), off = (i - 1) * W * .28;
+            g.beginPath(); g.moveTo(0, -W * k * .55 + off * .3); g.quadraticCurveTo(len * .45, -W * k * .7 + wob + off, len, wob * .7 + off); g.quadraticCurveTo(len * .45, W * k * .7 + wob + off, 0, W * k * .55 + off * .3); g.closePath(); g.fill();
+        }
+    });
     g.restore();
 }
+/* one of Luffy's arms reaching in from off-screen to a fist at (x, y) aimed along ang */
+function rubberArm(g, x, y, ang, len, wd, haki) {
+    const bx = x - Math.cos(ang) * len, by = y - Math.sin(ang) * len;
+    g.save(); g.lineCap = "round";
+    g.strokeStyle = "#1a0606"; g.lineWidth = wd + 5; g.beginPath(); g.moveTo(bx, by); g.lineTo(x, y); g.stroke();
+    const gr = g.createLinearGradient(bx, by, x, y); gr.addColorStop(0, "#f2b89a"); gr.addColorStop(K.mix(1, .45, haki), "#f6a89c"); gr.addColorStop(Math.min(1, K.mix(1, .45, haki) + .08), haki > 0 ? "#2a2234" : "#f6a89c"); gr.addColorStop(1, haki > 0 ? "#141018" : "#f6a89c");   // the haki creeps up from the fist
+    g.strokeStyle = gr; g.lineWidth = wd; g.beginPath(); g.moveTo(bx, by); g.lineTo(x, y); g.stroke();
+    g.strokeStyle = "rgba(255,255,255,.25)"; g.lineWidth = wd * .18; g.beginPath(); g.moveTo(bx - Math.sin(ang) * wd * .25, by + Math.cos(ang) * wd * .25); g.lineTo(x - Math.sin(ang) * wd * .25, y + Math.cos(ang) * wd * .25); g.stroke();
+    g.restore();
+}
+/* the gatling: every fist's launch time, synced punches first (they land on the voice's onsets), then a hail that gets denser */
+const HG_SYNC = [.193, .23, .253, .275, .294, .343, .413, .48, .5], HG_FLY = .022;
+const HG = (() => { const L = HG_SYNC.map(a => ({ at: a, big: 1 })); for (let a = .205; a < .665; a += a < .48 ? .0062 : .0038) L.push({ at: a, big: 0 }); return L.map((f, i) => Object.assign(f, { i, sd: i * 3.7 + 1 })); })();
 const luffy = {
-    col: "#ffd23f", trail: "#ffffff", ms: 7400, tailFx: "shatter",
+    col: "#ff6a1a", trail: "#ffd27a", ms: 7400, tailFx: "shatter",
     main(g, X, T) {
-        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r), DR = [.02, .1, .18, .26];
-        DR.forEach(a => X.cue(a, "drum", t)); X.cue(.4, "charge", t); X.cue(.66, "whoosh", t); X.cue(.72, "boom", t);
-        const beat = DR.reduce((m, a) => Math.max(m, hit(t, a, .05)), 0);
-        if (t < .34) {                                                       // DON-DOTT! the Sun God's heartbeat and that laugh
-            K.sky(g, w, h, ["#fff8e6", "#ffe6a6", "#ffd27a"]); K.focus(g, w / 2, h / 2, w, h, s, { col: "rgba(120,80,0,.25)", n: 80, r0: M * .3 });
-            g.save(); g.translate(w / 2, h / 2); g.scale(1 + beat * .05, 1 + beat * .05); g.translate(-w / 2, -h / 2); g.beginPath(); g.arc(w / 2, h * .48, M * .36, 0, TAU); g.clip(); K.still(g, X, lin(0, .34, t), { z0: 1.1, dz: .1, dy: .06 }); g.restore();
-            g.strokeStyle = "#1a1410"; g.lineWidth = M * .012; g.beginPath(); g.arc(w / 2, h * .48, M * .36, 0, TAU); g.stroke();
-            for (let i = 0; i < 12; i++) { const an = i / 12 * TAU + s * .3, R1 = M * (.4 + .06 * Math.sin(s * 6 + i)); g.save(); g.translate(w / 2 + Math.cos(an) * R1, h * .48 + Math.sin(an) * R1); g.rotate(an); g.fillStyle = "#fff"; g.strokeStyle = "#1a1410"; g.lineWidth = 3; g.beginPath(); g.ellipse(0, 0, M * .06, M * .035, 0, 0, TAU); g.fill(); g.stroke(); g.restore(); }   // clouds of steam round the god
-            DR.forEach((a, i) => { const q = lin(a, a + .1, t); if (q > 0 && q < 1) K.txt(g, i % 2 ? "ドット" : "ドン", w * (.18 + (i % 2) * .64), h * (.24 + i * .14), M * .13 * (1.3 - q * .3), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#1a1410", sw: M * .01, rot: (i % 2 ? .2 : -.2) }); });
-            K.slam(g, "ニカ", w / 2, h * .9, M * .08, lin(.2, .36, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#1a1410", from: 1.2 });
-            X.fx.flash = ["#ffffff", beat * .35]; return;
+        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r);
+        X.cue(.0, "charge", t); X.cue(.14, "whoosh", t); X.cue(.15, "crack", t); HG_SYNC.forEach(a => X.cue(a, "punch", t)); X.cue(.66, "charge", t); X.cue(.72, "boom", t);
+        const haki = ss(.085, .135, t), fire = ss(.14, .175, t), FS = M * .0024;
+        const fistAt = (x, y, ang, sc, sd, o) => {                       // a foreground fist: Gear 2 pink going haki-black, then burning
+            if (fire > 0) flameTail(g, x, y, o.move == null ? Math.PI / 2 : o.move, M * .26 * sc / FS * fire, M * .07 * sc / FS, s, sd);
+            rubberArm(g, x, y, ang - Math.PI / 2, M * 1.2, 84 * sc, haki);
+            fist(g, x, y, sc, ang, { skin: G2 });
+            if (haki > 0) { g.save(); g.globalAlpha *= haki; fist(g, x, y, sc, ang, { skin: "haki", haki: haki > .9 ? "#ff3b2a" : null, aura: fire > .1 ? "#ff7a1a" : null, t: s }); g.restore(); }
+            if (fire > 0) { g.save(); g.globalAlpha *= fire * (.8 + .2 * Math.sin(s * 30 + sd)); K.glow(g, x, y - 20 * sc, 130 * sc, "#ff6a1a", .7); g.restore(); }
+        };
+        if (t < .2) {                                                        // GOMU GOMU NO… / HAWK: the wind-up, close on Luffy
+            const shake = hit(t, .145, .05) * 16 + haki * 2;
+            g.save(); K.cam(g, X, { shake, z: 1 + t * .25 });
+            K.still(g, X, lin(0, .2, t), { z0: 1.12, dz: .12, dy: .04, grade: fire > 0 ? "#ff5a1a" : "#ff3a6a" });
+            K.focus(g, w / 2, h * .45, w, h, s, { col: fire > 0 ? "rgba(255,120,30,.35)" : "rgba(255,90,120,.25)", n: 70, r0: M * .34 });
+            K.drift(g, w, h, s, 34, 3, { up: 1, speed: .35, col: "#ffffff", size: M * .02, glow: 1, a: .35 * (1 - fire * .6) });   // Gear Second steam pouring off him
+            if (haki > 0 && haki < 1) { g.save(); g.globalCompositeOperation = "lighter"; for (let i = 0; i < 5; i++) K.bolt(g, w * (.1 + .8 * hs(i + Math.floor(s * 14))), h * (.6 + .3 * hs(i * 3)), w * (.1 + .8 * hs(i * 5 + Math.floor(s * 14))), h * (.7 + .3 * hs(i * 7)), i + Math.floor(s * 14), "#ff3b2a", 2.5, .3); g.restore(); }
+            const tw = Math.sin(lin(.14, .185, t) * Math.PI) * .7, rise = K.oBack(lin(0, .06, t));
+            [[-1, w * .22], [1, w * .78]].forEach(([sd, x]) => fistAt(x, h * (1.3 - .5 * rise), sd * (.28 + tw), FS * (1 + fire * .15), sd + 2, {}));
+            if (t > .015 && t < .14) K.slam(g, "ゴムゴムの…", w / 2, h * .17, M * .1, lin(.015, .14, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#3d1012", from: 1.4, glow: "#ff5a7a" });
+            if (t < .12) K.txt(g, "シュウウ", w * .14, h * .3 - t * h * .6, M * .05, { font: K.F_JP, weight: "400", fill: "rgba(255,255,255,.85)", stroke: "#3d1012", sw: M * .006, rot: -.2 });
+            if (t > .085 && t < .15) K.slam(g, "武装色", w * .84, h * .34, M * .06, lin(.085, .15, t), { font: K.F_JP, weight: "400", fill: "#cfc6ff", stroke: "#000", glow: "#ff3b2a", from: 1 });
+            if (t > .14) { K.slam(g, "鷹", w / 2, h * .36, M * .3, lin(.14, .21, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#4a0a00", glow: "#ff7a1a", from: 2.2, ghost: 1 }); K.slam(g, "HAWK", w / 2, h * .53, M * .08, lin(.145, .21, t), { fill: "#ffd27a", stroke: "#4a0a00", glow: "#ff6a1a", sp: M * .02 }); }
+            g.restore();
+            X.fx.flash = ["#ff9a3c", hit(t, .145, .04) * .6]; X.fx.rgb = hit(t, .145, .05) * 12;
+            K.bars(g, w, h, 1); return;
         }
-        // the fist: an arm stretched way back, the fist puffing up to fill the sky, then launched
-        g.save(); K.cam(g, X, { shake: hit(t, .72, .14) * 30 + (t > .4 && t < .66 ? 2 : 0), z: 1 + lin(.66, .72, t) * .08 });
-        K.sky(g, w, h, ["#9fd8ff", "#dff2ff", "#ffffff"]); for (let i = 0; i < 7; i++) { const x = ((hs(i) * w * 1.4 + s * 30) % (w * 1.4)) - w * .2, y = h * (.15 + .6 * hs(i + 5)); g.fillStyle = "#fff"; g.strokeStyle = "#1a1410"; g.lineWidth = 3; g.beginPath(); for (let k = 0; k < 4; k++) g.arc(x + k * M * .06, y + Math.sin(k) * M * .02, M * .05, 0, TAU); g.fill(); g.stroke(); }
-        plate(g, X, r, 1, lin(.66, .74, t));
-        const inf = K.oElastic(lin(.38, .58, t)), fly = K.iExpo(lin(.62, .72, t)), sq = Math.sin(s * 9) * (1 - lin(.58, .62, t)) * .4;
-        const sx = w * .76, sy = h * 1.1, R = M * (.08 + .26 * inf) * (1 - fly * .55), fx = K.mix(w * .62, c.x, fly), fy = K.mix(h * .5, c.y, fly);
-        g.save(); g.strokeStyle = "#1a1410"; g.lineWidth = M * .05 * (1 - fly * .4) + 6; g.lineCap = "round"; g.beginPath(); g.moveTo(sx, sy); g.quadraticCurveTo(w * .95, h * .6, fx, fy); g.stroke(); g.strokeStyle = "#f2c9a0"; g.lineWidth = M * .05 * (1 - fly * .4); g.stroke(); g.restore();   // the rubber arm
-        if (t < .74) { toonFist(g, fx, fy, R, sq, -.3); K.drift(g, w, h, s, 20, 5, { up: 1, speed: .3, col: "#ffffff", size: 6 }); }
-        if (fly > 0 && t < .74) K.streaks(g, w, h, s, Math.atan2(c.y - h * .5, c.x - w * .62), { n: 60, col: "#1a1410", a: .4, speed: 6 });
-        boom(g, X, c, lin(.72, .9, t), "#ffd23f", 1.2);
+        // GATLING: the target, and a hail of burning black fists from both of Luffy's arms
+        const wind = lin(.66, .715, t), fin = K.iCub(lin(.695, .72, t)), after = lin(.72, 1, t);
+        const big = HG_SYNC.reduce((m, a) => Math.max(m, hit(t, a, .02)), 0);
+        g.save(); K.cam(g, X, { shake: (t < .66 ? 5 + big * 14 : 0) + hit(t, .72, .16) * 34, z: 1 + big * .02 + hit(t, .72, .1) * .08 });
+        K.sky(g, w, h, ["#1a0300", "#4a0c00", "#a82800"]);
+        K.radial(g, c.x, c.y, M * .9, [[0, "rgba(255,200,120,.55)"], [.35, "rgba(255,90,20,.25)"], [1, "rgba(0,0,0,0)"]]);
+        K.focus(g, c.x, c.y, w, h, s, { col: "rgba(255,170,80,.35)", n: 90, r0: M * .18 });
+        plate(g, X, r, 1, Math.max(big * .8, lin(.72, .8, t)));
+        K.cracks(g, c.x, c.y, lin(.2, .74, t), Math.max(r.w, r.h) * .7, 7, "#ffd27a", 18);
+        const fl = HG.filter(f => t > f.at - HG_FLY && t < f.at + .02 && f.at < .7);
+        fl.forEach(f => {                                                    // each fist: launched from the bottom, shrinking into the distance, burning
+            const q = (t - (f.at - HG_FLY)) / HG_FLY, x0 = w * (.06 + .88 * hs(f.sd)), y0 = h * 1.15, tx = c.x + (hs(f.sd * 1.9) - .5) * r.w * (f.big ? .5 : .95), ty = c.y + (hs(f.sd * 2.7) - .5) * r.h * (f.big ? .5 : 1.2);
+            if (q <= 1) {
+                const e = K.oCub(q), x = K.mix(x0, tx, e), y = K.mix(y0, ty, e), ang = Math.atan2(ty - y0, tx - x0), R = M * (f.big ? .1 : .068) * (1.5 - e * .9);
+                g.save(); g.globalAlpha *= .5; g.strokeStyle = "#140c16"; g.lineCap = "round"; g.lineWidth = R * .7; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x, y); g.stroke(); g.restore();   // the stretched rubber arm
+                flameTail(g, x, y, ang, R * 4.2, R * 1.3, s, f.sd);
+                fistMini(g, x, y, R, ang + Math.PI / 2, "haki", "#ff6a1a");
+            } else {
+                const p = (q - 1) * HG_FLY / .02, ix = tx, iy = ty;                 // impact
+                K.sparks(g, ix, iy, p, f.big ? 18 : 7, f.sd, { speed: M * (f.big ? .5 : .25), col: "#ffb03a" });
+                if (p < .5) K.glow(g, ix, iy, M * (f.big ? .16 : .08) * (1 - p), "#ffd27a", 1 - p * 2);
+                if (f.big) K.shock(g, ix, iy, p, M * .3, "#ff7a1a", 16);
+            }
+        });
+        // Luffy's own two fists in the foreground, pumping in turn (pulled out of frame for the wind-up)
+        const pump = (t - .2) / .0124, out = K.iCub(wind);
+        [[-1, w * .2, 0], [1, w * .8, .5]].forEach(([sd, x, ph]) => {
+            if (t > .7) return;
+            const e = Math.max(0, Math.sin((pump + ph * 2) * Math.PI)) * (t < .66 ? 1 : 0), fx = K.mix(x, c.x, e * .3), fy = K.mix(h * .84, c.y, e * .3) + out * h * .6;
+            const ang = Math.atan2(c.y - fy, c.x - fx) + Math.PI / 2;
+            fistAt(fx, fy, ang, FS * (1 - e * .35), sd + 5, { move: Math.atan2(c.y - fy, c.x - fx) });
+        });
+        if (t > .66 && t < .74) {                                            // the finisher: the right arm cocks back, then one giant flaming haki fist
+            const q = fin, up = K.oBack(lin(.66, .695, t)), x0 = w * .58, y0 = h * (1.6 - up * .62), x = K.mix(x0, c.x, q), y = K.mix(y0, c.y, q), ang = Math.atan2(c.y - y0, c.x - x0), R = M * K.mix(.3, .1, q);
+            if (t < .72) { rubberArm(g, x, y, ang, M * 1.4, R * 1.1, 1); flameTail(g, x, y, Math.PI / 2, R * 2.6, R * 1.25, s, 9); if (q > 0) flameTail(g, x, y, ang, R * (2 + q * 4), R * 1.1, s, 4); fist(g, x, y, R / 60, ang + Math.PI / 2, { skin: "haki", haki: "#ff3b2a", aura: "#ff7a1a", t: s }); }
+            if (q > 0 && t < .72) K.streaks(g, w, h, s, ang, { n: 70, col: "#ffd27a", a: .5, speed: 7 });
+        }
+        boom(g, X, c, lin(.72, .9, t), "#ff6a1a", 1.4);
+        if (after > 0) { K.drift(g, w, h, s, 30, 11, { up: 1, speed: .25, col: "#ff9a3c", size: 4, add: 1 }); K.drift(g, w, h, s * .6, 16, 13, { up: 1, speed: .12, col: "#2a1a14", size: M * .05, glow: 1, a: .5 * (1 - lin(.85, 1, t)) }); }
         g.restore();
-        if (t > .4 && t < .66) K.slam(g, "ゴムゴムの…", w / 2, h * .18, M * .1, lin(.4, .66, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#1a1410", from: 1.3 });
-        if (t > .7) K.title(g, X, lin(.7, 1, t), { en: "BAJRANG GUN", kj: "猿神銃", sub: "GEAR 5 · " + X.who, y: .84 });
-        if (hit(t, .72, .03)) X.fx.inv = true; X.fx.rgb = hit(t, .72, .1) * 18;
-        K.bars(g, w, h, lin(.36, .4, t) * (1 - lin(.92, 1, t)));
+        // lettering: GATLING on the voice, the onomatopoeia on the synced hits, the name brushed down the side
+        if (t < .36) K.slam(g, "ガトリング", w / 2, h * .14, M * .11, lin(.2, .36, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#4a0a00", glow: "#ff6a1a", from: 1.6 });
+        HG_SYNC.forEach((a, i) => { const q = lin(a, a + .05, t); if (q > 0 && q < 1) K.txt(g, i % 2 ? "ドッ" : "ガッ", w * (.12 + .76 * hs(i * 4.1)), h * (.22 + .5 * hs(i * 6.3)), M * .09 * (1.25 - q * .25), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#4a0a00", sw: M * .009, rot: (hs(i) - .5) * .5 }); });
+        if (t > .48 && t < .66) { const q = lin(.48, .66, t); K.txt(g, "ドドドドドド", w / 2 + Math.sin(s * 50) * 3, h * .78, M * .07, { font: K.F_JP, weight: "400", fill: "#ffd27a", stroke: "#4a0a00", sw: M * .008, sp: M * .01 }); g.globalAlpha = 1; if (q < .1) X.fx.rgb = 8; }
+        if (t > .22 && t < .7) { g.save(); g.globalAlpha *= 1 - lin(.62, .7, t); K.column(g, "鷹銃乱打", w * .07, h * .2, M * .07, lin(.22, .4, t), { fill: "#fff", stroke: "#4a0a00", glow: "#ff6a1a", sw: M * .006 }); g.restore(); }
+        if (t > .74) K.title(g, X, lin(.74, 1, t), { en: "HAWK GATLING", kj: "鷹銃乱打", sub: "GOMU GOMU NO · GEAR 2 · ARMAMENT HAKI · " + X.who, y: .84 });
+        if (hit(t, .72, .03)) X.fx.inv = true; X.fx.rgb = Math.max(X.fx.rgb || 0, hit(t, .72, .1) * 20 + big * 6);
+        K.bars(g, w, h, 1 - lin(.92, 1, t));
     }
 };
 

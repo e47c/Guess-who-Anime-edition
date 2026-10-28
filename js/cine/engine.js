@@ -26,7 +26,7 @@ export function initCine(api) { A = api; }
 const SCENES = Object.assign({}, FREEZE, SWAP, ULT, PEEK);
 /* [ability, character, kanji, eye x, eye y] (where the eyes sit in the card art, 0..1, for the close-ups and cut-ins) */
 const META = {
-    onepiece_f: ["Ice Age", "Aokiji", "氷河時代", .5, .33], onepiece_t: ["Room · Shambles", "Trafalgar Law", "シャンブルズ", .35, .38], onepiece_u: ["Gear 5", "Luffy", "ギア5", .5, .38], onepiece_e: ["Conqueror's Haki", "Shanks", "覇王色", .45, .45],
+    onepiece_f: ["Ice Age", "Aokiji", "氷河時代", .5, .33], onepiece_t: ["Room · Shambles", "Trafalgar Law", "シャンブルズ", .35, .38], onepiece_u: ["Hawk Gatling", "Luffy", "鷹銃乱打", .5, .38], onepiece_e: ["Conqueror's Haki", "Shanks", "覇王色", .45, .45],
     naruto_f: ["Crystal Ice Mirrors", "Haku", "魔鏡氷晶", .58, .25], naruto_t: ["Flying Raijin", "Minato", "飛雷神", .62, .12], naruto_u: ["Rasengan", "Naruto", "螺旋丸", .5, .41], naruto_e: ["Byakugan", "Neji", "白眼", .5, .5],
     dragonball_f: ["Time Skip", "Hit", "時飛ばし", .5, .12], dragonball_t: ["Temporal Do-Over", "Whis", "時間逆行", .4, .42], dragonball_u: ["Kamehameha", "Goku", "かめはめ波", .5, .33], dragonball_e: ["Power Gaze", "Jiren", "気", .64, .27],
     jjk_f: ["Frost Calm", "Uraume", "霜凪", .35, .38], jjk_t: ["Boogie Woogie", "Aoi Todo", "不義遊戯", .48, .24], jjk_u: ["Malevolent Shrine", "Sukuna", "伏魔御廚子", .45, .36], jjk_e: ["Infinite Void", "Gojo", "無量空処", .45, .55],
@@ -45,7 +45,7 @@ const SYNC = {
     dragonball_f: [[.3, 1.65], [.5, 2.95], [.62, 3.62]], blackclover_f: [[.56, 4.8]], hxh_f: [[.32, 3.48], [.68, 5.53]], jojo_f: [[.3, 1.38], [.48, 2.55]],
     onepiece_t: [[.22, 1.3], [.64, 6.24]], naruto_t: [[.3, 1.65], [.6, 3.68]], dragonball_t: [[.22, 3.15], [.62, 5.05], [.66, 5.9]], jjk_t: [[.28, 1.62], [.5, 3.95], [.72, 5.45]],
     demonslayer_t: [[.34, 2.94], [.5, 5.02], [.66, 6.18]], bleach_t: [[.3, 1.9], [.58, 6.4]], hxh_t: [[.3, 1.95], [.48, 5.1]], blackclover_t: [[.24, 2.02], [.46, 4.55]], jojo_t: [[.28, 2.2]],
-    onepiece_u: [[.4, 3.0], [.72, 5.98]], naruto_u: [[.22, 1.4], [.7, 9.12]], dragonball_u: [[.14, 1.35], [.38, 3.4], [.5, 4.15]], jjk_u: [[.3, 3.2], [.56, 5.8]], demonslayer_u: [[.3, 1.6], [.56, 3.6], [.72, 4.6]],
+    onepiece_u: [[.09, 1.9], [.14, 2.43], [.193, 3.0], [.48, 5.98], [.72, 8.4]], naruto_u: [[.22, 1.4], [.7, 9.12]], dragonball_u: [[.14, 1.35], [.38, 3.4], [.5, 4.15]], jjk_u: [[.3, 3.2], [.56, 5.8]], demonslayer_u: [[.3, 1.6], [.56, 3.6], [.72, 4.6]],
     bleach_u: [[.5, 5.78], [.74, 6.75]], hxh_u: [[.42, 3.43], [.74, 8.22]], blackclover_u: [[.3, 2.2], [.62, 3.6]], jojo_u: [[.26, 1.9], [.66, 6.25]],
     // Future Sight: R = the reveal of the next player's cards
     onepiece_e: [[.3, 1.6], [.56, 4.4]], naruto_e: [[.36, 7.2], [.6, 13.8]], dragonball_e: [[.5, 3.4]], jjk_e: [[.3, 3.0], [.46, 5.6]], demonslayer_e: [[.3, 5.5], [.58, 11.3]],

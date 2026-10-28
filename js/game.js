@@ -1992,13 +1992,13 @@ const UNO_SP = {
     e: { emoji: "👁️", label: "FUTURE SIGHT", file: "vision",   snd: () => { tone(700, 1400, .3, "sine", .06); tone(1400, 2000, .25, "sine", .05, .2); } }
 };
 /* Your custom art goes in  images/special/<series>_<file>.png  (.jpg and .webp also work).
-   Example: images/special/onepiece_ultimate.png  =  Gear 5 Luffy.   Until a file exists, a placeholder card is shown.
+   Example: images/special/onepiece_ultimate.png  =  Luffy, Hawk Gatling.   Until a file exists, a placeholder card is shown.
    series keys: onepiece naruto dragonball jjk demonslayer bleach hxh blackclover jojo
    file names:  freeze  swap  ultimate  vision */
 const UNO_SP_DIR = "images/special/", UNO_SP_EXT = ["png", "jpg", "webp"];
 /* [character shown on the card, ABILITY NAME]. Leave the ability name "" until you have it; it appears on the card and in the big banner. */
 const UNO_SPECIAL = {
-    onepiece:    { f: ["Aokiji", ""],            t: ["Trafalgar Law", ""],       u: ["Luffy · Gear 5", ""],    e: ["Shanks", ""] },
+    onepiece:    { f: ["Aokiji", ""],            t: ["Trafalgar Law", ""],       u: ["Luffy · Hawk Gatling", ""],    e: ["Shanks", ""] },
     naruto:      { f: ["Haku", ""],              t: ["Minato Namikaze", ""],     u: ["Naruto Uzumaki", ""],    e: ["Neji Hyuga", ""] },
     dragonball:  { f: ["Hit", ""],               t: ["Whis", ""],                u: ["Goku", ""],              e: ["Jiren", ""] },
     jjk:         { f: ["Uraume", ""],            t: ["Aoi Todo", ""],            u: ["Sukuna", ""],            e: ["Satoru Gojo", ""] },
