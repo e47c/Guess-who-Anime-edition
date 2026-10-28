@@ -935,6 +935,7 @@ function showOnly(id) {
     const element = document.getElementById(id);
     element.classList.remove("hidden");
     if (currentScreen !== id) {
+        if (motionOK() && /^(home|lobby)$/.test(id) && /^(home|lobby)$/.test(currentScreen)) { const w = document.createElement("div"); w.className = "crt-wipe"; document.body.appendChild(w); setTimeout(() => w.remove(), 600); }
         currentScreen = id;
         const scene = SCENE_OF[id] || "lobby";
         document.body.dataset.scene = scene;
@@ -2987,7 +2988,7 @@ window.joinRoom = async function () {
 
 /* ---------- lobby ---------- */
 function openLobby() {
-    $("roomCode").textContent = room;
+    setRoomCode(room);
     try { history.replaceState(null, "", location.pathname + "?room=" + room); } catch (e) {}
     listenToRoom();
     startPresence();
@@ -3046,7 +3047,8 @@ function modeReq(d) {
     return { ok: true, msg: M.name + extra };
 }
 let modeCardsBuilt = false, seatSig = "";
-const seatSeen = new Set();
+const seatSeen = new Set(), readySeen = new Set();
+let lastMode = "";
 const modePlayers = M => (M.min === M.max ? M.min : M.min + "–" + M.max) + " players" + (M.seats ? " · " + M.seats : "");
 function buildModeCards() {
     if (modeCardsBuilt) return; modeCardsBuilt = true;
@@ -3056,23 +3058,84 @@ function buildModeCards() {
         const art = hbEl("div", "mc-art"); M.art.forEach((src, i) => { const im = makeImg(src); im.style.setProperty("--i", i); art.appendChild(im); });
         b.append(art, hbEl("div", "mc-kanji", M.kanji), hbEl("div", "mc-tag", M.tag), hbEl("b", "mc-name", M.name), hbEl("p", "mc-blurb", M.blurb));
         const foot = hbEl("div", "mc-foot"); foot.append(hbEl("span", "mc-players", modePlayers(M)), hbEl("span", "mc-votes"));
-        b.append(foot, hbEl("div", "mc-sel", "SELECTED"));
+        b.append(foot, hbEl("div", "mc-sel", "SELECTED"), hbEl("div", "mc-brk"), hbEl("div", "mc-curs"));
         b.onclick = () => pickMode(t);
         b.onmouseenter = () => sfx("hover");
         box.appendChild(b);
     });
 }
+/* the menu's arcade cabinets, one per mode: marquee, a CRT running the attract loop, joystick + buttons, coin door */
 function buildHomeModes() {
     const box = $("homeModes"); if (!box || box.childElementCount) return;
-    Object.values(MODES).forEach((M, i) => {
-        const c = hbEl("div", "hm-card"); c.style.setProperty("--mc", M.color); c.style.setProperty("--i", i);
-        const art = hbEl("div", "hm-art"); art.appendChild(makeImg(M.art[0]));
-        c.append(art, hbEl("div", "hm-kanji", M.kanji), hbEl("small", null, M.tag), hbEl("b", null, M.name), hbEl("span", "hm-pl", M.min + "–" + M.max + "P" + (M.short ? " · " + M.short : "")));
-        const t = Object.keys(MODES).find(k => MODES[k] === M);
+    Object.entries(MODES).forEach(([t, M], i) => {
+        const c = hbEl("div", "cab"); c.style.setProperty("--mc", M.color); c.style.setProperty("--i", i);
+        const mq = hbEl("div", "cab-mq"); mq.append(hbEl("b", null, M.name), hbEl("i", null, M.kanji));
+        const scr = hbEl("div", "cab-scr"); M.art.forEach((src, k) => { const im = makeImg(src); if (k === 0) im.classList.add("on"); scr.appendChild(im); });
+        scr.append(hbEl("div", "cab-crt"), hbEl("span", "cab-tag", M.tag), hbEl("span", "cab-sub", M.sub), hbEl("span", "cab-ps", "PRESS START"));
+        const cp = hbEl("div", "cab-cp"); cp.append(hbEl("span", "cab-stick"), hbEl("span", "cab-b"), hbEl("span", "cab-b"), hbEl("span", "cab-b"));
+        const door = hbEl("div", "cab-door"); door.append(hbEl("span", "cab-slot"), hbEl("span", "cab-pl", M.min + "–" + M.max + "P" + (M.short ? " · " + M.short : "")), hbEl("span", "cab-slot"));
+        const body = hbEl("div", "cab-body"); body.append(scr, cp);
+        c.append(mq, body, door);
         c.tabIndex = 0; c.setAttribute("role", "button"); c.setAttribute("aria-label", M.name + ": how to play");
-        c.onclick = () => { sfx("click"); showRules(t); }; c.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); c.click(); } };
+        c.onmouseenter = () => sfx("hover");
+        c.onclick = () => { sfx("click"); c.classList.remove("boot"); void c.offsetWidth; c.classList.add("boot"); setTimeout(() => showRules(t), motionOK() ? 260 : 0); };
+        c.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); c.click(); } };
         box.appendChild(c);
     });
+    let tick = 0;          // attract mode: each screen steps through its three shots, out of phase with its neighbours
+    setInterval(() => {
+        if (currentScreen !== "home" || document.hidden || !motionOK()) return;
+        tick++;
+        box.querySelectorAll(".cab").forEach((c, i) => { if ((tick + i) % 2) return; const ims = c.querySelectorAll(".cab-scr img"), on = [...ims].findIndex(im => im.classList.contains("on")); ims[on].classList.remove("on"); ims[(on + 1) % ims.length].classList.add("on"); });
+    }, 1700);
+}
+/* the room code as lit cells (the textContent stays the plain code) */
+function setRoomCode(code) {
+    const el = $("roomCode"); if (el.textContent === code) return;
+    el.innerHTML = ""; [...String(code)].forEach((ch, k) => { const c = hbEl("span", null, ch); c.style.setProperty("--k", k); el.appendChild(c); });
+}
+/* host = insert coin: the coin drops into the slot, the credit counter ticks, then the room is made */
+let credits = 0;
+window.insertCoin = function () {
+    const btn = document.querySelector("#home .home-cta > .btn"), coin = $("coinFly");
+    if (creating || (btn && btn.disabled)) return;
+    sfx("coin");
+    const cr = $("credit"); credits = Math.min(99, credits + 1); cr.querySelector("b").textContent = String(credits).padStart(2, "0"); cr.classList.remove("pop"); void cr.offsetWidth; cr.classList.add("pop");
+    if (!motionOK()) return createRoom();
+    coin.classList.remove("go"); void coin.offsetWidth; coin.classList.add("go");
+    setTimeout(() => { btn.classList.remove("fed"); void btn.offsetWidth; btn.classList.add("fed"); }, 330);
+    setTimeout(() => createRoom(), 430);
+};
+/* the join field: six cells like a high-score entry, the next free one blinks */
+function renderJoinCells(hit) {
+    const v = $("joinCode").value, cells = $("joinCells"); if (!cells) return;
+    [...cells.children].forEach((c, k) => { c.textContent = v[k] || ""; c.classList.toggle("cur", k === Math.min(v.length, 5) && v.length < 6); if (hit && k === v.length - 1) { c.classList.remove("hit"); void c.offsetWidth; c.classList.add("hit"); } });
+    cells.classList.toggle("full", v.length === 6); cells.classList.toggle("empty", !v.length);
+    $("joinArea").classList.toggle("go", v.length === 6);
+}
+/* pointer tilt for cabinets, the member card and the stage cards (fine pointers only) */
+function bindTilt() {
+    if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    let cur = null;
+    const reset = el => { el.style.setProperty("--rx", "0deg"); el.style.setProperty("--ry", "0deg"); };
+    document.addEventListener("pointermove", e => {
+        const el = e.target.closest && e.target.closest(".cab, .mode-card, [data-tilt]");
+        if (cur && cur !== el) { reset(cur); cur = null; }
+        if (!el || !motionOK()) return;
+        cur = el; const r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height, k = el.classList.contains("mode-card") ? 6 : 9;
+        el.style.setProperty("--ry", ((x - .5) * k * 2).toFixed(2) + "deg"); el.style.setProperty("--rx", ((.5 - y) * k * 1.6).toFixed(2) + "deg");
+        el.style.setProperty("--mx", (x * 100).toFixed(1) + "%"); el.style.setProperty("--my", (y * 100).toFixed(1) + "%");
+    }, { passive: true });
+}
+/* HERE COMES A NEW CHALLENGER: somebody joined the room while you were in the lobby */
+let challTimer = 0;
+function newChallenger(p, col) {
+    const el = $("challenger"); if (!el) return;
+    el.innerHTML = ""; el.style.setProperty("--pc", col);
+    const tx = hbEl("div", "ch-txt"); tx.append(hbEl("small", null, "HERE COMES A NEW CHALLENGER!"), hbEl("b", null, p.name || "Player"));
+    el.append(avatarEl(p, { size: 70 }), tx);
+    el.classList.remove("hidden"); el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
+    sfx("slam"); clearTimeout(challTimer); challTimer = setTimeout(() => el.classList.add("hidden"), 2200);
 }
 function lobbyRefresh() { if (currentRoomData && !$("lobby").classList.contains("hidden")) lobbyRender(currentRoomData); }
 let lobbyCountSeen = 0;
@@ -3080,7 +3143,7 @@ function lobbyRender(d) {
     const me = Number(myPlayer), host = amHost(), t = MODES[d.gameType] ? d.gameType : "classic", M = MODES[t], act = activeSlots(d), pres = d.presence || {}, packs = d.packs || {};
     const spectating = !!d.status && d.status !== "waiting";
     document.body.classList.toggle("is-host", host);
-    $("roomCode").textContent = room;
+    setRoomCode(room);
     if (lobbyCountSeen && act.length > lobbyCountSeen) sfx("join"); else if (lobbyCountSeen && act.length < lobbyCountSeen) sfx("leave");
     lobbyCountSeen = act.length;
     // a match is running and I'm not in it (joined late, or seated out)
@@ -3091,13 +3154,15 @@ function lobbyRender(d) {
     const sig = JSON.stringify([act.map(i => { const p = d["player" + i]; return [i, p.name, p.av && (p.av.u || p.av.g || (p.av.d || "").length), p.col, p.fr, p.ttl, p.lvl, p.lr, p.vote, pres["p" + i], packs["p" + i]]; }), hostSlot(d), me, t, spectating, duelists]);
     if (sig !== seatSig) {
         seatSig = sig;
-        const box = $("lobbySeats"); box.innerHTML = "";
+        const box = $("lobbySeats"), firstPaint = !seatSeen.size; box.innerHTML = "";
         act.forEach(i => {
-            const p = d["player" + i], isHost = i === hostSlot(d), off = pres["p" + i] === false;
+            const p = d["player" + i], isHost = i === hostSlot(d), off = pres["p" + i] === false, col = p.col || HB_COLORS[(i - 1) % HB_COLORS.length];
             const s = hbEl("div", "seat" + (i === me ? " me" : "") + (off ? " off" : "") + (p.lr ? " rdy" : "") + (isHost ? " hosting" : "") + (seatSeen.has(p.uid) ? "" : " enter"));
+            if (!seatSeen.has(p.uid) && !firstPaint && i !== me && !spectating) newChallenger(p, col);
             seatSeen.add(p.uid);
-            s.style.setProperty("--pc", p.col || HB_COLORS[(i - 1) % HB_COLORS.length]); s.dataset.emote = "p" + i;
-            s.appendChild(avatarEl(p, { size: 60, badge: true }));
+            s.style.setProperty("--pc", col); s.dataset.emote = "p" + i;
+            s.appendChild(hbEl("span", "seat-no", i + "P"));
+            s.appendChild(avatarEl(p, { size: 72, badge: true }));
             const id = hbEl("div", "seat-id"); id.append(hbEl("b", null, p.name || "Player " + i), hbEl("small", null, (p.ttl || "Rookie") + (p.lvl ? " · LV " + p.lvl : "")));
             s.appendChild(id);
             const tags = hbEl("div", "seat-tags");
@@ -3109,11 +3174,13 @@ function lobbyRender(d) {
             else if (p.lr) tags.appendChild(hbEl("span", "tag rdy", "✔ READY"));
             if (p.vote && MODES[p.vote]) { const v = hbEl("span", "tag vote", MODES[p.vote].kanji + " " + MODES[p.vote].name); v.style.setProperty("--mc", MODES[p.vote].color); tags.appendChild(v); }
             s.appendChild(tags);
+            if (p.lr && !off) { const r = hbEl("div", "seat-ready" + (readySeen.has(p.uid) ? "" : " stamp"), "READY!"); s.appendChild(r); if (!readySeen.has(p.uid) && !firstPaint) sfx("stamp"); readySeen.add(p.uid); } else readySeen.delete(p.uid);
             if (host && i !== me && !spectating) { const k = hbEl("button", "seat-kick", "✕"); k.setAttribute("aria-label", "Remove " + (p.name || "player")); k.onclick = () => kickPlayer(i); s.appendChild(k); }
             box.appendChild(s);
         });
         const want = Math.min(ROOM_MAX, Math.max(Math.min(M.max, 6), act.length + 1));
-        for (let k = act.length; k < want; k++) { const e = hbEl("button", "seat empty"); e.append(hbEl("span", "seat-plus", "+"), hbEl("span", null, k === act.length ? "Invite a friend" : "Open seat")); e.onclick = () => copyInviteLink(); box.appendChild(e); }
+        const free = SLOTS.filter(i => !act.includes(i));
+        for (let k = act.length; k < want; k++) { const e = hbEl("button", "seat empty" + (k === act.length ? " first" : "")); e.append(hbEl("span", "seat-no", free[k - act.length] + "P"), hbEl("span", "seat-plus", "+"), hbEl("span", "es-txt", k === act.length ? "Invite a friend" : "Insert coin")); e.onclick = () => copyInviteLink(); box.appendChild(e); }
         $("seatCount").textContent = act.length + "/" + ROOM_MAX;
     }
     // modes
@@ -3125,7 +3192,11 @@ function lobbyRender(d) {
         b.querySelector(".mc-players").textContent = modePlayers(MM) + (fits ? " ✓" : "");
         const vb = b.querySelector(".mc-votes"); vb.innerHTML = "";
         act.filter(i => (d["player" + i] || {}).vote === mt).forEach(i => vb.appendChild(avatarEl(d["player" + i], { size: 22 })));
+        const cu = b.querySelector(".mc-curs"); cu.innerHTML = "";
+        act.filter(i => (i === hostSlot(d) ? mt === t : (d["player" + i] || {}).vote === mt)).forEach(i => { const k = hbEl("span", "mc-cur" + (i === hostSlot(d) ? " host" : ""), i + "P"); k.style.setProperty("--pc", d["player" + i].col || HB_COLORS[(i - 1) % HB_COLORS.length]); cu.appendChild(k); });
+        if (mt === t && lastMode && lastMode !== t && motionOK()) { b.classList.remove("flash"); void b.offsetWidth; b.classList.add("flash"); }
     });
+    lastMode = t;
     $("modeVoteHint").textContent = host ? "you pick · others can vote" : "tap a mode to vote";
     // settings (host edits, everyone sees them live)
     applyModeUI(M.key);
@@ -3815,7 +3886,7 @@ window.copyRoomCode = function () {
 window.copyInviteLink = async function () {
     const url = location.origin + location.pathname + "?room=" + room;
     if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
-        try { await navigator.share({ title: "Guess Who: Anime Edition", text: "Join my room!", url }); return; } catch (e) {}
+        try { await navigator.share({ title: "Anime Arcade Party", text: "Join my room!", url }); return; } catch (e) {}
     }
     try { await navigator.clipboard.writeText(url); toast("Invite link copied"); }
     catch (e) { toast("Invite link: " + url); }
@@ -3838,13 +3909,15 @@ function secretPower(text) {
     burstText(text, innerWidth / 2, innerHeight * .42, "#7df3ff"); shake(document.querySelector(".screen:not(.hidden)"), 14, 520);
 }
 async function initApp() {
-    $("homeTitle").addEventListener("click", () => { clearTimeout(logoTimer); logoTimer = setTimeout(() => { logoTaps = 0; }, 900); if (++logoTaps >= 5) { logoTaps = 0; secretPower(["PLUS ULTRA!", "DATTEBAYO!", "BANKAI!", "KAMEHAMEHA!", "DOMAIN EXPANSION!"][(Math.random() * 5) | 0]); } else sfx("tick"); });
+    $("homeTitle").addEventListener("click", () => { const lg = $("homeTitle"); lg.classList.remove("zap"); void lg.offsetWidth; lg.classList.add("zap"); clearTimeout(logoTimer); logoTimer = setTimeout(() => { logoTaps = 0; }, 900); if (++logoTaps >= 5) { logoTaps = 0; secretPower(["PLUS ULTRA!", "DATTEBAYO!", "BANKAI!", "KAMEHAMEHA!", "DOMAIN EXPANSION!"][(Math.random() * 5) | 0]); } else sfx("tick"); });
     initGallery(ANIME_LIBRARY, Object.fromEntries(Object.keys(HB_SERIES).filter(k => !HB_HIDDEN_SERIES.includes(k)).map(k => [k, HB_SERIES[k].label])));
     setProfileHooks({ sfx: sfx, toast: toast, onAchievement: achToast });
     bindUpload(); bindSettings(); syncDock(); renderProfileCard(); buildHomeModes();
     $("name").value = profile.get().name || "";
     $("joinCode").addEventListener("keydown", e => { if (e.key === "Enter") joinRoom(); });
-    $("joinCode").addEventListener("input", () => { $("joinCode").value = $("joinCode").value.toUpperCase().replace(/[^A-Z0-9]/g, ""); });
+    let codeLen = 0;
+    $("joinCode").addEventListener("input", () => { $("joinCode").value = $("joinCode").value.toUpperCase().replace(/[^A-Z0-9]/g, ""); const n = $("joinCode").value.length, grew = n > codeLen; codeLen = n; renderJoinCells(grew); sfx(grew ? "xp" : "tick"); });
+    renderJoinCells(); bindTilt();
     document.body.dataset.scene = "home"; ambient.set("home"); audio.music.play("lobby");
     const boot = $("boot"); if (boot) { boot.classList.add("out"); setTimeout(() => boot.remove(), 600); }
     try { const n = sessionStorage.getItem("gw_notice"); if (n) { sessionStorage.removeItem("gw_notice"); setTimeout(() => toast(n), 400); } } catch (e) {}
@@ -3869,7 +3942,7 @@ async function initApp() {
         } catch (e) { console.error("Rejoin failed:", e); }
     }
     if (invite) {
-        $("joinCode").value = invite;
+        $("joinCode").value = invite; renderJoinCells();
         toast(profile.get().name ? "Invite loaded. Tap Join." : "Invite loaded. Set your name, then tap Join.");
         $("joinCode").focus();
     } else if (!profile.get().name) setTimeout(() => { if (!room) { openProfile(); toast("Welcome! Make your player card first."); } }, 700);

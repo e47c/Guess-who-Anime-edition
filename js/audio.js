@@ -128,6 +128,7 @@ const FX = {
     whoosh(o, t) { V.sweep(o, t, 300, 3500, .3, .8, 1.5); },
     impact(o, t) { V.kick(o, t, 1.3); V.tom(o, t, 60, 1); V.sweep(o, t, 3000, 200, .5, .7, 1); V.pad(o, t, [33, 40], .6, 1.8, 300); },
     tick(o, t) { V.hat(o, t, .7); },
+    coin(o, t) { V.pluck(o, t, 83, .07, .7, "square", 5200, 0); V.pluck(o, t + .07, 88, .4, .7, "square", 5200, .2); },
     // cinematic layer for the special-card scenes
     boom(o, t) { V.kick(o, t, 1.5); V.tom(o, t, 48, 1.3); V.sweep(o, t, 1800, 120, .9, .9, 1); V.pad(o, t, [28, 35], .9, 2.4, 260); },
     shing(o, t) { V.sweep(o, t, 5200, 9000, .5, .7, 8); V.bell(o, t + .02, 100, .5, 1.2); },

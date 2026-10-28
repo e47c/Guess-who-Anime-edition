@@ -18,8 +18,8 @@ document.body.classList.toggle("fx-lite", !motionOK());
 
 /* ---------------- ambient particles ---------------- */
 const PRESETS = {
-    home:  { n: 46, kinds: [["ember", .8], ["petal", .2]], cols: ["#ff4a2a", "#ffb347", "#e11b1b", "#ffd88a"] },
-    lobby: { n: 40, kinds: [["ember", .75], ["petal", .25]], cols: ["#ff4a2a", "#ffb347", "#e11b1b", "#ffd88a"] },
+    home:  { n: 44, kinds: [["pixel", .55], ["spark", .2], ["mote", .25]], cols: ["#ff2e88", "#35e8ff", "#ffe14d", "#8a5cff"] },
+    lobby: { n: 38, kinds: [["pixel", .6], ["mote", .4]], cols: ["#ff2e88", "#35e8ff", "#ffe14d", "#8a5cff"] },
     gw:    { n: 34, kinds: [["mote", 1]], cols: ["#f2c46b", "#fff1c9", "#d9a441"] },
     hb:    { n: 26, kinds: [["orb", 1]], cols: ["#b06bff", "#3ee8ff", "#ff6bd6"], links: true },
     im:    { n: 40, kinds: [["ash", .85], ["spark", .15]], cols: ["#9a8f86", "#c9bfb4", "#ff3355"] },
@@ -37,6 +37,7 @@ const ambient = (() => {
         const col = (accent && Math.random() < .5) ? accent : pr.cols[(Math.random() * pr.cols.length) | 0];
         Object.assign(p, { kind, col, x: rand(0, W), y: init ? rand(0, H) : (kind === "petal" || kind === "ash" ? -20 : H + 20), a: 0, life: 0, max: rand(6, 14), ph: rand(0, 6.28), s: 1 });
         switch (kind) {
+            case "pixel": p.vx = rand(-4, 4); p.vy = rand(-26, -10); p.s = (rand(2, 5) | 0); p.max = rand(5, 11); break;
             case "ember": p.vx = rand(-8, 8); p.vy = rand(-38, -16); p.s = rand(1, 2.6); break;
             case "spark": p.vx = rand(-20, 20); p.vy = rand(-60, -30); p.s = rand(.8, 1.6); p.max = rand(2, 4); break;
             case "petal": p.vx = rand(10, 28); p.vy = rand(14, 30); p.s = rand(3, 5.5); p.rot = rand(0, 6.28); break;
@@ -67,6 +68,7 @@ const ambient = (() => {
             g.globalAlpha = Math.max(0, fade) * (p.kind === "mote" ? .55 : p.kind === "ash" ? .5 : .85);
             g.fillStyle = p.col;
             if (p.kind === "petal") { p.rot += dt * 1.4; g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillStyle = "#ffb7c9"; g.beginPath(); g.ellipse(0, 0, p.s, p.s * .5, 0, 0, 6.283); g.fill(); g.restore(); }
+            else if (p.kind === "pixel") { const q = Math.round(p.s); g.fillRect(Math.round(p.x), Math.round(p.y), q, q); if ((p.ph * 3 | 0) % 4 === 0) { g.globalAlpha *= .3; g.fillRect(Math.round(p.x) - q, Math.round(p.y) - q, q * 3, q * 3); } }
             else if (p.kind === "ash") { p.rot += dt; g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillRect(-p.s, -p.s * .4, p.s * 2, p.s * .8); g.restore(); }
             else if (p.kind === "orb") { const r = p.s * (1 + .25 * Math.sin(p.ph * 2)); const gr = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 5); gr.addColorStop(0, p.col); gr.addColorStop(1, "transparent"); g.fillStyle = gr; g.beginPath(); g.arc(p.x, p.y, r * 5, 0, 6.283); g.fill(); }
             else { g.beginPath(); g.arc(p.x, p.y, p.s, 0, 6.283); g.fill(); if (p.kind !== "mote") { g.globalAlpha *= .25; g.beginPath(); g.arc(p.x, p.y, p.s * 3.2, 0, 6.283); g.fill(); } }

@@ -3,63 +3,76 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#07060a">
-<meta name="description" content="Anime party games with friends: Guess Who, Headbanz, Imposter and Anime UNO in one room.">
-<title>Guess Who: Anime Edition</title>
+<meta name="theme-color" content="#0a0618">
+<meta name="description" content="Anime Arcade Party: four anime party games with friends (Guess Who, Headbanz, Imposter and Anime UNO) in one room.">
+<title>Anime Arcade Party</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/base.css?v=4">
-<link rel="stylesheet" href="css/modes.css?v=4">
-<link rel="stylesheet" href="css/uno.css?v=4">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Monoton&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css?v=5">
+<link rel="stylesheet" href="css/modes.css?v=5">
+<link rel="stylesheet" href="css/uno.css?v=5">
 </head>
 <body class="anime-theme" data-scene="home">
 
 <canvas id="ambient" aria-hidden="true"></canvas>
-<div id="boot" class="boot"><div class="boot-logo">ANIME<small>loading the arena…</small></div></div>
+<div id="boot" class="boot"><div class="boot-logo">ANIME<span class="boot-sub">ARCADE PARTY</span><small>warming up the cabinets…</small></div></div>
 
 <!-- =========================================
      MAIN MENU
 ========================================= -->
+<div class="arc-floor" aria-hidden="true"></div>
 <div id="home" class="screen">
 <header class="home-top">
-<div class="brand-mini">GW<span>//</span>ANIME</div>
-<button class="icon-btn" onclick="openSettings()" aria-label="Settings">⚙</button>
+<div class="brand-mini">ANIME<span>✦</span>ARCADE<span>✦</span>PARTY</div>
+<div class="home-top-r"><span class="credit" id="credit" aria-label="Credits">CREDIT <b>00</b></span>
+<button class="icon-btn" onclick="openSettings()" aria-label="Settings">⚙</button></div>
 </header>
 <main class="home-main">
 <section class="home-hero">
-<h1 id="homeTitle" class="logo"><span class="logo-top">Guess Who</span><span class="logo-big" data-text="ANIME">ANIME</span><span class="logo-bot">Edition</span></h1>
-<p class="tagline">Four anime party games. One room. Infinite bragging rights.</p>
+<h1 id="homeTitle" class="logo" aria-label="Anime Arcade Party">
+<span class="lg-anime" aria-hidden="true"><i style="--k:0">A</i><i style="--k:1">N</i><i style="--k:2">I</i><i style="--k:3">M</i><i style="--k:4">E</i></span>
+<span class="lg-neon" aria-hidden="true"><span class="lg-arcade">ARC<em>A</em>DE</span><span class="lg-party">PAR<em>T</em>Y</span></span>
+<span class="lg-jp" aria-hidden="true">アニメ・アーケード</span>
+</h1>
+<p class="tagline">Four anime party games. One room. <b>Insert coin.</b></p>
 <div class="home-cta">
-<button class="btn xl" onclick="createRoom()"><span class="btn-k">作</span>Create room</button>
+<button class="btn xl coin-btn" onclick="insertCoin()"><span class="coin-slot" aria-hidden="true"><i></i></span><span class="cb-txt">Host a party<small>insert coin · create a room</small></span></button>
 <div id="joinArea" class="join-box">
-<input id="joinCode" maxlength="6" placeholder="ROOM CODE" autocomplete="off" spellcheck="false" aria-label="Room code">
+<div class="code-wrap"><div class="code-cells" id="joinCells" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+<input id="joinCode" maxlength="6" placeholder="ROOM CODE" autocomplete="off" spellcheck="false" aria-label="Room code"></div>
 <button class="btn alt" onclick="joinRoom()">Join</button>
 </div>
+<span class="coin-fly" id="coinFly" aria-hidden="true"></span>
 </div>
-<div class="mode-strip" id="homeModes" aria-label="Game modes"></div>
 </section>
-<aside class="profile-card" id="profileCard" aria-label="Your profile">
+<aside class="profile-card" id="profileCard" aria-label="Your profile" data-tilt>
+<div class="ic-foil" aria-hidden="true"></div>
+<div class="ic-head" aria-hidden="true"><span class="ic-brand">ARCADE PASS</span><span class="ic-chip"></span></div>
 <div class="pc-top">
 <div class="pc-ava" id="pcAva"></div>
-<div class="pc-id"><div class="pc-name" id="pcName">Player</div><div class="pc-title" id="pcTitle">Rookie</div></div>
+<div class="pc-id"><div class="pc-up">1UP</div><div class="pc-name" id="pcName">Player</div><div class="pc-title" id="pcTitle">Rookie</div></div>
 </div>
 <div class="pc-level"><span id="pcLvl">LV 1</span><div class="xpbar"><i id="pcXp"></i></div><span id="pcXpTxt">0 / 100</span></div>
+<div class="pc-hs" aria-hidden="true">HI-SCORE TABLE</div>
 <div class="pc-stats" id="pcStats"></div>
-<button class="btn ghost wide" onclick="openProfile()">Edit profile</button>
+<button class="btn ghost wide" onclick="openProfile()">Edit player card</button>
 <input id="name" type="hidden">
 </aside>
 </main>
+<section class="cab-row" id="homeModes" aria-label="Game modes: tap a cabinet for its rules"></section>
 </div>
 
 <!-- =========================================
      LOBBY (players gather here, pick a mode together, come back between matches)
 ========================================= -->
 <div id="lobby" class="screen hidden">
+<div class="challenger hidden" id="challenger" aria-live="polite"></div>
 <header class="lobby-top">
-<div class="room-tag"><small>ROOM</small><b id="roomCode">------</b>
-<button class="chip-btn" onclick="copyRoomCode()" aria-label="Copy room code">Copy</button>
-<button class="chip-btn" onclick="copyInviteLink()" aria-label="Copy invite link">Invite link</button></div>
+<div class="room-tag"><small>ROOM</small><b id="roomCode" class="code-show">------</b>
+<span class="rt-btns"><button class="chip-btn" onclick="copyRoomCode()" aria-label="Copy room code">Copy</button>
+<button class="chip-btn" onclick="copyInviteLink()" aria-label="Copy invite link">Invite link</button></span></div>
+<div class="lobby-title" aria-hidden="true"><b>PLAYER SELECT</b><small>アニメ・アーケード・パーティー</small></div>
 <div class="lobby-top-actions">
 <button class="icon-btn" onclick="openSettings()" aria-label="Settings">⚙</button>
 <button class="btn ghost sm" onclick="leaveRoom()">Leave</button>
@@ -69,13 +82,13 @@
 <div id="lobbyMatch" class="lobby-match hidden"></div>
 <div class="lobby-grid">
 <section class="lobby-col seats-col">
-<h2 class="sec-title"><span>01</span>Squad <em id="seatCount">1/8</em></h2>
+<h2 class="sec-title"><span>1P–8P</span>Players <em id="seatCount">1/8</em></h2>
 <div id="lobbySeats" class="seats"></div>
 </section>
 <section class="lobby-col modes-col">
-<h2 class="sec-title"><span>02</span>Choose the game <button class="chip-btn" onclick="showRules()">How to play</button><em id="modeVoteHint">tap a mode to vote</em></h2>
+<h2 class="sec-title"><span>STAGE</span>Pick the game <button class="chip-btn" onclick="showRules()">How to play</button><em id="modeVoteHint">tap a mode to vote</em></h2>
 <div id="lobbyModes" class="lobby-modes"></div>
-<div class="lobby-settings" id="lobbySettings">
+<div class="lobby-settings" id="lobbySettings"><div class="ls-head" aria-hidden="true"><b>RULESET</b><i></i><i></i><i></i><i></i><i></i><i></i></div>
 <div id="animePoll" class="field series-pick">
 <label class="field-label">Series in play</label>
 <div class="anime-poll">
@@ -123,8 +136,8 @@
 <footer class="lobby-foot">
 <p id="lobbyStatus" class="lobby-status" role="status">Waiting for players…</p>
 <div class="lobby-foot-btns">
-<button id="readyBtn" class="btn ghost" onclick="toggleReady()">I'm ready</button>
-<button id="startButton" class="btn xl hidden" onclick="startGame()">START</button>
+<button id="readyBtn" class="btn ghost arc-btn" onclick="toggleReady()">I'm ready</button>
+<button id="startButton" class="btn xl arc-btn hidden" onclick="startGame()">START</button>
 </div>
 </footer>
 </div>

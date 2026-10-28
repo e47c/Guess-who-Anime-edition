@@ -1,4 +1,6 @@
-# Guess Who: Anime Edition
+# Anime Arcade Party
+
+*(formerly Guess Who: Anime Edition)*
 
 A browser party game for a squad of up to 8 friends with four anime modes in one room:
 
@@ -42,3 +44,9 @@ A browser party game for a squad of up to 8 friends with four anime modes in one
 - Settings has master/music/SFX volume, mute, music on/off and **Reduced effects**. `prefers-reduced-motion` is respected everywhere.
 - Ambient particles run at about 30 fps, scale with screen size, and pause when the tab is hidden; the AudioContext suspends too. Effect loops stop by themselves.
 - One room listener, one guess listener and one connection listener per client. They are re-used across matches and removed on leave.
+
+## Menu and lobby: the night arcade
+
+- **Main menu.** A neon marquee ("ANIME" slams in, "ARCADE PARTY" buzzes on) over a row of arcade cabinets, one per mode. Each cabinet's CRT runs an attract loop; tap one for its rules. **Host a party** is *insert coin*: a coin drops into the slot and the credit counter ticks before the room is made. The join field is a six-cell high-score entry. Your profile is an arcade member card with a holographic foil that follows the pointer.
+- **Lobby.** A fighting-game *PLAYER SELECT*. Seats are 1P–8P fighter tiles, a **READY!** band stamps across a tile when that player readies up, and anyone joining mid-lobby gets a *HERE COMES A NEW CHALLENGER!* banner. The modes are a stage select: corner brackets mark the host's pick and every voter's 1P–8P cursor hovers over the mode they voted for. Ready and Start are physical arcade push buttons, and the status line is an LED board.
+- Reduced effects (or the OS reduced-motion setting) turns off the moving floor, tilt, foil and attract loops.
