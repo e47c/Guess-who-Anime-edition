@@ -943,6 +943,7 @@ function showOnly(id) {
         if (motionOK() && element.animate) element.animate([{ opacity: 0, transform: "translateY(14px) scale(.995)" }, { opacity: 1, transform: "none" }], { duration: 380, easing: "cubic-bezier(.2,.9,.3,1)" });
     }
     $("emoteBtn").classList.toggle("hidden", !room || id === "home");
+    if (id !== "uno") zwReset();
 }
 
 // board size: in the lobby the host's choice is written to the room so everybody sees it
@@ -2385,6 +2386,7 @@ function showUNO(data) {
     if (u.ev) unoSeen.ev = u.ev.id;
     if (u.n !== unoSeen.n) { if (unoSeen.n >= 0 && play && myTurn && u.turn !== unoSeen.turn) { sfx("turn"); } unoSeen.n = u.n; unoSeen.turn = u.turn; }
     if (u.fx && u.fx.id !== unoSeen.fx) { unoSeen.fx = u.fx.id; if (!firstRender) unoSpecialFx(u, u.fx); }
+    zwSync(u);
     const actCol = UNO_SUIT[u.color] || "#ffcf4a";
     $("uno").classList.toggle("myturn", myTurn); $("uno").style.setProperty("--ac", actCol); ambient.accent(actCol);
     $("unoArenaKj").textContent = UNO_KANJI[keys[u.color]] || "札";
@@ -2709,11 +2711,36 @@ function unoSpecialFx(u, f) {
     box.appendChild(hbEl("h2", null, c.ab || d.label));
     box.appendChild(hbEl("p", null, (u.names["p" + f.p] || "?") + " · " + c.n));
     $("uno").appendChild(box);
-    const close = () => { box.classList.add("out"); setTimeout(() => box.remove(), 420); };
+    const close = () => { box.classList.add("out"); setTimeout(() => box.remove(), 420); if (c.sk + "_" + c.k === "jojo_f" && zw.cine) { zw.cine = false; zwSync(zw.u); } };
     if (!UNO_FX_HOOKS[c.sk + "_" + c.k]) try { d.snd(); } catch (e) {}   // silent while a hand-made animation exists (voice lines come from audio/special/)
     const hook = UNO_FX_HOOKS[c.sk + "_" + c.k];
     if (hook) { try { hook(box, close, c, u); } catch (e) { console.warn(e); close(); } } else setTimeout(close, 1700);
 }
+/* ZA WARUDO: while a player frozen by DIO's card still has turns to lose, the whole page is grey for everyone: one fixed layer
+   (backdrop-filter) greys the table, the cards, the UI and any other animation under it. It switches on as DIO's scene ends
+   (the scene's last frame is already grey), stays through every other player's turns, and plays the reversal (grey, holographic
+   unwind, purple/green, gold, normal) the moment the frozen player's last skipped turn is spent. */
+const zw = { on: false, cine: false, el: null, u: null, tm: 0 };
+function zwVeil() {
+    if (!zw.el) { zw.el = hbEl("div", "zw-veil"); zw.el.setAttribute("aria-hidden", "true"); zw.el.append(hbEl("i", "zw-holo"), hbEl("i", "zw-ring"), hbEl("span", "zw-say", "時は動き出す")); document.body.appendChild(zw.el); }
+    return zw.el;
+}
+const zwActive = u => !!u && u.phase === "play" && unoLive(u).some(p => (u.frozen || {})["p" + p] > 0 && (u.fzk || {})["p" + p] === "jojo_f");
+function zwSync(u, instant) {
+    zw.u = u; const want = zwActive(u);
+    if (want && !zw.cine && (!zw.on || zw.el.classList.contains("pause"))) {
+        zw.on = true; const v = zwVeil(); clearTimeout(zw.tm); v.classList.remove("out", "pause"); v.classList.toggle("now", !!instant); void v.offsetWidth; v.classList.add("on");
+    } else if (!want && zw.on) {
+        zw.on = false; const v = zwVeil(); v.classList.remove("on", "now", "pause");
+        if (motionOK() && currentScreen === "uno") { v.classList.remove("out"); void v.offsetWidth; v.classList.add("out"); sfx("reverse"); setTimeout(() => sfx("chime"), 900); clearTimeout(zw.tm); zw.tm = setTimeout(() => v.classList.remove("out"), 2300); }
+    }
+}
+function zwReset() { zw.on = false; zw.cine = false; if (zw.el) zw.el.classList.remove("on", "now", "pause", "out"); }
+document.addEventListener("zawarudo", e => {
+    if (e.detail === "start") { zw.cine = true; if (zw.el) zw.el.classList.add("pause"); }           // DIO's scene draws its own colour → grey
+    else if (e.detail === "stopped") { zw.cine = false; zwSync(zw.u, true); }                        // its last frame is grey: take over without a seam
+});
+
 /* Future Sight, during the extra play: the hand you saw stays as a small reminder next to the table (only for you, only until
    the extra play is used). The big reveal itself is part of the card's cinematic (js/cine/peek.js). */
 function unoSightStrip(u, me, show) {

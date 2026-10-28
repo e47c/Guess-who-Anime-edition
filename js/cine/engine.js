@@ -42,7 +42,7 @@ const KANJI = { f: "凍", t: "換", u: "極", e: "眼" }, KLABEL = { f: "FREEZE"
    stretched between them. A clip that is replaced keeps working: pins that no longer fit are relaxed by the warp. */
 const SYNC = {
     onepiece_f: [[.3, 2.58], [.52, 4.58]], naruto_f: [[.48, 2.0], [.72, 4.28]], jjk_f: [[.24, 3.5], [.8, 10.05]], demonslayer_f: [[.52, 3.23]], bleach_f: [[.42, 2.83], [.72, 6.3]],
-    dragonball_f: [[.3, 1.65], [.5, 2.95], [.62, 3.62]], blackclover_f: [[.56, 4.8]], hxh_f: [[.32, 3.48], [.68, 5.53]], jojo_f: [[.3, 1.38], [.48, 2.55]],
+    dragonball_f: [[.3, 1.65], [.5, 2.95], [.62, 3.62]], blackclover_f: [[.56, 4.8]], hxh_f: [[.32, 3.48], [.68, 5.53]], jojo_f: [[.1, 1.6], [.2, 2.25], [.42, 3.9]],
     onepiece_t: [[.22, 1.3], [.64, 6.24]], naruto_t: [[.3, 1.65], [.6, 3.68]], dragonball_t: [[.22, 3.15], [.62, 5.05], [.66, 5.9]], jjk_t: [[.28, 1.62], [.5, 3.95], [.72, 5.45]],
     demonslayer_t: [[.34, 2.94], [.5, 5.02], [.66, 6.18]], bleach_t: [[.3, 1.9], [.58, 6.4]], hxh_t: [[.3, 1.95], [.48, 5.1]], blackclover_t: [[.24, 2.02], [.46, 4.55]], jojo_t: [[.28, 2.2]],
     onepiece_u: [[.09, 1.9], [.14, 2.43], [.193, 3.0], [.48, 5.98], [.72, 8.4]], naruto_u: [[.22, 1.4], [.7, 9.12]], dragonball_u: [[.14, 1.35], [.38, 3.4], [.5, 4.15]], jjk_u: [[.3, 3.2], [.56, 5.8]], demonslayer_u: [[.3, 1.6], [.56, 3.6], [.72, 4.6]],
@@ -298,7 +298,7 @@ export function cineHook(key) {
 
         function run(info) {
             const tail = kd.tail(env) + (S.tailPlus || 0), I = INTRO;
-            const main = info ? Math.min(V_MAX, Math.max(V_MIN, info.dur * 1000 + 300 - I)) : S.ms || V_MS;
+            const main = (info ? Math.min(V_MAX, Math.max(V_MIN, info.dur * 1000 + 300 - I)) : S.ms || V_MS) + (S.mainPlus || 0);   // mainPlus: extra screen time after the voice
             const total = I + main + tail, warp = warpOf(SYNC[key], info, I, main), w = innerWidth, h = innerHeight, mk = z => { const cv = A.hbEl("canvas", "fx-cv"); cv.style.zIndex = z; box.appendChild(cv); return cv; };
             let dpr = Math.min(1.5, window.devicePixelRatio || 1); if (w * h * dpr * dpr > 2.4e6) dpr = Math.sqrt(2.4e6 / (w * h));
             const cv = mk(1), g = cv.getContext("2d"); cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
@@ -333,7 +333,7 @@ export function cineHook(key) {
                     else if (ph === "main") S.main(g, X, T); else if (S.tail) S.tail(g, X, T); else kd.draw(g, X, T, S);
                 } catch (e) { console.warn(e); }
                 g.restore();
-                if (ph === "main" && vox > .04) { g.save(); g.globalCompositeOperation = "lighter"; K.vignette(g, w, h, .32 * vox, S.col, .42); g.restore(); }   // the picture breathes with the voice
+                if (ph === "main" && vox > .04 && (!S.breath || S.breath(T.t))) { g.save(); g.globalCompositeOperation = "lighter"; K.vignette(g, w, h, .32 * vox, S.col, .42); g.restore(); }   // the picture breathes with the voice
                 const f = X.fx;
                 if (f.shake && ph === "tail") { const k = f.shake, fr = Math.floor(T.s * 60); box.style.transform = "translate(" + ((K.hs(fr) - .5) * k) + "px," + ((K.hs(fr + 3) - .5) * k) + "px)"; } else if (box.style.transform) box.style.transform = "";
                 if (f.glitch) K.glitch(g, T.s, f.glitch);

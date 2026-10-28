@@ -410,45 +410,88 @@ const kurapika = {
     }
 };
 
-/* ---------- DIO · The World: menace, ZA WARUDO, the inverted sphere sweeps the page, time stops, knives hang in the air ---------- */
+/* ---------- DIO · ZA WARUDO, first person: arms crossed in an X before his chest (yellow sleeves), thrown open on the scream's peak;
+   reality is overwritten in gold with purple/green interference and holographic tearing, then everything slows to a stop in grey.
+   The grey does not come back here: the page itself stays grey (game.js, .zw-veil) until the frozen player's 2 turns are over. ---------- */
 function knife(g, x, y, an, L) {
     g.save(); g.translate(x, y); g.rotate(an); g.lineJoin = "round";
     const gr = g.createLinearGradient(0, -L * .1, 0, L * .1); gr.addColorStop(0, "#ffffff"); gr.addColorStop(.5, "#a8acb8"); gr.addColorStop(1, "#4a4e5a");
     g.beginPath(); g.moveTo(L, 0); g.quadraticCurveTo(L * .4, -L * .13, 0, -L * .09); g.lineTo(0, L * .07); g.quadraticCurveTo(L * .5, L * .06, L, 0); g.fillStyle = gr; g.fill(); g.strokeStyle = "#111"; g.lineWidth = 1.5; g.stroke();
     g.fillStyle = "#c9a227"; g.fillRect(-L * .04, -L * .16, L * .05, L * .32); g.fillStyle = "#2a1a0a"; g.fillRect(-L * .5, -L * .06, L * .46, L * .12); g.strokeRect(-L * .5, -L * .06, L * .46, L * .12); g.restore();
 }
+const DIO_SLEEVE = { c: "#f4cb2e", s: "#b8880e", cuff: "#2c6a3a", len: 640, w: 64 };
+const ZW = { cross: .2, open: .245, gold: .26, gray: .42, still: .62 };          // the beats (scene t), pinned to the voice in engine.js SYNC
+/* time that runs normally, then brakes smoothly to a dead stop between ZW.gray and ZW.still (first derivative 1 → 0) */
+const dioSlow = t => { if (t < ZW.gray) return t; const u = Math.min(1, (t - ZW.gray) / (ZW.still - ZW.gray)); return ZW.gray + (ZW.still - ZW.gray) * (u - u * u / 2); };
 const dio = {
-    col: "#ffd84a", ms: 7600,
-    seal(g, X, a, r) { r = r || X.env.r; if (a <= 0) return; g.save(); g.globalAlpha = a; g.strokeStyle = "#ffd84a"; g.lineWidth = 4; g.shadowColor = "#ffd84a"; g.shadowBlur = 26; g.strokeRect(r.x - 9, r.y - 9, r.w + 18, r.h + 18); g.shadowBlur = 0; g.fillStyle = "rgba(255,216,74,.14)"; g.fillRect(r.x - 9, r.y - 9, r.w + 18, r.h + 18); g.restore(); },
+    col: "#ffd84a", ms: 7600, mainPlus: 1500, breath: t => t < ZW.gray,
+    begin() { document.dispatchEvent(new CustomEvent("zawarudo", { detail: "start" })); },
+    tailStart() { document.dispatchEvent(new CustomEvent("zawarudo", { detail: "stopped" })); },
+    seal(g, X, a, r) { r = r || X.env.r; if (a <= 0) return; g.save(); g.globalAlpha = a; g.strokeStyle = "#e8e8e8"; g.lineWidth = 4; g.shadowColor = "#ffffff"; g.shadowBlur = 20; g.strokeRect(r.x - 9, r.y - 9, r.w + 18, r.h + 18); g.shadowBlur = 0; g.fillStyle = "rgba(255,255,255,.1)"; g.fillRect(r.x - 9, r.y - 9, r.w + 18, r.h + 18); g.restore(); },
+    tail(g, X, T) {                                                     // still grey: the snapshot dissolves into the (grey) table, the victim's plate is sealed
+        const a = 1 - K.ss(.35, 1, T.tt); X.reveal(T.tt, .3); dio.seal(g, X, a);
+        K.slam(g, X.env.toName + " · TIME STOPPED ×2", X.w / 2, Math.min(X.h * .5, X.env.r.y + X.env.r.h + X.M * .12), X.M * .055, K.lin(0, 1, T.tt), { fill: "#fff", stroke: "#111", glow: "#bbbbbb", from: 1.2 });
+    },
     main(g, X, T) {
-        const { w, h, M } = X, t = T.t, s = T.s, G = "#ffd84a", ZA = .3, stopped = t >= ZA + .06, r = K.stage(X, back(t)), c = mid(r);
-        X.cue(.02, "rumble", t); X.cue(ZA, "chime", t); X.cue(ZA + .01, "boom", t); X.cue(.4, "whoosh", t); for (let i = 0; i < 5; i++) X.cue(.48 + i * .09, "tick", t);
-        if (t < ZA) {                                                        // 1 · menace: DIO, ゴゴゴゴ
-            K.still(g, X, lin(0, ZA, t), { z0: 1.1, dz: .15, grade: "#7aff6a", dy: .1 }); K.halftone(g, w, h, "rgba(0,0,0,.35)", .5, 8);
-            "ゴゴゴゴゴ".split("").forEach((ch, i) => { const q = lin(.02 + i * .03, .12 + i * .03, t); g.save(); g.globalAlpha = q; K.txt(g, ch, w * (.1 + i * .2), h * (.2 + .06 * Math.sin(s * 3 + i)) + (i % 2) * h * .55, M * .11, { font: K.F_JP, weight: "400", fill: "#d9a6ff", stroke: "#2a0a3a", rot: (i - 2) * .1, sw: 4 }); g.restore(); });
-            K.slam(g, "ザ・ワールド!!", w / 2, h * .82, M * .1, lin(.18, ZA + .02, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#3a2600", glow: G, from: 1.6 });
-            K.bars(g, w, h, 1); return;
+        const { w, h, M } = X, t = T.t, G = "#ffd84a", r = K.stage(X, 0), c = mid(r);
+        const st = dioSlow(t), sM = st * X.main / 1000;                  // slowed clock for everything that moves
+        X.cue(.0, "rumble", t); X.cue(ZW.open - .01, "boom", t); X.cue(ZW.open, "shing", t); X.cue(ZW.gold, "chime", t);
+        [ZW.gray, ZW.gray + .05, ZW.gray + .11, ZW.gray + .19].forEach(a => X.cue(a, "tick", t));   // the clock, ticking slower and slower
+        const open = K.oBack(lin(ZW.cross, ZW.open, t)), tense = lin(.04, ZW.cross, t) * (1 - lin(ZW.cross, ZW.open, t)), live = 1 - lin(ZW.gray, ZW.still, t);
+        const gold = lin(ZW.open, ZW.gold + .04, t) * (1 - lin(ZW.gray + .04, ZW.still, t)), holo = K.bell(t, ZW.gold + .06, ZW.still - .02), grey = ss(ZW.gray, ZW.still, t);
+        g.save(); K.cam(g, X, { shake: tense * 4 + hit(t, ZW.open, .06) * 26, z: 1 + hit(t, ZW.open, .1) * .05 + (1 - grey) * .0 });
+        // the world in front of DIO: night, a golden floor running to the horizon, the next player's plate, dust in the air
+        K.sky(g, w, h, ["#0d0716", "#24133a", "#3a1e2a"]);
+        K.radial(g, w / 2, h * .55, M * 1.1, [[0, "rgba(255,190,80,.22)"], [.5, "rgba(120,40,140,.12)"], [1, "rgba(0,0,0,0)"]]);
+        g.save(); g.strokeStyle = "rgba(255,210,110,.22)"; g.lineWidth = 1.5; const hz = h * .58;
+        for (let i = -12; i <= 12; i++) { g.beginPath(); g.moveTo(w / 2 + i * M * .02, hz); g.lineTo(w / 2 + i * M * .3, h); g.stroke(); }
+        for (let j = 1; j < 9; j++) { const y = hz + Math.pow(((j + (sM * .6) % 1) / 9), 2) * (h - hz); g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); } g.restore();
+        plate(g, X, r, 1, open * .6);
+        g.save(); g.fillStyle = "#ffe9b0"; for (let i = 0; i < 90; i++) { const x = (hs(i) * w + sM * (8 + 18 * hs(i + 7))) % w, y = (hs(i + 3) * h - sM * (10 + 30 * hs(i + 9)) % h + h) % h; g.globalAlpha = .25 + .45 * hs(i + 4); g.fillRect(x, y, 2 + hs(i) * 2, 2 + hs(i) * 2); } g.restore();   // dust: drifts, then hangs
+        // ゴゴゴ while the arms are crossed
+        if (t < ZW.open + .04) "ゴゴゴゴ".split("").forEach((ch, i) => { const q = lin(.01 + i * .035, .08 + i * .035, t) * (1 - lin(ZW.open, ZW.open + .04, t)); if (q <= 0) return; g.save(); g.globalAlpha = q; K.txt(g, ch, w * (.12 + (i % 2) * .76), h * (.22 + i * .13) + Math.sin(sM * 9 + i) * 3, M * .1, { font: K.F_JP, weight: "400", fill: "#d9a6ff", stroke: "#2a0a3a", rot: (i % 2 ? .15 : -.15), sw: 4 }); g.restore(); });
+        // the knives: thrown the instant the world turns, braking to a stop in mid-air
+        for (let i = 0; i < 12; i++) {
+            const t0 = ZW.open + .02 + i * .012, q = K.oCub(Math.max(0, Math.min(1, (st - t0) / .2))); if (st < t0) continue;
+            const sx = w * (.5 + (hs(i + 20) - .5) * .5), sy = h * 1.1, tx = c.x + (hs(i + 50) - .5) * r.w * 1.4, ty = c.y + (hs(i + 60) - .5) * r.h * 2;
+            knife(g, K.mix(sx, tx, q * .85), K.mix(sy, ty, q * .85), Math.atan2(ty - sy, tx - sx), M * (.06 + .03 * hs(i)) * (1.6 - q * .7));
         }
-        // 2 · the inverted sphere sweeps out from the centre, then 3 · the world is still
-        g.save(); K.cam(g, X, { z: 1.04, shake: stopped ? 0 : 12 });
-        K.sky(g, w, h, ["#2a2410", "#5a4c1c", "#1c180a"]); K.halftone(g, w, h, "rgba(0,0,0,.25)", .6, 9);
-        g.fillStyle = "#3a3012"; for (let i = 0; i < 120; i++) { g.globalAlpha = .4 + .5 * hs(i + 4); g.fillRect(hs(i) * w, hs(i + 3) * h, 2.5, 2.5 + hs(i) * 3); } g.globalAlpha = 1;   // dust, motionless
-        plate(g, X, r, 1, ss(.45, .6, t));
-        for (let i = 0; i < 16; i++) {                                     // the knives, thrown, then hanging in the air
-            const sx = w * (.6 + .4 * hs(i + 20)), sy = h * (1.05 + .1 * hs(i + 30)), tx = c.x + (hs(i + 50) - .5) * r.w, ty = c.y + (hs(i + 60) - .5) * r.h, th = lin(.42 + i * .012, .52 + i * .012, t), fz = .5 + .35 * hs(i + 40);
-            if (th <= 0) continue; const q = Math.min(fz, K.oExpo(th) * fz), x = K.mix(sx, tx, q), y = K.mix(sy, ty, q); knife(g, x, y, Math.atan2(ty - sy, tx - sx), M * (.07 + .03 * hs(i))); }
-        hand(g, w * .8, h * (1.14 - .2 * K.oBack(lin(.36, .44, t))), HS(X) * 1.1, -.5 + .3 * K.oCub(lin(.44, .52, t)), t < .46 ? "fist" : "spread", { skin: "pale", sleeve: { c: "#e8c23a", s: "#a8841c", cuff: "#2a7a3a", len: 260 } });
-        const sec = Math.min(9, Math.floor(lin(.4, 1, t) * 9) + 1); if (t > .4) K.txt(g, sec + "秒経過", w * .86, h * .2, M * .05, { font: K.F_JP, weight: "400", fill: "#fff6c2", stroke: "#3a2600", glow: G, sw: 3 });   // seconds of stopped time
-        dio.seal(g, X, lin(.55, .7, t), r);
+        // gold aura rising off DIO while he holds the pose
+        if (tense > 0 || open > 0) { g.save(); g.globalCompositeOperation = "lighter"; for (let i = 0; i < 26; i++) { const u = (hs(i) + sM * (.25 + .2 * hs(i + 2))) % 1, x = w * (.15 + .7 * hs(i + 5)) + Math.sin(sM * 3 + i) * 12, y = h * (1.05 - u * .9); g.globalAlpha = Math.sin(u * Math.PI) * .5 * (tense + open * live) ; K.glow(g, x, y, M * (.02 + .02 * hs(i + 1)), G, 1); } g.restore(); }
+        // the arms, first person: crossed X (right arm over left), then thrown wide; sleeves run out of the bottom of the frame
+        const jit = tense * live, tr = k => (hs(Math.floor(sM * 40) + k) - .5) * M * .006 * jit;
+        const HSZ = M * .0026, arm = (side, top) => {                     // side 1 = right arm, -1 = left (mirrored)
+            const cx0 = w / 2 - side * w * (.17 - .02 * tense), cy0 = h * (.46 + .02 * tense), a0 = -side * (.95 + .08 * tense);
+            const cx1 = w / 2 + side * w * .36, cy1 = h * .6, a1 = side * .5;
+            const x = K.mix(cx0, cx1, open) + tr(side * 3), y = K.mix(cy0, cy1, open) + tr(side * 5) + Math.sin(open * Math.PI) * -h * .06, a = K.mix(a0, a1, open);
+            hand(g, x, y, HSZ * (1 + .08 * Math.sin(open * Math.PI)), a, open > .55 ? "spread" : "claw", { view: "back", skin: "pale", flip: side < 0, sleeve: DIO_SLEEVE });
+        };
+        if (open < .5) { arm(-1); arm(1); } else { arm(1); arm(-1); }
+        if (open > 0 && open < 1) K.streaks(g, w, h, sM, 0, { n: 30, col: "#fff2b0", a: .3 * (1 - open), speed: 6 });
         g.restore();
-        const sp = lin(ZA, ZA + .12, t);                                    // the sphere of inverted time
-        if (sp > 0 && sp < 1) { const R = Math.hypot(w, h) * K.oCub(sp) * 1.05; g.save(); g.beginPath(); g.arc(w / 2, h / 2, R, 0, TAU); if (sp > .5) g.arc(w / 2, h / 2, R * K.lin(.5, 1, sp) * .95, 0, TAU, true); g.clip(); g.globalCompositeOperation = "difference"; g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); g.restore(); g.strokeStyle = "rgba(255,255,255," + (1 - sp) + ")"; g.lineWidth = 6; g.beginPath(); g.arc(w / 2, h / 2, R, 0, TAU); g.stroke(); }
-        if (stopped) { g.save(); g.globalCompositeOperation = "saturation"; g.fillStyle = "rgba(0,0,0,.55)"; g.fillRect(0, 0, w, h); g.restore(); g.save(); g.globalCompositeOperation = "multiply"; g.fillStyle = "rgba(255,236,170,.9)"; g.fillRect(0, 0, w, h); g.restore(); }
-        X.fx.rgb = hit(t, ZA, .1) * 16;
-        K.column(g, "時よ止まれ", w * .08, h * .2, M * .07, lin(.42, .6, t), { fill: "#fff6c2", stroke: "#3a2600", glow: G, sw: 3 });
-        if (t > ZA && t < .62) K.slam(g, "THE WORLD", w / 2, h * .6, M * .17, lin(ZA, .62, t), { fill: "#fff", stroke: "#3a2600", glow: G, ghost: 1 });
-        K.title(g, X, lin(.68, 1, t), { en: "TIME STOP", kj: "ザ・ワールド", sub: "DIO · " + X.who, y: .86 });
-        K.vignette(g, w, h, .5, "#1a1400"); K.bars(g, w, h, 1 - lin(.92, 1, t));
+        // the shout: the lettering slams on the peak, shock ring from DIO's chest
+        K.shock(g, w / 2, h * .62, lin(ZW.open - .005, ZW.open + .1, t), M * 1.4, G, 40);
+        if (t > ZW.open - .02 && t < ZW.gray + .06) K.slam(g, "ザ・ワールド!!", w / 2, h * .2, M * .13, lin(ZW.open - .02, ZW.gray + .06, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#3a2600", glow: G, from: 2.2, ghost: 1 });
+        // reality overwritten: the inverted sphere, gold, purple/green interference, holographic tearing
+        const sp = lin(ZW.open, ZW.gold + .1, t);
+        if (sp > 0 && sp < 1) { const R = Math.hypot(w, h) * K.oCub(sp) * .75; g.save(); g.beginPath(); g.arc(w / 2, h * .55, R, 0, TAU); if (sp > .45) g.arc(w / 2, h * .55, R * lin(.45, 1, sp) * .96, 0, TAU, true); g.clip(); g.globalCompositeOperation = "difference"; g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); g.restore(); }
+        if (gold > 0) {
+            g.save(); g.globalCompositeOperation = "color"; g.globalAlpha = gold * .85; const gg = g.createLinearGradient(0, 0, w, h); gg.addColorStop(0, "#ffd400"); gg.addColorStop(.5, "#ffb000"); gg.addColorStop(1, "#ffe86a"); g.fillStyle = gg; g.fillRect(0, 0, w, h); g.restore();
+            g.save(); g.globalCompositeOperation = "color"; for (let i = 0; i < 7; i++) { const y0 = ((i / 7 + sM * .35 * (i % 2 ? 1 : -.7)) % 1) * h * 1.4 - h * .2; g.globalAlpha = gold * (.45 + .25 * Math.sin(sM * 7 + i * 2)); g.fillStyle = i % 2 ? "#a020ff" : "#00ff88"; g.beginPath(); g.moveTo(0, y0); g.lineTo(w, y0 - h * .25); g.lineTo(w, y0 - h * .25 + h * .07); g.lineTo(0, y0 + h * .07); g.closePath(); g.fill(); } g.restore();
+        }
+        if (holo > 0) {
+            g.save(); g.globalCompositeOperation = "lighter"; for (let y = 0; y < h; y += 4) { const k = .5 + .5 * Math.sin(y * .05 + sM * 9); g.globalAlpha = holo * .12 * k; g.fillStyle = `hsl(${(y * .6 + sM * 120) % 360},100%,60%)`; g.fillRect(0, y, w, 1.5); } g.restore();   // shimmering interference lines
+            g.save(); g.globalCompositeOperation = "screen"; g.globalAlpha = holo * .5; const ed = M * .08; [["#ff2a8a", 0], ["#2affd8", 1]].forEach(([col, k]) => { const eg = k ? g.createLinearGradient(w, 0, w - ed, 0) : g.createLinearGradient(0, 0, ed, 0); eg.addColorStop(0, col); eg.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = eg; g.fillRect(k ? w - ed : 0, 0, ed, h); }); g.restore();   // colours splitting at the edges
+            if (holo > .25 && live > .2) { const n = 6; for (let i = 0; i < n; i++) { const y = hs(Math.floor(sM * 12) + i * 7) * h, hh = h * (.01 + .03 * hs(i + Math.floor(sM * 12))), dx = (hs(i * 3 + Math.floor(sM * 12)) - .5) * M * .05 * holo * live; const dp = X.dpr || 1; g.drawImage(g.canvas, 0, y * dp, w * dp, hh * dp, dx, y, w, hh); } }   // brief holographic tearing
+        }
+        X.fx.rgb = hit(t, ZW.open, .08) * 18 + holo * 7 * live;
+        // the world stops: grey spreads over everything, uniformly, while the clock above brakes to zero
+        if (t > ZW.gray + .1) { const q = lin(ZW.gray + .1, ZW.still + .06, t); g.save(); g.globalAlpha = q; K.column(g, "時よ止まれ", w * .08, h * .18, M * .07, q, { fill: "#fff", stroke: "#222", sw: 3 }); g.restore(); }
+        if (t > ZW.still) K.title(g, X, lin(ZW.still, 1, t), { en: "THE WORLD", kj: "ザ・ワールド", sub: "TIME STOP · " + X.env.toName.toUpperCase() + " LOSES 2 TURNS", y: .86, col: "#d8d8d8" });
+        if (grey > 0) { g.save(); g.globalCompositeOperation = "saturation"; g.globalAlpha = grey; g.fillStyle = "#808080"; g.fillRect(0, 0, w, h); g.restore(); }
+        if (grey > 0) { g.save(); g.globalAlpha = grey * .5; K.vignette(g, w, h, .55, "#000", .4); g.restore(); }
+        if (hit(t, ZW.open, .02)) X.fx.flash = ["#fff6c8", .7];
+        K.bars(g, w, h, 1);
     }
 };
 
