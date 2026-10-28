@@ -4,8 +4,8 @@
    (staged at centre, then gliding back onto its real place on the table), and a seal(g, X, a, r) that the ending
    keeps on the real plate.
    ===================================================================== */
-import * as K from "./kit.js?v=6";
-import { hand, fist, handTips } from "./hands.js?v=6";
+import * as K from "./kit.js?v=7";
+import { hand, fist, handTips } from "./hands.js?v=7";
 const { lin, ss, hit, hs, TAU, mid } = K;
 
 const back = t => 1 - ss(.86, .97, t);                       // staged plate -> real plate over the last beat of the main act
@@ -25,61 +25,91 @@ function frozenWave(g, cx, by, W, H, e) {
     g.fillStyle = "rgba(235,250,255,.95)"; for (let k = 0; k < 6; k++) { const x = cx + W * (.12 + k * .028), y = by - Hh * (.62 - k * .01); g.beginPath(); g.moveTo(x - 4, y); g.lineTo(x, y + Hh * (.06 + .05 * hs(k))); g.lineTo(x + 4, y); g.fill(); }   // icicles under the curl
     g.restore();
 }
-/* ---------- AOKIJI · Ice Age: the lazy stare, a palm on the sea, the sea freezes to the horizon, spires entomb the target ---------- */
+/* ---------- AOKIJI · Ice Age, first person, drawn OVER the real table: the lazy right hand slides out of the white suit's pocket,
+   drifts over the table and lays its palm flat on it on the voice's peak; ice grows out of the palm across the real table, cards
+   and UI to every edge, then the world locks. The frozen look itself is the page's ice veil (game.js, .ice-veil), revealed by a
+   mask that grows with this wave, so the hold after the scene is the same ice with no seam. ---------- */
+const AO = { out: .17, reach: .36, touch: .39, edge: .6, lock: .74 };          // beats (scene t), pinned to the voice in engine.js SYNC
+const aoSlow = t => { if (t < AO.edge) return t; const u = Math.min(1, (t - AO.edge) / (AO.lock - AO.edge)); return AO.edge + (AO.lock - AO.edge) * (u - u * u / 2); };
+const AO_SKIN = { l: "#e9c3a0", b: "#c48d64", s: "#9a6644", d: "#6a3f28", ink: "#2a1206", nail: "#ead1bd" };   // Kuzan's tanned skin
+const AO_SLEEVE = { c: "#f3f5f8", s: "#bcc6d4", cuff: "#3a6fb0", len: 420, w: 62 };                            // white suit jacket, blue shirt cuff
+function aoFront(a, R) { return R * (1 + .06 * Math.sin(a * 7 + 1.3) + .045 * Math.sin(a * 13 + .4) + .035 * (hs(Math.floor((a + 7) * 9)) - .5)); }
 const aokiji = {
-    col: "#bfeaff", ms: 7600,
+    col: "#bfeaff", ms: 7600, grain: 0,
     seal: (g, X, a, r) => K.iceBlock(g, r || X.env.r, a, X.s, "#bfeaff"),
+    begin() { document.dispatchEvent(new CustomEvent("timestop", { detail: { key: "onepiece_f", ph: "start" } })); },
+    tailStart() { document.dispatchEvent(new CustomEvent("timestop", { detail: { key: "onepiece_f", ph: "stopped" } })); },
+    tail(g, X, T) {                                                     // the scene dissolves, the page stays frozen; the victim's plate is sealed in ice
+        const a = 1 - K.ss(.35, 1, T.tt); X.reveal(T.tt, .3); K.iceBlock(g, X.env.r, a, X.s, "#bfeaff");
+        K.slam(g, X.env.toName + " · FROZEN ×2", X.w / 2, Math.min(X.h * .5, X.env.r.y + X.env.r.h + X.M * .12), X.M * .055, K.lin(0, 1, T.tt), { fill: "#f4fcff", stroke: "#0a2a44", glow: "#9fe3ff", from: 1.2 });
+    },
     main(g, X, T) {
-        const { w, h, M } = X, t = T.t, s = T.s;
-        X.cue(.01, "wind", t); X.cue(.3, "impact", t); X.cue(.31, "freeze", t); X.cue(.52, "boom", t); X.cue(.53, "freeze", t);
-        if (t < .22) {                                                        // 1 · the lazy stare, cold breath
-            const p = lin(0, .22, t); K.eyes(g, X, p, { tint: "#9fd8ff", ta: .25 });
-            for (let i = 0; i < 5; i++) { const q = (s * .35 + i / 5) % 1; K.pool(g, w * (.3 + .4 * hs(i)) + q * w * .2, h * (.66 + .04 * i) - q * h * .1, M * (.12 + q * .25), "#dff4ff", .2 * Math.sin(q * Math.PI)); }
-            K.drift(g, w, h, s, 60, 3, { up: -1, speed: .06, col: "#ffffff", size: 2.4 }); K.bars(g, w, h, 1);
-            K.column(g, "青雉", w * .07, h * .2, M * .065, lin(.04, .5, p), { fill: "#e9f8ff", stroke: "#0a2a44", glow: "#9fe3ff", sw: 3 });
-            cutTo(X, t, .215, "#e9f8ff"); return;
-        }
-        if (t < .5) {                                                         // 2 · first person: a palm on the sea, the freeze runs to the horizon
-            const p = lin(.22, .5, t), slam = lin(.24, .3, t), e = K.oExpo(lin(.3, .5, t)), y0 = h * .43;
-            g.save(); K.cam(g, X, { z: 1.02 + p * .06, shake: hit(t, .3, .1) * 16, drift: 3 });
-            K.sky(g, w, h, ["#040a16", "#13304e", "#6f97ba"], 0, 0, 0, y0); K.glow(g, w * .72, h * .16, M * .2, "#dff2ff", .5); K.stars(g, w, y0 * .7, s, 40, "#cfe9ff", 4);
-            const sea = g.createLinearGradient(0, y0, 0, h); sea.addColorStop(0, "#0e2a44"); sea.addColorStop(1, "#02070f"); g.fillStyle = sea; g.fillRect(-w, y0, w * 3, h);
-            g.strokeStyle = "rgba(140,190,230,.25)"; g.lineWidth = 1.5; for (let i = 1; i < 18; i++) { const k = Math.pow(i / 18, 2), y = y0 + (h - y0) * k; g.beginPath(); for (let x = -20; x <= w + 20; x += 16) g.lineTo(x, y + Math.sin(x * .02 / (k + .1) + s * 2 + i) * 3 * k); g.stroke(); }
-            if (e > 0) {                                                      // the ice sheet, cracks racing out from the hand
-                g.save(); g.beginPath(); g.rect(-w, y0, w * 3, h); g.clip(); const rx = w * 1.7 * e, ry = (h * 1.06 - y0) * e * 1.02;
-                const ig = g.createRadialGradient(w / 2, h * 1.06, 0, w / 2, h * 1.06, Math.max(rx, ry)); ig.addColorStop(0, "#f4fcff"); ig.addColorStop(.5, "#b5ddf6"); ig.addColorStop(1, "#6fa6d4");
-                g.beginPath(); g.ellipse(w / 2, h * 1.06, rx, ry, 0, 0, TAU); g.fillStyle = ig; g.fill();
-                g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 1.6; for (let k = 0; k < 26; k++) { const an = Math.PI + k / 25 * Math.PI, L = (.5 + .5 * hs(k)); g.beginPath(); g.moveTo(w / 2, h * 1.04); for (let j = 1; j <= 7; j++) { const q = j / 7 * L, a2 = an + (hs(k * 9 + j) - .5) * .15; g.lineTo(w / 2 + Math.cos(a2) * rx * q * .98, h * 1.06 + Math.sin(a2) * ry * q * .98); } g.stroke(); }
-                for (let k = 0; k < 40; k++) { const an = Math.PI + hs(k + 50) * Math.PI, x = w / 2 + Math.cos(an) * rx, y = h * 1.06 + Math.sin(an) * ry; if (y < y0) continue; K.spire(g, x, y, M * .05 * (1 - e * .6) * (.5 + hs(k)), M * .02, 1); }
-                g.restore(); K.pool(g, w / 2, y0, w * .6 * e, "#e6f7ff", .25 * e);
-            }
-            frozenWave(g, w * .3, y0 + 2, w * .7, h * .3, lin(.32, .5, t)); frozenWave(g, w * .78, y0 + 2, w * .5, h * .22, lin(.36, .5, t));   // the tsunamis on the horizon freeze mid-crash
-            const hy = h * (1.3 - .26 * K.oBack(slam)) + hit(t, .3, .08) * 18, sz = HS(X) * 1.25, sl = { c: "#eef1f6", s: "#b9c2d2", cuff: "#22355f", len: 300 };
-            hand(g, w * .52, hy, sz, -.05, "spread", { skin: "tan", sleeve: sl });
-            const ice = lin(.27, .4, t); if (ice > 0) { g.save(); g.globalAlpha = ice; hand(g, w * .52, hy, sz, -.05, "spread", { skin: "ice", rim: "#bfeaff", sleeve: sl }); g.restore(); }
-            if (slam >= 1) { const q = lin(.3, .44, t); g.save(); g.translate(w / 2, h * .98); g.scale(1, .28); K.shock(g, 0, 0, q, w * .8, "#dff4ff", 40); g.restore(); K.sparks(g, w * .5, h * .9, q, 26, 3, { speed: M * .9, col: "#cfeeff", grav: M * .6, ang: -1.57, spread: 2.6 }); }
-            g.restore(); K.vignette(g, w, h, .6, "#000814"); K.bars(g, w, h, 1);
-            if (p > .25) K.slam(g, "氷河時代", w / 2, h * .2, M * .1, lin(.3, .5, t), { font: K.F_JP, weight: "400", fill: "#f4fcff", stroke: "#0a2a44", glow: "#9fe3ff", from: 1.4 });
-            cutTo(X, t, .495, "#ffffff", .03); return;
-        }
-        // 3 · whip to the target: spires erupt around it. 4 · glitter settles, frost creeps over the screen, the target glides home
-        const r = K.stage(X, back(t)), c = mid(r), shake = hit(t, .52, .14) * 22 + hit(t, .6, .1) * 10;
-        g.save(); K.cam(g, X, { z: 1.12 - .1 * K.oExpo(lin(.5, .62, t)), y: (1 - K.oExpo(lin(.5, .56, t))) * h * .6, shake });
-        K.sky(g, w, h, ["#01060f", "#0b2440", "#14385a"]); K.drift(g, w, h, s, 50, 9, { up: -1, speed: .05, col: "#dff4ff", size: 2 });
-        plate(g, X, r, 1, lin(.52, .6, t));
-        const by = r.y + r.h + M * .12 * back(t) + M * .04;
-        for (let i = 0; i < 13; i++) { const a = (i - 6) / 6, x = c.x + a * (r.w * .62 + M * .14), H = (r.h * 1.6 + M * .22 * (.6 + .6 * hs(i + 3))) * (1 - Math.abs(a) * .4), e = K.oBack(lin(.52 + Math.abs(a) * .04, .62 + Math.abs(a) * .04, t), 1.4);
-            K.spire(g, x, by - Math.abs(a) * M * .03, H, M * (.06 + .04 * hs(i)), e, -a * .25, i % 2); }
-        for (let i = 0; i < 6; i++) { const e = K.oBack(lin(.56 + i * .02, .68 + i * .02, t)) * (1 - lin(.84, .95, t) * .6); K.spire(g, w * (.04 + i * .184), h * 1.04, M * (.4 + .2 * hs(i + 20)), M * .15, e, (i - 2.5) * .06, 1); }   // foreground pillars
-        K.iceBlock(g, r, lin(.6, .75, t), s, "#bfeaff");
-        K.debris(g, c.x, by - M * .05, lin(.52, .72, t), 26, 5, { speed: M * 1.2, size: M * .022, grav: M * 1.6, ang: -1.57, spread: 2.2, cols: ["#e9f8ff", "#9fd2f2", "#ffffff"], edge: "#ffffff" });
+        const { w, h, M } = X, t = T.t, st = aoSlow(t), sM = st * X.main / 1000;
+        X.cue(.0, "wind", t); X.cue(AO.touch - .005, "freeze", t); X.cue(AO.touch, "crack", t); X.cue(AO.touch + .06, "crack", t); X.cue(AO.touch + .13, "crack", t); X.cue(AO.edge, "shing", t);
+        if (t < .035) { g.fillStyle = "rgba(0,0,0," + (1 - t / .035) * .85 + ")"; g.fillRect(0, 0, w, h); }   // out of the card shot, onto the real table
+        // the hand's path: out of the pocket (lower right), across, then lowered flat onto the table
+        const out = K.ioCub(lin(0, AO.out, t)), reach = K.ioCub(lin(AO.out, AO.reach, t)), low = K.iCub(lin(AO.reach, AO.touch, t)), press = hit(t, AO.touch + .01, .04);
+        const P0 = [w * .84, h * 1.18], P1 = [w * .8, h * .82], P2 = [w * .54, h * .66], tx = K.mix(K.mix(P0[0], P1[0], out), P2[0], reach), ty = K.mix(K.mix(P0[1], P1[1], out), P2[1], reach) + low * h * .04;
+        const sc = HS(X) * K.mix(1.3, 1.02, reach) * (1 - low * .06) * (1 - press * .03), ang = K.mix(-.35, -.08, reach), touched = t >= AO.touch;
+        const palm = [tx + Math.sin(ang) * 55 * sc, ty - Math.cos(ang) * 55 * sc];                                   // the centre of the palm (hand local 0,-55)
+        const R = Math.hypot(w, h) * 1.05 * K.oCub(lin(AO.touch, AO.edge, st)), live = 1 - lin(AO.edge, AO.lock, t);
+        if (X.env && X.env.box) document.dispatchEvent(new CustomEvent("timestop", { detail: { key: "onepiece_f", ph: "grow", x: palm[0], y: palm[1], r: touched ? R : 0 } }));
+        // his white trousers and the pocket, first person looking down; they slide out of view as he leans over the table
+        const tro = (1 - reach) * h * .0;
+        g.save(); g.translate(0, reach * h * .45 + tro);
+        const trouser = () => { g.beginPath(); g.moveTo(w * .58, h * 1.02); g.quadraticCurveTo(w * .7, h * .86, w * 1.02, h * .74); g.lineTo(w * 1.02, h * 1.02); g.closePath(); };
+        const tg = g.createLinearGradient(w * .6, h * .8, w, h); tg.addColorStop(0, "#f6f8fb"); tg.addColorStop(.6, "#dfe5ee"); tg.addColorStop(1, "#b8c2d0");
+        trouser(); g.fillStyle = tg; g.fill(); g.strokeStyle = "#2a3040"; g.lineWidth = 3; g.stroke();
+        g.strokeStyle = "rgba(120,135,160,.5)"; g.lineWidth = 2; [[.7, .95, .86, .86], [.78, 1, .95, .9]].forEach(([a, b, c2, d]) => { g.beginPath(); g.moveTo(w * a, h * b); g.quadraticCurveTo(w * (a + .06), h * (b - .06), w * c2, h * d); g.stroke(); });   // cloth folds
+        g.strokeStyle = "#2a3040"; g.lineWidth = 3; g.beginPath(); g.moveTo(w * .74, h * .9); g.quadraticCurveTo(w * .82, h * .84, w * .93, h * .8); g.stroke();   // the pocket's mouth
         g.restore();
-        g.save(); g.strokeStyle = "rgba(235,250,255,.75)"; g.lineWidth = 1.3; const fp = lin(.62, 1, t); g.beginPath(); [[0, 0, .6], [w, 0, 2.5], [0, h, -.6], [w, h, -2.5]].forEach(([x, y, a], i) => { for (let k = 0; k < 4; k++) K.frost(g, x, y, a + (k - 1.5) * .3, M * .16, fp, 0, i * 9 + k); }); g.stroke(); g.restore();
-        K.drift(g, w, h, s, 70, 21, { up: 1, speed: .03, col: "#ffffff", size: 2.2, glow: 1, add: 1, a: .6 * lin(.6, .8, t) });
-        if (hit(t, .52, .03) > 0) X.fx.inv = "#bfeaff";
-        X.fx.rgb = hit(t, .52, .08) * 10;
-        K.title(g, X, lin(.56, .98, t), { en: "ICE AGE", kj: "アイスエイジ", sub: "AOKIJI · " + X.who, y: .84 });
-        K.vignette(g, w, h, .55, "#00060f"); K.bars(g, w, h, 1 - lin(.9, 1, t));
+        // the hand's shadow on the table: soft and offset while it hovers, sharp and under it on contact
+        if (reach > .3) { const d = 1 - low; g.save(); g.globalAlpha = .35 * Math.min(1, reach) * (1 - (touched ? 0 : 0)); g.translate(palm[0] + d * M * .06, palm[1] + d * M * .05 + sc * 30); g.scale(1, .55); K.pool(g, 0, 0, sc * (110 + 50 * d), "#000814", .6); g.restore(); }
+        // the arm: sleeve of the white suit jacket, the blue shirt cuff, the bare tanned hand; it ices over from the palm out
+        const pose = reach < .4 ? "relax" : touched ? "spread" : "open";
+        g.save(); if (press) { g.translate(tx, ty); g.scale(1 + press * .02, 1 - press * .04); g.translate(-tx, -ty); }
+        hand(g, tx, ty, sc, ang, pose, { view: "back", skin: AO_SKIN, sleeve: AO_SLEEVE });
+        const iced = ss(AO.touch, AO.touch + .12, t); if (iced > 0) { g.globalAlpha = iced * .85; hand(g, tx, ty, sc, ang, pose, { view: "back", skin: "ice", rim: "#dff6ff", sleeve: { c: "#e8f6ff", s: "#a9d4f0", cuff: "#bfe6ff", len: AO_SLEEVE.len, w: AO_SLEEVE.w } }); }
+        g.restore();
+        if (t < AO.out + .02) {                                             // still in the pocket: the pocket's front panel covers the hand
+            g.save(); g.beginPath(); g.moveTo(w * .72, h * 1.02); g.lineTo(w * .74, h * .9); g.quadraticCurveTo(w * .82, h * .84, w * .93, h * .8); g.lineTo(w * 1.02, h * .78); g.lineTo(w * 1.02, h * 1.02); g.closePath();
+            g.globalAlpha = 1 - lin(AO.out - .06, AO.out + .02, t); const pg = g.createLinearGradient(w * .74, h * .85, w, h); pg.addColorStop(0, "#eef2f7"); pg.addColorStop(1, "#bcc6d4"); g.fillStyle = pg; g.fill(); g.strokeStyle = "#2a3040"; g.lineWidth = 3; g.stroke(); g.restore();
+        }
+        // cold breath before the touch: mist pooling under the palm
+        if (!touched && reach > .2) { const q = lin(AO.out, AO.touch, t); for (let i = 0; i < 6; i++) { const u = (sM * .3 + i / 6) % 1; K.pool(g, palm[0] + (hs(i) - .5) * M * .3 * u, palm[1] + M * .05 - u * M * .08, M * (.06 + u * .14), "#e6f7ff", .22 * q * Math.sin(u * Math.PI)); } }
+        if (touched) {
+            const fr = lin(AO.touch, AO.edge, st);
+            // branching cracks racing out from the palm across the table (they fade as the frost settles)
+            g.save(); g.lineCap = "round"; const ca = (1 - lin(AO.edge, AO.lock + .04, t));
+            for (let k = 0; k < 11; k++) {
+                const a0 = k / 11 * TAU + hs(k) * .5, Lk = Math.hypot(w, h) * (.35 + .5 * hs(k + 3)), reachK = Math.min(R * .96, Lk); if (reachK < 4) continue;
+                const pts = [[palm[0], palm[1]]]; let x = palm[0], y = palm[1], a = a0; const n = 9;
+                for (let j = 1; j <= n; j++) { const L = reachK / n; a += (hs(k * 13 + j) - .5) * .7; x += Math.cos(a) * L; y += Math.sin(a) * L; pts.push([x, y]); }
+                [[6, "rgba(120,200,255,.25)"], [1.8, "rgba(255,255,255,.9)"]].forEach(([lw, col]) => { g.globalAlpha = ca; g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke(); });
+                const fj = 4 + (k % 3), fp = pts[fj]; if (fp && reachK > Lk * .5) { let fx = fp[0], fy = fp[1], fa = a0 + (k % 2 ? .7 : -.7); g.lineWidth = 1.2; g.strokeStyle = "rgba(255,255,255,.75)"; g.beginPath(); g.moveTo(fx, fy); for (let j = 0; j < 4; j++) { fa += (hs(k * 7 + j) - .5) * .8; fx += Math.cos(fa) * reachK / 14; fy += Math.sin(fa) * reachK / 14; g.lineTo(fx, fy); } g.stroke(); }
+            }
+            g.restore();
+            // the wave front: jagged crystals pointing outward, a bright rim with a cold chromatic split and shimmer
+            if (fr < 1) {
+                const n = 120;
+                g.save(); g.globalCompositeOperation = "screen";
+                [["rgba(255,90,180,.55)", -3], ["rgba(90,240,255,.65)", 3], ["rgba(255,255,255,.95)", 0]].forEach(([col, off]) => { g.strokeStyle = col; g.lineWidth = off ? 3 : 2.2; g.beginPath(); for (let i = 0; i <= n; i++) { const a = i / n * TAU, rr = aoFront(a, R) + off; const x = palm[0] + Math.cos(a) * rr, y = palm[1] + Math.sin(a) * rr; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); });
+                g.restore();
+                g.save(); for (let i = 0; i < 70; i++) {                         // crystals growing at the front
+                    const a = (i + hs(i) * .6) / 70 * TAU, rr = aoFront(a, R), sz = M * (.018 + .03 * hs(i + 9)) * (1 - fr * .4), x = palm[0] + Math.cos(a) * rr, y = palm[1] + Math.sin(a) * rr;
+                    g.translate(x, y); g.rotate(a); g.beginPath(); g.moveTo(sz * 1.3, 0); g.lineTo(-sz * .2, -sz * .35); g.lineTo(-sz * .5, 0); g.lineTo(-sz * .2, sz * .35); g.closePath();
+                    const cg = g.createLinearGradient(-sz, 0, sz * 1.3, 0); cg.addColorStop(0, "rgba(160,215,255,.25)"); cg.addColorStop(1, "rgba(255,255,255,.9)"); g.fillStyle = cg; g.fill(); g.strokeStyle = "rgba(255,255,255,.7)"; g.lineWidth = 1; g.stroke(); g.setTransform(X.dpr || 1, 0, 0, X.dpr || 1, 0, 0);
+                } g.restore();
+            }
+            // contact burst at the palm
+            const bq = lin(AO.touch, AO.touch + .08, t); if (bq < 1) { K.glow(g, palm[0], palm[1], M * .3 * (1 - bq * .5), "#e6f7ff", 1 - bq); K.shock(g, palm[0], palm[1], bq, M * .5, "#dff4ff", 26); K.sparks(g, palm[0], palm[1], bq, 30, 3, { speed: M * .6, col: "#e6f7ff" }); }
+            // frost mist and floating ice crystals; both brake to a stop as the world locks
+            g.save(); for (let i = 0; i < 14; i++) { const u = (hs(i + 30) + sM * .05 * (.5 + hs(i))) % 1, x = w * (hs(i + 5) + sM * .02 * (hs(i) - .5)), y = h * (.15 + .8 * hs(i + 11)); K.pool(g, x, y, M * (.12 + .12 * hs(i)), "#f0faff", .12 * Math.min(1, fr * 2) * Math.sin(u * Math.PI)); } g.restore();
+            g.save(); g.globalCompositeOperation = "lighter"; for (let i = 0; i < 46; i++) { const d0 = hs(i + 70) * Math.hypot(w, h) * .7; if (d0 > R) continue; const a = hs(i + 80) * TAU, fl = sM * (6 + 10 * hs(i)), x = palm[0] + Math.cos(a) * d0 + Math.sin(fl * .3 + i) * 10, y = palm[1] + Math.sin(a) * d0 - fl * 4 % (h * .3);
+                const tw = .5 + .5 * Math.sin(sM * 5 + i * 2.3); g.globalAlpha = .7 * tw; g.fillStyle = "#ffffff"; g.save(); g.translate(x, y); g.rotate(i + fl * .2); g.fillRect(-1, -4, 2, 8); g.fillRect(-4, -1, 8, 2); g.restore(); } g.restore();
+        }
+        if (t > AO.lock - .04) K.title(g, X, lin(AO.lock - .04, 1, t), { en: "ICE AGE", kj: "氷河時代", sub: "AOKIJI · " + X.env.toName.toUpperCase() + " FROZEN FOR 2 TURNS", y: .2, col: "#bfeaff" });
+        if (hit(t, AO.touch, .015)) X.fx.flash = ["#eaf8ff", .55];
     }
 };
 
@@ -425,8 +455,8 @@ const ZW = { cross: .2, open: .245, gold: .26, gray: .42, still: .62 };         
 const dioSlow = t => { if (t < ZW.gray) return t; const u = Math.min(1, (t - ZW.gray) / (ZW.still - ZW.gray)); return ZW.gray + (ZW.still - ZW.gray) * (u - u * u / 2); };
 const dio = {
     col: "#ffd84a", ms: 7600, mainPlus: 1500, breath: t => t < ZW.gray,
-    begin() { document.dispatchEvent(new CustomEvent("zawarudo", { detail: "start" })); },
-    tailStart() { document.dispatchEvent(new CustomEvent("zawarudo", { detail: "stopped" })); },
+    begin() { document.dispatchEvent(new CustomEvent("timestop", { detail: { key: "jojo_f", ph: "start" } })); },
+    tailStart() { document.dispatchEvent(new CustomEvent("timestop", { detail: { key: "jojo_f", ph: "stopped" } })); },
     seal(g, X, a, r) { r = r || X.env.r; if (a <= 0) return; g.save(); g.globalAlpha = a; g.strokeStyle = "#e8e8e8"; g.lineWidth = 4; g.shadowColor = "#ffffff"; g.shadowBlur = 20; g.strokeRect(r.x - 9, r.y - 9, r.w + 18, r.h + 18); g.shadowBlur = 0; g.fillStyle = "rgba(255,255,255,.1)"; g.fillRect(r.x - 9, r.y - 9, r.w + 18, r.h + 18); g.restore(); },
     tail(g, X, T) {                                                     // still grey: the snapshot dissolves into the (grey) table, the victim's plate is sealed
         const a = 1 - K.ss(.35, 1, T.tt); X.reveal(T.tt, .3); dio.seal(g, X, a);

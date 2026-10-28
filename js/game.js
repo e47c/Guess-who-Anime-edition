@@ -22,8 +22,9 @@ import { audio } from "./audio.js";
 import { ambient, titleCard, shake, ring, burstText, motionOK, setReduced, isReduced } from "./fx.js";
 import { profile, avatarEl, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js";
 import { showResults, closeResults } from "./results.js";
-import { initCine, cineHook, cineHas } from "./cine/engine.js?v=6";
-import { hand as cineHand } from "./cine/hands.js?v=6";
+import { initCine, cineHook, cineHas } from "./cine/engine.js?v=7";
+import { hand as cineHand } from "./cine/hands.js?v=7";
+import * as CK from "./cine/kit.js?v=7";
 
 
 /* =========================================
@@ -943,7 +944,7 @@ function showOnly(id) {
         if (motionOK() && element.animate) element.animate([{ opacity: 0, transform: "translateY(14px) scale(.995)" }, { opacity: 1, transform: "none" }], { duration: 380, easing: "cubic-bezier(.2,.9,.3,1)" });
     }
     $("emoteBtn").classList.toggle("hidden", !room || id === "home");
-    if (id !== "uno") zwReset();
+    if (id !== "uno") tsReset();
 }
 
 // board size: in the lobby the host's choice is written to the room so everybody sees it
@@ -2386,7 +2387,7 @@ function showUNO(data) {
     if (u.ev) unoSeen.ev = u.ev.id;
     if (u.n !== unoSeen.n) { if (unoSeen.n >= 0 && play && myTurn && u.turn !== unoSeen.turn) { sfx("turn"); } unoSeen.n = u.n; unoSeen.turn = u.turn; }
     if (u.fx && u.fx.id !== unoSeen.fx) { unoSeen.fx = u.fx.id; if (!firstRender) unoSpecialFx(u, u.fx); }
-    zwSync(u);
+    tsSync(u);
     const actCol = UNO_SUIT[u.color] || "#ffcf4a";
     $("uno").classList.toggle("myturn", myTurn); $("uno").style.setProperty("--ac", actCol); ambient.accent(actCol);
     $("unoArenaKj").textContent = UNO_KANJI[keys[u.color]] || "札";
@@ -2711,35 +2712,104 @@ function unoSpecialFx(u, f) {
     box.appendChild(hbEl("h2", null, c.ab || d.label));
     box.appendChild(hbEl("p", null, (u.names["p" + f.p] || "?") + " · " + c.n));
     $("uno").appendChild(box);
-    const close = () => { box.classList.add("out"); setTimeout(() => box.remove(), 420); if (c.sk + "_" + c.k === "jojo_f" && zw.cine) { zw.cine = false; zwSync(zw.u); } };
+    const close = () => { box.classList.add("out"); setTimeout(() => box.remove(), 420); const k = c.sk + "_" + c.k; if (TS[k] && tsOf(k).cine) { tsOf(k).cine = false; tsSync(tsU); } };
     if (!UNO_FX_HOOKS[c.sk + "_" + c.k]) try { d.snd(); } catch (e) {}   // silent while a hand-made animation exists (voice lines come from audio/special/)
     const hook = UNO_FX_HOOKS[c.sk + "_" + c.k];
     if (hook) { try { hook(box, close, c, u); } catch (e) { console.warn(e); close(); } } else setTimeout(close, 1700);
 }
-/* ZA WARUDO: while a player frozen by DIO's card still has turns to lose, the whole page is grey for everyone: one fixed layer
-   (backdrop-filter) greys the table, the cards, the UI and any other animation under it. It switches on as DIO's scene ends
-   (the scene's last frame is already grey), stays through every other player's turns, and plays the reversal (grey, holographic
-   unwind, purple/green, gold, normal) the moment the frozen player's last skipped turn is spent. */
-const zw = { on: false, cine: false, el: null, u: null, tm: 0 };
-function zwVeil() {
-    if (!zw.el) { zw.el = hbEl("div", "zw-veil"); zw.el.setAttribute("aria-hidden", "true"); zw.el.append(hbEl("i", "zw-holo"), hbEl("i", "zw-ring"), hbEl("span", "zw-say", "時は動き出す")); document.body.appendChild(zw.el); }
-    return zw.el;
+/* FREEZES THAT HOLD THE WHOLE PAGE (DIO's ZA WARUDO, Aokiji's Ice Age): while the player frozen by that card still has turns to lose,
+   one fixed layer over everything (backdrop-filter + its own texture) holds the page for every player: grey for DIO, ice for Aokiji.
+   The card's scene hands over to it without a seam (Aokiji's grows it outward from his palm), the others play on under it, and the
+   moment the frozen player's last skipped turn is spent it plays its release: DIO's reversal, or the ice cracking and shattering. */
+const TS = {
+    jojo_f: { cls: "zw-veil", outMs: 2300,
+        build: el => el.append(hbEl("i", "zw-holo"), hbEl("i", "zw-ring"), hbEl("span", "zw-say", "時は動き出す")),
+        release: () => { sfx("reverse"); setTimeout(() => sfx("chime"), 900); } },
+    onepiece_f: { cls: "ice-veil", outMs: 1900, grow: true,
+        build: el => { const tx = hbEl("i", "ice-tex"); tx.style.backgroundImage = "url(" + iceTexture() + ")"; el.append(hbEl("i", "ice-cool"), tx, hbEl("i", "ice-mist"), hbEl("i", "ice-mist b")); for (let i = 0; i < 9; i++) { const gl = hbEl("i", "ice-glint"); gl.style.cssText = "left:" + (6 + 88 * CK.hs(i * 3.3)) + "%;top:" + (8 + 84 * CK.hs(i * 7.1)) + "%;animation-delay:" + (CK.hs(i * 5.7) * 7).toFixed(2) + "s"; el.appendChild(gl); } },
+        hold: on => { clearInterval(TS.onepiece_f.iv); if (on) TS.onepiece_f.iv = setInterval(() => { if (motionOK() && !document.hidden) sfx("creak"); }, 7400); },
+        release: v => iceShatter(v) }
+};
+const tsSt = {};
+const tsOf = key => tsSt[key] || (tsSt[key] = { on: false, cine: false, el: null, tm: 0 });
+function tsVeil(key) {
+    const s = tsOf(key); if (!s.el) { s.el = hbEl("div", "ts-veil " + TS[key].cls); s.el.setAttribute("aria-hidden", "true"); TS[key].build(s.el); document.body.appendChild(s.el); }
+    return s.el;
 }
-const zwActive = u => !!u && u.phase === "play" && unoLive(u).some(p => (u.frozen || {})["p" + p] > 0 && (u.fzk || {})["p" + p] === "jojo_f");
-function zwSync(u, instant) {
-    zw.u = u; const want = zwActive(u);
-    if (want && !zw.cine && (!zw.on || zw.el.classList.contains("pause"))) {
-        zw.on = true; const v = zwVeil(); clearTimeout(zw.tm); v.classList.remove("out", "pause"); v.classList.toggle("now", !!instant); void v.offsetWidth; v.classList.add("on");
-    } else if (!want && zw.on) {
-        zw.on = false; const v = zwVeil(); v.classList.remove("on", "now", "pause");
-        if (motionOK() && currentScreen === "uno") { v.classList.remove("out"); void v.offsetWidth; v.classList.add("out"); sfx("reverse"); setTimeout(() => sfx("chime"), 900); clearTimeout(zw.tm); zw.tm = setTimeout(() => v.classList.remove("out"), 2300); }
-    }
+const tsActive = (u, key) => !!u && u.phase === "play" && unoLive(u).some(p => (u.frozen || {})["p" + p] > 0 && (u.fzk || {})["p" + p] === key);
+let tsU = null;
+function tsSync(u, instant) {
+    tsU = u;
+    Object.keys(TS).forEach(key => {
+        const s = tsOf(key), want = tsActive(u, key), D = TS[key];
+        if (want && !s.cine && (!s.on || s.el.classList.contains("pause") || s.el.classList.contains("grow"))) {
+            s.on = true; const v = tsVeil(key); clearTimeout(s.tm); v.classList.remove("out", "pause", "grow"); v.style.removeProperty("--r"); v.classList.toggle("now", !!instant); void v.offsetWidth; v.classList.add("on"); D.hold && D.hold(true);
+        } else if (!want && s.on) {
+            s.on = false; const v = tsVeil(key); D.hold && D.hold(false);
+            if (motionOK() && currentScreen === "uno") { v.classList.remove("out", "now", "pause", "grow"); void v.offsetWidth; v.classList.add("out"); v.classList.remove("on"); D.release(v); clearTimeout(s.tm); s.tm = setTimeout(() => v.classList.remove("out"), D.outMs); }
+            else v.classList.remove("on", "now", "pause", "grow");
+        }
+    });
 }
-function zwReset() { zw.on = false; zw.cine = false; if (zw.el) zw.el.classList.remove("on", "now", "pause", "out"); }
-document.addEventListener("zawarudo", e => {
-    if (e.detail === "start") { zw.cine = true; if (zw.el) zw.el.classList.add("pause"); }           // DIO's scene draws its own colour → grey
-    else if (e.detail === "stopped") { zw.cine = false; zwSync(zw.u, true); }                        // its last frame is grey: take over without a seam
+function tsReset() { Object.keys(tsSt).forEach(key => { const s = tsSt[key]; s.on = false; s.cine = false; TS[key].hold && TS[key].hold(false); if (s.el) s.el.classList.remove("on", "now", "pause", "out", "grow"); }); const c = $("iceShatter"); if (c) c.remove(); }
+document.addEventListener("timestop", e => {
+    const d = e.detail || {}, D = TS[d.key]; if (!D) return; const s = tsOf(d.key);
+    if (d.ph === "start") { s.cine = true; const v = tsVeil(d.key); v.classList.remove("on", "out", "now"); if (D.grow) { v.classList.add("grow"); v.style.setProperty("--r", "0px"); } else v.classList.add("pause"); }
+    else if (d.ph === "grow" && s.cine && D.grow) { const v = tsVeil(d.key); v.style.setProperty("--x", d.x.toFixed(1) + "px"); v.style.setProperty("--y", d.y.toFixed(1) + "px"); v.style.setProperty("--r", d.r.toFixed(1) + "px"); }
+    else if (d.ph === "stopped") { s.cine = false; tsSync(tsU, true); }
 });
+/* the ice veil's frost: feathery frost thick at the screen's edges, a faint crystal grain everywhere, the centre left clear to read */
+let iceTexURL = "";
+function iceTexture() {
+    if (iceTexURL) return iceTexURL;
+    // the screen's own proportions, so the ferns aren't stretched on a phone
+    const W = 1200, H = Math.round(1200 * Math.min(2.4, Math.max(.4, innerHeight / innerWidth))), cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d"); g.lineCap = "round";
+    const fern = (x, y, a, L, d, k) => { if (d > 4 || L < 4) return; const x2 = x + Math.cos(a) * L, y2 = y + Math.sin(a) * L; g.globalAlpha = .55 - d * .1; g.lineWidth = Math.max(.6, 2.2 - d * .45); g.beginPath(); g.moveTo(x, y); g.lineTo(x2, y2); g.stroke();
+        for (let j = 1; j <= 3; j++) { const f = j / 4, bx = x + (x2 - x) * f, by = y + (y2 - y) * f; fern(bx, by, a + 1.05, L * .42, d + 1, k * 3 + j); fern(bx, by, a - 1.05, L * .42, d + 1, k * 5 + j); } fern(x2, y2, a + (CK.hs(k) - .5) * .5, L * .62, d + 1, k + 9); };
+    g.strokeStyle = "#ffffff";
+    for (let i = 0; i < 64; i++) {                                   // ferns growing inward from all four edges
+        const side = i % 4, u = CK.hs(i * 2.7 + 1), x = side === 0 ? u * W : side === 1 ? W : side === 2 ? u * W : 0, y = side === 0 ? 0 : side === 1 ? u * H : side === 2 ? H : u * H;
+        const a = [Math.PI / 2, Math.PI, -Math.PI / 2, 0][side] + (CK.hs(i * 4.1) - .5) * 1.1; fern(x, y, a, 40 + 70 * CK.hs(i * 6.3), 0, i + 1);
+    }
+    g.globalAlpha = .07; g.lineWidth = 1; for (let i = 0; i < 260; i++) { const x = CK.hs(i * 1.7) * W, y = CK.hs(i * 2.9) * H, L = 6 + 14 * CK.hs(i); for (let k = 0; k < 3; k++) { const a = k * Math.PI / 3 + CK.hs(i) ; g.beginPath(); g.moveTo(x - Math.cos(a) * L, y - Math.sin(a) * L); g.lineTo(x + Math.cos(a) * L, y + Math.sin(a) * L); g.stroke(); } }   // six-point crystal grain
+    g.globalAlpha = .16; g.lineWidth = 1.2; for (let i = 0; i < 7; i++) { let x = CK.hs(i * 9.1) * W, y = CK.hs(i * 4.4) * H, a = CK.hs(i * 3.3) * 6.28; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 9; k++) { a += (CK.hs(i * 17 + k) - .5) * .8; x += Math.cos(a) * 40; y += Math.sin(a) * 40; g.lineTo(x, y); } g.stroke(); }   // old hairline cracks
+    return (iceTexURL = cv.toDataURL("image/png"));
+}
+/* the release of Aokiji's ice: cracks race over the whole screen, then the ice bursts into shards that fall away while the colour returns */
+function iceShatter(v) {
+    const old = $("iceShatter"); if (old) old.remove();
+    const cv = document.createElement("canvas"); cv.id = "iceShatter"; cv.className = "ice-shatter"; const w = innerWidth, h = innerHeight, dpr = Math.min(1.5, devicePixelRatio || 1);
+    cv.width = w * dpr; cv.height = h * dpr; document.body.appendChild(cv); const g = cv.getContext("2d");
+    const cracks = []; for (let k = 0; k < 16; k++) { const o = k < 4 ? [w / 2, h / 2] : [w * CK.hs(k * 3.1), h * CK.hs(k * 5.3)]; let x = o[0], y = o[1], a = CK.hs(k * 7.7) * 6.28; const pts = [[x, y]]; for (let j = 0; j < 12; j++) { a += (CK.hs(k * 13 + j) - .5) * .9; x += Math.cos(a) * Math.hypot(w, h) / 22; y += Math.sin(a) * Math.hypot(w, h) / 22; pts.push([x, y]); } cracks.push(pts); }
+    const lines = []; for (let k = 0; k < 11; k++) lines.push(CK.randLine(k + 70 + (Date.now() % 50), w, h));
+    const shards = CK.shardsOf(w, h, lines), CRACK = 520, ALL = 1750, t0 = performance.now();
+    sfx("crack"); setTimeout(() => sfx("crack"), 230); setTimeout(() => sfx("shatter"), CRACK);
+    v.classList.add("cracking");
+    const frame = now => {
+        const el = now - t0; if (el > ALL || !cv.isConnected) { cv.remove(); return; }
+        g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+        if (el < CRACK) {                                            // cracks spreading, faster and faster
+            const q = Math.pow(el / CRACK, .7); g.lineCap = "round";
+            cracks.forEach(pts => { const n = Math.max(1, Math.floor(pts.length * q)); [[7, "rgba(140,210,255,.35)"], [2, "rgba(255,255,255,.95)"]].forEach(([lw, col]) => { g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); for (let i = 0; i < n; i++) i ? g.lineTo(pts[i][0], pts[i][1]) : g.moveTo(pts[i][0], pts[i][1]); g.stroke(); }); });
+            g.fillStyle = "rgba(225,245,255," + (.18 * q) + ")"; g.fillRect(0, 0, w, h);
+        } else {                                                     // the ice bursts: shards fly outward and fall, spinning, fading
+            if (!v.classList.contains("broken")) v.classList.add("broken");
+            const p = (el - CRACK) / (ALL - CRACK), e = 1 - Math.pow(1 - p, 2);
+            shards.forEach(S => {
+                const dx = S.dx * e * Math.hypot(w, h) * .22 * S.d, dy = S.dy * e * Math.hypot(w, h) * .14 * S.d + p * p * h * .9, rot = S.r * e;
+                g.save(); g.globalAlpha = Math.max(0, 1 - p * 1.1); g.translate(S.cx + dx, S.cy + dy); g.rotate(rot); g.translate(-S.cx, -S.cy);
+                g.beginPath(); S.p.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.closePath();
+                const sg = g.createLinearGradient(S.cx - 80, S.cy - 80, S.cx + 80, S.cy + 80); sg.addColorStop(0, "rgba(240,250,255,.66)"); sg.addColorStop(.5, "rgba(170,220,255,.34)"); sg.addColorStop(1, "rgba(255,255,255,.58)");
+                g.fillStyle = sg; g.fill(); g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 2; g.stroke(); g.restore();
+            });
+            for (let i = 0; i < 60; i++) { const a = CK.hs(i * 2.2) * 6.28, sp = (.3 + CK.hs(i * 3.9)) * Math.hypot(w, h) * .45 * e, x = w / 2 + Math.cos(a) * sp, y = h / 2 + Math.sin(a) * sp + p * p * h * .6; g.globalAlpha = 1 - p; g.fillStyle = "#ffffff"; g.fillRect(x, y, 3, 3); }
+            g.globalAlpha = 1;
+        }
+        requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+    setTimeout(() => v.classList.remove("cracking", "broken"), ALL + 400);
+}
 
 /* Future Sight, during the extra play: the hand you saw stays as a small reminder next to the table (only for you, only until
    the extra play is used). The big reveal itself is part of the card's cinematic (js/cine/peek.js). */
