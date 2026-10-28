@@ -13,11 +13,11 @@
    ===================================================================== */
 import { audio } from "../audio.js";
 import { isReduced } from "../fx.js";
-import * as K from "./kit.js";
-import { FREEZE } from "./freeze.js";
-import { SWAP } from "./swap.js";
-import { ULT } from "./ult.js";
-import { PEEK } from "./peek.js";
+import * as K from "./kit.js?v=6";
+import { FREEZE } from "./freeze.js?v=6";
+import { SWAP } from "./swap.js?v=6";
+import { ULT } from "./ult.js?v=6";
+import { PEEK } from "./peek.js?v=6";
 
 let A = null;                 // game hooks (see initCine)
 /* api: { hbEl, unoCardEl, unoNext, plateRect(p), me(), arr } */

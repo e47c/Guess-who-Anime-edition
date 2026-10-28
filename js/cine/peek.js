@@ -5,8 +5,8 @@
    player who used the card; everyone else watches the same moves with the backs. tail() is the hold that keeps the
    cards up long enough to read them. X.env: r = the target's plate, slots = where each card rests, toName, top/bot.
    ===================================================================== */
-import * as K from "./kit.js";
-import { hand } from "./hands.js";
+import * as K from "./kit.js?v=6";
+import { hand } from "./hands.js?v=6";
 const { lin, ss, hit, hs, TAU, mid, mix, bell } = K;
 
 const HS = X => X.M * (X.h > X.w ? .0036 : .003);

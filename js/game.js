@@ -22,8 +22,8 @@ import { audio } from "./audio.js";
 import { ambient, titleCard, shake, ring, burstText, motionOK, setReduced, isReduced } from "./fx.js";
 import { profile, avatarEl, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js";
 import { showResults, closeResults } from "./results.js";
-import { initCine, cineHook, cineHas } from "./cine/engine.js";
-import { hand as cineHand } from "./cine/hands.js";
+import { initCine, cineHook, cineHas } from "./cine/engine.js?v=6";
+import { hand as cineHand } from "./cine/hands.js?v=6";
 
 
 /* =========================================

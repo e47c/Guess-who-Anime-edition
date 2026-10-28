@@ -4,8 +4,8 @@
    group 0 = the swapper's old cards (they travel A -> B), group 1 = the target's old cards (B -> A).
    Only the two players involved see faces; everybody else sees card backs. A = swapper's spot, B = target's spot.
    ===================================================================== */
-import * as K from "./kit.js";
-import { hand, fist, handTips } from "./hands.js";
+import * as K from "./kit.js?v=6";
+import { hand, fist, handTips } from "./hands.js?v=6";
 const { lin, hit, hs, TAU, mid, ss } = K;
 
 const HS = X => X.M * (X.h > X.w ? .0036 : .003);
@@ -54,9 +54,9 @@ const law = {
         if (t > .24 && t < .44) K.slam(g, "ROOM", w * .34, h * .44, M * .2, lin(.24, .44, t), { fill: "#fff", stroke: "#06304a", glow: C, ghost: 1 });
         labels(g, X, lin(.42, .5, t) * (1 - lin(.62, .66, t)));
         if (t > .6 && t < .8) {                                              // SHAMBLES: index finger raised, the wrist twists over, and the two hands trade places
-            const q = lin(.6, .66, t), a = K.oBack(lin(.6, .64, t)) * (1 - lin(.74, .8, t)), turn = K.ioCub(q), hx = w * .8, hy = h * (1.12 - .2 * a);
-            g.save(); g.translate(hx, hy); g.scale(Math.cos(turn * Math.PI) || .01, 1); hand(g, 0, 0, HS(X) * 1.1, -.3, "point", { view: turn > .5 ? "palm" : "back", skin: "tan", rim: C, tattoo: LAW_INK, mark: 1, sleeve: { c: "#f4e6b8", s: "#c9b27a", cuff: "#1a1a22", len: 260 } }); g.restore();
-            const tp = handTips("point")[0], sx = Math.cos(turn * Math.PI), k2 = HS(X) * 1.1, lx = (tp[0] * Math.cos(-.3) - tp[1] * Math.sin(-.3)) * k2 * sx, ly = (tp[0] * Math.sin(-.3) + tp[1] * Math.cos(-.3)) * k2; K.glow(gf, hx + lx, hy + ly, M * .08, C, a); }
+            const q = lin(.6, .66, t), a = K.oBack(lin(.6, .64, t)) * (1 - lin(.74, .8, t)), turn = K.ioCub(q), hx = w * .84, hy = h * (1.08 - .22 * a);
+            gf.save(); gf.translate(hx, hy); gf.scale(Math.cos(turn * Math.PI) || .01, 1); hand(gf, 0, 0, HS(X) * 1.1, -.3, "pointT", { view: turn > .5 ? "palm" : "back", skin: "tan", tattoo: LAW_INK, mark: 1, sleeve: { c: "#f4e6b8", s: "#c9b27a", cuff: "#1a1a22", len: 260 } }); gf.restore();
+            const tp = handTips("pointT")[0], sx = Math.cos(turn * Math.PI), k2 = HS(X) * 1.1, lx = (tp[0] * Math.cos(-.3) - tp[1] * Math.sin(-.3)) * k2 * sx, ly = (tp[0] * Math.sin(-.3) + tp[1] * Math.cos(-.3)) * k2; K.glow(gf, hx + lx, hy + ly, M * .08, C, a); }
         if (t > .64 && t < .9) K.slam(g, "SHAMBLES", w / 2, h * .5, M * .14, lin(.64, .9, t), { fill: "#fff", stroke: "#06304a", glow: C, ghost: 1 });
         if (hit(t, .64, .02)) X.fx.flash = ["#bff0ff", .8];
         K.vignette(g, w, h, .6, "#000810"); K.bars(g, w, h, 1 - lin(.9, 1, t));

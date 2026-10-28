@@ -4,8 +4,8 @@
    (staged at centre, then gliding back onto its real place on the table), and a seal(g, X, a, r) that the ending
    keeps on the real plate.
    ===================================================================== */
-import * as K from "./kit.js";
-import { hand, fist, handTips } from "./hands.js";
+import * as K from "./kit.js?v=6";
+import { hand, fist, handTips } from "./hands.js?v=6";
 const { lin, ss, hit, hs, TAU, mid } = K;
 
 const back = t => 1 - ss(.86, .97, t);                       // staged plate -> real plate over the last beat of the main act

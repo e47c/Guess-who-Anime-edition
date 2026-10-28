@@ -8,7 +8,7 @@
    strokes at the joints, simple nails. Curled fingers are drawn folded: knuckle caps from the back, fingers lying over the
    palm from the front, so a fist or a pointing hand reads at a glance.
    ===================================================================== */
-import { TAU, rgba, shade, glow, hs } from "./kit.js";
+import { TAU, rgba, shade, glow, hs } from "./kit.js?v=6";
 
 export const SKIN = {
     base:   { l: "#fff3ea", b: "#fbd9c2", s: "#e5a98e", d: "#b8705a", ink: "#3d1a12", nail: "#ffe9e1" },
@@ -43,6 +43,7 @@ export const POSE = {
     relax:  { sp: .9, f: [[.97, .86, .8], [.97, .84, .78], [.96, .83, .77], [.94, .8, .75]], b: [[.04, .08, .08], [.02, .06, .06], [0, .04, .05], [-.02, .02, .04]], th: { a: -.5, b: [-.05, .1], f: [.95, .9] } },
     claw:   { sp: 1.6, f: [[.9, .64, .54], [.92, .62, .52], [.9, .62, .52], [.86, .6, .5]], b: [[-.06, .12, .16], [0, .08, .1], [.04, .06, .08], [.1, .06, .06]], th: { a: -.8, b: [.1, .3], f: [.92, .8] } },
     point:  { sp: .8, f: [F1, Z3, Z3, Z3], b: [[0, .01, .01], Z3, Z3, Z3], th: { a: -.2, b: [.75, .65], f: [.9, .8] }, curl: [0, 1, 1, 1], thF: 1 },
+    pointT: { sp: .8, f: [F1, Z3, Z3, Z3], b: [[0, .01, .01], Z3, Z3, Z3], th: { a: -1.05, b: [-.15, -.05], f: [1, 1] }, curl: [0, 1, 1, 1] },   // index up, thumb out to the side (Law's Shambles)
     two:    { sp: .35, f: [F1, F1, Z3, Z3], b: [[.02, .01, 0], [-.02, 0, 0], Z3, Z3], th: { a: -.2, b: [.8, .7], f: [.9, .8] }, curl: [0, 0, 1, 1], thF: 1 },
     cross:  { sp: .3, f: [F1, [1, .98, .96], Z3, Z3], b: [[.16, .02, 0], [-.34, .04, .02], Z3, Z3], th: { a: -.2, b: [.8, .7], f: [.9, .8] }, curl: [0, 0, 1, 1], ord: [3, 2, 0, 1], thF: 1 },
     fist:   { sp: .85, f: [Z3, Z3, Z3, Z3], b: [Z3, Z3, Z3, Z3], th: { a: -.28, b: [.6, .75], f: [.9, .78] }, curl: [1, 1, 1, 1], thF: 1 },
