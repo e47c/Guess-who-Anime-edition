@@ -228,7 +228,7 @@ const hitsugaya = {
         plate(g, X, r, ss(.5, .58, t), lin(.6, .72, t));
         const hx = w * .74, hy = h * 1.0, ang = -1.25 - .55 * K.oCub(lin(.17, .32, t)), bl = M * .78;          // first person: the blade rises, held out in front
         const tipx = hx + Math.cos(ang) * bl, tipy = hy + Math.sin(ang) * bl;
-        K.katana(g, hx, hy, ang, bl, { blade: ["#f5fbff", "#b9dcf5", "#5c86b4"], glow: t > .25 ? "#9fd8ff" : null, s, guard: "#e9d36a" });
+        K.katana(g, hx, hy, ang, bl, { blade: ["#f5fbff", "#b9dcf5", "#5c86b4"], glow: t > .25 ? "#9fd8ff" : null, s, guard: "#e9d36a", tsuba: "star4", chain: "crescent", wrap: "#1c3a6a", wrapLine: "#dfeaff" });   // Hyorinmaru: star guard, the chain and sickle
         g.save(); g.strokeStyle = "#c9a227"; g.lineWidth = 3; g.beginPath(); g.moveTo(hx - Math.cos(ang) * M * .18, hy - Math.sin(ang) * M * .18); g.quadraticCurveTo(hx + M * .08, hy + M * .02, hx + M * .02, hy + M * .2); g.stroke(); g.beginPath(); g.arc(hx + M * .02, hy + M * .24, M * .035, 3.6, 8.4); g.stroke(); g.restore();   // chain + crescent
         hand(g, hx + Math.cos(ang) * -M * .1, hy + Math.sin(ang) * -M * .1 + M * .02, HS(X), ang + 1.5708, "fist", { skin: "base", sleeve: { c: "#16161c", s: "#08080c", cuff: "#ffffff", len: 260 } });
         const fr = lin(.24, .4, t); if (fr > 0) for (let k = 0; k < 8; k++) { const q = K.mix(.15, 1, k / 8); if (q > fr) break; K.glow(g, K.mix(hx, tipx, q), K.mix(hy, tipy, q), M * .03, "#bfe6ff", .7); }

@@ -2009,9 +2009,8 @@ const UNO_SPECIAL = {
 };
 /* SPECIAL-CARD CINEMATICS: the engine and all 36 scenes live in js/cine/ (engine.js + freeze/swap/ult/peek.js, kit.js, hands.js).
    Voice lines still load from audio/special/<series>_<kind>.mp3 and set each scene's length. The engine reaches the game only through these hooks. */
-let unoFxOwnsPeek = null;
 initCine({ hbEl: (...a) => hbEl(...a), unoCardEl: (...a) => unoCardEl(...a), unoNext: (...a) => unoNext(...a), arr: x => arr(x), plateRect: p => unoPlateRect(p),
-    me: () => Number(myPlayer), ownPeek: id => { unoFxOwnsPeek = id; }, peekShow: (u, me) => unoPeekShow(u, me) });
+    me: () => Number(myPlayer) });
 const UNO_FX_HOOKS = {};
 Object.keys(UNO_SPECIAL).forEach(sk => ["f", "t", "u", "e"].forEach(k => { const key = sk + "_" + k; if (cineHas(key)) UNO_FX_HOOKS[key] = cineHook(key); }));
 
@@ -2153,7 +2152,7 @@ function unoDealState(cards, anime, seats, names, round) {
     seats.forEach(p => { hands["p" + p] = draw.splice(0, 7); });
     const first = draw.splice(draw.findIndex(i => cards[i].k === "a"), 1)[0];   // the opening card is always an attribute card
     return { cards: cards, anime: anime, seats: seats, names: names, hands: hands, draw: draw, disc: [first], turn: seats[0], dir: 1,
-        color: cards[first].s, drew: null, call: null, frozen: {}, fzk: null, fx: null, peek: null, ev: null, fin: null, winner: null, out: [], places: null, pend: 0,
+        color: cards[first].s, drew: null, bonus: null, frozen: {}, fzk: null, fx: null, peek: null, ev: null, fin: null, winner: null, out: [], places: null, pend: 0,
         phase: "play", round: round, n: 1, msg: "Game on! " + names["p" + seats[0]] + " starts." };
 }
 const unoTop = u => u.cards[u.disc[u.disc.length - 1]];
@@ -2198,7 +2197,7 @@ function unoDraw(u, p, n) {
 /* The round is over once at most one player still holds cards: the last one takes the last place. */
 function unoEnd(u, tail) {
     unoLive(u).sort((a, b) => (tail || []).indexOf(a) - (tail || []).indexOf(b)).forEach(p => u.out.push(p));
-    u.phase = "over"; u.places = u.out.slice(); u.winner = u.places[0]; u.pend = 0; u.call = null; u.drew = null; u.fx = null;
+    u.phase = "over"; u.places = u.out.slice(); u.winner = u.places[0]; u.pend = 0; u.bonus = null; u.drew = null; u.fx = null;
     u.wins = u.wins || {}; u.wins["p" + u.winner] = (Number(u.wins["p" + u.winner]) || 0) + 1;
     u.msg = u.names["p" + u.winner] + " wins the round! Final ranking: " + u.places.map((p, i) => (i + 1) + ". " + u.names["p" + p]).join("  ");
 }
@@ -2217,10 +2216,10 @@ function unoDoPlay(u, p, ci, col, tg) {
     tg = Number(tg) || 0;
     if (c.k === "t" && h.length > 1 && (tg === p || !unoLive(u).includes(tg))) return false;      // swap needs a valid target still in the round
     const duel = unoLive(u).length === 2;
-    h.splice(h.indexOf(ci), 1); u.disc.push(ci); u.drew = null;
+    h.splice(h.indexOf(ci), 1); u.disc.push(ci); u.drew = null; u.bonus = null;
     u.color = wild ? Math.max(0, Math.min(u.anime.length - 1, Number(col) || 0)) : c.s;
     const finished = !h.length;
-    if (finished) { u.out.push(p); u.call = null; if (u.out.length === 1) u.fin = { ci: ci, sp: sp ? 1 : 0 }; }
+    if (finished) { u.out.push(p); if (u.out.length === 1) u.fin = { ci: ci, sp: sp ? 1 : 0 }; }
     let msg = nm + " played " + c.n, victim = 0;
     if (c.k === "s") { victim = nx; msg += ". " + u.names["p" + nx] + " is skipped!"; u.turn = unoAdv(u, p, 2, notes); }
     else if (c.k === "r") { u.dir *= -1; msg += ". Direction reversed!"; u.turn = duel && !finished ? p : unoAdv(u, p, 1, notes); }
@@ -2235,12 +2234,13 @@ function unoDoPlay(u, p, ci, col, tg) {
         if (h.length) { victim = tg; const mine = h; u.hands["p" + p] = u.hands["p" + tg]; u.hands["p" + tg] = mine; msg += (c.ab ? " (" + c.ab + ")" : "") + ". Hands swapped with " + u.names["p" + tg] + "!"; }
         u.turn = unoAdv(u, p, 1, notes);
     }
-    else if (c.k === "e") { msg += (c.ab ? " (" + c.ab + ")" : "") + ". " + nm + " sees every hand!"; u.turn = unoAdv(u, p, 1, notes); }
+    else if (c.k === "e") {         // Future Sight: see the NEXT player's hand, then play one more card (or end the turn)
+        victim = nx; msg += (c.ab ? " (" + c.ab + ")" : "") + ". " + nm + " reads " + u.names["p" + nx] + "'s hand";
+        if (finished) u.turn = unoAdv(u, p, 1, notes); else { u.turn = p; u.bonus = p; msg += " and gets one more play!"; }
+    }
     else u.turn = unoAdv(u, p, 1, notes);
     if (wild) msg += " Colour: " + u.anime[u.color] + ".";
     if (notes.length) msg += " " + notes.join(" ");
-    const fh = u.hands["p" + p];
-    if (!finished) u.call = fh.length === 1 ? { p: p, safe: false, t: Date.now() } : null;
     if (finished) msg += " " + nm + " is out of cards and finishes #" + u.out.length + "!";
     u.n++; u.msg = msg;
     u.ev = { id: u.n, t: "p", p: p, ci: ci, k: c.k, to: victim, dc: ({ x: 4, u: 5 })[c.k] || 0, stk: c.k === "d" ? u.pend : 0, col: u.color, fin: finished ? u.out.length : 0 };
@@ -2248,12 +2248,11 @@ function unoDoPlay(u, p, ci, col, tg) {
     if (finished && u.turn === p) u.turn = unoAdv(u, p, 1);
     const id = (u.round || 1) + ":" + u.n;
     if (sp) u.fx = { id: id, ci: ci, p: p, to: nx, sw: c.k === "t" ? tg : 0 };
-    if (c.k === "e") u.peek = { id: id, p: p, t: Date.now() };
+    if (c.k === "e") u.peek = { id: id, p: p, to: nx, t: Date.now() };
 }
 function unoDoDraw(u, p) {
     const h = u.hands["p" + p];
-    if (u.phase !== "play" || u.turn !== p || unoIsOut(u, p) || u.drew != null) return false;
-    if (u.call && u.call.p !== p) u.call = null;
+    if (u.phase !== "play" || u.turn !== p || unoIsOut(u, p) || u.drew != null || u.bonus === p) return false;   // the Future Sight extra is a play, not a draw
     const before = h.length;
     if (u.pend > 0) {               // can't (or won't) stack: take the whole stack and lose the turn
         const n = u.pend; unoDraw(u, p, n); u.pend = 0;
@@ -2265,13 +2264,13 @@ function unoDoDraw(u, p) {
     if (h.length === before || !unoCan(u, h, h[h.length - 1])) u.turn = unoAdv(u, p, 1); else u.drew = h[h.length - 1];
 }
 function unoDoPass(u, p) {
-    if (u.phase !== "play" || u.turn !== p || u.drew == null) return false;
-    u.drew = null; u.msg = u.names["p" + p] + " passed."; u.turn = unoAdv(u, p, 1); u.n++;
+    if (u.phase !== "play" || u.turn !== p || (u.drew == null && u.bonus !== p)) return false;
+    u.msg = u.names["p" + p] + (u.bonus === p ? " keeps the extra play and ends the turn." : " passed."); u.drew = null; u.bonus = null; u.turn = unoAdv(u, p, 1); u.n++;
 }
 /* an away / departed player's turn is skipped; a running Draw-2 stack lands on them */
 function unoSkipTurn(u, p, why) {
     if (u.phase !== "play" || u.turn !== p) return false;
-    u.drew = null; let extra = "";
+    u.drew = null; u.bonus = null; let extra = "";
     if (u.pend > 0) { unoDraw(u, p, u.pend); extra = " They take the +" + u.pend + " stack."; u.pend = 0; }
     u.msg = u.names["p" + p] + why + extra; u.turn = unoAdv(u, p, 1); u.n++; u.ev = { id: u.n, t: "s", p: 0, to: p };
 }
@@ -2291,14 +2290,6 @@ async function unoStart() {
 window.unoPlay = (ci, col, tg) => unoTx(u => unoDoPlay(u, Number(myPlayer), ci, col, tg));
 window.unoDrawClick = () => unoTx(u => unoDoDraw(u, Number(myPlayer)));
 window.unoPass = () => unoTx(u => unoDoPass(u, Number(myPlayer)));
-window.unoCall = () => unoTx(u => {
-    const p = Number(myPlayer); if (!u.call || u.call.p !== p || u.call.safe) return false;
-    u.call.safe = true; u.msg = u.names["p" + p] + " shouts UNO!"; u.n++; u.ev = { id: u.n, t: "u", p: p };
-});
-window.unoCatch = () => unoTx(u => {
-    const p = Number(myPlayer); if (!u.call || u.call.safe || u.call.p === p || unoIsOut(u, p) || !u.seats.includes(p) || Date.now() - u.call.t < 2500) return false;
-    const caught = u.call.p; unoDraw(u, caught, 2); u.msg = u.names["p" + p] + " caught " + u.names["p" + caught] + " forgetting UNO! +2 cards."; u.call = null; u.n++; u.ev = { id: u.n, t: "c", p: p, to: caught, dc: 2 };
-});
 window.unoSkipAbsent = () => unoTx(u => unoSkipTurn(u, u.turn, " is away, turn skipped."));
 window.unoRematch = () => {
     const d = currentRoomData, seats = activeSlots(d), names = {};
@@ -2371,7 +2362,7 @@ function unoPlateEl(data, u, p, me, play, pres) {
         return box;
     }
     const fan = hbEl("div", "u-fan"); for (let i = 0; i < Math.min(n, 7); i++) { const c = hbEl("i"); c.style.setProperty("--k", i * 6 / Math.max(1, Math.min(n, 7) - 1 || 1)); fan.appendChild(c); } box.appendChild(fan);
-    box.appendChild(hbEl("div", "u-ocount" + (n === 1 ? " uno" : ""), (left ? "LEFT · " : "") + (n === 1 ? "UNO! · 1 card" : n + " cards") + (frozen ? "  ❄ x" + u.frozen["p" + p] : "")));
+    box.appendChild(hbEl("div", "u-ocount" + (n === 1 ? " last" : ""), (left ? "LEFT · " : "") + (n === 1 ? "LAST CARD" : n + " cards") + (frozen ? "  ❄ x" + u.frozen["p" + p] : "")));
     return box;
 }
 const unoRect = el => el ? el.getBoundingClientRect() : null;
@@ -2387,17 +2378,16 @@ function showUNO(data) {
     showOnly("uno");
     const u = unoNorm(JSON.parse(JSON.stringify(data.uno))), me = Number(myPlayer), pres = data.presence || {}, keys = arr(data.animes);
     if (!u.disc.length) return;
-    const play = u.phase === "play", myTurn = play && u.turn === me, hand = u.hands["p" + me] || [], myPlace = u.out.indexOf(me) + 1, stack = play ? u.pend : 0;
+    const play = u.phase === "play", myTurn = play && u.turn === me, hand = u.hands["p" + me] || [], myPlace = u.out.indexOf(me) + 1, stack = play ? u.pend : 0, bonus = play && u.bonus === u.turn ? u.bonus : 0;
     const firstRender = unoSeen.n < 0;
     const newEv = u.ev && u.ev.id !== unoSeen.ev && !firstRender ? u.ev : null;
     if (u.ev) unoSeen.ev = u.ev.id;
     if (u.n !== unoSeen.n) { if (unoSeen.n >= 0 && play && myTurn && u.turn !== unoSeen.turn) { sfx("turn"); } unoSeen.n = u.n; unoSeen.turn = u.turn; }
     if (u.fx && u.fx.id !== unoSeen.fx) { unoSeen.fx = u.fx.id; if (!firstRender) unoSpecialFx(u, u.fx); }
-    if (u.peek && u.peek.id !== unoSeen.peek) { unoSeen.peek = u.peek.id; if (!firstRender && u.peek.p === me && Date.now() - u.peek.t < 5000) unoPeekShow(u, me); }
     const actCol = UNO_SUIT[u.color] || "#ffcf4a";
     $("uno").classList.toggle("myturn", myTurn); $("uno").style.setProperty("--ac", actCol); ambient.accent(actCol);
     $("unoArenaKj").textContent = UNO_KANJI[keys[u.color]] || "札";
-    $("unoTurn").textContent = !play ? "ROUND OVER" : myTurn ? (stack ? "STACK +" + stack + "!" : "YOUR TURN!") : (u.names["p" + u.turn] || "?") + "'s turn";
+    $("unoTurn").textContent = !play ? "ROUND OVER" : myTurn ? (stack ? "STACK +" + stack + "!" : bonus ? "EXTRA PLAY!" : "YOUR TURN!") : (u.names["p" + u.turn] || "?") + (bonus ? "'s extra play" : "'s turn");
     $("unoStatus").textContent = u.msg || "";
     $("uno").classList.toggle("watching", play && myPlace > 0);
     // opponents
@@ -2425,13 +2415,10 @@ function showUNO(data) {
     if (u.out.length && play) { const rk = hbEl("div", "u-rank"); u.out.forEach((p, i) => { const r = hbEl("span", null, "#" + (i + 1) + " " + (u.names["p" + p] || "?")); r.style.setProperty("--pc", HB_COLORS[(p - 1) % HB_COLORS.length]); rk.appendChild(r); }); info.appendChild(rk); }
     const dr = $("unoDraw"); dr.innerHTML = ""; dr.appendChild(hbEl("b", null, stack && myTurn ? "TAKE +" + stack : "DRAW")); dr.appendChild(hbEl("em", null, String(u.draw.length)));
     dr.classList.toggle("stack", !!(stack && myTurn)); dr.setAttribute("aria-label", stack && myTurn ? "Take the Draw-2 stack: draw " + stack + " cards" : "Draw a card");
-    dr.disabled = !(myTurn && u.drew == null); dr.classList.toggle("glow", myTurn && u.drew == null && !hand.some(ci => unoCan(u, hand, ci)));
-    $("unoBtnPass").classList.toggle("hidden", !(myTurn && u.drew != null));
-    $("unoBtnUno").classList.toggle("hidden", !(u.call && u.call.p === me && !u.call.safe));
-    const canCatch = u.call && !u.call.safe && u.call.p !== me && !myPlace && u.seats.includes(me), wait = canCatch ? 2500 - (Date.now() - u.call.t) : 0;
-    $("unoBtnCatch").classList.toggle("hidden", !canCatch); $("unoBtnCatch").disabled = wait > 0;
-    clearTimeout(unoCatchTimer);
-    if (wait > 0) unoCatchTimer = setTimeout(() => { if (currentRoomData && currentRoomData.gameType === "uno" && currentRoomData.status === "playing") showUNO(currentRoomData); }, wait + 60);
+    dr.disabled = !(myTurn && u.drew == null && !bonus); dr.classList.toggle("glow", myTurn && u.drew == null && !bonus && !hand.some(ci => unoCan(u, hand, ci)));
+    $("unoBtnPass").classList.toggle("hidden", !(myTurn && (u.drew != null || bonus))); $("unoBtnPass").textContent = bonus ? "END TURN" : "PASS";
+    $("unoBtnPass").classList.toggle("glow", !!(myTurn && bonus && !hand.some(ci => unoCan(u, hand, ci))));
+    unoSightStrip(u, me, myTurn && bonus);
     const turnGone = data["player" + u.turn] && data["player" + u.turn].left;
     $("unoBtnSkip").classList.toggle("hidden", !(play && !myTurn && (pres["p" + u.turn] === false || turnGone)));
     const hd = $("unoHand"); hd.innerHTML = "";
@@ -2461,7 +2448,6 @@ function showUNO(data) {
     $("unoOver").classList.add("hidden");
     if (!play && u.winner) unoOverSequence(u, data); else if (vxKey && vxKey.startsWith("uno:")) { closeResults(); vxKey = ""; }
 }
-let unoCatchTimer = 0;
 
 /* ---------- Anime UNO: motion + action effects (all short, never block play) ---------- */
 const unoFx = (() => {
@@ -2519,8 +2505,6 @@ function unoAnimate(u, ev, snap, data) {
         }
         impact();
     } else if (ev.t === "d") { unoDrawFly(u, ev.p, ev.dc || 1, 0); if (ev.stk) { unoStamp(unoPlateRect(ev.p), "+" + ev.stk, "#ff2a2a", ev.stk >= 6 ? "big" : ""); sfx("punch"); } }
-    else if (ev.t === "u") { const r = unoPlateRect(ev.p); unoStamp(r, "UNO!", "#ffe14d", "big"); sfx("uno"); ring(ctr(r).x, ctr(r).y, "#ffe14d", 240, 700); }
-    else if (ev.t === "c") { const r = unoPlateRect(ev.to); unoStamp(r, "CAUGHT!", "#ff3b3b"); sfx("catch"); unoDrawFly(u, ev.to, 2, 300); }
     else if (ev.t === "s") { unoStamp(unoPlateRect(ev.to), "AWAY", "#bbbbbb"); sfx("skip"); }
 }
 function unoAction(u, ev, c, col, center) {
@@ -2676,17 +2660,45 @@ window.unoColorPick = s => { $("unoColor").classList.add("hidden"); if (unoPick 
 window.unoColorCancel = () => { $("unoColor").classList.add("hidden"); unoPick = null; };
 
 /* ---------- special cards: swap target picker, banner, future sight ---------- */
+/* Swap Hands target picker: an exchange portal. You sit in the middle of a vortex in the card's colour (the swap card's own
+   picture spinning in it); the other players orbit you, each with a fan of their real card count. Hover / focus draws the
+   exchange beam and says what you would end up with; click, tap or Enter swaps. Arrow keys walk round the ring. */
 function unoBuildTargets(u, me) {
-    const b = $("unoTargetBtns"); b.innerHTML = "";
-    unoLive(u).filter(p => p !== me).forEach(p => {
-        const x = hbEl("button", "u-pickbtn"); x.style.setProperty("--c", HB_COLORS[p - 1]);
-        x.appendChild(hbEl("span", null, "🌀"));
-        x.appendChild(hbEl("b", null, u.names["p" + p] || "?"));
-        x.appendChild(hbEl("div", "u-tcount", (u.hands["p" + p] || []).length + " cards"));
-        x.onclick = () => unoTargetPick(p); b.appendChild(x);
+    const box = $("unoTargetBtns"); box.innerHTML = "";
+    const c = unoPick != null ? u.cards[unoPick] : null, col = c ? UNO_SUIT[c.s] : "#7fd4ff", data = currentRoomData || {}, opp = unoLive(u).filter(p => p !== me), N = opp.length;
+    $("unoTarget").style.setProperty("--c", col);
+    $("unoTargetAb").textContent = c ? (c.ab || "SWAP HANDS") + " · " + c.n : "SWAP HANDS";
+    const keep = Math.max(0, (u.hands["p" + me] || []).length - 1), hint = $("unoTargetHint");    // the swap card itself leaves your hand first
+    const fan = (n, cls) => { const f = hbEl("div", "sw-fan " + (cls || "")), k = Math.min(n, 9); for (let i = 0; i < k; i++) { const b = hbEl("i"); b.style.setProperty("--r", ((i - (k - 1) / 2) * (k > 1 ? 44 / (k - 1) : 0)).toFixed(1) + "deg"); f.appendChild(b); } f.appendChild(hbEl("b", null, "×" + n)); return f; };
+    const svg = svgEl("svg", { class: "sw-beams", viewBox: "-100 -100 200 200", "aria-hidden": "true" });
+    svg.appendChild(svgEl("circle", { r: 76, class: "sw-orbit" }));
+    const beamA = svgEl("line", { class: "sw-beam a", x1: 0, y1: 0, x2: 0, y2: 0 }), beamB = svgEl("line", { class: "sw-beam b", x1: 0, y1: 0, x2: 0, y2: 0 }); svg.append(beamA, beamB); box.appendChild(svg);
+    const vortex = hbEl("div", "sw-vortex"); if (c) { const pic = hbEl("div", "sw-art"); unoSpArt(pic, c); vortex.appendChild(pic); } box.appendChild(vortex);
+    const meEl = hbEl("div", "sw-me"); meEl.appendChild(avatarEl(pPub(data, me), { size: 52 })); meEl.appendChild(hbEl("b", null, "YOU")); meEl.appendChild(fan(keep, "me")); box.appendChild(meEl);
+    const btns = [], idle = "Pick a player: their whole hand becomes yours, and yours becomes theirs.";
+    hint.textContent = idle;
+    const aim = (x, y, p, on) => {
+        btns.forEach(b => b.classList.toggle("on", b === on)); box.classList.toggle("aiming", !!on);
+        [beamA, beamB].forEach(l => { l.setAttribute("x2", x.toFixed(1)); l.setAttribute("y2", y.toFixed(1)); });
+        hint.textContent = on ? "You get " + (u.hands["p" + p] || []).length + " card" + ((u.hands["p" + p] || []).length === 1 ? "" : "s") + " · " + (u.names["p" + p] || "?") + " gets your " + keep : idle;
+        if (on) { box.style.setProperty("--pc", HB_COLORS[(p - 1) % HB_COLORS.length]); sfx("hover"); }
+    };
+    opp.forEach((p, i) => {
+        const a = -Math.PI / 2 + (N === 1 ? 0 : i / N * Math.PI * 2), x = Math.cos(a) * 76, y = Math.sin(a) * 76, n = (u.hands["p" + p] || []).length;
+        const b = hbEl("button", "sw-opp"); b.type = "button"; b.style.left = (50 + x / 2) + "%"; b.style.top = (50 + y / 2) + "%"; b.style.setProperty("--pc", HB_COLORS[(p - 1) % HB_COLORS.length]); b.style.setProperty("--i", i);
+        b.setAttribute("aria-label", "Swap hands with " + (u.names["p" + p] || "?") + ", " + n + " card" + (n === 1 ? "" : "s"));
+        b.appendChild(avatarEl(pPub(data, p), { size: 40 })); b.appendChild(hbEl("b", null, u.names["p" + p] || "?")); b.appendChild(fan(n));
+        const go = () => aim(x, y, p, b);
+        b.addEventListener("pointerenter", go); b.addEventListener("focus", go);
+        b.addEventListener("pointerleave", () => { if (document.activeElement !== b) aim(0, 0, 0, null); });
+        b.onclick = () => { b.classList.add("pick"); box.classList.add("go"); setTimeout(() => unoTargetPick(p), motionOK() ? 260 : 0); };
+        b.addEventListener("keydown", e => { if (/^Arrow/.test(e.key)) { e.preventDefault(); const d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : -1; btns[(i + d + N) % N].focus(); } });
+        btns.push(b); box.appendChild(b);
     });
+    box.classList.toggle("few", N <= 3); box.classList.toggle("many", N >= 6);
+    setTimeout(() => { if (!$("unoTarget").classList.contains("hidden") && btns[0]) btns[0].focus({ preventScroll: true }); }, 60);
 }
-window.unoTargetPick = p => { $("unoTarget").classList.add("hidden"); if (unoPick != null) unoPlay(unoPick, 0, p); unoPick = null; };
+window.unoTargetPick = p => { if ($("unoTarget").classList.contains("hidden")) return; $("unoTarget").classList.add("hidden"); if (unoPick != null) unoPlay(unoPick, 0, p); unoPick = null; };
 window.unoTargetCancel = () => { $("unoTarget").classList.add("hidden"); unoPick = null; };
 function unoSpecialFx(u, f) {
     const c = u.cards[f.ci]; if (!c || !UNO_SP[c.k]) return;
@@ -2701,29 +2713,17 @@ function unoSpecialFx(u, f) {
     const hook = UNO_FX_HOOKS[c.sk + "_" + c.k];
     if (hook) { try { hook(box, close, c, u); } catch (e) { console.warn(e); close(); } } else setTimeout(close, 1700);
 }
-const UNO_PK = { onepiece_e: "OBSERVATION HAKI", naruto_e: "白眼 BYAKUGAN", dragonball_e: "KI SENSING", jjk_e: "六眼 SIX EYES", demonslayer_e: "TRANSPARENT WORLD",
-    bleach_e: "THE ALMIGHTY", hxh_e: "LOVELY GHOSTWRITER", blackclover_e: "RED THREAD OF FATE", jojo_e: "EPITAPH" };
-function unoPeekShow(u, me) {
-    const old = $("unoPeek"); if (old) old.remove();
-    const box = hbEl("div", "u-peek"); box.id = "unoPeek";
-    const fxk = u.fx && u.cards[u.fx.ci] ? u.cards[u.fx.ci].sk + "_e" : "";
-    if (UNO_PK[fxk]) box.classList.add("pk", "pk-" + fxk);
-    box.appendChild(hbEl("h2", null, UNO_PK[fxk] || "👁️ FUTURE SIGHT"));
-    const opp = unoLive(u).filter(p => p !== me), n = opp.reduce((s, p) => s + (u.hands["p" + p] || []).length, 0) || 1;
-    const S = Math.min(innerWidth * .92, innerHeight * .72, 800), table = hbEl("div", "u-peek-table");      // a square, see-through table
-    table.style.width = table.style.height = S + "px"; box.appendChild(table);
-    const sc = Math.max(.36, Math.min(1.3, S * Math.sqrt(.78 / (n + opp.length * 2.5)) / 176)), ix = { i: 0 };   // cards as big as the table allows, never a thin line
-    opp.forEach(p => {
-        const sec = hbEl("div", "u-peek-sec"), nm = hbEl("div", "u-peek-name", u.names["p" + p]); nm.style.color = HB_COLORS[p - 1]; sec.appendChild(nm);
-        const grid = hbEl("div", "u-peek-grid");
-        (u.hands["p" + p] || []).slice().sort((a, b) => (u.cards[a].s - u.cards[b].s) || (u.cards[a].v - u.cards[b].v)).forEach(ci => {
-            const cell = hbEl("div", "u-peek-cell"), el = unoCardEl(u, ci, ""); cell.style.width = 118 * sc + "px"; cell.style.height = 176 * sc + "px"; cell.style.setProperty("--i", ix.i++);
-            el.style.cssText += ";position:absolute;left:0;top:0;width:118px;height:176px;transform-origin:0 0;transform:scale(" + sc + ");margin:0;transition:none"; cell.appendChild(el); grid.appendChild(cell);
-        });
-        sec.appendChild(grid); table.appendChild(sec);
-    });
-    box.appendChild(hbEl("div", "u-peek-bar"));
-    const showPeek = () => { if ($("unoFx")) return setTimeout(showPeek, 200); if (unoFxOwnsPeek && u.peek && unoFxOwnsPeek === u.peek.id) return; setTimeout(() => { $("uno").appendChild(box); setTimeout(() => box.remove(), 6000); }, 600); }; setTimeout(showPeek, 300);   // after the banner, then 6 seconds
+/* Future Sight, during the extra play: the hand you saw stays as a small reminder next to the table (only for you, only until
+   the extra play is used). The big reveal itself is part of the card's cinematic (js/cine/peek.js). */
+function unoSightStrip(u, me, show) {
+    const old = $("unoSight"); if (old) old.remove();
+    if (!show || !u.peek || u.peek.p !== me) return;
+    const to = Number(u.peek.to), hand = u.hands["p" + to] || []; if (!to || !hand.length) return;
+    const box = hbEl("div", "u-sight"); box.id = "unoSight"; box.style.setProperty("--pc", HB_COLORS[(to - 1) % HB_COLORS.length]);
+    box.appendChild(hbEl("small", null, "👁 " + (u.names["p" + to] || "?") + "'s hand"));
+    const row = hbEl("div", "u-sight-row");
+    hand.slice().sort((a, b) => (u.cards[a].s - u.cards[b].s) || (u.cards[a].v - u.cards[b].v)).forEach(ci => { const cell = hbEl("div", "u-sight-cell"); cell.appendChild(unoCardEl(u, ci, "")); cell.title = u.cards[ci].n; row.appendChild(cell); });
+    box.appendChild(row); $("unoInfo").appendChild(box);
 }
 
 /* =====================================================================
@@ -2746,7 +2746,7 @@ const RULES = {
     classic: ["Two players duel 1v1 (with more people in the room, the host picks the duelists and everyone else spectates). Both secretly pick a character from the same board.", "On your turn, ask one yes/no question out loud, then flip down every character it rules out.", "Press END TURN when you are done. Think you know it? Press ACCUSE and tap their character.", "A right accusation wins. A wrong one hands the win to your opponent."],
     headbanz: ["Everyone gets a character card that all the others can see, except you.", "Take turns asking yes/no questions about your own card; the others answer.", "Guess your character whenever you like. Three wrong guesses and you sit out the round.", "2 to 8 players, everyone at once. Points per round follow the guessing order: with N players the 1st right guess scores N, the next N-1 and so on (8 players: 8, 7, 6 ... 1). Giving up or three strikes scores 0."],
     imposter: ["Everyone sees the same secret character, except one imposter.", "Two clue rounds: on your call, say one clue out loud. Never say the name.", "Then vote. Catch the imposter and the crew scores; if they slip away, they score big.", "A caught imposter can still steal points by naming the character."],
-    uno: ["Classic deck: pick exactly 4 anime (red, green, yellow, dark blue). Chaos deck: pick 4 to 8 (adds pink, orange, purple, light blue). Match the colour, or the attribute or action of the top card.", "Skip, Reverse, Wild and Wild +4 work like classic UNO. Draw-2s stack: answer a +2 with a +2 to pass on +4, +6, +8... or take the whole stack.", "Specials: Freeze (next player loses 2 turns), Swap Hands, Ultimate (+5) and Future Sight (peek at every hand).", "Down to one card? Hit UNO! before someone catches you, or draw 2. Empty your hand to take the next place; the round goes on until every place is decided."]
+    uno: ["Classic deck: pick exactly 4 anime (red, green, yellow, dark blue). Chaos deck: pick 4 to 8 (adds pink, orange, purple, light blue). Match the colour, or the attribute or action of the top card.", "Skip, Reverse, Wild and Wild +4 work like classic UNO. Draw-2s stack: answer a +2 with a +2 to pass on +4, +6, +8... or take the whole stack.", "Specials: Freeze (next player loses 2 turns), Swap Hands, Ultimate (+5) and Future Sight (see the next player's hand, then play one more card).", "No UNO call: down to one card, just keep playing. Empty your hand to take the next place; the round goes on until every place is decided."]
 };
 function showRules(t) {
     const M = MODES[t] || MODES.classic;
@@ -3343,7 +3343,7 @@ function resetMatchState() {
     unoSeen = { n: -1, over: "", hl: -1, top: -1, round: -1, ev: null, turn: 0 }; unoPick = null; unoFx.clear();
     hbRoundKey = ""; hbSig = ""; imSig = ""; specSig = ""; hbSeen = { wrong: 0, order: 0, done: false, phase: "" }; imSeen = { phase: "", round: 0 };
     ["hbPicker", "imPicker", "unoColor", "unoTarget", "unoOver"].forEach(id => $(id).classList.add("hidden"));
-    ["unoFx", "unoPeek"].forEach(id => { const e = $(id); if (e) e.remove(); });
+    ["unoFx", "unoSight"].forEach(id => { const e = $(id); if (e) e.remove(); });
     $("rematchPanel").classList.add("hidden"); $("oppBanner").classList.add("hidden");
     closeResults(); vxKey = "";
 }

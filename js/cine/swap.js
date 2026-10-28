@@ -45,7 +45,7 @@ const law = {
         frame(g, A, C, lin(.4, .46, t) * (1 - sw), 10, [12, 8]); frame(g, B, C, lin(.4, .46, t) * (1 - sw), 10, [12, 8]);
         if (cut > 0 && cut < 1) [A, B].forEach((r, i) => { const L = Math.hypot(r.w, r.h) * 1.6, c = mid(r), an = i ? -.5 : .4, e = K.oExpo(lin(i * .3, i * .3 + .5, cut)); gf.save(); gf.translate(c.x, c.y); gf.rotate(an); gf.globalCompositeOperation = "lighter"; gf.strokeStyle = "#ffffff"; gf.lineWidth = 4 * (1 - cut) + 1; gf.shadowColor = C; gf.shadowBlur = 20; gf.beginPath(); gf.moveTo(-L / 2, 0); gf.lineTo(-L / 2 + L * e, 0); gf.stroke(); gf.restore(); });
         if (sw > 0 && sw < 1) [pa, pb].forEach(p => { const c = mid(p); K.glow(gf, c.x, c.y, M * .2, C, .5); });
-        K.katana(g, w * .08, h * 1.1, -1.1 + 1.6 * K.ioCub(cut), M * 1.1, { blade: ["#f4f7ff", "#9aa6c0", "#3a4258"], guard: "#2a2a2a", wrap: "#2a1440", glow: cut > 0 && cut < 1 ? C : null, s });   // Kikoku, the nodachi
+        K.katana(g, w * .08, h * 1.1, -1.1 + 1.6 * K.ioCub(cut), M * 1.1, { blade: ["#f4f7ff", "#9aa6c0", "#3a4258"], guard: "#d9b44a", wrap: "#16141a", wrapLine: "#f2f2f2", tsuba: "cross", hilt: 1.45, glow: cut > 0 && cut < 1 ? C : null, s });   // Kikoku, the nodachi: cross guard, long black-and-white hilt
         labels(g, X, lin(.42, .5, t) * (1 - lin(.62, .66, t)));
         if (t > .64 && t < .9) K.slam(g, "SHAMBLES", w / 2, h * .5, M * .14, lin(.64, .9, t), { fill: "#fff", stroke: "#06304a", glow: C, ghost: 1 });
         if (hit(t, .64, .02)) X.fx.flash = ["#bff0ff", .8];

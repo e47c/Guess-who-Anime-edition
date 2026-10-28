@@ -219,12 +219,12 @@
 <div class="uno-wrap">
 <div class="uno-opps" id="unoOpps"></div>
 <div class="uno-table"><button id="unoDraw" class="ucard back" onclick="unoDrawClick()" aria-label="Draw a card"></button><div class="u-center"><div class="u-ring" id="unoRing"></div><div id="unoTop"></div></div><div class="uno-info" id="unoInfo"></div></div>
-<div class="uno-actions"><div class="uno-me" id="unoMe"></div><button id="unoBtnUno" class="u-burst hidden" onclick="unoCall()">UNO!</button><button id="unoBtnCatch" class="u-btn catch hidden" onclick="unoCatch()">CATCH THEM!</button><button id="unoBtnPass" class="u-btn alt hidden" onclick="unoPass()">PASS</button><button id="unoBtnSkip" class="u-btn alt hidden" onclick="unoSkipAbsent()">SKIP AWAY PLAYER</button></div>
+<div class="uno-actions"><div class="uno-me" id="unoMe"></div><button id="unoBtnPass" class="u-btn alt hidden" onclick="unoPass()">PASS</button><button id="unoBtnSkip" class="u-btn alt hidden" onclick="unoSkipAbsent()">SKIP AWAY PLAYER</button></div>
 <div class="uno-hand" id="unoHand"></div>
 </div>
 <canvas id="unoFxCv" class="uno-fxcv" aria-hidden="true"></canvas>
 <div id="unoColor" class="hb-picker uw-ov hidden" role="dialog" aria-label="Choose the anime"><div class="uw-wrap"><div class="uw-kicker">WILD CARD</div><h1>CHOOSE THE ANIME</h1><div class="uw" id="unoColorBtns"></div><button class="pop ghost uw-cancel" onclick="unoColorCancel()">Cancel</button></div></div>
-<div id="unoTarget" class="hb-picker hidden" role="dialog" aria-label="Swap hands with"><div style="text-align:center"><h1>SWAP HANDS WITH...</h1><div class="uno-colors" id="unoTargetBtns"></div><button class="pop ghost" style="margin-top:18px" onclick="unoTargetCancel()">Cancel</button></div></div>
+<div id="unoTarget" class="hb-picker sw-ov hidden" role="dialog" aria-label="Swap hands with"><div class="sw-wrap"><div class="sw-kicker" id="unoTargetAb">SWAP HANDS</div><h1>TRADE HANDS WITH...</h1><div class="sw" id="unoTargetBtns"></div><p class="sw-hint" id="unoTargetHint" aria-live="polite"></p><button class="pop ghost sw-cancel" onclick="unoTargetCancel()">Cancel</button></div></div>
 <div id="unoOver" class="hb-picker hidden"><canvas id="unoWinCv"></canvas><div class="u-over"><div class="u-win-k" id="unoWinK"></div><div class="stars">★ ★ ★</div><h1 id="unoOverTitle"></h1><p id="unoOverSub"></p><div class="u-win-card" id="unoWinCard"></div><div class="u-win-chips" id="unoWinChips"></div><div class="u-win-btns" id="unoOverBtns"><button class="u-btn" onclick="unoRematch()">PLAY AGAIN</button></div></div></div>
 </div>
 

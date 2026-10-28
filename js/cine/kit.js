@@ -338,15 +338,26 @@ export function cracks(g, x, y, p, R, sd, col = "#fff", n = 16) {
 }
 
 /* ---------- props ---------- */
-/* a katana: blade along +x from the guard at (0,0) */
+/* a katana: blade along +x from the guard at (0,0).
+   o.tsuba: "oval" (plain) | "cross" (Law's Kikoku) | "star4" (Hitsugaya's Hyorinmaru) | "manji" (Ichigo's Tensa Zangetsu) | "flame" (Tanjiro, Rengoku's guard)
+   o.hilt = hilt length (1 = katana, ~1.4 = nodachi), o.chain: "broken" (Tensa Zangetsu) | "crescent" (Hyorinmaru's chain and sickle) */
 export function katana(g, x, y, ang, len, o = {}) {
     const k = len / 600; g.save(); g.translate(x, y); g.rotate(ang); g.scale(k, k); g.lineJoin = "round";
-    const blade = o.blade || ["#f4f7ff", "#9aa6c0", "#3a4258"], ink = o.ink || "#05060a";
+    const blade = o.blade || ["#f4f7ff", "#9aa6c0", "#3a4258"], ink = o.ink || "#05060a", H = 170 * (o.hilt || 1);
+    if (o.chain === "broken") chain(g, u => [-H - 14 - u * 46, u * 70 + Math.sin(u * 3) * 8], 6, 1, 9, "#c9c9d2");
+    if (o.chain === "crescent") { chain(g, u => [-H - 14 - u * 120, u * 160 + Math.sin(u * 4 + (o.s || 0) * 3) * 18], 14, 1, 8, "#dfe6ee"); g.save(); g.translate(-H - 134, 170); g.rotate(.6); g.beginPath(); g.arc(0, 0, 34, -1.2, 1.9); g.arc(-12, 6, 28, 1.7, -1.0, true); g.closePath(); g.fillStyle = "#e9f4ff"; g.fill(); g.lineWidth = 3; g.strokeStyle = ink; g.stroke(); g.restore(); }
     // hilt with diamond wrap
-    g.fillStyle = o.wrap || "#1b1420"; g.beginPath(); g.moveTo(-170, -13); g.lineTo(-8, -15); g.lineTo(-8, 15); g.lineTo(-170, 13); g.quadraticCurveTo(-182, 0, -170, -13); g.fill(); g.lineWidth = 4; g.strokeStyle = ink; g.stroke();
-    g.strokeStyle = o.wrapLine || "#e9dcc0"; g.lineWidth = 2.5; for (let i = -160; i < -16; i += 18) { g.beginPath(); g.moveTo(i, -12); g.lineTo(i + 9, 0); g.lineTo(i, 12); g.moveTo(i + 9, -12); g.lineTo(i, 0); g.lineTo(i + 9, 12); g.stroke(); }
+    g.fillStyle = o.wrap || "#1b1420"; g.beginPath(); g.moveTo(-H, -13); g.lineTo(-8, -15); g.lineTo(-8, 15); g.lineTo(-H, 13); g.quadraticCurveTo(-H - 12, 0, -H, -13); g.fill(); g.lineWidth = 4; g.strokeStyle = ink; g.stroke();
+    g.strokeStyle = o.wrapLine || "#e9dcc0"; g.lineWidth = 2.5; for (let i = -H + 10; i < -16; i += 18) { g.beginPath(); g.moveTo(i, -12); g.lineTo(i + 9, 0); g.lineTo(i, 12); g.moveTo(i + 9, -12); g.lineTo(i, 0); g.lineTo(i + 9, 12); g.stroke(); }
     // guard
-    g.fillStyle = o.guard || "#c9a24a"; g.beginPath(); g.ellipse(0, 0, 10, 34, 0, 0, TAU); g.fill(); g.lineWidth = 3; g.strokeStyle = ink; g.stroke();
+    const ts = o.tsuba || "oval"; g.fillStyle = o.guard || "#c9a24a"; g.lineWidth = 3; g.strokeStyle = ink; g.beginPath();
+    if (ts === "cross") { [[0, -1], [0, 1]].forEach(([, d]) => { g.moveTo(-6, 0); g.lineTo(-6, d * 34); g.lineTo(-13, d * 44); g.lineTo(0, d * 52); g.lineTo(13, d * 44); g.lineTo(6, d * 34); g.lineTo(6, 0); }); g.fill(); g.stroke(); g.beginPath(); g.moveTo(-16, 0); g.lineTo(0, -12); g.lineTo(16, 0); g.lineTo(0, 12); g.closePath(); }
+    else if (ts === "star4") { g.moveTo(0, -50); g.quadraticCurveTo(4, -10, 22, 0); g.quadraticCurveTo(4, 10, 0, 50); g.quadraticCurveTo(-4, 10, -22, 0); g.quadraticCurveTo(-4, -10, 0, -50); g.closePath(); }
+    else if (ts === "flame") { for (let i = 0; i < 10; i++) { const a = i / 10 * TAU, r0 = 30, r1 = 50 + (i % 2) * 8; g.lineTo(Math.cos(a) * 12, Math.sin(a) * r0); g.quadraticCurveTo(Math.cos(a + .2) * 22, Math.sin(a + .2) * r1, Math.cos(a + .32) * 12, Math.sin(a + .32) * r0); } g.closePath(); const fg = g.createLinearGradient(0, -50, 0, 50); fg.addColorStop(0, "#ffd04a"); fg.addColorStop(.5, "#ff5a1a"); fg.addColorStop(1, "#b81408"); g.fillStyle = fg; }
+    else if (ts === "manji") { g.ellipse(0, 0, 9, 36, 0, 0, TAU); }
+    else g.ellipse(0, 0, 10, 34, 0, 0, TAU);
+    g.fill(); g.stroke();
+    if (ts === "manji") { g.save(); g.font = "400 76px " + F_JP; g.textAlign = "center"; g.textBaseline = "middle"; g.lineWidth = 8; g.strokeStyle = ink; g.strokeText("卍", 0, 2); g.fillStyle = o.guard || "#1a1a1a"; g.fillText("卍", 0, 2); g.lineWidth = 1.5; g.strokeStyle = "#6a6a74"; g.strokeText("卍", 0, 2); g.restore(); }
     // blade with a curve, an edge highlight and a hamon line
     const bl = 600 * (o.out == null ? 1 : o.out); if (bl > 4) {
         g.beginPath(); g.moveTo(8, -9); g.quadraticCurveTo(bl * .55, -14, bl, -24); g.lineTo(bl - 26, 4); g.quadraticCurveTo(bl * .55, 9, 8, 9); g.closePath();

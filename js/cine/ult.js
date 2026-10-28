@@ -192,7 +192,7 @@ const tanjiro = {
         const hx = w * .74, hy = h * 1.04, sw = K.ioCub(lin(.56, .66, t)), ang = -2.0 + sw * 2.2, bl = M * .8;    // first person: the black blade, burning
         const P = u => { const a = u * TAU * 1.3; return [K.mix(w / 2, c.x, u) + Math.cos(a) * M * .4 * (1 - u), K.mix(h * .45, c.y, u) + Math.sin(a) * M * .28 * (1 - u)]; };
         const dr = K.ioCub(lin(.3, .72, t)); if (dr > 0 && t < .8) { flameRibbon(g, P, Math.max(0, dr - .45), dr, M * .07, s); const hd = P(dr); K.glow(g, hd[0], hd[1], M * .12, "#ffd27a", .9); }   // the fire dragon
-        if (t < .74) { K.katana(g, hx, hy, ang, bl, { blade: ["#3a3a40", "#141418", "#000000"], guard: "#2a2a2a", wrap: "#1a0f08", glow: t > .2 ? "#ff6a2a" : null, s }); hand(g, hx - Math.cos(ang) * M * .1, hy - Math.sin(ang) * M * .1, HS(X), ang + 1.5708, "fist", { skin: "base", sleeve: { c: "#1e5a3c", s: "#123a26", cuff: "#111", len: 240 } });
+        if (t < .74) { K.katana(g, hx, hy, ang, bl, { blade: ["#3a3a40", "#141418", "#000000"], guard: "#e0461a", wrap: "#1a1a1e", wrapLine: "#2a6a4a", tsuba: "flame", glow: t > .2 ? "#ff6a2a" : null, s });   // the black Nichirin blade with Rengoku's flame guard hand(g, hx - Math.cos(ang) * M * .1, hy - Math.sin(ang) * M * .1, HS(X), ang + 1.5708, "fist", { skin: "base", sleeve: { c: "#1e5a3c", s: "#123a26", cuff: "#111", len: 240 } });
             if (t > .2) for (let i = 0; i < 10; i++) { const q = .2 + i * .08; K.glow(g, hx + Math.cos(ang) * bl * q, hy + Math.sin(ang) * bl * q, M * .04, "#ff8a2a", .5 + .3 * Math.sin(s * 20 + i)); } }
         if (sw > 0 && sw < 1) { g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = "rgba(255,200,120,.9)"; g.lineWidth = M * .04 * (1 - sw); g.beginPath(); g.arc(hx, hy, bl * .9, -2, -2 + sw * 2.2); g.stroke(); g.restore(); }
         boom(g, X, c, lin(.72, .92, t), "#ff6a2a", 1.2);
@@ -217,7 +217,7 @@ const ichigo = {
         for (let i = 0; i < 26; i++) { const x = w * (.1 + .8 * hs(i)), L = h * (.4 + .6 * hs(i + 3)), sway = Math.sin(s * 3 + i) * M * .03; g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = i % 4 ? "rgba(140,0,20,.35)" : "rgba(255,40,70,.5)"; g.lineWidth = M * (.02 + .04 * hs(i + 7)); g.beginPath(); g.moveTo(x, h); g.quadraticCurveTo(x + sway, h - L * .5, x - sway, h - L * lin(.18, .36, t)); g.stroke(); g.restore(); }   // the reiatsu pillar
         plate(g, X, r, ss(.46, .52, t), lin(.56, .7, t));
         const lift = K.oBack(lin(.26, .46, t)), swing = K.ioCub(lin(.48, .56, t)), hx = w * .62, hy = h * (1.12 - .14 * lift), ang = -1.9 + .6 * lift - 1.8 * swing, bl = M * .9;
-        K.katana(g, hx, hy, ang, bl, { blade: ["#2a2a30", "#0c0c10", "#000000"], guard: "#1a1a1a", wrap: "#160606", wrapLine: "#7a1020", glow: "#ff2a4a", s });   // Tensa Zangetsu
+        K.katana(g, hx, hy, ang, bl, { blade: ["#2a2a30", "#0c0c10", "#000000"], guard: "#1a1a1a", wrap: "#0e0e10", wrapLine: "#c8c8d0", tsuba: "manji", chain: "broken", glow: "#ff2a4a", s });   // Tensa Zangetsu: black blade, 卍 guard, the broken chain
         g.save(); g.strokeStyle = "#1a1a1a"; g.lineWidth = 3; g.beginPath(); g.moveTo(hx - Math.cos(ang) * M * .18, hy - Math.sin(ang) * M * .18); for (let i = 0; i < 8; i++) g.lineTo(hx - Math.cos(ang) * M * .18 - i * M * .02 + Math.sin(s * 4 + i) * 8, hy - Math.sin(ang) * M * .18 + i * M * .03); g.stroke(); g.restore();   // the broken chain on the hilt
         [-1, 1].forEach((sd, i) => hand(g, hx - Math.cos(ang) * M * (.08 + i * .07), hy - Math.sin(ang) * M * (.08 + i * .07), HS(X), ang + 1.5708, "fist", { flip: sd < 0, skin: "tan", sleeve: { c: "#0a0a0c", s: "#000", cuff: "#ff3050", len: 240 } }));
         const q = K.oExpo(lin(.54, .76, t));                                    // the black crescent with a red rim, sweeping at the target
@@ -234,14 +234,45 @@ const ichigo = {
 };
 
 /* ---------- NETERO · 100-Type Guanyin Bodhisattva: a prayer of gratitude, the golden statue rises with its hundred hands, the barrage, ZERO HAND ---------- */
+/* the Guanyin Bodhisattva: a golden statue with a crown, a serene face, a flame-edged halo and tier upon tier of arms, every one
+   ending in an open palm; its own two hands joined in prayer before its chest */
 function guanyin(g, x, y, R, p, s, a) {
     if (p <= 0) return; g.save(); g.translate(x, y); g.globalAlpha *= a;
-    g.save(); g.rotate(s * .05); for (let i = 0; i < 60; i++) { const an = i / 60 * TAU, L = R * (1.1 + .1 * Math.sin(s * 3 + i)) * p; g.strokeStyle = "rgba(255,210,74,.35)"; g.lineWidth = 2; g.beginPath(); g.moveTo(Math.cos(an) * R * .5, Math.sin(an) * R * .5); g.lineTo(Math.cos(an) * L, Math.sin(an) * L); g.stroke(); } g.restore();
-    for (let i = 0; i < 26; i++) { const an = Math.PI + (i + .5) / 26 * Math.PI, L = R * (.62 + .06 * Math.sin(s * 5 + i)) * p, ex = Math.cos(an) * L, ey = Math.sin(an) * L * .9 - R * .1; g.strokeStyle = "#c98a1e"; g.lineWidth = R * .03; g.beginPath(); g.moveTo(0, -R * .12); g.quadraticCurveTo(ex * .5, ey * .3 - R * .1, ex, ey); g.stroke(); fistMini(g, ex, ey, R * .045, an + 1.5708, "gold", "#ffd24a"); }   // the hundred arms
-    const body = g.createLinearGradient(0, -R * .5, 0, R * .6); body.addColorStop(0, "#fff0b0"); body.addColorStop(.5, "#e6b33a"); body.addColorStop(1, "#7a4a08");
-    g.beginPath(); g.moveTo(-R * .34, R * .7); g.quadraticCurveTo(-R * .3, -R * .1, 0, -R * .24); g.quadraticCurveTo(R * .3, -R * .1, R * .34, R * .7); g.closePath(); g.fillStyle = body; g.fill(); g.strokeStyle = "#4a2a00"; g.lineWidth = 3; g.stroke();
-    g.beginPath(); g.arc(0, -R * .36, R * .13, 0, TAU); g.fillStyle = body; g.fill(); g.stroke(); g.beginPath(); g.arc(0, -R * .36, R * .22, 0, TAU); g.strokeStyle = "#ffd24a"; g.lineWidth = 4; g.stroke();
-    g.fillStyle = "#4a2a00"; g.fillRect(-R * .07, -R * .37, R * .05, R * .01); g.fillRect(R * .02, -R * .37, R * .05, R * .01); g.restore();
+    const ink = "#3a2200", gold = (y0, y1) => { const gr = g.createLinearGradient(0, y0, 0, y1); gr.addColorStop(0, "#fff3b8"); gr.addColorStop(.45, "#eab83e"); gr.addColorStop(1, "#8a5408"); return gr; };
+    g.save(); g.rotate(s * .05); for (let i = 0; i < 64; i++) { const an = i / 64 * TAU, L = R * (1.05 + .1 * Math.sin(s * 3 + i)) * p; g.strokeStyle = "rgba(255,210,74,.3)"; g.lineWidth = 2; g.beginPath(); g.moveTo(Math.cos(an) * R * .52, Math.sin(an) * R * .52); g.lineTo(Math.cos(an) * L, Math.sin(an) * L); g.stroke(); } g.restore();
+    const hy = -R * .42;                                                       // the halo behind the head, edged with flames
+    g.save(); g.translate(0, hy); g.beginPath(); for (let i = 0; i <= 48; i++) { const an = i / 48 * TAU, r0 = R * .27 * p * (1 + (i % 2 ? .07 : 0) + .02 * Math.sin(s * 6 + i)); g.lineTo(Math.cos(an) * r0, Math.sin(an) * r0); } g.closePath(); g.fillStyle = "rgba(255,200,60,.22)"; g.fill(); g.strokeStyle = "#ffd24a"; g.lineWidth = 3; g.stroke();
+    g.beginPath(); g.arc(0, 0, R * .2 * p, 0, TAU); g.strokeStyle = "rgba(255,240,180,.8)"; g.lineWidth = 2; g.stroke(); g.restore();
+    // the arms: three tiers fanning out from the shoulders, open palms facing us
+    const tiers = [[7, .5, .8], [8, .68, .9], [9, .86, 1]];
+    tiers.slice().reverse().forEach(([n, rr, k], ti) => [-1, 1].forEach(sd => { for (let i = 0; i < n; i++) {
+        const an = sd < 0 ? Math.PI + .12 + (i / (n - 1)) * 1.45 + ti * .04 : -.12 - (i / (n - 1)) * 1.45 - ti * .04, wave = Math.sin(s * 2.2 + i * .9 + ti) * .05, a2 = sd < 0 ? an - wave : an + wave;
+        const sx = sd * R * .17, sy = -R * .2, L = R * rr * p, ex = sx + Math.cos(a2) * L, ey = sy + Math.sin(a2) * L * .82;
+        g.strokeStyle = ink; g.lineCap = "round"; g.lineWidth = R * .034 * k + 3; g.beginPath(); g.moveTo(sx, sy); g.quadraticCurveTo(sx + Math.cos(a2) * L * .5, sy + Math.sin(a2) * L * .5 - R * .05, ex, ey); g.stroke();
+        g.strokeStyle = gold(sy, ey); g.lineWidth = R * .034 * k; g.stroke();
+        hand(g, ex, ey, R * .085 * k / 110, Math.atan2(Math.sin(a2) * .82, Math.cos(a2)) + 1.5708, i % 3 ? "open" : "blade", { view: "palm", flip: sd > 0, skin: "gold", line: 1.6, arm: 0 });
+    } }));
+    // the body: shoulders and robes, drapery folds
+    g.beginPath(); g.moveTo(-R * .4, R * .75); g.bezierCurveTo(-R * .38, R * .1, -R * .34, -R * .2, -R * .16, -R * .25); g.quadraticCurveTo(0, -R * .3, R * .16, -R * .25); g.bezierCurveTo(R * .34, -R * .2, R * .38, R * .1, R * .4, R * .75); g.closePath();
+    g.fillStyle = gold(-R * .3, R * .75); g.fill(); g.strokeStyle = ink; g.lineWidth = 3; g.stroke();
+    g.strokeStyle = "rgba(90,50,0,.55)"; g.lineWidth = 2; [-.24, -.12, .12, .24].forEach(k => { g.beginPath(); g.moveTo(R * k * .6, -R * .1); g.quadraticCurveTo(R * k, R * .3, R * k * 1.3, R * .74); g.stroke(); });
+    g.beginPath(); g.moveTo(-R * .16, -R * .24); g.quadraticCurveTo(0, -R * .1, R * .16, -R * .24); g.stroke();      // the neckline of the robe
+    // its own hands in prayer
+    [-1, 1].forEach(sd => hand(g, sd * R * .012, -R * .02, R * .1 / 110, sd * -.05, "blade", { view: "palm", flip: sd > 0, skin: "gold", line: 1.8, arm: 0 }));
+    // the head: ushnisha, crown, serene face, long earlobes, the urna
+    g.fillStyle = gold(hy - R * .2, hy + R * .1); g.strokeStyle = ink; g.lineWidth = 3;
+    g.beginPath(); g.ellipse(0, hy - R * .15, R * .055, R * .06, 0, 0, TAU); g.fill(); g.stroke();                                    // the topknot
+    [-1, 1].forEach(sd => { g.beginPath(); g.ellipse(sd * R * .11, hy + R * .03, R * .025, R * .07, sd * .1, 0, TAU); g.fill(); g.stroke(); });   // ears with long lobes
+    g.beginPath(); g.ellipse(0, hy, R * .1, R * .125, 0, 0, TAU); g.fill(); g.stroke();                                              // the face
+    g.beginPath(); g.moveTo(-R * .12, hy - R * .06); for (let i = 0; i <= 6; i++) { const xx = -R * .12 + i * R * .04, yy = hy - R * .07 - (i % 2 ? R * .07 : R * .025); g.lineTo(xx, yy); } g.lineTo(R * .12, hy - R * .06); g.quadraticCurveTo(0, hy - R * .1, -R * .12, hy - R * .06); g.closePath();
+    g.fillStyle = gold(hy - R * .15, hy - R * .05); g.fill(); g.stroke(); [-2, 0, 2].forEach(i => { g.fillStyle = i ? "#ff6a4a" : "#6ad0ff"; g.beginPath(); g.arc(i * R * .03, hy - R * .085 - (i ? 0 : R * .02), R * .012, 0, TAU); g.fill(); });   // the crown and its jewels
+    g.strokeStyle = ink; g.lineWidth = 2.4; g.lineCap = "round";
+    [-1, 1].forEach(sd => { g.beginPath(); g.arc(sd * R * .042, hy - R * .002, R * .028, .25 * Math.PI, .75 * Math.PI); g.stroke(); g.beginPath(); g.arc(sd * R * .042, hy - R * .035, R * .035, 1.2 * Math.PI, 1.8 * Math.PI); g.stroke(); });   // closed eyes, long brows
+    g.beginPath(); g.moveTo(0, hy + R * .005); g.quadraticCurveTo(R * .012, hy + R * .045, -R * .004, hy + R * .05); g.stroke();      // the nose
+    g.beginPath(); g.moveTo(-R * .022, hy + R * .075); g.quadraticCurveTo(0, hy + R * .087, R * .022, hy + R * .075); g.stroke();  // a calm mouth
+    g.fillStyle = ink; g.beginPath(); g.arc(0, hy - R * .052, R * .007, 0, TAU); g.fill();                                          // the urna
+    K.glow(g, 0, hy, R * .3, "#ffd24a", .25 * p);
+    g.restore();
 }
 const netero = {
     col: "#ffd24a", trail: "#ffd24a", ms: 7600, tailFx: "shatter",
@@ -259,12 +290,12 @@ const netero = {
         guanyin(g, w / 2, h * .62, M * .62, K.oBack(lin(.24, .4, t)), s, 1 - lin(.88, .96, t));
         for (let i = 0; i < 60; i++) {                                       // the barrage: golden palms faster than sound
             const st = .4 + i * .0045, q = K.oExpo(lin(st, st + .06, t)); if (q <= 0 || q >= 1 || t > .72) continue; const a0 = Math.PI + ((i * 7) % 26 + .5) / 26 * Math.PI, x0 = w / 2 + Math.cos(a0) * M * .38, y0 = h * .62 + Math.sin(a0) * M * .34, tx = c.x + (hs(i) - .5) * r.w, ty = c.y + (hs(i + 3) - .5) * r.h, x = K.mix(x0, tx, q), y = K.mix(y0, ty, q);
-            g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = "rgba(255,210,74,.45)"; g.lineWidth = M * .02; g.beginPath(); g.moveTo(K.mix(x0, tx, Math.max(0, q - .3)), K.mix(y0, ty, Math.max(0, q - .3))); g.lineTo(x, y); g.stroke(); g.restore(); fistMini(g, x, y, M * .03 * (1 + q * .5), Math.atan2(ty - y0, tx - x0) + 1.5708, "gold", Y);
+            g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = "rgba(255,210,74,.45)"; g.lineWidth = M * .02; g.beginPath(); g.moveTo(K.mix(x0, tx, Math.max(0, q - .3)), K.mix(y0, ty, Math.max(0, q - .3))); g.lineTo(x, y); g.stroke(); g.restore(); hand(g, x, y, M * .055 * (1 + q * .6) / 110, Math.atan2(ty - y0, tx - x0) + 1.5708, "open", { view: "palm", skin: "gold", line: 1.6, arm: 0, rim: Y });   // open-palm strikes, not fists
             if (q > .9) K.sparks(g, tx, ty, (q - .9) * 10, 6, i, { speed: M * .2, col: "#fff2b0" }); }
         if (t > .7 && t < .86) { const q = lin(.7, .86, t), sc = K.mix(.4, 2.2, K.oExpo(q)); g.save(); g.globalAlpha = 1 - lin(.6, 1, q); hand(g, K.mix(w / 2, c.x, q * .6), K.mix(h * .9, c.y + M * .3, q * .6), HS(X) * sc, 0, "open", { view: "palm", skin: "gold", aura: Y }); g.restore(); }   // ZERO HAND
         boom(g, X, c, lin(.74, .94, t), Y, 1.4);
         g.restore();
-        if (t > .4 && t < .7) K.slam(g, "百式観音", w / 2, h * .14, M * .11, lin(.4, .7, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#5a3a00", glow: Y });
+        if (t > .4 && t < .7) K.slam(g, "百式観音", w / 2, h * .2, M * .11, lin(.4, .7, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#5a3a00", glow: Y });
         if (t > .72) K.title(g, X, lin(.72, 1, t), { en: "ZERO HAND", kj: "零の掌", y: .84 });
         if (hit(t, .74, .03)) X.fx.inv = "#ffe9a0"; X.fx.rgb = hit(t, .74, .1) * 14;
         K.vignette(g, w, h, .55, "#0a0600"); K.bars(g, w, h, 1 - lin(.92, 1, t));

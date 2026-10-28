@@ -116,8 +116,6 @@ const FX = {
     punch(o, t) { V.kick(o, t, 1.2); V.snare(o, t, 1, .1); V.tom(o, t, 90, .8); },
     heavy(o, t) { V.sweep(o, t, 100, 1500, .35, .8, 2); V.kick(o, t + .35, 1.4); V.tom(o, t + .35, 55, 1.2); V.snare(o, t + .35, 1, .5); V.pad(o, t + .35, [38, 45], .8, 2.2, 400); },
     wild(o, t) { [72, 76, 79, 84, 88, 91].forEach((m, i) => V.pluck(o, t + i * .045, m, .3, .55, "triangle", 6000, .5)); },
-    uno(o, t) { V.stab(o, t, [62, 66, 69, 74], 1.1, .35); V.kick(o, t, .8); V.stab(o, t + .16, [64, 68, 71, 76], 1.1, .5); },
-    catch(o, t) { [0, .12, .24].forEach(d => V.pluck(o, t + d, 88, .08, .8, "square", 5000, 0)); },
     emote(o, t) { V.pluck(o, t, 79, .08, .6, "sine", 5000, .2); V.pluck(o, t + .05, 91, .1, .4, "sine", 5000, .2); },
     xp(o, t) { V.pluck(o, t, 91, .04, .25, "sine", 7000, 0); },
     levelup(o, t) { chord(o, t, [72, 76, 79, 84], .08, 1); V.bell(o, t + .36, 84, 1, 2.5); V.bell(o, t + .36, 91, .6, 2.5); },
