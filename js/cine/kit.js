@@ -187,9 +187,9 @@ export function column(g, s, x, y, size, p, o = {}) {
 /* ability title block: kanji over a skewed band with the English name, used at each scene's reveal */
 export function title(g, X, p, o) {
     if (p <= 0 || p >= 1) return;
-    const { w, h, M } = X, col = o.col || X.col, y = (o.y == null ? .8 : o.y) * h, inn = oExpo(lin(0, .18, p)), out = lin(.84, 1, p), a = 1 - out;
+    const { w, h, M } = X, col = o.col || X.col, bh = M * .1, y = Math.min((o.y == null ? .8 : o.y) * h, h * .885 - bh * (o.sub ? 1.3 : .7) - 4), inn = oExpo(lin(0, .18, p)), out = lin(.84, 1, p), a = 1 - out;   // kept above the bottom letterbox bar
     g.save(); g.globalAlpha *= a;
-    const bw = w * 1.2 * inn, bh = M * .1; g.save(); g.translate(w / 2, y); g.transform(1, 0, -.35, 1, 0, 0);
+    const bw = w * 1.2 * inn; g.save(); g.translate(w / 2, y); g.transform(1, 0, -.35, 1, 0, 0);
     const gr = g.createLinearGradient(-bw / 2, 0, bw / 2, 0); gr.addColorStop(0, rgba(col, 0)); gr.addColorStop(.2, rgba(shade(col, -.55), .92)); gr.addColorStop(.8, rgba(shade(col, -.55), .92)); gr.addColorStop(1, rgba(col, 0));
     g.fillStyle = gr; g.fillRect(-bw / 2, -bh / 2, bw, bh); g.fillStyle = col; g.fillRect(-bw / 2, -bh / 2 - 3, bw, 2); g.fillRect(-bw / 2, bh / 2 + 1, bw, 2); g.restore();
     if (o.kj) { const kp = lin(.05, .3, p); g.globalAlpha = a * kp; txt(g, o.kj, w / 2, y - bh * 1.15, M * (o.kjs || .1), { font: F_JP, weight: "400", fill: "#fff", stroke: shade(col, -.7), glow: col, sw: M * .008, sp: M * .01 }); }

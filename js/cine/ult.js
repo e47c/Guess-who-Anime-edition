@@ -170,7 +170,8 @@ const sukuna = {
     }
 };
 
-/* ---------- TANJIRO · Hinokami Kagura: the scars burn, the blade catches fire, a sun-halo dragon of flame coils and dives ---------- */
+/* ---------- TANJIRO · Hinokami Kagura, Clear Blue Sky (Hekira no Ten): the scars burn, the black blade catches fire, then it spins one full
+   circle overhead and leaves a ring of sun-fire in the air, which comes down on the target ---------- */
 function flameRibbon(g, P, u0, u1, W, s) {                               // a woodblock-print flame ribbon along path P from u0 to u1
     const n = 40, pts = []; for (let i = 0; i <= n; i++) { const u = K.mix(u0, u1, i / n), p = P(u), q = P(Math.min(1, u + .005)), an = Math.atan2(q[1] - p[1], q[0] - p[0]); pts.push([p[0], p[1], an, Math.sin(i / n * Math.PI) * W]); }
     g.save(); g.globalCompositeOperation = "lighter";
@@ -189,17 +190,18 @@ const tanjiro = {
         K.drift(g, w, h, s, 90, 3, { up: 1, speed: .12, col: "#ff9a3a", size: 3, glow: 1, add: 1 });
         const halo = K.oBack(lin(.26, .4, t)); if (halo > 0) { g.save(); g.translate(w / 2, h * .42); g.rotate(s * .4); g.globalCompositeOperation = "lighter"; g.strokeStyle = "#ff8a2a"; g.lineWidth = M * .02; g.beginPath(); g.arc(0, 0, M * .34 * halo, 0, TAU); g.stroke(); for (let i = 0; i < 24; i++) { const an = i / 24 * TAU; g.beginPath(); g.moveTo(Math.cos(an) * M * .34 * halo, Math.sin(an) * M * .34 * halo); g.lineTo(Math.cos(an) * M * (.4 + .04 * Math.sin(s * 9 + i)) * halo, Math.sin(an) * M * (.4 + .04 * Math.sin(s * 9 + i)) * halo); g.stroke(); } g.restore(); }   // the sun halo
         plate(g, X, r, ss(.5, .56, t), lin(.62, .72, t));
-        const hx = w * .74, hy = h * 1.04, sw = K.ioCub(lin(.56, .66, t)), ang = -2.0 + sw * 2.2, bl = M * .8;    // first person: the black blade, burning
-        const P = u => { const a = u * TAU * 1.3; return [K.mix(w / 2, c.x, u) + Math.cos(a) * M * .4 * (1 - u), K.mix(h * .45, c.y, u) + Math.sin(a) * M * .28 * (1 - u)]; };
-        const dr = K.ioCub(lin(.3, .72, t)); if (dr > 0 && t < .8) { flameRibbon(g, P, Math.max(0, dr - .45), dr, M * .07, s); const hd = P(dr); K.glow(g, hd[0], hd[1], M * .12, "#ffd27a", .9); }   // the fire dragon
-        if (t < .74) { K.katana(g, hx, hy, ang, bl, { blade: ["#3a3a40", "#141418", "#000000"], guard: "#e0461a", wrap: "#1a1a1e", wrapLine: "#2a6a4a", tsuba: "flame", glow: t > .2 ? "#ff6a2a" : null, s });   // the black Nichirin blade with Rengoku's flame guard hand(g, hx - Math.cos(ang) * M * .1, hy - Math.sin(ang) * M * .1, HS(X), ang + 1.5708, "fist", { skin: "base", sleeve: { c: "#1e5a3c", s: "#123a26", cuff: "#111", len: 240 } });
-            if (t > .2) for (let i = 0; i < 10; i++) { const q = .2 + i * .08; K.glow(g, hx + Math.cos(ang) * bl * q, hy + Math.sin(ang) * bl * q, M * .04, "#ff8a2a", .5 + .3 * Math.sin(s * 20 + i)); } }
+        const hx = w * .74, hy = h * 1.04, sw = K.ioCub(lin(.56, .66, t)), ang = -2.0 + sw * 2.2, bl = M * .8;    // first person: the black Nichirin blade (Rengoku's flame guard), burning
+        const spin = K.ioCub(lin(.56, .66, t)), drop = K.iCub(lin(.66, .72, t)), rcx = K.mix(w / 2, c.x, drop), rcy = K.mix(h * .42, c.y, drop), RR = M * .34 * K.mix(1, .45, drop);   // the circle of the Clear Blue Sky
+        const P = u => { const a = -2.0 + u * TAU; return [rcx + Math.cos(a) * RR, rcy + Math.sin(a) * RR * .92]; };
+        if (spin > 0 && t < .74) { flameRibbon(g, P, Math.max(0, spin - .98), spin, M * .055 * (1 + drop * .5), s); if (spin < 1) { const hd = P(spin); K.glow(g, hd[0], hd[1], M * .1, "#ffd27a", .9); } }
+        if (t < .74 && sw < .7) { g.save(); g.globalAlpha *= 1 - lin(.25, .7, sw); K.katana(g, hx, hy, ang, bl, { blade: ["#3a3a40", "#141418", "#000000"], guard: "#e0461a", wrap: "#1a1a1e", wrapLine: "#2a6a4a", tsuba: "flame", glow: t > .2 ? "#ff6a2a" : null, s }); hand(g, hx - Math.cos(ang) * M * .1, hy - Math.sin(ang) * M * .1, HS(X), ang + 1.5708, "fist", { skin: "base", sleeve: { c: "#1e5a3c", s: "#123a26", cuff: "#111", len: 240 } });
+            if (t > .2) for (let i = 0; i < 10; i++) { const q = .2 + i * .08; K.glow(g, hx + Math.cos(ang) * bl * q, hy + Math.sin(ang) * bl * q, M * .04, "#ff8a2a", .5 + .3 * Math.sin(s * 20 + i)); } g.restore(); }   // the arm fades as the blade spins away into the circle of fire
         if (sw > 0 && sw < 1) { g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = "rgba(255,200,120,.9)"; g.lineWidth = M * .04 * (1 - sw); g.beginPath(); g.arc(hx, hy, bl * .9, -2, -2 + sw * 2.2); g.stroke(); g.restore(); }
         boom(g, X, c, lin(.72, .92, t), "#ff6a2a", 1.2);
         g.restore();
         K.cutIn(g, X, lin(.36, .56, t), { y: .72, hh: .22, dir: 1, ang: -.05, kj: "ヒノカミ神楽", name: "TANJIRO" });
-        if (t > .56 && t < .76) K.slam(g, "日暈の龍 頭舞い", w / 2, h * .16, M * .08, lin(.56, .76, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#5a0a00", glow: "#ff6a2a" });
-        if (t > .74) K.title(g, X, lin(.74, 1, t), { en: "SUN HALO DRAGON HEAD DANCE", kj: "ヒノカミ神楽", y: .84 });
+        if (t > .56 && t < .76) K.slam(g, "碧羅の天", w / 2, h * .16, M * .11, lin(.56, .76, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#5a0a00", glow: "#ff6a2a" });
+        if (t > .74) K.title(g, X, lin(.74, 1, t), { en: "CLEAR BLUE SKY", kj: "碧羅の天", sub: "HINOKAMI KAGURA · TANJIRO", y: .84 });
         if (hit(t, .72, .03)) X.fx.inv = "#ffb37a"; X.fx.rgb = hit(t, .72, .1) * 14;
         K.vignette(g, w, h, .6, "#0a0000"); K.bars(g, w, h, 1 - lin(.92, 1, t));
     }

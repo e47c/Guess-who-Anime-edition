@@ -5,7 +5,7 @@
    Only the two players involved see faces; everybody else sees card backs. A = swapper's spot, B = target's spot.
    ===================================================================== */
 import * as K from "./kit.js";
-import { hand, fist } from "./hands.js";
+import { hand, fist, handTips } from "./hands.js";
 const { lin, hit, hs, TAU, mid } = K;
 
 const HS = X => X.M * (X.h > X.w ? .0036 : .003);
@@ -47,6 +47,10 @@ const law = {
         if (sw > 0 && sw < 1) [pa, pb].forEach(p => { const c = mid(p); K.glow(gf, c.x, c.y, M * .2, C, .5); });
         K.katana(g, w * .08, h * 1.1, -1.1 + 1.6 * K.ioCub(cut), M * 1.1, { blade: ["#f4f7ff", "#9aa6c0", "#3a4258"], guard: "#d9b44a", wrap: "#16141a", wrapLine: "#f2f2f2", tsuba: "cross", hilt: 1.45, glow: cut > 0 && cut < 1 ? C : null, s });   // Kikoku, the nodachi: cross guard, long black-and-white hilt
         labels(g, X, lin(.42, .5, t) * (1 - lin(.62, .66, t)));
+        if (t > .6 && t < .8) {                                              // SHAMBLES: the hand flips over, index and middle raised, and the two hands trade places
+            const q = lin(.6, .66, t), a = K.oBack(lin(.6, .64, t)) * (1 - lin(.74, .8, t)), turn = K.ioCub(q), hx = w * .8, hy = h * (1.12 - .2 * a);
+            g.save(); g.translate(hx, hy); g.scale(Math.cos(turn * Math.PI) || .01, 1); hand(g, 0, 0, HS(X) * 1.1, -.3, "two", { view: turn > .5 ? "palm" : "back", skin: "tan", rim: C, tattoo: turn > .5 ? null : ["D", "E", "A", "T"], sleeve: { c: "#f4e6b8", s: "#c9b27a", cuff: "#1a1a22", len: 260 } }); g.restore();
+            const tp = handTips("two")[1], sx = Math.cos(turn * Math.PI), k2 = HS(X) * 1.1, lx = (tp[0] * Math.cos(-.3) - tp[1] * Math.sin(-.3)) * k2 * sx, ly = (tp[0] * Math.sin(-.3) + tp[1] * Math.cos(-.3)) * k2; K.glow(gf, hx + lx, hy + ly, M * .08, C, a); }
         if (t > .64 && t < .9) K.slam(g, "SHAMBLES", w / 2, h * .5, M * .14, lin(.64, .9, t), { fill: "#fff", stroke: "#06304a", glow: C, ghost: 1 });
         if (hit(t, .64, .02)) X.fx.flash = ["#bff0ff", .8];
         K.vignette(g, w, h, .6, "#000810"); K.bars(g, w, h, 1 - lin(.9, 1, t));
@@ -159,6 +163,21 @@ function corridor(g, w, h, s, rot, M) {
         g.fillStyle = "rgba(255,170,80," + (.08 * (8 - k)) + ")"; g.fillRect(-W / 2, H * .3, W, H * .2); }
     g.restore();
 }
+/* the biwa: a pear-shaped body of dark wood, a short neck with tall frets, the pegbox bent back, four strings, a crescent
+   sound hole; the big fan-shaped bachi (plectrum) comes down across the strings on every BEN */
+function biwa(g, x, y, M, strike, s) {
+    const k = M / 700; g.save(); g.translate(x, y); g.rotate(-.55); g.scale(k, k); g.lineJoin = "round"; const ink = "#120600", wood = g.createLinearGradient(-90, 0, 90, 0);
+    wood.addColorStop(0, "#2a1206"); wood.addColorStop(.45, "#6a3414"); wood.addColorStop(1, "#1e0c04");
+    g.beginPath(); g.moveTo(0, -120); g.bezierCurveTo(70, -110, 100, 20, 80, 110); g.quadraticCurveTo(0, 170, -80, 110); g.bezierCurveTo(-100, 20, -70, -110, 0, -120); g.closePath(); g.fillStyle = wood; g.fill(); g.strokeStyle = ink; g.lineWidth = 4; g.stroke();   // body
+    g.fillStyle = "#c9a24a"; g.beginPath(); g.ellipse(0, 70, 58, 18, 0, 0, TAU); g.fill(); g.stroke();                                    // the bachi guard (bachimen)
+    g.fillStyle = "#0a0400"; [-1, 1].forEach(sd => { g.beginPath(); g.arc(sd * 34, -30, 12, Math.PI * .1, Math.PI * .9); g.fill(); });  // crescent sound holes
+    g.fillStyle = "#3a1a08"; g.fillRect(-14, -330, 28, 215); g.strokeRect(-14, -330, 28, 215);                                            // the neck
+    for (let i = 0; i < 4; i++) { g.fillStyle = "#e8d6a8"; g.fillRect(-18, -310 + i * 45, 36, 12); g.strokeRect(-18, -310 + i * 45, 36, 12); }   // the tall frets
+    g.save(); g.translate(0, -330); g.rotate(-.9); g.fillStyle = "#2a1206"; g.fillRect(-13, -80, 26, 80); g.strokeRect(-13, -80, 26, 80); [-1, 1].forEach(sd => [20, 50].forEach(yy => { g.fillStyle = "#c9a24a"; g.fillRect(sd > 0 ? 13 : -33, -yy - 6, 20, 10); })); g.restore();   // pegbox bent back + pegs
+    const vib = strike * Math.sin(s * 120) * 3; g.strokeStyle = "#f4e6b0"; g.lineWidth = 1.6; for (let i = 0; i < 4; i++) { const sx = -9 + i * 6; g.beginPath(); g.moveTo(sx, -328); g.quadraticCurveTo(sx * 1.4 + vib, -100, sx * 1.6, 100); g.stroke(); }   // strings, ringing after a strike
+    const ba = -.9 + 1.4 * strike; g.save(); g.translate(150, 30); g.rotate(ba); g.beginPath(); g.moveTo(0, 0); g.lineTo(-36, -120); g.quadraticCurveTo(0, -140, 36, -120); g.closePath(); const bg = g.createLinearGradient(0, 0, 0, -130); bg.addColorStop(0, "#5a3010"); bg.addColorStop(1, "#f2e2b8"); g.fillStyle = bg; g.fill(); g.strokeStyle = ink; g.lineWidth = 3; g.stroke(); g.restore();   // the bachi
+    g.restore(); if (strike > 0) K.glow(g, x + M * .06, y - M * .02, M * .12, "#ffe6a0", strike);
+}
 const nakime = {
     col: "#d9a441", ms: 7400, fg: 1,
     main(g, X, T) {
@@ -166,8 +185,8 @@ const nakime = {
         BEN.forEach(a => X.cue(a, "biwa", t)); X.cue(.52, "whoosh", t);
         const rot = BEN.reduce((a, x) => a + K.ioCub(lin(x, x + .1, t)), 0) * 1.5708 * .5;
         corridor(g, w, h, s, rot, M); K.vignette(g, w, h, .8, "#0a0300", .25);
-        const bx = w * .2, by = h * .8; g.save(); g.translate(bx, by); g.rotate(-.5); g.fillStyle = "#3a1a08"; g.strokeStyle = O; g.lineWidth = 3; g.beginPath(); g.ellipse(0, M * .06, M * .12, M * .17, 0, 0, TAU); g.fill(); g.stroke(); g.fillRect(-M * .018, -M * .5, M * .036, M * .5); g.strokeRect(-M * .018, -M * .5, M * .036, M * .5);
-        for (let i = 0; i < 4; i++) { g.strokeStyle = "#f4e6b0"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(-M * .012 + i * M * .008, -M * .48); g.lineTo(-M * .02 + i * M * .013, M * .1); g.stroke(); } g.restore();   // the biwa
+        const bx = w * .2, by = h * .8, strike = BEN.reduce((m, a) => Math.max(m, hit(t, a, .05)), 0);
+        biwa(g, bx, by, M, strike, s);
         BEN.forEach((a, i) => { const q = lin(a, a + .1, t); if (q > 0 && q < 1) { K.shock(g, bx, by, q, M * .9, "#ffe6a0", 10); K.slam(gf, "ベン!", w * (.55 + i * .1), h * (.3 + i * .15), M * .2, q, { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#5a1a00", glow: O, rot: -.12 }); } });
         if (t < .12) K.cutIn(g, X, lin(0, .14, t), { y: .45, hh: .32, dir: 1, ang: -.06, kj: "無限城", name: "NAKIME" });
         const fall = K.ioCub(lin(.52, .7, t)), open = Math.sin(lin(.48, .74, t) * Math.PI);    // shoji doors slide open over both hands; they drop through

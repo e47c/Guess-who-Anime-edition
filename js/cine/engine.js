@@ -41,12 +41,12 @@ const KANJI = { f: "凍", t: "換", u: "極", e: "眼" }, KLABEL = { f: "FREEZE"
    being named...) to the moment the line says it. Taken from a word-level transcript of every clip; the scene's clock is
    stretched between them. A clip that is replaced keeps working: pins that no longer fit are relaxed by the warp. */
 const SYNC = {
-    onepiece_f: [[.52, 4.65]], jjk_f: [[.24, 3.1], [.8, 9.6]], demonslayer_f: [[.52, 2.9]], bleach_f: [[.42, 2.2], [.72, 6.4]],
-    dragonball_f: [[.62, 3.2]], blackclover_f: [[.56, 4.9]], hxh_f: [[.32, 3.2], [.68, 5.3]], jojo_f: [[.3, 1.4], [.48, 2.6]],
-    onepiece_t: [[.22, 1.5], [.72, 6.3]], naruto_t: [[.6, 3.2]], dragonball_t: [[.22, 3.0], [.62, 5.1], [.66, 5.9]], jjk_t: [[.28, 1.45], [.5, 4.0], [.72, 5.45]],
-    demonslayer_t: [[.34, 2.94], [.5, 5.02], [.66, 6.18]], bleach_t: [[.3, 1.9], [.58, 6.6]], hxh_t: [[.48, 5.1]], blackclover_t: [[.24, 2.0], [.46, 4.4]], jojo_t: [[.28, 2.3]],
-    onepiece_u: [[.4, 3.0], [.72, 6.5]], naruto_u: [[.22, 1.6], [.7, 9.4]], dragonball_u: [[.14, 1.35], [.38, 3.4], [.5, 4.15]], jjk_u: [[.3, 3.5]], demonslayer_u: [[.3, 1.6], [.6, 4.5]],
-    bleach_u: [[.5, 5.9]], hxh_u: [[.42, 3.5]], blackclover_u: [[.3, 2.1], [.62, 3.6]], jojo_u: [[.26, 2.7], [.66, 6.2]],
+    onepiece_f: [[.3, 2.58], [.52, 4.58]], naruto_f: [[.48, 2.0], [.72, 4.28]], jjk_f: [[.24, 3.5], [.8, 10.05]], demonslayer_f: [[.52, 3.23]], bleach_f: [[.42, 2.83], [.72, 6.3]],
+    dragonball_f: [[.3, 1.65], [.5, 2.95], [.62, 3.62]], blackclover_f: [[.56, 4.8]], hxh_f: [[.32, 3.48], [.68, 5.53]], jojo_f: [[.3, 1.38], [.48, 2.55]],
+    onepiece_t: [[.22, 1.3], [.64, 6.24]], naruto_t: [[.3, 1.65], [.6, 3.68]], dragonball_t: [[.22, 3.15], [.62, 5.05], [.66, 5.9]], jjk_t: [[.28, 1.62], [.5, 3.95], [.72, 5.45]],
+    demonslayer_t: [[.34, 2.94], [.5, 5.02], [.66, 6.18]], bleach_t: [[.3, 1.9], [.58, 6.4]], hxh_t: [[.3, 1.95], [.48, 5.1]], blackclover_t: [[.24, 2.02], [.46, 4.55]], jojo_t: [[.28, 2.2]],
+    onepiece_u: [[.4, 3.0], [.72, 5.98]], naruto_u: [[.22, 1.4], [.7, 9.12]], dragonball_u: [[.14, 1.35], [.38, 3.4], [.5, 4.15]], jjk_u: [[.3, 3.2], [.56, 5.8]], demonslayer_u: [[.3, 1.6], [.56, 3.6], [.72, 4.6]],
+    bleach_u: [[.5, 5.78], [.74, 6.75]], hxh_u: [[.42, 3.43], [.74, 8.22]], blackclover_u: [[.3, 2.2], [.62, 3.6]], jojo_u: [[.26, 1.9], [.66, 6.25]],
     // Future Sight: R = the reveal of the next player's cards
     onepiece_e: [[.3, 1.6], [.56, 4.4]], naruto_e: [[.36, 7.2], [.6, 13.8]], dragonball_e: [[.5, 3.4]], jjk_e: [[.3, 3.0], [.46, 5.6]], demonslayer_e: [[.3, 5.5], [.58, 11.3]],
     bleach_e: [[.3, 2.9], [.6, 6.2]], hxh_e: [[.62, 7.96]], blackclover_e: [[.4, 1.4], [.62, 2.7]], jojo_e: [[.4, 1.2]]

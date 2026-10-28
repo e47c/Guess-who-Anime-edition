@@ -216,3 +216,11 @@ export function fistMini(g, x, y, r, ang, P, rim) {
     g.strokeStyle = rgba(P.ink, .75); g.lineWidth = Math.max(1, r * .06); for (let i = -1; i <= 1; i++) { g.beginPath(); g.moveTo(i * r * .42, -r * .72); g.lineTo(i * r * .42, -r * .15); g.stroke(); }
     if (rim) glow(g, 0, 0, r * 2.2, rim, .35); g.restore();
 }
+/* where the fingertips of a pose are (back view of a right hand, wrist at 0,0, scale 1, fingers up):
+   [index, middle, ring, pinky, thumb] as [x, y]. Rotate / scale / mirror them the same way as the hand. */
+export function handTips(pose) {
+    const Q = POSE[pose] || POSE.open, curl = Q.curl || [0, 0, 0, 0], out = [];
+    FING.forEach((F, i) => { let a = F.a * Q.sp, px = F.x, py = F.y; if (!curl[i]) for (let j = 0; j < 3; j++) { const f = Q.f[i][j]; if (f <= .02) break; a += Q.b[i][j]; px += Math.sin(a) * F.L[j] * f; py -= Math.cos(a) * F.L[j] * f; } out.push([px, py]); });
+    let a = Q.th.a, px = THUMB.x, py = THUMB.y; for (let j = 0; j < 3; j++) { const f = j ? Q.th.f[j - 1] : 1; if (j) a += Q.th.b[j - 1]; px += Math.sin(a) * THUMB.L[j] * f; py -= Math.cos(a) * THUMB.L[j] * f; } out.push([px, py]);
+    return out;
+}
