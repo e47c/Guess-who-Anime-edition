@@ -400,221 +400,221 @@ ANIME_LIBRARY.onepiece = CHARACTER_LIBRARY;
 ========================================= */
 const CHARACTER_NAMES = {
     "images/character1.jpg": "",
-    "images/character2.jpg": "",
+    "images/character2.jpg": "Rob Lucci",
     "images/character3.jpg": "",
-    "images/character4.jpg": "",
-    "images/character5.jpg": "",
+    "images/character4.jpg": "Smoker",
+    "images/character5.jpg": "Arlong",
     "images/character6.jpg": "",
     "images/character7.jpg": "",
     "images/character8.jpg": "",
     "images/character9.jpg": "",
-    "images/character10.jpg": "",
-    "images/character11.jpg": "",
-    "images/character12.jpg": "",
+    "images/character10.jpg": "Kuro",
+    "images/character11.jpg": "X Drake",
+    "images/character12.jpg": "Akainu",
     "images/character13.jpg": "",
-    "images/character14.jpg": "",
-    "images/character15.jpg": "",
-    "images/character16.jpg": "",
-    "images/character17.jpg": "",
-    "images/character18.jpg": "",
-    "images/character19.jpg": "",
-    "images/character20.jpg": "",
+    "images/character14.jpg": "Charlotte Katakuri",
+    "images/character15.jpg": "Sengoku",
+    "images/character16.jpg": "Whitebeard",
+    "images/character17.jpg": "Eustass Kid",
+    "images/character18.jpg": "Wapol",
+    "images/character19.jpg": "Avalo Pizarro",
+    "images/character20.jpg": "Enel",
     "images/character21.jpg": "",
-    "images/character22.jpg": "",
-    "images/character23.jpg": "",
+    "images/character22.jpg": "Jesus Burgess",
+    "images/character23.jpg": "Koby",
     "images/character24.jpg": "",
     "images/character25.jpg": "",
-    "images/character26.jpg": "",
-    "images/character27.jpg": "",
+    "images/character26.jpg": "Brook",
+    "images/character27.jpg": "Monkey D. Garp",
     "images/character28.jpg": "",
-    "images/character29.jpg": "",
-    "images/character30.jpg": "",
-    "images/character31.jpg": "",
+    "images/character29.jpg": "Roronoa Zoro",
+    "images/character30.jpg": "Tony Tony Chopper",
+    "images/character31.jpg": "Gol D. Roger",
     "images/character32.jpg": "",
-    "images/character33.jpg": "",
-    "images/character34.jpg": "",
+    "images/character33.jpg": "Basil Hawkins",
+    "images/character34.jpg": "Nefertari Vivi",
     "images/character35.jpg": "",
-    "images/character36.jpg": "",
+    "images/character36.jpg": "Monkey D. Luffy",
     "images/character37.jpg": "",
-    "images/character38.jpg": "",
-    "images/character39.jpg": "",
-    "images/character40.jpg": "",
-    "images/character41.jpg": "",
-    "images/character42.jpg": "",
-    "images/character43.jpg": "",
-    "images/character44.jpg": "",
+    "images/character38.jpg": "Silvers Rayleigh",
+    "images/character39.jpg": "Donquixote Rosinante",
+    "images/character40.jpg": "Trafalgar Law",
+    "images/character41.jpg": "Shanks",
+    "images/character42.jpg": "Yamato",
+    "images/character43.jpg": "Hina",
+    "images/character44.jpg": "Marco",
     "images/character45.jpg": "",
     "images/character46.jpg": "",
-    "images/character47.jpg": "",
-    "images/character48.jpg": "",
-    "images/character49.jpg": "",
-    "images/character50.jpg": "",
-    "images/character51.jpg": "",
-    "images/character52.jpg": "",
-    "images/character53.jpg": "",
-    "images/character54.jpg": "",
-    "images/character55.jpg": "",
-    "images/character56.jpg": "",
-    "images/character57.jpg": "",
+    "images/character47.jpg": "Boa Hancock",
+    "images/character48.jpg": "Aokiji",
+    "images/character49.jpg": "Killer",
+    "images/character50.jpg": "Monkey D. Dragon",
+    "images/character51.jpg": "Jack",
+    "images/character52.jpg": "Gecko Moria",
+    "images/character53.jpg": "Crocodile",
+    "images/character54.jpg": "Charlotte Pudding",
+    "images/character55.jpg": "Belo Betty",
+    "images/character56.jpg": "Donquixote Doflamingo",
+    "images/character57.jpg": "Marco",
     "images/character58.jpg": "",
     "images/character59.jpg": "",
     "images/character60.jpg": "",
     "images/character61.jpg": "",
     "images/character62.jpg": "",
     "images/character63.jpg": "",
-    "images/character64.jpg": "",
-    "images/character65.jpg": "",
+    "images/character64.jpg": "Benn Beckman",
+    "images/character65.jpg": "Pedro",
     "images/character66.jpg": "",
-    "images/character67.jpg": "",
-    "images/character68.jpg": "",
+    "images/character67.jpg": "Dracule Mihawk",
+    "images/character68.jpg": "Kozuki Oden",
     "images/character69.jpg": "",
     "images/character70.jpg": "",
     "images/character71.jpg": "",
     "images/character72.jpg": "",
-    "images/character73.jpg": "",
-    "images/character74.jpg": "",
+    "images/character73.jpg": "Portgas D. Ace",
+    "images/character74.jpg": "Kurozumi Kanjuro",
     "images/character75.jpg": "",
-    "images/character76.jpg": "",
+    "images/character76.jpg": "Shirahoshi",
     "images/character77.jpg": "",
     "images/character78.jpg": "",
     "images/character79.jpg": "",
-    "images/character80.jpg": "",
+    "images/character80.jpg": "Jinbe",
     "images/character81.jpg": "",
-    "images/character82.jpg": "",
+    "images/character82.jpg": "Kizaru",
     "images/character83.jpg": "",
-    "images/character84.jpg": "",
-    "images/character85.jpg": "",
+    "images/character84.jpg": "Charlotte Perospero",
+    "images/character85.jpg": "Cavendish",
     "images/character86.jpg": "",
-    "images/character87.jpg": "",
-    "images/character88.jpg": "",
-    "images/character89.jpg": "",
-    "images/character90.jpg": "",
+    "images/character87.jpg": "Blackbeard",
+    "images/character88.jpg": "Franky",
+    "images/character89.jpg": "Perona",
+    "images/character90.jpg": "Lucky Roux",
     "images/character91.jpg": "",
     "images/character92.jpg": "",
-    "images/character93.jpg": "",
+    "images/character93.jpg": "Sanji",
     "images/character94.jpg": "",
-    "images/character95.jpg": "",
-    "images/character96.jpg": "",
-    "images/anime/naruto/na1.jpg": "",
-    "images/anime/naruto/na2.jpg": "",
-    "images/anime/naruto/na3.jpg": "",
-    "images/anime/naruto/na4.jpg": "",
-    "images/anime/naruto/na5.jpg": "",
-    "images/anime/naruto/na6.jpg": "",
-    "images/anime/naruto/na7.jpg": "",
-    "images/anime/naruto/na8.jpg": "",
-    "images/anime/naruto/na9.jpg": "",
-    "images/anime/naruto/na10.jpg": "",
-    "images/anime/naruto/na11.jpg": "",
-    "images/anime/naruto/na12.jpg": "",
-    "images/anime/naruto/na13.jpg": "",
-    "images/anime/naruto/na14.jpg": "",
-    "images/anime/naruto/na15.jpg": "",
-    "images/anime/naruto/na16.jpg": "",
-    "images/anime/naruto/na17.jpg": "",
-    "images/anime/naruto/na18.jpg": "",
-    "images/anime/naruto/na19.jpg": "",
-    "images/anime/naruto/na20.jpg": "",
-    "images/anime/naruto/na21.jpg": "",
-    "images/anime/naruto/na22.jpg": "",
-    "images/anime/naruto/na23.jpg": "",
-    "images/anime/naruto/na24.jpg": "",
-    "images/anime/dragonball/db1.jpg": "",
-    "images/anime/dragonball/db2.jpg": "",
-    "images/anime/dragonball/db3.jpg": "",
-    "images/anime/dragonball/db4.jpg": "",
-    "images/anime/dragonball/db5.jpg": "",
-    "images/anime/dragonball/db6.jpg": "",
-    "images/anime/dragonball/db7.jpg": "",
-    "images/anime/dragonball/db8.jpg": "",
-    "images/anime/dragonball/db9.jpg": "",
-    "images/anime/dragonball/db10.jpg": "",
-    "images/anime/dragonball/db11.jpg": "",
-    "images/anime/dragonball/db12.jpg": "",
-    "images/anime/dragonball/db13.jpg": "",
-    "images/anime/dragonball/db14.jpg": "",
-    "images/anime/dragonball/db15.jpg": "",
-    "images/anime/dragonball/db16.jpg": "",
-    "images/anime/dragonball/db17.jpg": "",
-    "images/anime/dragonball/db18.jpg": "",
-    "images/anime/dragonball/db19.jpg": "",
-    "images/anime/dragonball/db20.jpg": "",
-    "images/anime/dragonball/db21.jpg": "",
-    "images/anime/dragonball/db22.jpg": "",
-    "images/anime/dragonball/db23.jpg": "",
-    "images/anime/dragonball/db24.jpg": "",
-    "images/anime/jjk/jk1.jpg": "",
-    "images/anime/jjk/jk2.jpg": "",
-    "images/anime/jjk/jk3.jpg": "",
-    "images/anime/jjk/jk4.jpg": "",
-    "images/anime/jjk/jk5.jpg": "",
-    "images/anime/jjk/jk6.jpg": "",
-    "images/anime/jjk/jk7.jpg": "",
-    "images/anime/jjk/jk8.jpg": "",
-    "images/anime/jjk/jk9.jpg": "",
+    "images/character95.jpg": "Baby 5",
+    "images/character96.jpg": "Sabo",
+    "images/anime/naruto/na1.jpg": "Tobirama Senju",
+    "images/anime/naruto/na2.jpg": "Naruto Uzumaki",
+    "images/anime/naruto/na3.jpg": "Might Guy",
+    "images/anime/naruto/na4.jpg": "Kakashi Hatake",
+    "images/anime/naruto/na5.jpg": "Tsunade",
+    "images/anime/naruto/na6.jpg": "Neji Hyuga",
+    "images/anime/naruto/na7.jpg": "Pain",
+    "images/anime/naruto/na8.jpg": "Temari",
+    "images/anime/naruto/na9.jpg": "Sasuke Uchiha",
+    "images/anime/naruto/na10.jpg": "Orochimaru",
+    "images/anime/naruto/na11.jpg": "Sasori",
+    "images/anime/naruto/na12.jpg": "Jiraiya",
+    "images/anime/naruto/na13.jpg": "Gaara",
+    "images/anime/naruto/na14.jpg": "Hidan",
+    "images/anime/naruto/na15.jpg": "Itachi Uchiha",
+    "images/anime/naruto/na16.jpg": "Kisame Hoshigaki",
+    "images/anime/naruto/na17.jpg": "Shikamaru Nara",
+    "images/anime/naruto/na18.jpg": "Sakura Haruno",
+    "images/anime/naruto/na19.jpg": "Hinata Hyuga",
+    "images/anime/naruto/na20.jpg": "Zetsu",
+    "images/anime/naruto/na21.jpg": "Kabuto Yakushi",
+    "images/anime/naruto/na22.jpg": "Obito Uchiha",
+    "images/anime/naruto/na23.jpg": "Madara Uchiha",
+    "images/anime/naruto/na24.jpg": "Roronoa Zoro",
+    "images/anime/dragonball/db1.jpg": "Hit",
+    "images/anime/dragonball/db2.jpg": "Master Roshi",
+    "images/anime/dragonball/db3.jpg": "Kale",
+    "images/anime/dragonball/db4.jpg": "Kid Buu",
+    "images/anime/dragonball/db5.jpg": "Jiren",
+    "images/anime/dragonball/db6.jpg": "Whis",
+    "images/anime/dragonball/db7.jpg": "Goku",
+    "images/anime/dragonball/db8.jpg": "Gohan",
+    "images/anime/dragonball/db9.jpg": "Frieza",
+    "images/anime/dragonball/db10.jpg": "Goku Black",
+    "images/anime/dragonball/db11.jpg": "Bulma",
+    "images/anime/dragonball/db12.jpg": "Broly",
+    "images/anime/dragonball/db13.jpg": "Mr. Satan",
+    "images/anime/dragonball/db14.jpg": "Beerus",
+    "images/anime/dragonball/db15.jpg": "Krillin",
+    "images/anime/dragonball/db16.jpg": "Android 18",
+    "images/anime/dragonball/db17.jpg": "Toppo",
+    "images/anime/dragonball/db18.jpg": "Cell",
+    "images/anime/dragonball/db19.jpg": "Chi-Chi",
+    "images/anime/dragonball/db20.jpg": "Piccolo",
+    "images/anime/dragonball/db21.jpg": "Android 17",
+    "images/anime/dragonball/db22.jpg": "Trunks",
+    "images/anime/dragonball/db23.jpg": "Tien Shinhan",
+    "images/anime/dragonball/db24.jpg": "Vegeta",
+    "images/anime/jjk/jk1.jpg": "Hajime Kashimo",
+    "images/anime/jjk/jk2.jpg": "Toge Inumaki",
+    "images/anime/jjk/jk3.jpg": "Yuki Tsukumo",
+    "images/anime/jjk/jk4.jpg": "Panda",
+    "images/anime/jjk/jk5.jpg": "Naoya Zen'in",
+    "images/anime/jjk/jk6.jpg": "Ryomen Sukuna",
+    "images/anime/jjk/jk7.jpg": "Aoi Todo",
+    "images/anime/jjk/jk8.jpg": "Maki Zen'in",
+    "images/anime/jjk/jk9.jpg": "Mei Mei",
     "images/anime/jjk/jk10.jpg": "",
-    "images/anime/jjk/jk11.jpg": "",
-    "images/anime/jjk/jk12.jpg": "",
-    "images/anime/jjk/jk13.jpg": "",
-    "images/anime/jjk/jk14.jpg": "",
-    "images/anime/jjk/jk15.jpg": "",
-    "images/anime/jjk/jk16.jpg": "",
-    "images/anime/jjk/jk17.jpg": "",
-    "images/anime/jjk/jk18.jpg": "",
-    "images/anime/jjk/jk19.jpg": "",
-    "images/anime/jjk/jk20.jpg": "",
-    "images/anime/jjk/jk21.jpg": "",
-    "images/anime/jjk/jk22.jpg": "",
-    "images/anime/jjk/jk23.jpg": "",
+    "images/anime/jjk/jk11.jpg": "Utahime Iori",
+    "images/anime/jjk/jk12.jpg": "Yuji Itadori",
+    "images/anime/jjk/jk13.jpg": "Choso",
+    "images/anime/jjk/jk14.jpg": "Kento Nanami",
+    "images/anime/jjk/jk15.jpg": "Nobara Kugisaki",
+    "images/anime/jjk/jk16.jpg": "Toji Fushiguro",
+    "images/anime/jjk/jk17.jpg": "Kirara Hoshi",
+    "images/anime/jjk/jk18.jpg": "Suguru Geto",
+    "images/anime/jjk/jk19.jpg": "Satoru Gojo",
+    "images/anime/jjk/jk20.jpg": "Megumi Fushiguro",
+    "images/anime/jjk/jk21.jpg": "Yuta Okkotsu",
+    "images/anime/jjk/jk22.jpg": "Mahito",
+    "images/anime/jjk/jk23.jpg": "Kasumi Miwa",
     "images/anime/jjk/jk24.jpg": "",
-    "images/anime/demonslayer/ds1.jpg": "",
-    "images/anime/demonslayer/ds2.jpg": "",
-    "images/anime/demonslayer/ds3.jpg": "",
-    "images/anime/demonslayer/ds4.jpg": "",
-    "images/anime/demonslayer/ds5.jpg": "",
-    "images/anime/demonslayer/ds6.jpg": "",
-    "images/anime/demonslayer/ds7.jpg": "",
-    "images/anime/demonslayer/ds8.jpg": "",
-    "images/anime/demonslayer/ds9.jpg": "",
-    "images/anime/demonslayer/ds10.jpg": "",
-    "images/anime/demonslayer/ds11.jpg": "",
-    "images/anime/demonslayer/ds12.jpg": "",
-    "images/anime/demonslayer/ds13.jpg": "",
-    "images/anime/demonslayer/ds14.jpg": "",
-    "images/anime/demonslayer/ds15.jpg": "",
-    "images/anime/demonslayer/ds16.jpg": "",
-    "images/anime/demonslayer/ds17.jpg": "",
-    "images/anime/demonslayer/ds18.jpg": "",
-    "images/anime/demonslayer/ds19.jpg": "",
-    "images/anime/demonslayer/ds20.jpg": "",
-    "images/anime/demonslayer/ds21.jpg": "",
-    "images/anime/demonslayer/ds22.jpg": "",
-    "images/anime/demonslayer/ds23.jpg": "",
-    "images/anime/demonslayer/ds24.jpg": "",
-    "images/anime/bleach/bc1.jpg": "",
-    "images/anime/bleach/bc2.jpg": "",
-    "images/anime/bleach/bc3.jpg": "",
-    "images/anime/bleach/bc4.jpg": "",
-    "images/anime/bleach/bc5.jpg": "",
-    "images/anime/bleach/bc6.jpg": "",
-    "images/anime/bleach/bc7.jpg": "",
-    "images/anime/bleach/bc8.jpg": "",
-    "images/anime/bleach/bc9.jpg": "",
-    "images/anime/bleach/bc10.jpg": "",
-    "images/anime/bleach/bc11.jpg": "",
-    "images/anime/bleach/bc12.jpg": "",
-    "images/anime/bleach/bc13.jpg": "",
-    "images/anime/bleach/bc14.jpg": "",
-    "images/anime/bleach/bc15.jpg": "",
-    "images/anime/bleach/bc16.jpg": "",
-    "images/anime/bleach/bc17.jpg": "",
-    "images/anime/bleach/bc18.jpg": "",
-    "images/anime/bleach/bc19.jpg": "",
-    "images/anime/bleach/bc20.jpg": "",
-    "images/anime/bleach/bc21.jpg": "",
-    "images/anime/bleach/bc22.jpg": "",
+    "images/anime/demonslayer/ds1.jpg": "Kokushibo",
+    "images/anime/demonslayer/ds2.jpg": "Genya Shinazugawa",
+    "images/anime/demonslayer/ds3.jpg": "Obanai Iguro",
+    "images/anime/demonslayer/ds4.jpg": "Gyutaro",
+    "images/anime/demonslayer/ds5.jpg": "Doma",
+    "images/anime/demonslayer/ds6.jpg": "Yoriichi Tsugikuni",
+    "images/anime/demonslayer/ds7.jpg": "Gyomei Himejima",
+    "images/anime/demonslayer/ds8.jpg": "Sabito",
+    "images/anime/demonslayer/ds9.jpg": "Kaigaku",
+    "images/anime/demonslayer/ds10.jpg": "Muichiro Tokito",
+    "images/anime/demonslayer/ds11.jpg": "Sanemi Shinazugawa",
+    "images/anime/demonslayer/ds12.jpg": "Mitsuri Kanroji",
+    "images/anime/demonslayer/ds13.jpg": "Kyojuro Rengoku",
+    "images/anime/demonslayer/ds14.jpg": "Inosuke Hashibira",
+    "images/anime/demonslayer/ds15.jpg": "Muzan Kibutsuji",
+    "images/anime/demonslayer/ds16.jpg": "Kagaya Ubuyashiki",
+    "images/anime/demonslayer/ds17.jpg": "Nezuko Kamado",
+    "images/anime/demonslayer/ds18.jpg": "Shinobu Kocho",
+    "images/anime/demonslayer/ds19.jpg": "Tengen Uzui",
+    "images/anime/demonslayer/ds20.jpg": "Zenitsu Agatsuma",
+    "images/anime/demonslayer/ds21.jpg": "Giyu Tomioka",
+    "images/anime/demonslayer/ds22.jpg": "Akaza",
+    "images/anime/demonslayer/ds23.jpg": "Kanao Tsuyuri",
+    "images/anime/demonslayer/ds24.jpg": "Daki",
+    "images/anime/bleach/bc1.jpg": "Rangiku Matsumoto",
+    "images/anime/bleach/bc2.jpg": "Sosuke Aizen",
+    "images/anime/bleach/bc3.jpg": "Yhwach",
+    "images/anime/bleach/bc4.jpg": "Kisuke Urahara",
+    "images/anime/bleach/bc5.jpg": "Szayelaporro Granz",
+    "images/anime/bleach/bc6.jpg": "Ichigo Kurosaki",
+    "images/anime/bleach/bc7.jpg": "Nelliel Tu Odelschwanck",
+    "images/anime/bleach/bc8.jpg": "Kenpachi Zaraki",
+    "images/anime/bleach/bc9.jpg": "Orihime Inoue",
+    "images/anime/bleach/bc10.jpg": "Shinji Hirako",
+    "images/anime/bleach/bc11.jpg": "Gin Ichimaru",
+    "images/anime/bleach/bc12.jpg": "Shunsui Kyoraku",
+    "images/anime/bleach/bc13.jpg": "Grimmjow Jaegerjaquez",
+    "images/anime/bleach/bc14.jpg": "Rukia Kuchiki",
+    "images/anime/bleach/bc15.jpg": "Ulquiorra Cifer",
+    "images/anime/bleach/bc16.jpg": "Byakuya Kuchiki",
+    "images/anime/bleach/bc17.jpg": "Yasutora Sado",
+    "images/anime/bleach/bc18.jpg": "Mayuri Kurotsuchi",
+    "images/anime/bleach/bc19.jpg": "Uryu Ishida",
+    "images/anime/bleach/bc20.jpg": "Yoruichi Shihoin",
+    "images/anime/bleach/bc21.jpg": "Toshiro Hitsugaya",
+    "images/anime/bleach/bc22.jpg": "Renji Abarai",
     "images/anime/bleach/bc23.jpg": "",
-    "images/anime/bleach/bc24.jpg": "",
+    "images/anime/bleach/bc24.jpg": "Coyote Starrk",
 };
 
 const $ = id => document.getElementById(id);
@@ -918,7 +918,7 @@ function updatePresenceBanner(data) {
 let lastSfxTurn = null;
 let exiting = false;
 let namesOn = false;
-try { namesOn = localStorage.getItem("gw_names") === "1"; } catch (e) {}
+try { namesOn = localStorage.getItem("gw_names") !== "0"; } catch (e) { namesOn = true; }
 let unsubReveal = null;
 let rematchSize = 24;
 
@@ -3765,6 +3765,25 @@ function showGameScreen(data) {
     else board = newBoard;
     gameScreenWasShown = true;
     updateGameHeader(data);
+    gwMineRender(data);
+}
+/* "Your Character": the duelist's own secret beside the board all match. Read from their own private/ node once per match,
+   so it survives a refresh; the opponent's pick is never fetched. */
+let mySecret = null, mySecretKey = "";
+function gwMineRender(d) {
+    const box = $("gwMine"); if (!box || !d) return;
+    const key = room + ":" + (d.matchId || "") + ":" + myPlayer;
+    if (mySecretKey !== key) {
+        mySecretKey = key; mySecret = null; box.innerHTML = ""; box.dataset.img = ""; box.classList.add("hidden");
+        get(ref(db, "rooms/" + room + "/private/" + user.uid + "/secret"))
+            .then(s => { if (mySecretKey === key && s.exists()) { mySecret = s.val(); gwMineRender(currentRoomData || d); } }).catch(() => {});
+        return;
+    }
+    if (!mySecret || box.dataset.img === mySecret.image) return;
+    box.dataset.img = mySecret.image; box.innerHTML = "";
+    const pic = hbEl("div", "gm-pic"); pic.appendChild(makeImg(mySecret.image));
+    const tx = hbEl("div", "gm-txt"); tx.append(hbEl("small", null, "YOUR CHARACTER"), hbEl("b", null, nameOf(mySecret.image) || "Secret character"), hbEl("span", "gm-note", "🔒 Only you can see this"));
+    box.append(pic, tx); box.classList.remove("hidden");
 }
 function boardSig() {
     const str = board.map(c => c.image).join("|"); let h = 0;
@@ -4037,6 +4056,21 @@ function winSoundForChar(c, won) {
     const key = Object.keys(HB_SERIES).find(k => HB_SERIES[k].label === c.s);
     winCelebrate(key, won);
 }
+/* one card of the verdict: state "ok"/"bad" (an accusation, right or wrong), "none" (no accusation made) or "secret" (face down until revealed) */
+function gvCard(label, image, state, slot) {
+    const c = hbEl("div", "gv-card " + state + (state === "secret" ? " hidden-face" : ""));
+    const por = hbEl("div", "portrait gv-pic"), img = new Image(); img.alt = ""; por.appendChild(img);
+    if (slot) img.id = "resultImg_" + slot;
+    if (image) applyImg(img, image);
+    if (state === "none") por.appendChild(hbEl("span", "gv-q", "—"));
+    if (state === "secret") por.appendChild(hbEl("span", "gv-q", "?"));
+    if (state === "ok" || state === "bad") por.appendChild(hbEl("span", "gv-mark", state === "ok" ? "✓" : "✗"));
+    const tx = hbEl("div", "gv-txt"), nm = hbEl("b", null, state === "none" ? "No accusation" : image ? nameOf(image) || "Secret character" : "???");
+    if (slot) nm.id = "resultCap_" + slot;
+    tx.append(hbEl("small", null, label), nm);
+    if (state === "ok" || state === "bad") tx.appendChild(hbEl("span", "gv-verd", state === "ok" ? "✓ Correct!" : "✗ Wrong"));
+    c.append(por, tx); return c;
+}
 async function showResultScreen(data) {
     if (resultShown) return;
     resultShown = true; winSoundDone = false;
@@ -4047,15 +4081,19 @@ async function showResultScreen(data) {
     const msg = data.result === "correct"
         ? (iWon ? "You read them perfectly. Case closed." : pName(data, w) + " guessed your character.")
         : (iWon ? "They accused the wrong character. You win!" : "Wrong accusation. " + pName(data, w) + " takes the round.");
-    // reveal: both secret characters, face down until each player reveals theirs
-    const rev = hbEl("div", "versus");
-    [me, opp].forEach((s, k) => {
-        const f = hbEl("div", "fighter" + (s === w ? " champ" : "")); f.style.setProperty("--pc", (pNode(data, s) || {}).col || HB_COLORS[(s - 1) % HB_COLORS.length]);
-        const who = hbEl("div", "who"); who.appendChild(avatarEl(pPub(data, s), { size: 34 })); who.appendChild(hbEl("b", null, (s === me ? "Your" : pName(data, s) + "'s") + " secret"));
-        const por = hbEl("div", "portrait"); const img = new Image(); img.alt = ""; img.id = "resultImg_" + s; por.appendChild(img);
-        f.append(who, por, Object.assign(hbEl("div", "cap", "???"), { id: "resultCap_" + s }));
-        rev.appendChild(f);
-        if (k === 0) rev.appendChild(hbEl("div", "vs", "VS"));
+    // the verdict: each duelist's accusation above their own secret character; the opponent on top (left on wide screens), you below.
+    // Secrets stay face down until each player reveals theirs; the accused card is public (it's on the board).
+    const accuser = data.result === "correct" ? w : gwOther(data, w), right = data.result === "correct";
+    const guessed = arr(data.board).find(c => String(c.id) === String(data.guessedCharacter));
+    const rev = hbEl("div", "gw-verdict");
+    [opp, me].forEach(s => {
+        const mineSide = s === me, whose = mineSide ? "Your" : pName(data, s) + "'s";
+        const side = hbEl("section", "gv-side " + (mineSide ? "me" : "opp") + (s === w ? " won" : " lost")); side.style.setProperty("--pc", (pNode(data, s) || {}).col || HB_COLORS[(s - 1) % HB_COLORS.length]);
+        const head = hbEl("header", "gv-head"); head.append(avatarEl(pPub(data, s), { size: 34 }), hbEl("b", null, mineSide ? "You" : pName(data, s)), hbEl("span", "gv-res", s === w ? "🏆 WINNER" : "LOST"));
+        side.append(head,
+            gvCard(whose + " Guess", s === accuser ? (guessed && guessed.image) || "" : "", s === accuser ? (right ? "ok" : "bad") : "none"),
+            gvCard(whose + " Character", "", "secret", s));
+        rev.appendChild(side);
     });
     const myTurns = (Number(((data.gw || {}).tc || {})["p" + me]) || 0) + 1, mine = pNode(data, me) || {}, theirs = pNode(data, opp) || {};
     const prog = recordOnce("gw:" + (data.matchId || "") + ":" + (data.finishedAt || ""), "gw", iWon, { ach: iWon ? ["gw_win"].concat(myTurns <= 3 ? ["gw_fast"] : []) : [] });
@@ -4080,7 +4118,7 @@ async function showResultScreen(data) {
         }
         gwSeats(data).forEach(n => {
             const r = revealed["player" + n], img = $("resultImg_" + n);
-            if (r && img && !img.src) { applyImg(img, r.image); img.closest(".portrait").classList.add("flip-in"); $("resultCap_" + n).textContent = nameOf(r.image) || "Secret character"; sfx("reveal"); }
+            if (r && img && !img.src) { applyImg(img, r.image); img.closest(".portrait").classList.add("flip-in"); $("resultCap_" + n).textContent = nameOf(r.image) || "Secret character"; img.closest(".gv-card").classList.remove("hidden-face"); sfx("reveal"); }
         });
     });
 }

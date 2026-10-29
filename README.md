@@ -14,6 +14,7 @@ A browser party game for a squad of up to 8 friends with four anime modes in one
 ## How the modes scale
 
 - **Guess Who** stays a duel. With more than 2 in the room the host taps the two duelists in the lobby, and everyone else spectates. Spectators see both boards live (`gw/elim/p<slot>` holds each duelist's crossed-out cards) but never a secret character. They don't read `private/`, they get no end-of-match reveal, and the accused card isn't marked for them.
+- **Guess Who screens:** during the match each duelist sees their own pick in a *Your Character* panel left of the board (a compact card above it on phones). It's read once per match from their own `private/` node, so it survives a refresh, and the opponent's pick is never fetched. The verdict shows both players: the opponent on top (left on wide screens) and you below (right). Each side has its accusation (✓ Correct! / ✗ Wrong, or *No accusation*) above its secret character, plus a WINNER / LOST badge.
 - **Headbanz:** everyone guesses at once. With N players the 1st right guess scores N points, the next N-1, and so on (8 players: 8, 7, 6 … 1). Giving up or three strikes scores 0. A 2-player game uses the same rule (2 / 1 / 0) over the chosen number of rounds.
 - **Imposter:** 3–8 players. One lap = everyone is the imposter once, so the round count follows the table size.
 - **Anime UNO:**
@@ -30,7 +31,7 @@ A browser party game for a squad of up to 8 friends with four anime modes in one
 
 ## Customising
 
-- **Series art and names:** `ANIME_LIBRARY` and `CHARACTER_NAMES` at the top of `js/game.js`.
+- **Series art and names:** `ANIME_LIBRARY` and `CHARACTER_NAMES` at the top of `js/game.js`. A name left as `""` (still unidentified) shows as *Secret character*.
 - **Series logos:** `images/logos/<series>.png`. A missing file falls back to the text name.
 - **Special-card art:** `images/special/<series>_<freeze|swap|ultimate|vision>.(png|jpg|webp)`. Until a file exists, the card shows a kanji emblem. Every cinematic opens on the full picture, framed and never cropped.
 - **Special-card voice lines:** `audio/special/<series>_<f|t|u|e>.mp3`. The cinematic lasts as long as the clip (up to 17 s), pulses with the voice's loudness, and pins its key beats to the words of the line (`SYNC` in `js/cine/engine.js`, taken from a transcript of each clip). If you replace a clip, update its pins; pins that no longer fit are relaxed automatically.
