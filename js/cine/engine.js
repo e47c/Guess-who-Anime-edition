@@ -13,11 +13,11 @@
    ===================================================================== */
 import { audio } from "../audio.js";
 import { isReduced } from "../fx.js";
-import * as K from "./kit.js?v=7";
-import { FREEZE } from "./freeze.js?v=7";
-import { SWAP } from "./swap.js?v=7";
-import { ULT } from "./ult.js?v=7";
-import { PEEK } from "./peek.js?v=7";
+import * as K from "./kit.js?v=8";
+import { FREEZE } from "./freeze.js?v=8";
+import { SWAP } from "./swap.js?v=8";
+import { ULT } from "./ult.js?v=8";
+import { PEEK } from "./peek.js?v=8";
 
 let A = null;                 // game hooks (see initCine)
 /* api: { hbEl, unoCardEl, unoNext, plateRect(p), me(), arr } */
@@ -29,7 +29,7 @@ const META = {
     onepiece_f: ["Ice Age", "Aokiji", "氷河時代", .5, .33], onepiece_t: ["Room · Shambles", "Trafalgar Law", "シャンブルズ", .35, .38], onepiece_u: ["Hawk Gatling", "Luffy", "鷹銃乱打", .5, .38], onepiece_e: ["Conqueror's Haki", "Shanks", "覇王色", .45, .45],
     naruto_f: ["Crystal Ice Mirrors", "Haku", "魔鏡氷晶", .58, .25], naruto_t: ["Flying Raijin", "Minato", "飛雷神", .62, .12], naruto_u: ["Rasengan", "Naruto", "螺旋丸", .5, .41], naruto_e: ["Byakugan", "Neji", "白眼", .5, .5],
     dragonball_f: ["Time Skip", "Hit", "時飛ばし", .5, .12], dragonball_t: ["Temporal Do-Over", "Whis", "時間逆行", .4, .42], dragonball_u: ["Kamehameha", "Goku", "かめはめ波", .5, .33], dragonball_e: ["Power Gaze", "Jiren", "気", .64, .27],
-    jjk_f: ["Frost Calm", "Uraume", "霜凪", .35, .38], jjk_t: ["Boogie Woogie", "Aoi Todo", "不義遊戯", .48, .24], jjk_u: ["Malevolent Shrine", "Sukuna", "伏魔御廚子", .45, .36], jjk_e: ["Infinite Void", "Gojo", "無量空処", .45, .55],
+    jjk_f: ["Ice Formation", "Uraume", "氷凝呪法", .35, .38], jjk_t: ["Boogie Woogie", "Aoi Todo", "不義遊戯", .48, .24], jjk_u: ["Malevolent Shrine", "Sukuna", "伏魔御廚子", .45, .36], jjk_e: ["Infinite Void", "Gojo", "無量空処", .45, .55],
     demonslayer_f: ["Lotus Leaf Ice", "Doma", "蓮葉氷", .6, .47], demonslayer_t: ["Infinity Castle", "Nakime", "無限城", .4, .24], demonslayer_u: ["Hinokami Kagura", "Tanjiro", "ヒノカミ神楽", .45, .42], demonslayer_e: ["Transparent World", "Yoriichi", "透き通る世界", .5, .4],
     bleach_f: ["Daiguren Hyorinmaru", "Hitsugaya", "大紅蓮氷輪丸", .5, .47], bleach_t: ["Kyoka Suigetsu", "Aizen", "鏡花水月", .52, .5], bleach_u: ["Getsuga Tensho", "Ichigo", "月牙天衝", .45, .36], bleach_e: ["The Almighty", "Yhwach", "全知全能", .5, .57],
     hxh_f: ["Chain Jail", "Kurapika", "束縛する中指の鎖", .55, .38], hxh_t: ["Hide and Seek", "Knov", "四次元マンション", .5, .42], hxh_u: ["100-Type Guanyin · Zero Hand", "Netero", "百式観音 零の掌", .5, .4], hxh_e: ["Lovely Ghostwriter", "Neon", "天使の自動筆記", .5, .47],
@@ -41,7 +41,7 @@ const KANJI = { f: "凍", t: "換", u: "極", e: "眼" }, KLABEL = { f: "FREEZE"
    being named...) to the moment the line says it. Taken from a word-level transcript of every clip; the scene's clock is
    stretched between them. A clip that is replaced keeps working: pins that no longer fit are relaxed by the warp. */
 const SYNC = {
-    onepiece_f: [[.17, 2.62], [.39, 4.6], [.6, 6.15], [.74, 7.58]], naruto_f: [[.48, 2.0], [.72, 4.28]], jjk_f: [[.24, 3.5], [.8, 10.05]], demonslayer_f: [[.52, 3.23]], bleach_f: [[.42, 2.83], [.72, 6.3]],
+    onepiece_f: [[.17, 2.62], [.39, 4.6], [.6, 6.15], [.74, 7.58]], naruto_f: [[.48, 2.0], [.72, 4.28]], jjk_f: [[.165, 3.1], [.24, 4.1], [.58, 8.45], [.705, 10.1]], demonslayer_f: [[.52, 3.23]], bleach_f: [[.42, 2.83], [.72, 6.3]],
     dragonball_f: [[.3, 1.65], [.5, 2.95], [.62, 3.62]], blackclover_f: [[.56, 4.8]], hxh_f: [[.32, 3.48], [.68, 5.53]], jojo_f: [[.1, 1.6], [.2, 2.25], [.42, 3.9]],
     onepiece_t: [[.22, 1.3], [.64, 6.24]], naruto_t: [[.3, 1.65], [.6, 3.68]], dragonball_t: [[.22, 3.15], [.62, 5.05], [.66, 5.9]], jjk_t: [[.28, 1.62], [.5, 3.95], [.72, 5.45]],
     demonslayer_t: [[.34, 2.94], [.5, 5.02], [.66, 6.18]], bleach_t: [[.3, 1.9], [.58, 6.4]], hxh_t: [[.3, 1.95], [.48, 5.1]], blackclover_t: [[.24, 2.02], [.46, 4.55]], jojo_t: [[.28, 2.2]],

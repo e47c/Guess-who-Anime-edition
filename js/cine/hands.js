@@ -8,7 +8,7 @@
    strokes at the joints, simple nails. Curled fingers are drawn folded: knuckle caps from the back, fingers lying over the
    palm from the front, so a fist or a pointing hand reads at a glance.
    ===================================================================== */
-import { TAU, rgba, shade, glow, hs } from "./kit.js?v=7";
+import { TAU, rgba, shade, glow, hs } from "./kit.js?v=8";
 
 export const SKIN = {
     base:   { l: "#fff3ea", b: "#fbd9c2", s: "#e5a98e", d: "#b8705a", ink: "#3d1a12", nail: "#ffe9e1" },

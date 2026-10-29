@@ -4,8 +4,8 @@
    last picture away (tailFx: shatter | split | hole | burn | fade) and throws 5 cards from the real deck into the
    target's real plate.
    ===================================================================== */
-import * as K from "./kit.js?v=7";
-import { hand, fist, fistMini } from "./hands.js?v=7";
+import * as K from "./kit.js?v=8";
+import { hand, fist, fistMini } from "./hands.js?v=8";
 const { lin, ss, hit, hs, TAU, mid } = K;
 
 const back = t => 1 - ss(.86, .97, t);

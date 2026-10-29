@@ -564,3 +564,31 @@ body.fx-lite .zw-veil.out { animation-duration: .8s; } body.fx-lite .zw-veil.out
 .ice-shatter { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 9001; pointer-events: none; }
 body.fx-lite .ice-mist, body.fx-lite .ice-glint { animation: none; display: none; }
 @media (prefers-reduced-motion: reduce) { .ice-mist, .ice-glint { animation: none; display: none; } }
+
+/* ===== ICE FORMATION (Uraume's Freeze): light-blue ice and soft snow over the page while the frozen player's turns run out ===== */
+.snow-veil { --f: saturate(.6) brightness(1.08) contrast(.95) hue-rotate(-4deg);
+    position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0; overflow: hidden;
+    -webkit-backdrop-filter: var(--f); backdrop-filter: var(--f); transition: opacity 1s ease; }
+.snow-veil::before { content: ""; position: absolute; inset: 0; background: linear-gradient(170deg, rgba(214,240,255,.22), rgba(190,228,255,.08) 50%, rgba(226,246,255,.24)); }
+.snow-veil::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 46%, transparent 55%, rgba(236,248,255,.28) 86%, rgba(248,253,255,.5) 100%); }
+.snow-veil .ice-cool { position: absolute; inset: 0; background: #a9dcff; mix-blend-mode: soft-light; opacity: .28; }
+.snow-fall { position: absolute; inset: -20% 0 0; opacity: .85;
+    background-image: radial-gradient(circle, #fff 0 1.6px, transparent 2.4px), radial-gradient(circle, rgba(255,255,255,.9) 0 1.1px, transparent 1.8px), radial-gradient(circle, rgba(255,255,255,.8) 0 2.2px, transparent 3px);
+    background-size: 190px 190px, 120px 120px, 260px 260px; background-position: 0 0, 40px 60px, 90px 20px; animation: snowFall 16s linear infinite; }
+.snow-fall.b { opacity: .55; background-size: 140px 140px, 90px 90px, 210px 210px; animation-duration: 26s; filter: blur(.4px); }
+@keyframes snowFall { to { background-position: 60px 190px, 10px 180px, 130px 260px; } }
+.snow-fall.b { animation-name: snowFallB; } @keyframes snowFallB { to { background-position: -40px 140px, 70px 180px, 40px 210px; } }
+.snow-caps { position: absolute; inset: 0; width: 100%; height: 100%; }
+.snow-veil.on { opacity: 1; }
+.snow-veil.now, .snow-veil.pause { transition: none; }
+.snow-veil.pause { opacity: 0 !important; }
+.snow-veil.grow { opacity: 1; transition: none;
+    -webkit-mask-image: radial-gradient(circle at var(--x, 50%) var(--y, 50%), #000 calc(var(--r, 0px) - 50px), transparent var(--r, 0px));
+    mask-image: radial-gradient(circle at var(--x, 50%) var(--y, 50%), #000 calc(var(--r, 0px) - 50px), transparent var(--r, 0px)); }
+.snow-veil.grow .snow-caps { opacity: 0; }
+.snow-veil.out { opacity: 1; transition: none; }
+.snow-veil.out.cracking { --f: saturate(.5) brightness(1.12) contrast(.95) hue-rotate(-4deg); }
+.snow-veil.out.broken { opacity: 0; transition: opacity 1.1s cubic-bezier(.3,.6,.4,1); }
+.snow-veil.out.broken .snow-fall { animation-duration: 1.4s; }
+body.fx-lite .snow-fall, body.fx-lite .snow-veil .ice-mist, body.fx-lite .snow-veil .ice-glint { animation: none; }
+@media (prefers-reduced-motion: reduce) { .snow-fall { animation: none; } }

@@ -22,9 +22,9 @@ import { audio } from "./audio.js";
 import { ambient, titleCard, shake, ring, burstText, motionOK, setReduced, isReduced } from "./fx.js";
 import { profile, avatarEl, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js";
 import { showResults, closeResults } from "./results.js";
-import { initCine, cineHook, cineHas } from "./cine/engine.js?v=7";
-import { hand as cineHand } from "./cine/hands.js?v=7";
-import * as CK from "./cine/kit.js?v=7";
+import { initCine, cineHook, cineHas } from "./cine/engine.js?v=8";
+import { hand as cineHand } from "./cine/hands.js?v=8";
+import * as CK from "./cine/kit.js?v=8";
 
 
 /* =========================================
@@ -2728,7 +2728,14 @@ const TS = {
     onepiece_f: { cls: "ice-veil", outMs: 1900, grow: true,
         build: el => { const tx = hbEl("i", "ice-tex"); tx.style.backgroundImage = "url(" + iceTexture() + ")"; el.append(hbEl("i", "ice-cool"), tx, hbEl("i", "ice-mist"), hbEl("i", "ice-mist b")); for (let i = 0; i < 9; i++) { const gl = hbEl("i", "ice-glint"); gl.style.cssText = "left:" + (6 + 88 * CK.hs(i * 3.3)) + "%;top:" + (8 + 84 * CK.hs(i * 7.1)) + "%;animation-delay:" + (CK.hs(i * 5.7) * 7).toFixed(2) + "s"; el.appendChild(gl); } },
         hold: on => { clearInterval(TS.onepiece_f.iv); if (on) TS.onepiece_f.iv = setInterval(() => { if (motionOK() && !document.hidden) sfx("creak"); }, 7400); },
-        release: v => iceShatter(v) }
+        release: v => iceShatter(v) },
+    jjk_f: { cls: "snow-veil", outMs: 2300, grow: true,
+        build: el => { const tx = hbEl("i", "ice-tex"); tx.style.backgroundImage = "url(" + iceTexture("lace") + ")"; const caps = document.createElement("canvas"); caps.className = "snow-caps";
+            el.append(hbEl("i", "ice-cool"), tx, hbEl("i", "snow-fall"), hbEl("i", "snow-fall b"), caps, hbEl("i", "ice-mist"), hbEl("i", "ice-mist b"));
+            for (let i = 0; i < 7; i++) { const gl = hbEl("i", "ice-glint"); gl.style.cssText = "left:" + (8 + 84 * CK.hs(i * 4.9)) + "%;top:" + (10 + 80 * CK.hs(i * 2.3)) + "%;animation-delay:" + (CK.hs(i * 8.1) * 7).toFixed(2) + "s"; el.appendChild(gl); } },
+        hold: on => { clearInterval(TS.jjk_f.iv); if (on) { let k = 0; TS.jjk_f.iv = setInterval(() => { if (motionOK() && !document.hidden) sfx(k++ % 2 ? "creak" : "wind"); }, 6800); } },
+        refresh: el => snowCaps(el),
+        release: v => iceShatter(v, { snow: true }) }
 };
 const tsSt = {};
 const tsOf = key => tsSt[key] || (tsSt[key] = { on: false, cine: false, el: null, tm: 0 });
@@ -2744,7 +2751,10 @@ function tsSync(u, instant) {
         const s = tsOf(key), want = tsActive(u, key), D = TS[key];
         if (want && !s.cine && (!s.on || s.el.classList.contains("pause") || s.el.classList.contains("grow"))) {
             s.on = true; const v = tsVeil(key); clearTimeout(s.tm); v.classList.remove("out", "pause", "grow"); v.style.removeProperty("--r"); v.classList.toggle("now", !!instant); void v.offsetWidth; v.classList.add("on"); D.hold && D.hold(true);
-        } else if (!want && s.on) {
+        }
+        if (want && s.on && D.refresh) { const v = s.el; requestAnimationFrame(() => requestAnimationFrame(() => { if (s.on) D.refresh(v); })); }
+        if (!want && s.on && D.refresh) { const c = s.el.querySelector(".snow-caps"); if (c) c.getContext("2d").clearRect(0, 0, c.width, c.height); }
+        if (!want && s.on) {
             s.on = false; const v = tsVeil(key); D.hold && D.hold(false);
             if (motionOK() && currentScreen === "uno") { v.classList.remove("out", "now", "pause", "grow"); void v.offsetWidth; v.classList.add("out"); v.classList.remove("on"); D.release(v); clearTimeout(s.tm); s.tm = setTimeout(() => v.classList.remove("out"), D.outMs); }
             else v.classList.remove("on", "now", "pause", "grow");
@@ -2759,29 +2769,51 @@ document.addEventListener("timestop", e => {
     else if (d.ph === "stopped") { s.cine = false; tsSync(tsU, true); }
 });
 /* the ice veil's frost: feathery frost thick at the screen's edges, a faint crystal grain everywhere, the centre left clear to read */
-let iceTexURL = "";
-function iceTexture() {
-    if (iceTexURL) return iceTexURL;
+const iceTexURL = {};
+function iceTexture(kind) {
+    kind = kind || "fern"; if (iceTexURL[kind]) return iceTexURL[kind]; const lace = kind === "lace";
     // the screen's own proportions, so the ferns aren't stretched on a phone
     const W = 1200, H = Math.round(1200 * Math.min(2.4, Math.max(.4, innerHeight / innerWidth))), cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d"); g.lineCap = "round";
     const fern = (x, y, a, L, d, k) => { if (d > 4 || L < 4) return; const x2 = x + Math.cos(a) * L, y2 = y + Math.sin(a) * L; g.globalAlpha = .55 - d * .1; g.lineWidth = Math.max(.6, 2.2 - d * .45); g.beginPath(); g.moveTo(x, y); g.lineTo(x2, y2); g.stroke();
         for (let j = 1; j <= 3; j++) { const f = j / 4, bx = x + (x2 - x) * f, by = y + (y2 - y) * f; fern(bx, by, a + 1.05, L * .42, d + 1, k * 3 + j); fern(bx, by, a - 1.05, L * .42, d + 1, k * 5 + j); } fern(x2, y2, a + (CK.hs(k) - .5) * .5, L * .62, d + 1, k + 9); };
     g.strokeStyle = "#ffffff";
-    for (let i = 0; i < 64; i++) {                                   // ferns growing inward from all four edges
+    if (lace) {                                                      // Uraume: lighter lace frost and snowflakes along the edges instead of heavy ferns
+        g.lineWidth = 1;
+        for (let i = 0; i < 70; i++) { const side = i % 4, u = CK.hs(i * 3.7 + 2), d = 10 + 70 * CK.hs(i * 1.9), x = side === 1 ? W - d : side === 3 ? d : u * W, y = side === 0 ? d : side === 2 ? H - d : u * H, R = 7 + 16 * CK.hs(i * 5.1);
+            g.globalAlpha = .55 - d / 200; for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3 + i; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * R, y + Math.sin(a) * R); const mx = x + Math.cos(a) * R * .55, my = y + Math.sin(a) * R * .55; g.moveTo(mx, my); g.lineTo(mx + Math.cos(a + .6) * R * .3, my + Math.sin(a + .6) * R * .3); g.moveTo(mx, my); g.lineTo(mx + Math.cos(a - .6) * R * .3, my + Math.sin(a - .6) * R * .3); g.stroke(); } }
+    }
+    for (let i = 0; i < (lace ? 28 : 64); i++) {                     // ferns growing inward from all four edges
         const side = i % 4, u = CK.hs(i * 2.7 + 1), x = side === 0 ? u * W : side === 1 ? W : side === 2 ? u * W : 0, y = side === 0 ? 0 : side === 1 ? u * H : side === 2 ? H : u * H;
         const a = [Math.PI / 2, Math.PI, -Math.PI / 2, 0][side] + (CK.hs(i * 4.1) - .5) * 1.1; fern(x, y, a, 40 + 70 * CK.hs(i * 6.3), 0, i + 1);
     }
     g.globalAlpha = .07; g.lineWidth = 1; for (let i = 0; i < 260; i++) { const x = CK.hs(i * 1.7) * W, y = CK.hs(i * 2.9) * H, L = 6 + 14 * CK.hs(i); for (let k = 0; k < 3; k++) { const a = k * Math.PI / 3 + CK.hs(i) ; g.beginPath(); g.moveTo(x - Math.cos(a) * L, y - Math.sin(a) * L); g.lineTo(x + Math.cos(a) * L, y + Math.sin(a) * L); g.stroke(); } }   // six-point crystal grain
     g.globalAlpha = .16; g.lineWidth = 1.2; for (let i = 0; i < 7; i++) { let x = CK.hs(i * 9.1) * W, y = CK.hs(i * 4.4) * H, a = CK.hs(i * 3.3) * 6.28; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 9; k++) { a += (CK.hs(i * 17 + k) - .5) * .8; x += Math.cos(a) * 40; y += Math.sin(a) * 40; g.lineTo(x, y); } g.stroke(); }   // old hairline cracks
-    return (iceTexURL = cv.toDataURL("image/png"));
+    return (iceTexURL[kind] = cv.toDataURL("image/png"));
+}
+window.addEventListener("resize", () => { const st = tsSt.jjk_f; if (st && st.on && st.el) snowCaps(st.el); });
+/* Uraume's snow settles on the top edges of the real cards, plates, piles and buttons (re-drawn when the table re-renders) */
+function snowCaps(v) {
+    const c = v && v.querySelector(".snow-caps"); if (!c) return; const dpr = Math.min(1.5, devicePixelRatio || 1), w = innerWidth, h = innerHeight;
+    if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+    const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    document.querySelectorAll("#uno .ucard, #uno .u-opp, #uno #unoDraw, #uno button").forEach((el, i) => {
+        const r = el.getBoundingClientRect(); if (r.width < 24 || r.height < 14 || r.bottom < 0 || r.top > h || getComputedStyle(el).visibility === "hidden") return;
+        const n = Math.max(3, Math.round(r.width / 14)), y0 = r.top + 1, th = Math.min(14, 6 + r.width / 30);
+        g.beginPath(); g.moveTo(r.left + 2, y0 + 1);
+        for (let k = 0; k <= n; k++) { const x = r.left + 2 + (r.width - 4) * k / n, bump = th * (.55 + .45 * CK.hs(i * 13 + k)) * Math.sin(Math.PI * Math.min(1, Math.min(k, n - k) / 1.6 + .25)); g.lineTo(x, y0 - bump); }
+        g.lineTo(r.right - 2, y0 + 2); g.quadraticCurveTo(r.left + r.width / 2, y0 + 4, r.left + 2, y0 + 1); g.closePath();
+        g.fillStyle = "rgba(255,255,255,.92)"; g.shadowColor = "rgba(120,170,220,.55)"; g.shadowBlur = 4; g.shadowOffsetY = 1.5; g.fill(); g.shadowColor = "transparent";
+    });
 }
 /* the release of Aokiji's ice: cracks race over the whole screen, then the ice bursts into shards that fall away while the colour returns */
-function iceShatter(v) {
+function iceShatter(v, opt) {
+    opt = opt || {};
     const old = $("iceShatter"); if (old) old.remove();
     const cv = document.createElement("canvas"); cv.id = "iceShatter"; cv.className = "ice-shatter"; const w = innerWidth, h = innerHeight, dpr = Math.min(1.5, devicePixelRatio || 1);
     cv.width = w * dpr; cv.height = h * dpr; document.body.appendChild(cv); const g = cv.getContext("2d");
     const cracks = []; for (let k = 0; k < 16; k++) { const o = k < 4 ? [w / 2, h / 2] : [w * CK.hs(k * 3.1), h * CK.hs(k * 5.3)]; let x = o[0], y = o[1], a = CK.hs(k * 7.7) * 6.28; const pts = [[x, y]]; for (let j = 0; j < 12; j++) { a += (CK.hs(k * 13 + j) - .5) * .9; x += Math.cos(a) * Math.hypot(w, h) / 22; y += Math.sin(a) * Math.hypot(w, h) / 22; pts.push([x, y]); } cracks.push(pts); }
-    const lines = []; for (let k = 0; k < 11; k++) lines.push(CK.randLine(k + 70 + (Date.now() % 50), w, h));
+    const lines = []; for (let k = 0; k < (opt.snow ? 16 : 11); k++) lines.push(CK.randLine(k + 70 + (Date.now() % 50), w, h));
+    if (opt.snow) setTimeout(() => sfx("wind"), 640);
     const shards = CK.shardsOf(w, h, lines), CRACK = 520, ALL = 1750, t0 = performance.now();
     sfx("crack"); setTimeout(() => sfx("crack"), 230); setTimeout(() => sfx("shatter"), CRACK);
     v.classList.add("cracking");
@@ -2802,6 +2834,9 @@ function iceShatter(v) {
                 const sg = g.createLinearGradient(S.cx - 80, S.cy - 80, S.cx + 80, S.cy + 80); sg.addColorStop(0, "rgba(240,250,255,.66)"); sg.addColorStop(.5, "rgba(170,220,255,.34)"); sg.addColorStop(1, "rgba(255,255,255,.58)");
                 g.fillStyle = sg; g.fill(); g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 2; g.stroke(); g.restore();
             });
+            if (opt.snow) for (let i = 0; i < 460; i++) {             // the flurry: snow bursts out of the break and blows away to the right
+                const x0 = CK.hs(i * 1.3) * w, y0 = CK.hs(i * 2.7) * h, sw = Math.sin(p * 6 + i) * 30 * p, x = x0 + e * w * (.5 + .7 * CK.hs(i * 4.1)) + sw, y = y0 - e * h * (.15 + .3 * CK.hs(i * 5.3)) + Math.cos(p * 5 + i) * 20 * p;
+                g.globalAlpha = (1 - p) * (.55 + .45 * CK.hs(i)); g.fillStyle = "#ffffff"; g.beginPath(); g.arc(x, y, 1.6 + 3.4 * CK.hs(i * 7.7), 0, 6.283); g.fill(); }
             for (let i = 0; i < 60; i++) { const a = CK.hs(i * 2.2) * 6.28, sp = (.3 + CK.hs(i * 3.9)) * Math.hypot(w, h) * .45 * e, x = w / 2 + Math.cos(a) * sp, y = h / 2 + Math.sin(a) * sp + p * p * h * .6; g.globalAlpha = 1 - p; g.fillStyle = "#ffffff"; g.fillRect(x, y, 3, 3); }
             g.globalAlpha = 1;
         }

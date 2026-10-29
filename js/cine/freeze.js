@@ -4,8 +4,8 @@
    (staged at centre, then gliding back onto its real place on the table), and a seal(g, X, a, r) that the ending
    keeps on the real plate.
    ===================================================================== */
-import * as K from "./kit.js?v=7";
-import { hand, fist, handTips } from "./hands.js?v=7";
+import * as K from "./kit.js?v=8";
+import { hand, fist, handTips } from "./hands.js?v=8";
 const { lin, ss, hit, hs, TAU, mid } = K;
 
 const back = t => 1 - ss(.86, .97, t);                       // staged plate -> real plate over the last beat of the main act
@@ -161,41 +161,91 @@ const haku = {
     }
 };
 
-/* ---------- URAUME · Frost Calm: an elegant fingertip, one snowflake, lacework frost across the page, a crystal lattice cage ---------- */
-function lattice(g, r, n) {
-    const x0 = r.x - 14, y0 = r.y - 14, W = r.w + 28, H = r.h + 28; g.save(); g.strokeStyle = "rgba(235,228,255,.95)"; g.lineWidth = 2; g.globalCompositeOperation = "lighter";
-    for (let i = 0; i < n; i++) { const k = i % 7, v = Math.floor(i / 7) % 2; g.beginPath(); if (v) { const x = x0 + W * (k + .5) / 7; g.moveTo(x, y0 - 8); g.lineTo(x + 12, y0 + H + 8); } else { const y = y0 + H * (k + .5) / 7; g.moveTo(x0 - 8, y); g.lineTo(x0 + W + 8, y - 6); } g.stroke(); }
-    g.restore(); if (n > 12) { g.save(); g.fillStyle = "rgba(200,190,255,.12)"; g.fillRect(x0, y0, W, H); g.restore(); }
+/* ---------- URAUME · Ice Formation (氷凝呪法), first person, drawn OVER the real table: hands folded at the waist like a servant
+   waiting; on 霜凪 they rise and hold together out in front, palms forward, a point of pale cold light gathering between the thumbs
+   while the voice builds; on its peak they push forward and the ice bursts out in every direction with snow, across the real table,
+   cards and UI to the page's edges, then everything slows to a stop. The frozen, snowy look is the page's snow veil (game.js,
+   .snow-veil), revealed by a mask that grows with this wave. ---------- */
+const UR = { rise: .165, held: .24, build: .58, push: .705, edge: .84, lock: .92 };     // beats (scene t), pinned to the voice in engine.js SYNC
+const urSlow = t => { if (t < UR.edge) return t; const u = Math.min(1, (t - UR.edge) / (UR.lock - UR.edge)); return UR.edge + (UR.lock - UR.edge) * (u - u * u / 2); };
+const UR_SLEEVE = { c: "#f4f2f8", s: "#c6bfd6", cuff: "#d9d3e6", len: 380, w: 92 };      // Uraume's pale kimono: wide sleeves, a lavender-grey shade
+const UR_ICE = { c: "#eef8ff", s: "#b4dcf4", cuff: "#d6eeff", len: 380, w: 92 };
+function flake(g, x, y, R, rot, a) {                                              // a six-armed snowflake with side branches
+    if (R < .8 || a <= 0) return; g.save(); g.globalAlpha *= a; g.translate(x, y); g.rotate(rot); g.strokeStyle = "#ffffff"; g.lineWidth = Math.max(.8, R * .12); g.lineCap = "round";
+    for (let k = 0; k < 6; k++) { g.rotate(Math.PI / 3); g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -R); g.moveTo(0, -R * .55); g.lineTo(-R * .25, -R * .78); g.moveTo(0, -R * .55); g.lineTo(R * .25, -R * .78); g.stroke(); }
+    g.restore();
 }
 const uraume = {
-    col: "#d9ccff", ms: 7400,
-    seal(g, X, a, r) { r = r || X.env.r; const c = mid(r); g.save(); g.globalAlpha = a; lattice(g, r, 14); K.snowflake(g, c.x, c.y, Math.min(r.h, r.w) * .55, 1, X.s * .2, "rgba(240,235,255,.85)"); g.restore(); },
+    col: "#bfe4ff", ms: 9000, mainPlus: 3200, grain: 0,
+    seal: (g, X, a, r) => K.iceBlock(g, r || X.env.r, a, X.s, "#cfeaff"),
+    begin() { document.dispatchEvent(new CustomEvent("timestop", { detail: { key: "jjk_f", ph: "start" } })); },
+    tailStart() { document.dispatchEvent(new CustomEvent("timestop", { detail: { key: "jjk_f", ph: "stopped" } })); },
+    tail(g, X, T) {
+        const a = 1 - K.ss(.35, 1, T.tt); X.reveal(T.tt, .3); K.iceBlock(g, X.env.r, a, X.s, "#cfeaff");
+        K.slam(g, X.env.toName + " · FROZEN ×2", X.w / 2, Math.min(X.h * .5, X.env.r.y + X.env.r.h + X.M * .12), X.M * .055, K.lin(0, 1, T.tt), { fill: "#f6fbff", stroke: "#1a3a5a", glow: "#bfe4ff", from: 1.2 });
+    },
     main(g, X, T) {
-        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r);
-        X.cue(.02, "chime", t); X.cue(.24, "freeze", t); for (let i = 0; i < 6; i++) X.cue(.62 + i * .03, "tick", t); X.cue(.8, "freeze", t);
-        if (t < .2) { K.eyes(g, X, lin(0, .2, t), { tint: "#cbbcff", ta: .3 }); K.drift(g, w, h, s, 50, 2, { up: -1, speed: .04, col: "#efe9ff", size: 2 }); K.bars(g, w, h, 1); cutTo(X, t, .195, "#efe9ff"); return; }
-        K.sky(g, w, h, ["#0b0820", "#1d1640", "#07050f"]); K.glow(g, w * .5, h * .3, M * .45, "#a99cff", .25); K.drift(g, w, h, s, 60, 5, { up: -1, speed: .035, col: "#efe9ff", size: 2.2 });
-        const sz = HS(X), hx = w * .62, hy = h * 1.12 - ss(.2, .3, t) * h * .14 + Math.sin(s) * 3, ang = -.32;      // the fingertip (index tip of a pale, raised hand)
-        const fx = hx + Math.sin(ang - .15) * 215 * sz, fy = hy - Math.cos(ang - .15) * 215 * sz;
-        g.save(); g.strokeStyle = "rgba(230,222,255,.85)"; g.lineWidth = 1.4; g.globalCompositeOperation = "lighter";
-        g.beginPath(); for (let k = 0; k < 9; k++) { const an = -Math.PI / 2 + (k - 4) * .38; K.frost(g, fx, fy - M * .02, an, M * (.2 + .06 * hs(k)), lin(.28 + k * .01, .62, t), 0, k * 5 + 1); }
-        for (let k = 0; k < 6; k++) { const an = k * 1.05 + .3; K.frost(g, w * (k % 2 ? .04 : .96), h * (.15 + k * .15), an + (k % 2 ? 0 : Math.PI), M * .22, lin(.4, .8, t), 0, k * 11 + 3); } g.stroke();
-        g.restore();
-        const fl = M * .11 * K.oBack(lin(.22, .36, t)) * (1 - lin(.56, .66, t) * .7), fy2 = fy - M * .1;
-        K.snowflake(g, fx, fy2, fl, lin(.22, .4, t), s * .25, "#ffffff"); K.glow(g, fx, fy2, M * .14, "#cfc2ff", lin(.22, .3, t) * (1 - lin(.56, .7, t)));
-        if (t > .54) {                                                       // the flake flies to the target; the lattice clicks in line by line
-            const q = K.ioCub(lin(.54, .64, t)), x = K.mix(fx, c.x, q), y = K.mix(fy2, c.y, q); if (q < 1) { K.snowflake(g, x, y, M * .06, 1, s * 3, "#fff"); K.glow(g, x, y, M * .08, "#d9ccff", .8); }
-            plate(g, X, r, ss(.5, .58, t), lin(.62, .7, t)); lattice(g, r, Math.floor(lin(.6, .78, t) * 14));
-            if (t > .78) K.snowflake(g, c.x, c.y, Math.min(r.h, r.w) * .55 * K.oBack(lin(.78, .86, t)), 1, s * .2, "rgba(245,240,255,.95)");
-            if (t > .78) { for (let i = 0; i < 11; i++) { const a = (i - 5) / 5, e = K.oBack(lin(.79 + Math.abs(a) * .03, .87 + Math.abs(a) * .03, t), 1.5) * back(t); K.spire(g, c.x + a * (r.w * .6 + M * .1), r.y + r.h + M * .06 * back(t), (r.h * 1.4 + M * .2 * (1 - Math.abs(a) * .5)) * (.7 + .3 * hs(i)), M * (.05 + .03 * hs(i + 4)), e, -a * .3, i % 2); }   // Icefall: the ground of ice erupts round the target
-                K.debris(g, c.x, r.y + r.h, lin(.79, .95, t), 22, 8, { speed: M * .9, size: M * .018, grav: M * 1.4, ang: -1.57, spread: 2, cols: ["#f0ecff", "#c9bcff", "#ffffff"], edge: "#ffffff" });
-                K.slam(g, "直瀑", w * .8, h * .3, M * .11, lin(.79, .98, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#2a1d5a", glow: "#d9ccff" }); }
+        const { w, h, M } = X, t = T.t, st = urSlow(t), sM = st * X.main / 1000;
+        X.cue(.0, "wind", t); X.cue(UR.rise, "chime", t); X.cue(UR.build, "charge", t); X.cue(UR.push - .004, "freeze", t); X.cue(UR.push, "crack", t); X.cue(UR.push + .04, "crack", t); X.cue(UR.edge - .02, "shing", t);
+        if (t < .03) { g.fillStyle = "rgba(0,0,0," + (1 - t / .03) * .85 + ")"; g.fillRect(0, 0, w, h); }
+        // the hands: folded at the waist → raised together out in front → pushed forward on the peak
+        const up = K.ioCub(lin(UR.rise - .02, UR.held, t)), push = K.oBack(lin(UR.push - .012, UR.push + .01, t)), build = lin(UR.held, UR.push, t), loud = lin(UR.build, UR.push, t);
+        const sc = HS(X) * K.mix(1.15, .96, up) * (1 - push * .14), trem = (hs(Math.floor(sM * 30)) - .5) * M * .003 * loud * (1 - push), released = t >= UR.push;
+        const cx = w / 2 + trem, cy = K.mix(h * 1.02, h * .7, up) - push * h * .05, gap = sc * 70;
+        const side = s1 => {                                                 // s1 = 1 right hand, -1 left (mirrored); thumbs face each other
+            const x = K.mix(w / 2 + s1 * w * .07, cx + s1 * gap, up), y = K.mix(h * 1.0 + (s1 > 0 ? -h * .02 : 0), cy, up), a = K.mix(-s1 * 1.32, -s1 * .1, up);
+            const pose = up < .5 ? "relax" : "open", o = { view: "back", skin: "pale", flip: s1 < 0, sleeve: UR_SLEEVE };
+            hand(g, x, y, sc, a, pose, o);
+            const ice = ss(UR.push, UR.push + .07, t); if (ice > 0) { g.save(); g.globalAlpha = ice * .8; hand(g, x, y, sc, a, pose, Object.assign({}, o, { skin: "ice", rim: "#e6f6ff", sleeve: UR_ICE })); g.restore(); }
+            return [x, y];
+        };
+        side(-1); side(1);                                         // left under, right over (folded hands)
+        const core = [cx, cy - sc * 62];                                      // between the thumbs and index fingers
+        // a cold breath of mist over the table while she waits
+        g.save(); for (let i = 0; i < 6; i++) { const u = (sM * .05 + i / 6) % 1; K.pool(g, w * (-.1 + 1.2 * u), h * (.7 + .08 * Math.sin(i * 2.3)), M * .3, "#eaf6ff", .1 * Math.sin(u * Math.PI) * (1 - lin(UR.lock, 1, t) * .5)); } g.restore();
+        if (t > .02 && t < UR.held + .05) { g.save(); g.globalAlpha = 1 - lin(UR.held, UR.held + .05, t); K.column(g, "氷凝呪法", w * .08, h * .16, M * .062, lin(.02, .12, t), { fill: "#f4fbff", stroke: "#1a3a5a", glow: "#bfe4ff", sw: 3 }); g.restore(); }
+        if (t > UR.rise && t < UR.held + .1) K.slam(g, "霜凪", w / 2, h * .2, M * .12, lin(UR.rise, UR.held + .1, t), { font: K.F_JP, weight: "400", fill: "#f4fbff", stroke: "#1a3a5a", glow: "#9fd6ff", from: 1.3 });
+        // the point of cold light gathering between the hands: a pale core, a slow ring, frost creeping on the fingertips, flakes drawn in
+        if (build > 0 && !released) {
+            const k = .25 + .75 * Math.pow(build, 1.6), R = M * (.012 + .05 * k);
+            K.glow(g, core[0], core[1], R * 4, "#bfe4ff", .6 + .4 * loud); K.glow(g, core[0], core[1], R * 1.5, "#ffffff", .9);
+            g.save(); g.strokeStyle = "rgba(220,242,255," + (.5 * k) + ")"; g.lineWidth = 1.5; g.beginPath(); g.ellipse(core[0], core[1], R * 2.6, R * 1.1, sM * .6, 0, TAU); g.stroke(); g.restore();
+            for (let i = 0; i < 14; i++) { const u = (sM * .35 + i / 14) % 1, an = i * 2.4 + sM * .4, d = M * .22 * (1 - u); flake(g, core[0] + Math.cos(an) * d, core[1] + Math.sin(an) * d * .7, M * .008 * (1 + k), an, Math.sin(u * Math.PI) * k); }
         }
-        hand(g, hx, hy, sz, ang, "point", { skin: "pale", sleeve: { c: "#f3f0f8", s: "#c9c0dc", cuff: "#8f7fc8", len: 280 }, rim: "#d9ccff" });
-        K.cutIn(g, X, lin(.64, .86, t), { y: .62, hh: .22, dir: -1, ang: .06, kj: "霜凪", name: "URAUME" });
-        K.title(g, X, lin(.72, 1, t), { en: "FROST CALM", kj: "霜凪", y: .86 });
-        if (hit(t, .64, .02)) X.fx.flash = ["#efe9ff", .7]; if (hit(t, .8, .025)) X.fx.inv = "#d9ccff"; X.fx.rgb = hit(t, .8, .08) * 10;
-        K.vignette(g, w, h, .6, "#05030c"); K.bars(g, w, h, 1 - lin(.9, 1, t));
+        const R = Math.hypot(w, h) * 1.05 * K.oCub(lin(UR.push, UR.edge, st)), fr = lin(UR.push, UR.edge, st);
+        if (X.env && X.env.box) document.dispatchEvent(new CustomEvent("timestop", { detail: { key: "jjk_f", ph: "grow", x: core[0], y: core[1], r: released ? R : 0 } }));
+        if (released) {
+            // the release: a burst of light and a ring of frost from between the hands
+            const bq = lin(UR.push, UR.push + .05, t); if (bq < 1) { K.glow(g, core[0], core[1], M * .4 * (1 - bq * .4), "#e8f6ff", 1 - bq); K.shock(g, core[0], core[1], bq, M * .55, "#dff2ff", 22); }
+            // frost lines branching out ahead of the ice, six-fold like the snowflakes
+            g.save(); g.lineCap = "round"; const fa = 1 - lin(UR.edge, UR.lock + .04, t);
+            for (let k = 0; k < 12; k++) {
+                let a = k / 12 * TAU + .26, x = core[0], y = core[1]; const Lk = Math.min(R * .95, Math.hypot(w, h) * (.4 + .45 * hs(k + 2))); if (Lk < 6) continue;
+                g.globalAlpha = fa * .85; g.strokeStyle = "#f2faff"; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x, y);
+                const n = 10; for (let j = 1; j <= n; j++) { a += (hs(k * 11 + j) - .5) * .35; const nx = x + Math.cos(a) * Lk / n, ny = y + Math.sin(a) * Lk / n; g.lineTo(nx, ny);
+                    if (j % 2 === 0) { const bl = Lk / n * .9; [1, -1].forEach(sd => { g.moveTo(nx, ny); g.lineTo(nx + Math.cos(a + sd * 1.05) * bl, ny + Math.sin(a + sd * 1.05) * bl); g.moveTo(nx, ny); }); } x = nx; y = ny; }
+                g.stroke();
+            }
+            g.restore();
+            // the front: a bright, clean edge with a cold shimmer and a slight colour split, delicate crystals riding it
+            if (fr < 1) {
+                const n = 140, front = a => R * (1 + .035 * Math.sin(a * 6) + .025 * Math.sin(a * 17 + .7));
+                g.save(); g.globalCompositeOperation = "screen";
+                [["rgba(255,120,200,.45)", -2.5], ["rgba(120,230,255,.6)", 2.5], ["rgba(255,255,255,.95)", 0]].forEach(([col, off]) => { g.strokeStyle = col; g.lineWidth = off ? 2.5 : 2; g.beginPath(); for (let i = 0; i <= n; i++) { const a = i / n * TAU, rr = front(a) + off; i ? g.lineTo(core[0] + Math.cos(a) * rr, core[1] + Math.sin(a) * rr) : g.moveTo(core[0] + Math.cos(a) * rr, core[1] + Math.sin(a) * rr); } g.stroke(); });
+                g.restore();
+                for (let i = 0; i < 40; i++) { const a = (i + hs(i) * .5) / 40 * TAU, rr = front(a), x = core[0] + Math.cos(a) * rr, y = core[1] + Math.sin(a) * rr; flake(g, x, y, M * (.012 + .016 * hs(i + 5)) * (1 - fr * .3), a + sM, .9); }
+            }
+            // snow: flakes swirling out with the burst, then drifting down, slowing to a stop as the world locks
+            g.save(); for (let i = 0; i < 90; i++) {
+                const d0 = (hs(i + 120) * .9 + .05) * Math.hypot(w, h) * .6; if (d0 > R) continue;
+                const a = hs(i + 130) * TAU + sM * .15 * (hs(i) - .5), fall = (sM - (UR.push * X.main / 1000)) * (14 + 26 * hs(i + 3)), x = core[0] + Math.cos(a) * d0 + Math.sin(sM * .8 + i) * 14, y = core[1] + Math.sin(a) * d0 + fall;
+                const yy = ((y % (h + 40)) + h + 40) % (h + 40) - 20; if (i % 3) { g.globalAlpha = .85; g.fillStyle = "#ffffff"; g.beginPath(); g.arc(x, yy, 1.2 + 2 * hs(i + 7), 0, TAU); g.fill(); } else flake(g, x, yy, M * (.006 + .008 * hs(i)), i + sM * .3, .9);
+            } g.restore();
+            // mist rolling across the table
+            g.save(); for (let i = 0; i < 8; i++) { const u = (hs(i + 40) + sM * .03) % 1; K.pool(g, w * (-.2 + 1.4 * u), h * (.55 + .35 * hs(i + 50)), M * (.25 + .15 * hs(i)), "#f0f8ff", .14 * Math.min(1, fr * 2)); } g.restore();
+        }
+        if (t > UR.lock - .06) K.title(g, X, lin(UR.lock - .06, 1, t), { en: "ICE FORMATION", kj: "氷凝呪法", sub: "URAUME · " + X.env.toName.toUpperCase() + " FROZEN FOR 2 TURNS", y: .2, col: "#bfe4ff" });
+        if (hit(t, UR.push, .01)) X.fx.flash = ["#f0f9ff", .5];
     }
 };
 
