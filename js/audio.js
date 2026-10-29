@@ -128,6 +128,7 @@ const FX = {
     whoosh(o, t) { V.sweep(o, t, 300, 3500, .3, .8, 1.5); },
     impact(o, t) { V.kick(o, t, 1.3); V.tom(o, t, 60, 1); V.sweep(o, t, 3000, 200, .5, .7, 1); V.pad(o, t, [33, 40], .6, 1.8, 300); },
     tick(o, t) { V.hat(o, t, .7); },
+    roar(o, t) { V.sweep(o, t, 160, 900, .9, 1, 1.2); V.pad(o, t, [31, 38, 43], .9, 1.3, 520); V.snare(o, t + .05, .5, .7); V.tom(o, t, 55, .8); },
     clink(o, t) { [101, 106].forEach((m, i) => V.bell(o, t + i * .03, m, .45, .5)); V.hat(o, t, .5); },
     chainbreak(o, t) { V.snare(o, t, .9, .25); [94, 99, 103, 108, 111].forEach((m, i) => V.bell(o, t + i * .035, m, .5, .9)); V.sweep(o, t, 6000, 1500, .4, .7, 3); V.kick(o, t, .5); },
     creak(o, t) { V.sweep(o, t, 420, 160, .9, .28, 7); V.sweep(o, t + .35, 300, 120, .7, .2, 9); },

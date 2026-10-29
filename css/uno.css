@@ -599,3 +599,21 @@ body.fx-lite .snow-fall, body.fx-lite .snow-veil .ice-mist, body.fx-lite .snow-v
 .chain-veil.on, .chain-veil.out { opacity: 1; }
 .chain-veil.now, .chain-veil.pause, .chain-veil.out { transition: none; }
 .chain-veil.pause { opacity: 0 !important; }
+
+/* ===== DAIGUREN HYORINMARU (Hitsugaya's Freeze): two layers of ice over the page: the frozen sheet (this veil's backdrop + frost)
+   and the diamond crystals + the coiled dragon on its canvases ===== */
+.hyo-veil { --f: saturate(.55) brightness(1.06) contrast(.96) hue-rotate(-8deg);
+    position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0; overflow: hidden;
+    -webkit-backdrop-filter: var(--f); backdrop-filter: var(--f); transition: opacity 1s ease; }
+.hyo-veil::before { content: ""; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(196,232,255,.22), rgba(140,200,250,.1) 50%, rgba(206,238,255,.22)); }
+.hyo-veil::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(220,242,255,.26) 86%, rgba(240,250,255,.45) 100%); }
+.hyo-veil .ice-cool { position: absolute; inset: 0; background: #7fc4ff; mix-blend-mode: soft-light; opacity: .3; }
+.hyo-veil canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+.hyo-veil.on { opacity: 1; }
+.hyo-veil.now, .hyo-veil.pause, .hyo-veil.grow { transition: none; }
+.hyo-veil.pause { opacity: 0 !important; }
+.hyo-veil.grow { opacity: 1; }
+.hyo-veil.grow canvas { display: none; }
+.hyo-veil.out { opacity: 1; transition: none; }
+.hyo-veil.out.cracking { --f: saturate(.45) brightness(1.1) contrast(.96) hue-rotate(-8deg); }
+.hyo-veil.out.broken { opacity: 0; transition: opacity 1s cubic-bezier(.3,.6,.4,1); }

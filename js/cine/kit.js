@@ -531,3 +531,89 @@ export function chainGlow(g, w, h, a) {
     if (a <= 0) return; g.save(); g.globalAlpha = a; const gr = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * .2, w / 2, h / 2, Math.hypot(w, h) * .62);
     gr.addColorStop(0, "rgba(255,220,110,.05)"); gr.addColorStop(1, "rgba(255,196,60,.2)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); g.restore();
 }
+
+/* ---------- Hyorinmaru (Hitsugaya): the ice dragon and the diamond-crystal ice. The Bankai scene and the page's two-layer ice hold
+   both draw with these, so the hold is the scene's last frame. ---------- */
+export function iceDragon(g, P, u, M, s, o = {}) {
+    /* Hyorinmaru: a long serpentine ice dragon. Body = one tapered ribbon along the path P (tail -> head), dorsal spines,
+       belly bands, then the head: long snout, swept-back horns, mane, open jaws with fangs, a glowing eye, whiskers */
+    const span = o.span || .55, N = o.n || 64, pts = []; for (let k = 0; k <= N; k++) { const q = u - span * (1 - k / N); if (q >= 0) pts.push(P(q)); }
+    const n = pts.length; if (n < 4) return; const W = M * .05 * (o.scale || 1); g.save(); g.globalAlpha *= o.alpha == null ? 1 : o.alpha; if (o.wings) dragonWings(g, pts, W, M * (o.scale || 1), s, o.wings);
+    const sideOf = sg => pts.map((p, i) => { const a2 = pts[Math.min(n - 1, i + 1)], b2 = pts[Math.max(0, i - 1)], an = Math.atan2(a2[1] - b2[1], a2[0] - b2[0]), k = i / (n - 1), wd = W * (.12 + .88 * Math.sin(Math.min(1, k * 1.25) * Math.PI / 2)) * (k > .94 ? 1 - (k - .94) * 6 : 1); return [p[0] + Math.cos(an + sg * 1.5708) * wd, p[1] + Math.sin(an + sg * 1.5708) * wd, an, wd]; });
+    const A = sideOf(-1), B = sideOf(1); g.save(); g.lineJoin = "round";
+    for (let i = 4; i < n - 5; i += 3) { const [x, y, an, wd] = A[i], L2 = wd * 1.1 + M * .012; g.beginPath(); g.moveTo(x - Math.cos(an) * wd * .55, y - Math.sin(an) * wd * .55); g.lineTo(x + Math.cos(an - 1.5708) * L2 - Math.cos(an) * wd * 1.1, y + Math.sin(an - 1.5708) * L2 - Math.sin(an) * wd * 1.1); g.lineTo(x + Math.cos(an) * wd * .45, y + Math.sin(an) * wd * .45); g.closePath(); g.fillStyle = "#eaf8ff"; g.fill(); g.strokeStyle = "#2f74bf"; g.lineWidth = 1.6; g.stroke(); }   // dorsal spines
+    g.beginPath(); A.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); for (let i = n - 1; i >= 0; i--) g.lineTo(B[i][0], B[i][1]); g.closePath();
+    const hd = pts[n - 1], tl = pts[0], gr = g.createLinearGradient(tl[0], tl[1], hd[0], hd[1]); gr.addColorStop(0, "rgba(120,180,240,.75)"); gr.addColorStop(.5, "#bfe5ff"); gr.addColorStop(1, "#f2fbff");
+    g.fillStyle = gr; g.fill(); g.strokeStyle = "#1f5a9a"; g.lineWidth = 2.6; g.stroke();
+    g.strokeStyle = "rgba(255,255,255,.75)"; g.lineWidth = 1.4; g.beginPath(); A.forEach((q, i) => { const m2 = [(q[0] * 2 + B[i][0]) / 3, (q[1] * 2 + B[i][1]) / 3]; i ? g.lineTo(m2[0], m2[1]) : g.moveTo(m2[0], m2[1]); }); g.stroke();   // the light down its back
+    g.strokeStyle = "rgba(40,100,170,.35)"; g.lineWidth = 1.2; for (let i = 3; i < n - 3; i += 2) { const m1 = [(A[i][0] + B[i][0]) / 2, (A[i][1] + B[i][1]) / 2]; g.beginPath(); g.moveTo(m1[0], m1[1]); g.lineTo(B[i][0], B[i][1]); g.stroke(); }   // belly bands
+    for (let i = 0; i < n; i += 4) glow(g, pts[i][0], pts[i][1], W * 1.4, "#bfe6ff", .18);
+    // the head
+    const an = A[n - 1][2], r = M * .065 * (o.scale || 1); g.translate(hd[0], hd[1]); g.rotate(an); const ink = "#1f5a9a", jaw = .28 + .22 * Math.sin(s * 9);
+    [-1, 1].forEach(sd => { g.beginPath(); g.moveTo(-r * .2, -r * .55); g.quadraticCurveTo(-r * 1.4, -r * (1.1 + sd * .3), -r * 2.8, -r * (1.6 + sd * .45)); g.quadraticCurveTo(-r * 1.6, -r * (.85 + sd * .2), -r * .7, -r * .35); g.closePath(); g.fillStyle = "#eef9ff"; g.fill(); g.strokeStyle = ink; g.lineWidth = 2; g.stroke(); });   // horns
+    for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(-r * (.3 + k * .3), -r * .5); g.lineTo(-r * (1.2 + k * .45), -r * (.2 + k * .25) + Math.sin(s * 5 + k) * r * .15); g.lineTo(-r * (.55 + k * .3), -r * .05); g.closePath(); g.fillStyle = "rgba(220,242,255,.9)"; g.fill(); g.strokeStyle = "#5a9ad8"; g.lineWidth = 1.2; g.stroke(); }   // the mane
+    g.save(); g.rotate(jaw); g.beginPath(); g.moveTo(-r * .5, r * .15); g.lineTo(r * 2.1, r * .2); g.quadraticCurveTo(r * 1.2, r * .75, -r * .7, r * .6); g.closePath(); g.fillStyle = "#cfeaff"; g.fill(); g.strokeStyle = ink; g.lineWidth = 2.2; g.stroke();
+    g.fillStyle = "#fff"; for (let i = 0; i < 5; i++) { g.beginPath(); g.moveTo(r * (.3 + i * .38), r * .2); g.lineTo(r * (.45 + i * .38), -r * .08); g.lineTo(r * (.6 + i * .38), r * .2); g.fill(); } g.restore();   // lower jaw + fangs
+    g.beginPath(); g.moveTo(-r, -r * .65); g.quadraticCurveTo(r * .4, -r * .9, r * 1.5, -r * .5); g.lineTo(r * 2.7, -r * .12); g.quadraticCurveTo(r * 2.4, r * .1, r * 1.4, r * .08); g.lineTo(-r * .4, r * .25); g.quadraticCurveTo(-r * 1.1, r * .1, -r, -r * .65); g.closePath();
+    g.fillStyle = "#f4fbff"; g.fill(); g.strokeStyle = ink; g.lineWidth = 2.6; g.stroke();
+    g.fillStyle = "#fff"; for (let i = 0; i < 5; i++) { g.beginPath(); g.moveTo(r * (.5 + i * .4), r * .04); g.lineTo(r * (.65 + i * .4), r * .32); g.lineTo(r * (.8 + i * .4), r * .04); g.fill(); }   // upper fangs
+    g.strokeStyle = "rgba(31,90,154,.6)"; g.lineWidth = 1.4; g.beginPath(); g.moveTo(r * .2, -r * .55); g.quadraticCurveTo(r * 1.1, -r * .62, r * 2.2, -r * .25); g.stroke();   // brow ridge
+    g.fillStyle = "#06204a"; g.beginPath(); g.ellipse(r * .55, -r * .38, r * .2, r * .1, -.25, 0, TAU); g.fill(); glow(g, r * .55, -r * .38, r * .55, "#5aa9ff", .95);
+    g.strokeStyle = "rgba(230,248,255,.85)"; g.lineWidth = 1.6; [-1, 1].forEach(sd => { g.beginPath(); g.moveTo(r * 2.3, -r * .05); g.bezierCurveTo(r * 1.6, r * (.6 + sd * .3), r * .2, r * (1 + sd * .5) + Math.sin(s * 4 + sd) * r * .3, -r * 1.2, r * (.9 + sd * .6)); g.stroke(); });   // whiskers
+    g.restore();
+    g.restore();
+}
+
+/* the great ice wings at the dragon's shoulders: crystal ribs fanned out, a translucent membrane between them, jagged trailing edge */
+function dragonWings(g, pts, W, M, s, k) {
+    const n = pts.length, i = Math.max(2, Math.floor(n * .78)), p = pts[i], q = pts[Math.min(n - 1, i + 2)], an = Math.atan2(q[1] - p[1], q[0] - p[0]), flap = Math.sin(s * 2.2) * .18 * k;
+    [-1, 1].forEach(sd => {
+        g.save(); g.translate(p[0], p[1]); g.rotate(an + sd * (1.35 + flap)); const L = M * .34 * k;
+        const ribs = [0, .22, .44, .66].map((f, j) => [Math.cos(-.5 + f * 1.1) * L * (1 - j * .1), Math.sin(-.5 + f * 1.1) * L * (1 - j * .1) * .9]);
+        g.beginPath(); g.moveTo(0, 0); ribs.forEach(([x, y], j) => { g.lineTo(x, y); const nx = ribs[j + 1]; if (nx) g.lineTo((x + nx[0]) * .42, (y + nx[1]) * .42 + L * .04); }); g.lineTo(0, W * .6); g.closePath();
+        const mg = g.createLinearGradient(0, 0, L, 0); mg.addColorStop(0, "rgba(190,228,255,.55)"); mg.addColorStop(1, "rgba(240,250,255,.22)"); g.fillStyle = mg; g.fill(); g.strokeStyle = "rgba(31,90,154,.7)"; g.lineWidth = 2; g.stroke();
+        g.strokeStyle = "#e9f7ff"; g.lineWidth = Math.max(2, W * .22); g.lineCap = "round"; ribs.forEach(([x, y]) => { g.beginPath(); g.moveTo(0, 0); g.lineTo(x, y); g.stroke(); });
+        g.strokeStyle = "#1f5a9a"; g.lineWidth = 1.4; ribs.forEach(([x, y]) => { g.beginPath(); g.moveTo(0, 0); g.lineTo(x, y); g.stroke(); });
+        ribs.forEach(([x, y]) => { g.fillStyle = "#f4fbff"; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(Math.atan2(y, x)) * L * .14, y + Math.sin(Math.atan2(y, x)) * L * .14); g.lineTo(x + 4, y + 6); g.closePath(); g.fill(); });   // crystal claws at the rib tips
+        g.restore();
+    });
+}
+/* the flight: out of the blade (bottom centre), up through the middle of the table, then round the screen twice and a bit, settling
+   coiled round the page's edges (half of the body off-screen so it frames the page) with the head at the top left, looking in */
+export function hyoPath(w, h, start) {
+    const s0 = start || [w * .55, h * .62], cx = w / 2, cy = h * .5, rx = w * .47, ry = h * .5;
+    return u => { if (u < .12) { const f = u / .12; return [mix(s0[0], cx + rx * .15, f), mix(s0[1], cy - ry * .2, f) - Math.sin(f * Math.PI) * h * .1]; }
+        const f = (u - .12) / .88, a = -Math.PI * .45 + f * Math.PI * 2.45, sh = mix(.35, 1, Math.min(1, f * 1.6)); return [cx + Math.cos(a) * rx * sh, cy + Math.sin(a) * ry * sh]; };
+}
+/* where the freeze has spread: circles left along the dragon's path, each growing for a while after the head passes; a last big one
+   from the centre seals whatever is left. p = head position along the path (0..1), lockQ = 0..1 for the final seal */
+export function hyoFreeze(w, h, P, p, lockQ) {
+    const M = Math.min(w, h), out = [], N = 22;
+    for (let i = 0; i < N; i++) { const ui = .04 + i / N * .96; if (ui > p) break; const c = P(ui), age = (p - ui) / .25; out.push([c[0], c[1], M * .62 * (1 - Math.pow(1 - Math.min(1, age), 2))]); }
+    if (lockQ > 0) out.push([w / 2, h / 2, Math.hypot(w, h) * .62 * lockQ]);
+    return out;
+}
+/* the outer layer: sharp blue diamond crystals standing on the page: clusters of spikes along every edge, ice flowers at the corners
+   and edge midpoints, a sparse scatter of small faceted diamonds over the middle (kept sparse so the table stays readable) */
+export function crystalField(w, h) {
+    const M = Math.min(w, h), L = []; let k = 0;
+    const edge = (x, y, inA) => { const n = 2 + (k % 3); for (let j = 0; j < n; j++) { L.push({ x: x + (hs(k * 3 + j) - .5) * M * .04, y: y + (hs(k * 5 + j) - .5) * M * .04, a: inA + (hs(k * 7 + j) - .5) * 1.1, sz: M * (.035 + .07 * hs(k * 11 + j)), kind: "spike", i: L.length }); } k++; };
+    const step = M * .11;
+    for (let x = step * .5; x < w; x += step) { edge(x, 0, Math.PI / 2); edge(x, h, -Math.PI / 2); }
+    for (let y = step * .5; y < h; y += step) { edge(0, y, 0); edge(w, y, Math.PI); }
+    [[0, 0], [w, 0], [0, h], [w, h], [w / 2, 0], [w / 2, h], [0, h / 2], [w, h / 2]].forEach(([x, y], j) => L.push({ x: x + (x ? (x === w ? -1 : 0) : 1) * M * .05, y: y + (y ? (y === h ? -1 : 0) : 1) * M * .05, a: hs(j) * TAU, sz: M * (j < 4 ? .085 : .06), kind: "flower", i: L.length }));
+    for (let j = 0; j < 46; j++) { const x = w * (.08 + .84 * hs(j * 2.3 + 40)), y = h * (.1 + .8 * hs(j * 3.7 + 41)); L.push({ x, y, a: hs(j * 5.1) * TAU, sz: M * (.012 + .016 * hs(j * 7.9)), kind: "gem", i: L.length }); }
+    return L;
+}
+/* one crystal, grown to q (0..1); glint 0..1 flashes a highlight */
+export function crystalDraw(g, c, q, glint) {
+    if (q <= 0) return; const e = 1 - Math.pow(1 - Math.min(1, q), 3); g.save(); g.translate(c.x, c.y); g.rotate(c.a);
+    const gem = (L, W, f) => { g.beginPath(); g.moveTo(0, 0); g.lineTo(L * .32, -W); g.lineTo(L, 0); g.lineTo(L * .32, W); g.closePath();
+        const gr = g.createLinearGradient(0, -W, 0, W); gr.addColorStop(0, "rgba(235,248,255,.95)"); gr.addColorStop(.5, "rgba(120,190,245,.85)"); gr.addColorStop(1, "rgba(60,130,215,.9)"); g.fillStyle = gr; g.globalAlpha *= f; g.fill();
+        g.strokeStyle = "rgba(20,70,140,.85)"; g.lineWidth = 1.2; g.stroke(); g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 1; g.beginPath(); g.moveTo(0, 0); g.lineTo(L, 0); g.moveTo(L * .32, -W); g.lineTo(L * .6, 0); g.stroke(); };
+    if (c.kind === "spike") gem(c.sz * 1.3 * e, c.sz * .22 * e, 1);
+    else if (c.kind === "flower") { for (let p = 0; p < 6; p++) { g.rotate(TAU / 6); gem(c.sz * e, c.sz * .3 * e, .95); } g.fillStyle = "#f4fbff"; g.beginPath(); g.arc(0, 0, c.sz * .14 * e, 0, TAU); g.fill(); }
+    else { for (let p = 0; p < 2; p++) { gem(c.sz * e, c.sz * .45 * e, .7); g.rotate(Math.PI); } }
+    if (glint > 0) { g.globalCompositeOperation = "lighter"; glow(g, c.kind === "spike" ? c.sz * .8 : 0, 0, c.sz * 1.2, "#ffffff", glint); }
+    g.restore();
+}

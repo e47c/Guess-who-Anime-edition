@@ -22,9 +22,9 @@ import { audio } from "./audio.js";
 import { ambient, titleCard, shake, ring, burstText, motionOK, setReduced, isReduced } from "./fx.js";
 import { profile, avatarEl, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js";
 import { showResults, closeResults } from "./results.js";
-import { initCine, cineHook, cineHas } from "./cine/engine.js?v=9";
-import { hand as cineHand } from "./cine/hands.js?v=9";
-import * as CK from "./cine/kit.js?v=9";
+import { initCine, cineHook, cineHas } from "./cine/engine.js?v=10";
+import { hand as cineHand } from "./cine/hands.js?v=10";
+import * as CK from "./cine/kit.js?v=10";
 
 
 /* =========================================
@@ -2741,7 +2741,12 @@ const TS = {
         onStopped: d => { CH.origins = d.origins || null; CH.plate = d.plate || null; },
         hold: on => chainHold(on),
         refresh: () => chainStatic(false),
-        release: v => chainRelease(v) }
+        release: v => chainRelease(v) },
+    bleach_f: { cls: "hyo-veil", outMs: 3500, grow: true,
+        build: el => { const tx = hbEl("i", "ice-tex"); tx.style.backgroundImage = "url(" + iceTexture() + ")"; const a = document.createElement("canvas"), b = document.createElement("canvas"); a.className = "hyo-crys"; b.className = "hyo-live"; el.append(hbEl("i", "ice-cool"), tx, a, b); },
+        onStopped: d => { HYO.start = d.start || null; },
+        hold: on => hyoHold(on),
+        release: v => hyoRelease(v) }
 };
 const tsSt = {};
 const tsOf = key => tsSt[key] || (tsSt[key] = { on: false, cine: false, el: null, tm: 0 });
@@ -2756,7 +2761,7 @@ function tsSync(u, instant) {
     Object.keys(TS).forEach(key => {
         const s = tsOf(key), want = tsActive(u, key), D = TS[key];
         if (want && !s.cine && (!s.on || s.el.classList.contains("pause") || s.el.classList.contains("grow"))) {
-            s.on = true; const v = tsVeil(key); clearTimeout(s.tm); v.classList.remove("out", "pause", "grow"); v.style.removeProperty("--r"); v.classList.toggle("now", !!instant); void v.offsetWidth; v.classList.add("on"); D.hold && D.hold(true);
+            s.on = true; const v = tsVeil(key); clearTimeout(s.tm); v.classList.remove("out", "pause", "grow"); v.style.removeProperty("--r"); v.style.webkitMaskImage = ""; v.style.maskImage = ""; v.classList.toggle("now", !!instant); void v.offsetWidth; v.classList.add("on"); D.hold && D.hold(true);
         }
         if (want && s.on && D.refresh) { const v = s.el; requestAnimationFrame(() => requestAnimationFrame(() => { if (s.on) D.refresh(v); })); }
         if (!want && s.on && D.refresh) { const c = s.el.querySelector(".snow-caps"); if (c) c.getContext("2d").clearRect(0, 0, c.width, c.height); }
@@ -2771,6 +2776,7 @@ function tsReset() { Object.keys(tsSt).forEach(key => { const s = tsSt[key]; s.o
 document.addEventListener("timestop", e => {
     const d = e.detail || {}, D = TS[d.key]; if (!D) return; const s = tsOf(d.key);
     if (d.ph === "start") { s.cine = true; const v = tsVeil(d.key); v.classList.remove("on", "out", "now"); if (D.grow) { v.classList.add("grow"); v.style.setProperty("--r", "0px"); } else v.classList.add("pause"); }
+    else if (d.ph === "grow" && s.cine && D.grow && d.circles) { const v = tsVeil(d.key), m = d.circles.length ? d.circles.map(([x, y, r]) => "radial-gradient(circle at " + x.toFixed(0) + "px " + y.toFixed(0) + "px, #000 " + Math.max(0, r - 50).toFixed(0) + "px, transparent " + Math.max(1, r).toFixed(0) + "px)").join(",") : "linear-gradient(transparent, transparent)"; v.style.webkitMaskImage = m; v.style.maskImage = m; }
     else if (d.ph === "grow" && s.cine && D.grow) { const v = tsVeil(d.key); v.style.setProperty("--x", d.x.toFixed(1) + "px"); v.style.setProperty("--y", d.y.toFixed(1) + "px"); v.style.setProperty("--r", d.r.toFixed(1) + "px"); }
     else if (d.ph === "stopped") { s.cine = false; D.onStopped && D.onStopped(d); tsSync(tsU, true); }
 });
@@ -2847,6 +2853,50 @@ function chainRelease(v) {
     requestAnimationFrame(frame);
 }
 window.addEventListener("resize", () => { const st = tsSt.hxh_f; if (st && st.on) chainStatic(true); });
+/* HITSUGAYA's Daiguren Hyorinmaru held over the page in two layers: the inner frosted sheet (the veil's own backdrop + frost) and the
+   outer diamond crystals and ice flowers (kit.js crystalField, the same ones the scene grew); on a live layer Hyorinmaru stays coiled
+   round the edges breathing cold, its eye glowing, with snow and glinting crystals. The release breaks the layers one at a time:
+   the crystals shatter and the dragon roars and dissolves, then after a beat the frozen sheet cracks like glass and falls away. */
+const HYO = { start: null, crys: null, raf: 0, iv: 0 };
+const HYO_DRAGON = { scale: 1.5, wings: 1, span: .5, n: 90, alpha: .55 };
+const hyoDragon = () => Object.assign({}, HYO_DRAGON, { scale: HYO_DRAGON.scale * (innerWidth < 600 ? .75 : 1) });
+function hyoHold(on) {
+    cancelAnimationFrame(HYO.raf); clearInterval(HYO.iv); HYO.raf = 0; const st = tsSt.bleach_f; if (!on || !st || !st.el) return;
+    const w = innerWidth, h = innerHeight, M = Math.min(w, h); HYO.crys = CK.crystalField(w, h);
+    const gc = chainCanvas(st.el.querySelector(".hyo-crys")); gc.clearRect(0, 0, w, h); HYO.crys.forEach(c => CK.crystalDraw(gc, c, 1, 0));
+    const live = st.el.querySelector(".hyo-live"), P = CK.hyoPath(w, h, HYO.start); let last = 0;
+    const frame = now => {
+        HYO.raf = requestAnimationFrame(frame); if (now - last < 42 || document.hidden) return; last = now;
+        const g = chainCanvas(live), t = now / 1000, mo = motionOK(); g.clearRect(0, 0, w, h);
+        const hd = P(1), hn = P(.996), an = Math.atan2(hd[1] - hn[1], hd[0] - hn[0]);
+        if (mo) for (let i = 0; i < 9; i++) { const q = (t * .18 + i / 9) % 1, d = M * (.06 + q * .3); CK.pool(g, hd[0] + Math.cos(an) * d - q * M * .1, hd[1] + Math.sin(an) * d, M * (.05 + q * .13), "#eef8ff", .26 * (1 - q)); }   // the breath drifting
+        CK.iceDragon(g, P, 1, M, mo ? t * .5 : 0, hyoDragon());
+        if (mo) { for (let i = 0; i < 6; i++) { const c = HYO.crys[Math.floor(CK.hs(i * 7.3 + Math.floor(t * .7 + i * .4)) * HYO.crys.length)], q = (t * .7 + i * .4) % 1; if (c) CK.crystalDraw(g, c, 0.0001, Math.sin(q * Math.PI) * .8); }   // glints
+            g.fillStyle = "#fff"; for (let i = 0; i < 60; i++) { const y = ((CK.hs(i) * h + t * (16 + 26 * CK.hs(i + 3))) % (h + 20)) - 10, x = (CK.hs(i + 9) * w + Math.sin(t * .6 + i) * 24) % w; g.globalAlpha = .7; g.beginPath(); g.arc(x, y, 1 + 1.8 * CK.hs(i + 4), 0, 6.283); g.fill(); } g.globalAlpha = 1; }
+    };
+    HYO.raf = requestAnimationFrame(frame);
+    let k = 0; HYO.iv = setInterval(() => { if (motionOK() && !document.hidden) sfx(k++ % 2 ? "creak" : "wind"); }, 7000);
+}
+function hyoRelease(v) {
+    cancelAnimationFrame(HYO.raf); clearInterval(HYO.iv); const st = tsSt.bleach_f; if (!st || !st.el) return;
+    const w = innerWidth, h = innerHeight, M = Math.min(w, h), crys = HYO.crys || CK.crystalField(w, h), P = CK.hyoPath(w, h, HYO.start), cc = st.el.querySelector(".hyo-crys"), live = st.el.querySelector(".hyo-live");
+    cc.getContext("2d").clearRect(0, 0, cc.width, cc.height);
+    sfx("roar"); setTimeout(() => { sfx("shatter"); sfx("boom"); }, 120);
+    const ONE = 1150, t0 = performance.now();
+    const frame = now => {                                          // stage 1: the crystals shatter into glitter, Hyorinmaru roars and dissolves into ice
+        const el = now - t0, p = Math.min(1, el / ONE), e = 1 - Math.pow(1 - p, 2), g = chainCanvas(live); g.clearRect(0, 0, w, h); if (el > ONE || !live.isConnected) return;
+        crys.forEach((c, i) => { const dx = c.x - w / 2, dy = c.y - h / 2, d = Math.hypot(dx, dy) || 1;
+            for (let k = 0; k < (c.kind === "gem" ? 2 : 4); k++) { const a = Math.atan2(dy, dx) + (CK.hs(i * 5 + k) - .5) * 1.4, sp = M * (.15 + .3 * CK.hs(i * 3 + k)) * e, x = c.x + Math.cos(a) * sp, y = c.y + Math.sin(a) * sp + e * e * h * .35, sz = c.sz * (.25 + .2 * CK.hs(i + k));
+                g.save(); g.globalAlpha = 1 - p; g.translate(x, y); g.rotate(c.a + e * 6 * (CK.hs(i * 9 + k) - .5)); g.beginPath(); g.moveTo(sz, 0); g.lineTo(-sz * .4, -sz * .45); g.lineTo(-sz * .3, sz * .4); g.closePath(); g.fillStyle = k % 2 ? "rgba(160,215,255,.9)" : "rgba(240,250,255,.95)"; g.fill(); g.strokeStyle = "rgba(20,70,140,.7)"; g.lineWidth = 1; g.stroke(); g.restore(); } });
+        const roar = Math.min(1, el / 400), hd = P(1); if (roar < 1) CK.glow(g, hd[0], hd[1], M * .35 * roar, "#dff2ff", 1 - roar);
+        CK.iceDragon(g, P, 1, M, el / 600, Object.assign(hyoDragon(), { alpha: .55 * (1 - e) }));
+        g.save(); g.globalCompositeOperation = "lighter"; for (let i = 0; i < 220; i++) { const q = CK.hs(i * 2.1), b = P(1 - .5 * q); g.globalAlpha = (1 - p) * .9; g.fillStyle = i % 3 ? "#cfeaff" : "#ffffff"; g.fillRect(b[0] + (CK.hs(i * 3.3) - .5) * M * .1 + Math.sin(i + el * .005) * 20 * e, b[1] - e * M * (.1 + .3 * CK.hs(i * 4.7)), 2.5, 2.5); } g.restore();
+        requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+    setTimeout(() => { if (v.classList.contains("out")) iceShatter(v); }, ONE + 250);     // stage 2, after a beat: the frozen sheet cracks like glass and falls away
+}
+window.addEventListener("resize", () => { const st = tsSt.bleach_f; if (st && st.on) hyoHold(true); });
 /* Uraume's snow settles on the top edges of the real cards, plates, piles and buttons (re-drawn when the table re-renders) */
 function snowCaps(v) {
     const c = v && v.querySelector(".snow-caps"); if (!c) return; const dpr = Math.min(1.5, devicePixelRatio || 1), w = innerWidth, h = innerHeight;
