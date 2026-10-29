@@ -457,3 +457,77 @@ export function chain(g, pt, n, p, size, col = "#f2c94c") {
         g.strokeStyle = shade(col, -.55); g.beginPath(); g.ellipse(0, 0, o ? size * .55 : size, o ? size * .3 : size * .5, 0, 0, TAU); g.stroke();
         g.strokeStyle = col; g.lineWidth = Math.max(1, size * .16); g.beginPath(); g.ellipse(0, -size * .04, o ? size * .55 : size, o ? size * .3 : size * .5, 0, 3.4, 6); g.stroke(); g.restore(); }
 }
+
+/* ---------- Kurapika's five chains (the Chain Jail scene and the page's chain hold both draw with these, so the hold IS the
+   scene's last frame). Order = his right hand's fingers: index Steal Chain (syringe), middle Chain Jail (hook), ring Dowsing
+   Chain (pendulum), pinky Judgment Chain (blade), thumb Holy Chain (cross). ---------- */
+export const KCHAIN = ["syringe", "hook", "pendulum", "blade", "cross"];
+/* a dense polyline through the points (Catmull-Rom), with cumulative arc length */
+export function chainPath(wp, step = 5) {
+    const pts = [wp[0].slice()], P = i => wp[Math.max(0, Math.min(wp.length - 1, i))];
+    for (let i = 0; i < wp.length - 1; i++) {
+        const p0 = P(i - 1), p1 = P(i), p2 = P(i + 1), p3 = P(i + 2), n = Math.max(2, Math.ceil(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) / step));
+        for (let k = 1; k <= n; k++) { const t = k / n, t2 = t * t, t3 = t2 * t;
+            pts.push([0, 1].map(d => .5 * (2 * p1[d] + (-p0[d] + p2[d]) * t + (2 * p0[d] - 5 * p1[d] + 4 * p2[d] - p3[d]) * t2 + (-p0[d] + 3 * p1[d] - 3 * p2[d] + p3[d]) * t3))); }
+    }
+    const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    return { pts, cum, len: cum[cum.length - 1] };
+}
+/* the five routes across the screen: each comes up from below (under Kurapika's arm) to its ring, runs to the table first, then
+   out over the cards and the UI to the page's edges; Chain Jail ends coiled round the bound player's plate */
+export function chainRoutes(w, h, origins, plate) {
+    const W = (x, y) => [x * w, y * h], pc = plate ? [plate.x + plate.w / 2, plate.y + plate.h / 2] : [w * .5, h * .12], pw = plate ? plate.w : w * .2, ph = plate ? plate.h : h * .12;
+    const R = [[[.42, .5], [.12, .3], [.3, .06], [.75, .14], [1.08, .34]], null, [[.68, .46], [.94, .66], [.62, .94], [.18, .86], [-.08, .58]],
+        [[.8, .58], [1.04, .22], [.66, .03], [.24, .24], [-.06, .1]], [[.34, .62], [.06, .94], [.42, .8], [.82, .96], [1.08, .78]]];
+    return R.map((rt, k) => {
+        const o = (origins && origins[k]) || [w * (.56 + k * .03), h * 1.02], lead = [o[0] + w * .1, h * 1.2];
+        let wp;
+        if (rt) wp = [lead, o].concat(rt.map(p => W(p[0], p[1])));
+        else { wp = [lead, o, W(.52, .52), [pc[0] - pw * .75, pc[1] + ph * 1.1]]; for (let i = 0; i <= 36; i++) { const u = i / 36, a = Math.PI * .8 + u * TAU * 2.1; wp.push([pc[0] + Math.cos(a) * pw * (.6 + .06 * u), pc[1] + Math.sin(a) * ph * (.95 + .25 * u)]); } }
+        const P = chainPath(wp); P.kind = KCHAIN[k]; P.lead = Math.hypot(o[0] - lead[0], o[1] - lead[1]); return P;
+    });
+}
+/* draw a chain along path P between arc lengths s0..s1: real links (face-on rings and edge-on bars, alternating), steel with a
+   shine; o.aura (0..1) up to arc length o.auraTo turns them gold and lays a flowing yellow Nen glow under them;
+   o.wob = slack (perpendicular wave), o.off(s, k) = extra displacement, o.t = time, o.k = chain index */
+export function drawChain(g, P, s0, s1, size, o = {}) {
+    const pts = P.pts, cum = P.cum, step = size * 1.22, aura = o.aura || 0, aTo = o.auraTo == null ? P.len : o.auraTo, t = o.t || 0;
+    s1 = Math.min(s1, P.len); if (s1 <= s0) return;
+    let j = 0; const at = s => { while (j < cum.length - 2 && cum[j + 1] < s) j++; const a = pts[j], b = pts[j + 1], seg = cum[j + 1] - cum[j] || 1, f = (s - cum[j]) / seg, tx = (b[0] - a[0]) / seg, ty = (b[1] - a[1]) / seg;
+        let x = a[0] + (b[0] - a[0]) * f, y = a[1] + (b[1] - a[1]) * f; if (o.wob) { const q = Math.sin(s * .011 + t * 5 + (o.k || 0)) * o.wob; x -= ty * q; y += tx * q; } if (o.off) { const d = o.off(s); x += d[0]; y += d[1]; } return [x, y, Math.atan2(ty, tx)]; };
+    if (aura > 0 && !o.noGlow) {                                      // the Nen glow, flowing (brighter pulses travel along the chain)
+        g.save(); g.globalCompositeOperation = "lighter"; g.lineCap = "round"; g.lineJoin = "round"; const e = Math.min(s1, aTo), ch = Math.max(24, size * 5);
+        for (let s = s0; s < e; s += ch) { j = 0; const q = .7 + .3 * Math.sin(s * .012 - t * 4 + (o.k || 0)), a = at(s); j = 0; const b = at(Math.min(e, s + ch + 2));
+            g.globalAlpha = aura * q * .22; g.strokeStyle = "#ffcf3a"; g.lineWidth = size * 2; g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+            g.globalAlpha = aura * q * .45; g.strokeStyle = "#fff0a8"; g.lineWidth = size * .8; g.stroke(); }
+        g.restore(); j = 0;
+    }
+    if (o.glowOnly) return;
+    const first = Math.ceil(s0 / step) * step; g.lineCap = "round";
+    for (let s = first; s <= s1; s += step) {
+        const [x, y, an] = at(s), n = Math.round(s / step), gold = aura > .4 && s <= aTo;
+        if (n % 2 === 0) {                                            // face-on link: an oval ring
+            g.lineWidth = size * .3; g.strokeStyle = gold ? "#6a4600" : "#2c313b"; g.beginPath(); g.ellipse(x, y, size * .64, size * .38, an, 0, TAU); g.stroke();
+            g.lineWidth = size * .15; g.strokeStyle = gold ? "#ffe680" : "#e4e9f1"; g.beginPath(); g.ellipse(x, y, size * .64, size * .38, an, 3.5, 5.9); g.stroke();
+        } else {                                                      // edge-on link: a bar through the rings on either side
+            const c = Math.cos(an), sn = Math.sin(an), L = size * .6;
+            g.lineWidth = size * .3; g.strokeStyle = gold ? "#6a4600" : "#2c313b"; g.beginPath(); g.moveTo(x - c * L, y - sn * L); g.lineTo(x + c * L, y + sn * L); g.stroke();
+            g.lineWidth = size * .13; g.strokeStyle = gold ? "#fff2b0" : "#f4f6fa"; g.beginPath(); g.moveTo(x - c * L * .7, y - sn * L * .7 - size * .04); g.lineTo(x + c * L * .7, y + sn * L * .7 - size * .04); g.stroke();
+        }
+    }
+}
+/* the weapon at the end of each chain */
+export function chainTip(g, x, y, an, kind, sz) {
+    g.save(); g.translate(x, y); g.rotate(an); g.fillStyle = "#e9edf4"; g.strokeStyle = "#2c313b"; g.lineWidth = Math.max(1.5, sz * .12);
+    if (kind === "pendulum") { g.beginPath(); g.moveTo(sz * 1.6, 0); g.lineTo(sz * .2, -sz * .7); g.lineTo(-sz * .2, 0); g.lineTo(sz * .2, sz * .7); g.closePath(); g.fill(); g.stroke(); }
+    else if (kind === "blade") { g.beginPath(); g.moveTo(sz * 2.2, 0); g.lineTo(0, -sz * .45); g.lineTo(0, sz * .45); g.closePath(); g.fill(); g.stroke(); }
+    else if (kind === "syringe") { g.fillRect(0, -sz * .32, sz * 1.3, sz * .64); g.strokeRect(0, -sz * .32, sz * 1.3, sz * .64); g.beginPath(); g.moveTo(sz * 1.3, 0); g.lineTo(sz * 2.2, 0); g.stroke(); }
+    else if (kind === "cross") { g.fillRect(0, -sz * .2, sz * 1.9, sz * .4); g.strokeRect(0, -sz * .2, sz * 1.9, sz * .4); g.fillRect(sz * 1.05, -sz * .72, sz * .4, sz * 1.44); g.strokeRect(sz * 1.05, -sz * .72, sz * .4, sz * 1.44); }
+    else { g.lineWidth = sz * .34; g.strokeStyle = "#2c313b"; g.beginPath(); g.arc(sz * .7, 0, sz * .62, Math.PI * .9, Math.PI * 2.7); g.stroke(); g.lineWidth = sz * .16; g.strokeStyle = "#ffe680"; g.stroke(); }
+    g.restore();
+}
+/* the soft golden glow of the bind, over everything */
+export function chainGlow(g, w, h, a) {
+    if (a <= 0) return; g.save(); g.globalAlpha = a; const gr = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * .2, w / 2, h / 2, Math.hypot(w, h) * .62);
+    gr.addColorStop(0, "rgba(255,220,110,.05)"); gr.addColorStop(1, "rgba(255,196,60,.2)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); g.restore();
+}

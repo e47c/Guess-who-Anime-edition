@@ -4,8 +4,8 @@
    group 0 = the swapper's old cards (they travel A -> B), group 1 = the target's old cards (B -> A).
    Only the two players involved see faces; everybody else sees card backs. A = swapper's spot, B = target's spot.
    ===================================================================== */
-import * as K from "./kit.js?v=8";
-import { hand, fist, handTips } from "./hands.js?v=8";
+import * as K from "./kit.js?v=9";
+import { hand, fist, handTips } from "./hands.js?v=9";
 const { lin, hit, hs, TAU, mid, ss } = K;
 
 const HS = X => X.M * (X.h > X.w ? .0036 : .003);

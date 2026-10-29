@@ -22,9 +22,9 @@ import { audio } from "./audio.js";
 import { ambient, titleCard, shake, ring, burstText, motionOK, setReduced, isReduced } from "./fx.js";
 import { profile, avatarEl, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js";
 import { showResults, closeResults } from "./results.js";
-import { initCine, cineHook, cineHas } from "./cine/engine.js?v=8";
-import { hand as cineHand } from "./cine/hands.js?v=8";
-import * as CK from "./cine/kit.js?v=8";
+import { initCine, cineHook, cineHas } from "./cine/engine.js?v=9";
+import { hand as cineHand } from "./cine/hands.js?v=9";
+import * as CK from "./cine/kit.js?v=9";
 
 
 /* =========================================
@@ -2735,7 +2735,13 @@ const TS = {
             for (let i = 0; i < 7; i++) { const gl = hbEl("i", "ice-glint"); gl.style.cssText = "left:" + (8 + 84 * CK.hs(i * 4.9)) + "%;top:" + (10 + 80 * CK.hs(i * 2.3)) + "%;animation-delay:" + (CK.hs(i * 8.1) * 7).toFixed(2) + "s"; el.appendChild(gl); } },
         hold: on => { clearInterval(TS.jjk_f.iv); if (on) { let k = 0; TS.jjk_f.iv = setInterval(() => { if (motionOK() && !document.hidden) sfx(k++ % 2 ? "creak" : "wind"); }, 6800); } },
         refresh: el => snowCaps(el),
-        release: v => iceShatter(v, { snow: true }) }
+        release: v => iceShatter(v, { snow: true }) },
+    hxh_f: { cls: "chain-veil", outMs: 2200,
+        build: el => { const a = document.createElement("canvas"), b = document.createElement("canvas"); a.className = "chain-static"; b.className = "chain-live"; el.append(a, b); },
+        onStopped: d => { CH.origins = d.origins || null; CH.plate = d.plate || null; },
+        hold: on => chainHold(on),
+        refresh: () => chainStatic(false),
+        release: v => chainRelease(v) }
 };
 const tsSt = {};
 const tsOf = key => tsSt[key] || (tsSt[key] = { on: false, cine: false, el: null, tm: 0 });
@@ -2766,7 +2772,7 @@ document.addEventListener("timestop", e => {
     const d = e.detail || {}, D = TS[d.key]; if (!D) return; const s = tsOf(d.key);
     if (d.ph === "start") { s.cine = true; const v = tsVeil(d.key); v.classList.remove("on", "out", "now"); if (D.grow) { v.classList.add("grow"); v.style.setProperty("--r", "0px"); } else v.classList.add("pause"); }
     else if (d.ph === "grow" && s.cine && D.grow) { const v = tsVeil(d.key); v.style.setProperty("--x", d.x.toFixed(1) + "px"); v.style.setProperty("--y", d.y.toFixed(1) + "px"); v.style.setProperty("--r", d.r.toFixed(1) + "px"); }
-    else if (d.ph === "stopped") { s.cine = false; tsSync(tsU, true); }
+    else if (d.ph === "stopped") { s.cine = false; D.onStopped && D.onStopped(d); tsSync(tsU, true); }
 });
 /* the ice veil's frost: feathery frost thick at the screen's edges, a faint crystal grain everywhere, the centre left clear to read */
 const iceTexURL = {};
@@ -2791,6 +2797,56 @@ function iceTexture(kind) {
     return (iceTexURL[kind] = cv.toDataURL("image/png"));
 }
 window.addEventListener("resize", () => { const st = tsSt.jjk_f; if (st && st.on && st.el) snowCaps(st.el); });
+/* KURAPIKA's Chain Jail held over the page: the same five chain routes his scene ended on (kit.js chainRoutes), the links drawn once
+   on a static layer, the yellow Nen pulsing along them and sparks flickering on a live layer; the release loosens them, snaps them
+   into pieces that fall away and dissolves them into yellow particles */
+const CH = { origins: null, plate: null, routes: null, key: "", raf: 0, iv: 0 };
+function chainBound() { const u = tsU; if (!u) return 0; return unoLive(u).find(p => (u.frozen || {})["p" + p] > 0 && (u.fzk || {})["p" + p] === "hxh_f") || 0; }
+function chainCanvas(c) { const dpr = Math.min(1.5, devicePixelRatio || 1), w = innerWidth, h = innerHeight; if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); } const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); return g; }
+function chainStatic(force) {
+    const st = tsSt.hxh_f; if (!st || !st.el) return; const w = innerWidth, h = innerHeight, M = Math.min(w, h), p = chainBound();
+    let plate = CH.plate; if (p) { const r = unoPlateRect(p); if (r && r.width) { const nr = { x: r.left, y: r.top, w: r.width, h: r.height }; if (!plate || Math.abs(nr.x - plate.x) + Math.abs(nr.y - plate.y) + Math.abs(nr.w - plate.w) > 6) plate = nr; } }
+    const key = [w, h, plate && Math.round(plate.x), plate && Math.round(plate.y), plate && Math.round(plate.w)].join(",");
+    if (!force && key === CH.key && CH.routes) return; CH.key = key; CH.plate = plate;
+    CH.routes = CK.chainRoutes(w, h, CH.origins, plate);
+    const g = chainCanvas(st.el.querySelector(".chain-static")); g.clearRect(0, 0, w, h); CK.chainGlow(g, w, h, 1);
+    CH.routes.forEach((P, k) => CK.drawChain(g, P, 0, P.len, M * .0095 * (k === 1 ? 1.12 : 1), { aura: 1, noGlow: true, k }));
+    const J = CH.routes[1], n = J.pts.length; CK.chainTip(g, J.pts[n - 1][0], J.pts[n - 1][1], Math.atan2(J.pts[n - 1][1] - J.pts[n - 2][1], J.pts[n - 1][0] - J.pts[n - 2][0]), J.kind, M * .0095 * 2.3);
+}
+function chainHold(on) {
+    cancelAnimationFrame(CH.raf); clearInterval(CH.iv); CH.raf = 0; const st = tsSt.hxh_f; if (!on || !st || !st.el) return;
+    chainStatic(true); const live = st.el.querySelector(".chain-live"); let last = 0;
+    const frame = now => {
+        CH.raf = requestAnimationFrame(frame); if (now - last < 40 || document.hidden) return; last = now;     // ~24 fps is plenty for a slow pulse
+        const w = innerWidth, h = innerHeight, M = Math.min(w, h), g = chainCanvas(live), t = now / 1000; g.clearRect(0, 0, w, h); if (!CH.routes) return;
+        const breathe = (.62 + .22 * Math.sin(t * 1.3)) * (Math.min(innerWidth, innerHeight) < 500 ? .8 : 1);
+        CH.routes.forEach((P, k) => CK.drawChain(g, P, 0, P.len, M * .0095 * (k === 1 ? 1.12 : 1), { aura: breathe * (motionOK() ? 1 : .8), glowOnly: true, t: motionOK() ? t * .35 : 0, k }));
+        if (motionOK()) { g.save(); g.globalCompositeOperation = "lighter"; for (let i = 0; i < 26; i++) { const P = CH.routes[i % 5], lf = (t * (.5 + CK.hs(i)) + CK.hs(i * 7)) % 1, s = P.len * CK.hs(i * 3.3 + Math.floor(t * (.5 + CK.hs(i)) + CK.hs(i * 7)));
+            let j = 0; while (j < P.cum.length - 2 && P.cum[j + 1] < s) j++; const q = P.pts[j]; g.globalAlpha = Math.sin(lf * Math.PI) * .85; g.fillStyle = "#fff0a0"; g.fillRect(q[0] - 1.2, q[1] - 1.2 - lf * 8, 2.4, 2.4); } g.restore(); }
+    };
+    CH.raf = requestAnimationFrame(frame);
+    let k = 0; CH.iv = setInterval(() => { if (motionOK() && !document.hidden) sfx(k++ % 3 ? "creak" : "clink"); }, 6200);
+}
+function chainRelease(v) {
+    cancelAnimationFrame(CH.raf); clearInterval(CH.iv); const st = tsSt.hxh_f; if (!st || !st.el || !CH.routes) return;
+    const sc = st.el.querySelector(".chain-static"), live = st.el.querySelector(".chain-live"); sc.getContext("2d").clearRect(0, 0, sc.width, sc.height);
+    const LOOSE = 700, ALL = 2000, t0 = performance.now(), routes = CH.routes; sfx("clink"); setTimeout(() => sfx("clink"), 220); setTimeout(() => sfx("clink"), 440); setTimeout(() => sfx("chainbreak"), LOOSE);
+    const frame = now => {
+        const el = now - t0, w = innerWidth, h = innerHeight, M = Math.min(w, h), g = chainCanvas(live); g.clearRect(0, 0, w, h); if (el > ALL || !live.isConnected) return;
+        const p1 = Math.min(1, el / LOOSE), p2 = Math.max(0, (el - LOOSE) / (ALL - LOOSE)), e2 = 1 - Math.pow(1 - p2, 2);
+        CK.chainGlow(g, w, h, 1 - p2);
+        routes.forEach((P, k) => {
+            const sag = s => { const A = M * .035 * p1, pc = Math.floor(s / 150), dx = (CK.hs(pc * 3.1 + k) - .5) * M * .5 * e2, dy = (CK.hs(pc * 5.7 + k) - .7) * M * .3 * e2 + e2 * e2 * h * .5;
+                return [Math.sin(s * .02 + k + el * .012) * A * .5 + dx, Math.abs(Math.sin(s * .006 + k)) * A + dy]; };
+            g.save(); g.globalAlpha = 1 - p2; CK.drawChain(g, P, 0, P.len, M * .0095 * (k === 1 ? 1.12 : 1), { aura: 1 - p1 * .85, t: el / 1000, k, off: sag }); g.restore();
+        });
+        if (p2 > 0) { g.save(); g.globalCompositeOperation = "lighter"; for (let i = 0; i < 260; i++) { const P = routes[i % 5], s = P.len * CK.hs(i * 2.9); let j = 0; while (j < P.cum.length - 2 && P.cum[j + 1] < s) j++; const q = P.pts[j];
+            g.globalAlpha = (1 - p2) * (.5 + .5 * CK.hs(i)); g.fillStyle = i % 3 ? "#ffd23a" : "#fff4b8"; g.beginPath(); g.arc(q[0] + Math.sin(i + el * .004) * 16 * e2, q[1] - e2 * M * (.15 + .35 * CK.hs(i * 4.4)), 1.4 + 2 * CK.hs(i * 6.6), 0, 6.283); g.fill(); } g.restore(); }
+        requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+}
+window.addEventListener("resize", () => { const st = tsSt.hxh_f; if (st && st.on) chainStatic(true); });
 /* Uraume's snow settles on the top edges of the real cards, plates, piles and buttons (re-drawn when the table re-renders) */
 function snowCaps(v) {
     const c = v && v.querySelector(".snow-caps"); if (!c) return; const dpr = Math.min(1.5, devicePixelRatio || 1), w = innerWidth, h = innerHeight;

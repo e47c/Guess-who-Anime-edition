@@ -8,7 +8,7 @@
    strokes at the joints, simple nails. Curled fingers are drawn folded: knuckle caps from the back, fingers lying over the
    palm from the front, so a fist or a pointing hand reads at a glance.
    ===================================================================== */
-import { TAU, rgba, shade, glow, hs } from "./kit.js?v=8";
+import { TAU, rgba, shade, glow, hs } from "./kit.js?v=9";
 
 export const SKIN = {
     base:   { l: "#fff3ea", b: "#fbd9c2", s: "#e5a98e", d: "#b8705a", ink: "#3d1a12", nail: "#ffe9e1" },
@@ -180,6 +180,15 @@ export function hand(g, x, y, s, ang, pose, o = {}) {
             if (!k) g.moveTo(p1[0], p1[1]); else g.lineTo(p1[0], p1[1]); g.lineTo(p2[0], p2[1]); g.quadraticCurveTo(p3[0], p3[1], p4[0], p4[1]); g.lineTo(p5[0], p5[1]); }
         g.closePath(); g.fill(); g.restore();
     }
+    if (o.rings && !palm) {      // Kurapika: a metal ring on every digit, each with the link its chain hangs from; o.ringGlow = [i, 0..1] lights one (Nen)
+        const ring = (sg, f, k) => { if (!sg) return; const x = sg.x0 + (sg.x1 - sg.x0) * f, y = sg.y0 + (sg.y1 - sg.y0) * f, r = (sg.r0 + (sg.r1 - sg.r0) * f) * 1.12, a = sg.a;
+            g.save(); g.translate(x, y); g.rotate(a); const gr = g.createLinearGradient(-r, 0, r, 0); gr.addColorStop(0, "#6a7282"); gr.addColorStop(.3, "#f4f6fa"); gr.addColorStop(.55, "#9aa2b2"); gr.addColorStop(.8, "#e8ebf1"); gr.addColorStop(1, "#5a6272");
+            g.beginPath(); g.moveTo(-r, -3.4); g.quadraticCurveTo(0, -5.4, r, -3.4); g.lineTo(r, 3.4); g.quadraticCurveTo(0, 5.4, -r, 3.4); g.closePath(); g.fillStyle = gr; g.fill(); g.lineWidth = lw * .8; g.strokeStyle = P.ink; g.stroke();
+            g.beginPath(); g.ellipse(0, 6.5, 2.6, 3.4, 0, 0, TAU); g.lineWidth = 1.6; g.strokeStyle = "#3a404c"; g.stroke();                 // the link the chain hangs from
+            const gl = o.ringGlow && o.ringGlow[0] === k ? o.ringGlow[1] : 0; if (gl > 0) { g.globalCompositeOperation = "lighter"; glow(g, 0, 0, r * 3.2, "#ffd23a", gl); g.globalCompositeOperation = "source-over"; g.globalAlpha = gl * .8; g.fillStyle = "#ffe680"; g.beginPath(); g.moveTo(-r, -3.4); g.quadraticCurveTo(0, -5.4, r, -3.4); g.lineTo(r, 3.4); g.quadraticCurveTo(0, 5.4, -r, 3.4); g.closePath(); g.fill(); }
+            g.restore(); };
+        fingers.forEach((segs, i) => { if (!curl[i]) ring(segs[0], .45, i); }); ring(thumb[1], .5, 4);
+    }
     // 5) haki coat lightning, rim light, aura
     if (o.haki) { g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = o.haki; g.lineWidth = lw * 1.4; const fr = Math.floor((o.t || 0) * 18);
         for (let i = 0; i < 6; i++) { let bx = -36 + hs(i + fr) * 72, by = -100 + hs(i * 3 + fr) * 100; g.beginPath(); g.moveTo(bx, by); for (let k = 0; k < 4; k++) { bx += (hs(i * 7 + k + fr) - .5) * 28; by += 8 + hs(i * 5 + k + fr) * 13; g.lineTo(bx, by); } g.stroke(); } g.restore(); }
@@ -230,6 +239,16 @@ export function fistMini(g, x, y, r, ang, P, rim) {
     g.strokeStyle = rgba(P.ink, .75); g.lineWidth = Math.max(1, r * .06); for (let i = -1; i <= 1; i++) { g.beginPath(); g.moveTo(i * r * .42, -r * .72); g.lineTo(i * r * .42, -r * .15); g.stroke(); }
     if (rim) glow(g, 0, 0, r * 2.2, rim, .35); g.restore();
 }
+/* where Kurapika's rings sit for a pose (back view of a right hand, wrist at 0,0, scale 1): [index, middle, ring, pinky, thumb] as
+   [x, y] (the chain's link), null for a folded finger. Map with handPoint(). */
+export function handRings(pose) {
+    const Q = POSE[pose] || POSE.open, curl = Q.curl || [0, 0, 0, 0], out = [];
+    FING.forEach((F, i) => { const f = Q.f[i][0]; if (curl[i] || f <= .02) { out.push(null); return; } const a = F.a * Q.sp + Q.b[i][0], L = F.L[0] * f * .45; out.push([F.x + Math.sin(a) * L - Math.sin(a) * 6.5, F.y - Math.cos(a) * L + Math.cos(a) * 6.5]); });
+    const T = Q.th; let a = T.a; const px = THUMB.x + Math.sin(a) * THUMB.L[0], py = THUMB.y - Math.cos(a) * THUMB.L[0]; a += T.b[0]; const L = THUMB.L[1] * T.f[0] * .5;
+    out.push([px + Math.sin(a) * L - Math.sin(a) * 6.5, py - Math.cos(a) * L + Math.cos(a) * 6.5]); return out;
+}
+/* a point in a hand's local space → the screen, for hand(g, x, y, s, ang, pose, { flip }) */
+export function handPoint(lx, ly, x, y, s, ang, flip) { const fx = (flip ? -1 : 1) * s * lx, fy = s * ly; return [x + Math.cos(ang) * fx - Math.sin(ang) * fy, y + Math.sin(ang) * fx + Math.cos(ang) * fy]; }
 /* where the fingertips of a pose are (back view of a right hand, wrist at 0,0, scale 1, fingers up):
    [index, middle, ring, pinky, thumb] as [x, y]. Rotate / scale / mirror them the same way as the hand. */
 export function handTips(pose) {

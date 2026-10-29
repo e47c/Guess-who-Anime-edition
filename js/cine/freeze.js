@@ -4,8 +4,8 @@
    (staged at centre, then gliding back onto its real place on the table), and a seal(g, X, a, r) that the ending
    keeps on the real plate.
    ===================================================================== */
-import * as K from "./kit.js?v=8";
-import { hand, fist, handTips } from "./hands.js?v=8";
+import * as K from "./kit.js?v=9";
+import { hand, fist, handTips, handRings, handPoint } from "./hands.js?v=9";
 const { lin, ss, hit, hs, TAU, mid } = K;
 
 const back = t => 1 - ss(.86, .97, t);                       // staged plate -> real plate over the last beat of the main act
@@ -443,52 +443,67 @@ const julius = {
     }
 };
 
-/* ---------- KURAPIKA · Emperor Time -> Chain Jail: the Scarlet Eyes ignite, five chains leave five fingers, wrap the target and lock ---------- */
-/* the five chains of his right hand, by finger [index, middle, ring, pinky, thumb]: Steal Chain (syringe), Chain Jail (hook),
-   Dowsing Chain (pendulum), Judgment Chain (blade), Holy Chain (cross) */
-const KCH = ["syringe", "hook", "pendulum", "blade", "cross"];
-function chainTip(g, x, y, an, kind, sz) {
-    g.save(); g.translate(x, y); g.rotate(an); g.fillStyle = "#f2c94c"; g.strokeStyle = "#5a3a00"; g.lineWidth = 2;
-    if (kind === "pendulum") { g.beginPath(); g.moveTo(sz * 1.6, 0); g.lineTo(0, -sz * .7); g.lineTo(-sz * .5, 0); g.lineTo(0, sz * .7); g.closePath(); g.fill(); g.stroke(); }
-    else if (kind === "blade") { g.beginPath(); g.moveTo(sz * 2.2, 0); g.lineTo(0, -sz * .5); g.lineTo(0, sz * .5); g.closePath(); g.fill(); g.stroke(); }
-    else if (kind === "syringe") { g.fillRect(-sz * .2, -sz * .35, sz * 1.4, sz * .7); g.strokeRect(-sz * .2, -sz * .35, sz * 1.4, sz * .7); g.beginPath(); g.moveTo(sz * 1.2, 0); g.lineTo(sz * 2.2, 0); g.stroke(); }
-    else if (kind === "cross") { g.fillRect(-sz * .15, -sz * .22, sz * 1.9, sz * .44); g.strokeRect(-sz * .15, -sz * .22, sz * 1.9, sz * .44); g.fillRect(sz * .9, -sz * .75, sz * .44, sz * 1.5); g.strokeRect(sz * .9, -sz * .75, sz * .44, sz * 1.5); }
-    else if (kind === "hook") { g.lineWidth = sz * .35; g.strokeStyle = "#f2c94c"; g.beginPath(); g.arc(sz * .6, 0, sz * .6, Math.PI, Math.PI * 2.6); g.stroke(); }
-    else { g.beginPath(); g.arc(sz * .7, 0, sz * .7, 0, TAU); g.fill(); g.stroke(); g.fillStyle = "#5a3a00"; g.fillRect(sz * .5, -sz * .5, sz * .4, sz); }
-    K.glow(g, sz * .6, 0, sz * 2, "#f2c94c", .5); g.restore();
-}
-function bind(g, r, a) {
-    if (a <= 0) return; const c = mid(r); g.save(); g.globalAlpha *= a;
-    for (let l = 0; l < 3; l++) K.chain(g, u => [c.x + Math.cos(u * TAU + l) * (r.w * .56 + l * 6), c.y + Math.sin(u * TAU + l) * (r.h * .62 + l * 5) + Math.sin(u * TAU * 3) * 4], 34, 1, 7, "#f2c94c");
-    g.strokeStyle = "#f2c94c"; g.lineWidth = 3; g.beginPath(); g.arc(c.x, c.y, Math.min(r.h, 40) * .5, 0, TAU); g.stroke(); g.beginPath(); g.moveTo(c.x - 10, c.y); g.lineTo(c.x + 10, c.y); g.moveTo(c.x, c.y - 12); g.lineTo(c.x, c.y + 12); g.stroke(); g.restore();
+/* ---------- KURAPIKA · Chain Jail, first person, drawn OVER the real table: his right hand raised in the Kurta sleeve, a steel ring on
+   every finger with its chain hanging; the middle finger's Chain Jail fills with yellow Nen; on the voice's peak the hand thrusts
+   forward and the five chains shoot out across the real table, cards and UI to the page's edges (Chain Jail coils round the bound
+   player's plate), the Nen floods all of them, they tighten and lock. The routes and the drawing are shared with the page's chain
+   hold (kit.js chainRoutes / drawChain / chainGlow, game.js), so the hold is this scene's last frame. ---------- */
+const KU = { glow: .1, wind: .275, thrust: .304, spread: .5, lock: .534, still: .62 };     // beats (scene t), pinned to the voice in engine.js SYNC
+const kuSlow = t => { if (t < KU.lock) return t; const u = Math.min(1, (t - KU.lock) / (KU.still - KU.lock)); return KU.lock + (KU.still - KU.lock) * (u - u * u / 2); };
+const KU_SLEEVE = { c: "#2c58b4", s: "#1a3578", cuff: "#e8c24a", len: 380, w: 64 };      // the Kurta clan's blue garment with its gold trim
+const KU_POSE0 = "open", KU_POSE1 = "spread";
+function kuHand(X, t) {                                                        // where the hand is: raised and calm → a short draw back → the thrust
+    const { w, h } = X, back = K.ioCub(lin(KU.wind, KU.thrust - .006, t)) * (1 - lin(KU.thrust - .006, KU.thrust + .01, t)), th = K.oBack(lin(KU.thrust - .006, KU.thrust + .012, t));
+    const s = HS(X) * 1.22 * (1 + back * .06) * (1 - th * .2), x = w * (.66 + back * .02 - th * .06), y = h * (.98 + back * .04 - th * .14), ang = -.16 + back * .05 + th * .1;
+    return { x, y, s, ang, pose: th > .5 ? KU_POSE1 : KU_POSE0 };
 }
 const kurapika = {
-    col: "#f2c94c", ms: 7400,
-    seal: (g, X, a, r) => bind(g, r || X.env.r, a),
+    col: "#ffd23a", ms: 7600, mainPlus: 1500, grain: 0, breath: () => false,     // no voice-glow tint: only Chain Jail carries the Nen before the launch
+    seal: (g, X, a) => {},
+    begin(env) { document.dispatchEvent(new CustomEvent("timestop", { detail: { key: "hxh_f", ph: "start" } })); },
+    tailStart(X) { const H = kuHand({ w: X.w, h: X.h, M: X.M }, 1); document.dispatchEvent(new CustomEvent("timestop", { detail: { key: "hxh_f", ph: "stopped", origins: kuOrigins(X, H), plate: X.env.r } })); },
+    tail(g, X, T) { X.reveal(T.tt, .35); K.slam(g, X.env.toName + " · BOUND ×2", X.w / 2, Math.min(X.h * .5, X.env.r.y + X.env.r.h + X.M * .12), X.M * .055, K.lin(0, 1, T.tt), { fill: "#fff8d8", stroke: "#4a3000", glow: "#ffd23a", from: 1.2 }); },
     main(g, X, T) {
-        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r), RED = "#ff2a4a";
-        X.cue(.03, "heartbeat", t); X.cue(.12, "charge", t); X.cue(.32, "chain", t); X.cue(.5, "chain", t); X.cue(.68, "slam", t);
-        if (t < .2) { const p = lin(0, .2, t); K.eyes(g, X, p, { tint: "#ff2a4a", ta: .3 * lin(.3, .7, p) }); K.column(g, "緋の眼", w * .08, h * .2, M * .07, lin(.1, .6, p), { fill: "#fff", stroke: "#4a0010", glow: RED, sw: 3 }); K.bars(g, w, h, 1); cutTo(X, t, .195, "#ffd0d8"); return; }
-        K.sky(g, w, h, ["#06081a", "#121a3a", "#050610"]); K.vignette(g, w, h, .7, "#3a0010", .2);
-        g.save(); K.cam(g, X, { z: 1 + lin(.2, .5, t) * .04, shake: hit(t, .68, .1) * 14 });
-        plate(g, X, r, ss(.3, .38, t), lin(.6, .7, t));
-        const sz = HS(X), hx = w * .5, hy = h * 1.12;                        // first person: the right hand, a chain from every fingertip
-        const tips = handTips("spread").map(([a, b]) => [hx + a * sz, hy + b * sz]);
-        const fly = K.ioCub(lin(.32, .62, t)), wrap = lin(.58, .74, t);
-        tips.forEach((tp, k) => { const tx = c.x + (k - 2) * r.w * .18, ty = c.y + (k % 2 ? 1 : -1) * r.h * .3, mx = K.mix(tp[0], tx, .5) + (k - 2) * M * .1, my = K.mix(tp[1], ty, .5) + M * (k % 2 ? .1 : -.06) + Math.sin(s * 3 + k) * 14 * (1 - fly), reach = Math.max(.16, fly);
-            const pt = u => [K.bez2(tp[0], mx, tx, u * reach), K.bez2(tp[1], my, ty, u * reach)];
-            g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = "rgba(242,201,76,.25)"; g.lineWidth = M * .02; g.beginPath(); for (let i = 0; i <= 20; i++) { const q = pt(i / 20); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); } g.stroke(); g.restore();
-            K.chain(g, pt, 30, 1, M * (k === 1 ? .02 : .015), k === 1 ? "#ffd75a" : "#e8bf48"); const e = pt(1), e2 = pt(.97); chainTip(g, e[0], e[1], Math.atan2(e[1] - e2[1], e[0] - e2[0]), KCH[k], M * (k === 1 ? .028 : .02)); });   // the middle finger's Chain Jail is the one that binds
-        hand(g, hx, hy, sz, 0, "spread", { skin: "pale", sleeve: { c: "#1a2250", s: "#0c1030", cuff: "#f2c94c", len: 260 } });
-        if (wrap > 0) bind(g, r, wrap);
-        K.sparks(g, c.x, c.y, lin(.68, .82, t), 30, 4, { speed: M * .5, col: "#f2c94c" }); K.shock(g, c.x, c.y, lin(.68, .84, t), M * .5, "#f2c94c", 20);
-        g.restore();
-        K.cutIn(g, X, lin(.2, .44, t), { y: .62, hh: .26, dir: -1, ang: .06, kj: "絶対時間", name: "KURAPIKA" });
-        if (hit(t, .68, .02)) X.fx.inv = "#ff9aa8";
-        K.title(g, X, lin(.66, 1, t), { en: "CHAIN JAIL", kj: "束縛する中指の鎖", sub: "EMPEROR TIME · KURAPIKA", y: .86 });
-        K.bars(g, w, h, 1 - lin(.92, 1, t));
+        const { w, h, M } = X, t = T.t, st = kuSlow(t), sM = st * X.main / 1000, H = kuHand(X, t), HF = kuHand(X, 1), size = M * .0095;
+        X.cue(.0, "wind", t); X.cue(KU.glow, "charge", t); X.cue(KU.thrust - .004, "whoosh", t); X.cue(KU.thrust, "clink", t); [.34, .38, .42, .46].forEach(a => X.cue(a, "clink", t)); X.cue(KU.lock, "stamp", t); X.cue(KU.lock + .004, "clink", t);
+        if (t < .03) { g.fillStyle = "rgba(0,0,0," + (1 - t / .03) * .85 + ")"; g.fillRect(0, 0, w, h); }
+        const launched = t >= KU.thrust, jailGlow = ss(KU.glow, KU.thrust, t), O = kuOrigins(X, HF);
+        const routes = X.env._routes || (X.env._routes = K.chainRoutes(w, h, O, X.env.r));
+        const flood = lin(KU.thrust + .02, KU.spread + .02, t), tight = ss(KU.spread - .04, KU.lock, t), wob = M * .018 * (1 - tight);
+        // the golden glow of the bind settles over the page as the Nen floods the chains
+        K.chainGlow(g, w, h, ss(KU.spread - .1, KU.lock + .02, t));
+        if (launched) {                                                     // the five chains in flight: tip first, the Nen following behind
+            routes.forEach((P, k) => {
+                const e = K.oCub(lin(KU.thrust + .002 + k * .006, KU.spread - .02 + k * .006, st)), front = P.lead + (P.len - P.lead) * e;
+                const auraTo = k === 1 ? front : P.lead + (P.len - P.lead) * K.oCub(lin(KU.thrust + .03 + k * .01, KU.spread + .03, st));
+                K.drawChain(g, P, 0, Math.min(front, P.lead), size * (k === 1 ? 1.12 : 1), { aura: k === 1 ? 1 : Math.max(.15, flood), auraTo, t: sM, k, wob }); P._o = { front, aura: k === 1 ? 1 : Math.max(.15, flood), auraTo, wob };
+                if (e < 1) {                                                // the front: the weapon, a cold shimmer with a slight colour split
+                    let j = 0; while (j < P.cum.length - 2 && P.cum[j + 1] < front) j++; const a = P.pts[j], b = P.pts[j + 1] || a, an = Math.atan2(b[1] - a[1], b[0] - a[0]);
+                    g.save(); g.globalCompositeOperation = "screen"; [["rgba(255,90,170,.6)", -3], ["rgba(90,230,255,.6)", 3]].forEach(([c, d]) => K.glow(g, a[0] + d, a[1], size * 4, c, .7)); g.restore();
+                    K.glow(g, a[0], a[1], size * 5, "#ffe680", .8); K.chainTip(g, a[0], a[1], an, P.kind, size * 2.1);
+                } else if (k === 1) { const n = P.pts.length, a = P.pts[n - 2], b = P.pts[n - 1]; K.chainTip(g, b[0], b[1], Math.atan2(b[1] - a[1], b[0] - a[0]), P.kind, size * 2.3); }
+            });
+            // sparks of Nen along the chains, slowing to a stop as they lock
+            g.save(); g.globalCompositeOperation = "lighter"; for (let i = 0; i < 60; i++) { const P = routes[i % 5], s0 = P.lead + (P.len - P.lead) * hs(i * 3.3), lf = (sM * (1.2 + hs(i)) + hs(i * 7)) % 1; if (s0 > P.lead + (P.len - P.lead) * flood) continue;
+                let j = 0; while (j < P.cum.length - 2 && P.cum[j + 1] < s0) j++; const p = P.pts[j]; g.globalAlpha = Math.sin(lf * Math.PI) * .9; g.fillStyle = "#fff0a0"; g.fillRect(p[0] + (hs(i) - .5) * 10, p[1] - lf * 14 * (1 - tight * .8), 2.4, 2.4); } g.restore();
+            const lk = lin(KU.lock, KU.lock + .05, t); if (lk > 0 && lk < 1) { const c = mid(X.env.r); K.shock(g, c.x, c.y, lk, M * .35, "#ffd23a", 18); K.glow(g, c.x, c.y, M * .25, "#ffe680", 1 - lk); }
+        }
+        hand(g, H.x, H.y, H.s, H.ang, H.pose, { view: "back", skin: "base", sleeve: KU_SLEEVE, rings: 1, ringGlow: [1, Math.max(jailGlow, launched ? 1 : 0)] });
+        // the hand: rings on all five fingers; before the launch the chains hang from them, swaying, Chain Jail filling with Nen
+        if (!launched) {
+            const rings = K_rings(H);
+            rings.forEach((r, k) => { if (!r) return; const sway = Math.sin(sM * 1.6 + k) * M * .02, P = K.chainPath([[r[0], r[1]], [r[0] + sway * .4 + (k - 2) * M * .01, r[1] + h * .16], [r[0] + sway + (k - 2) * M * .04, h * 1.1]], 6);
+                drawRoute(g, P, P.len, size * .9, { aura: k === 1 ? jailGlow : 0, t: sM, k }); });
+        }
+        if (launched) routes.forEach((P, k) => { const q = P._o; if (q && q.front > P.lead) K.drawChain(g, P, P.lead, q.front, size * (k === 1 ? 1.12 : 1), { aura: q.aura, auraTo: q.auraTo, t: sM, k, wob: q.wob }); });
+        if (t > KU.glow && t < KU.thrust + .06) K.column(g, "束縛する中指の鎖", w * .08, h * .14, M * .05, lin(KU.glow, KU.thrust - .02, t), { fill: "#fff6cc", stroke: "#3a2600", glow: "#ffd23a", sw: 3 });
+        if (t > KU.lock - .03) K.title(g, X, lin(KU.lock - .03, 1, t), { en: "CHAIN JAIL", kj: "束縛する中指の鎖", sub: "KURAPIKA · " + X.env.toName.toUpperCase() + " BOUND FOR 2 TURNS", y: .2, col: "#ffd23a" });
+        if (hit(t, KU.thrust, .012)) X.fx.flash = ["#fff6c8", .4];
+        function K_rings(Hh) { return handRings(Hh.pose).map(r => r && handPoint(r[0], r[1], Hh.x, Hh.y, Hh.s, Hh.ang, false)); }
     }
 };
+function drawRoute(g, P, upTo, size, o) { K.drawChain(g, P, 0, upTo, size, o); }
+function kuOrigins(X, H) { return handRings(H.pose).map(r => r ? handPoint(r[0], r[1], H.x, H.y, H.s, H.ang, false) : null); }
 
 /* ---------- DIO · ZA WARUDO, first person: arms crossed in an X before his chest (yellow sleeves), thrown open on the scream's peak;
    reality is overwritten in gold with purple/green interference and holographic tearing, then everything slows to a stop in grey.

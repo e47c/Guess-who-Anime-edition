@@ -128,6 +128,8 @@ const FX = {
     whoosh(o, t) { V.sweep(o, t, 300, 3500, .3, .8, 1.5); },
     impact(o, t) { V.kick(o, t, 1.3); V.tom(o, t, 60, 1); V.sweep(o, t, 3000, 200, .5, .7, 1); V.pad(o, t, [33, 40], .6, 1.8, 300); },
     tick(o, t) { V.hat(o, t, .7); },
+    clink(o, t) { [101, 106].forEach((m, i) => V.bell(o, t + i * .03, m, .45, .5)); V.hat(o, t, .5); },
+    chainbreak(o, t) { V.snare(o, t, .9, .25); [94, 99, 103, 108, 111].forEach((m, i) => V.bell(o, t + i * .035, m, .5, .9)); V.sweep(o, t, 6000, 1500, .4, .7, 3); V.kick(o, t, .5); },
     creak(o, t) { V.sweep(o, t, 420, 160, .9, .28, 7); V.sweep(o, t + .35, 300, 120, .7, .2, 9); },
     shatter(o, t) { V.snare(o, t, 1, .5); V.sweep(o, t, 9000, 2500, .5, 1, 1.5); V.hat(o, t + .02, 1, true); [96, 100, 103, 108].forEach((m, i) => V.bell(o, t + .03 + i * .04, m, .5, 1)); V.kick(o, t, .7); },
     coin(o, t) { V.pluck(o, t, 83, .07, .7, "square", 5200, 0); V.pluck(o, t + .07, 88, .4, .7, "square", 5200, .2); },

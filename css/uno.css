@@ -592,3 +592,10 @@ body.fx-lite .ice-mist, body.fx-lite .ice-glint { animation: none; display: none
 .snow-veil.out.broken .snow-fall { animation-duration: 1.4s; }
 body.fx-lite .snow-fall, body.fx-lite .snow-veil .ice-mist, body.fx-lite .snow-veil .ice-glint { animation: none; }
 @media (prefers-reduced-motion: reduce) { .snow-fall { animation: none; } }
+
+/* ===== CHAIN JAIL (Kurapika's Freeze): the page bound in his chains while the bound player's turns run out ===== */
+.chain-veil { position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0; transition: opacity .6s ease; }
+.chain-veil canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.chain-veil.on, .chain-veil.out { opacity: 1; }
+.chain-veil.now, .chain-veil.pause, .chain-veil.out { transition: none; }
+.chain-veil.pause { opacity: 0 !important; }
