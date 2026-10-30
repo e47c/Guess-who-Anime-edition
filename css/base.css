@@ -651,10 +651,6 @@ label.btn { cursor: pointer; }
 .ach small { font-size: 11px; color: var(--muted); line-height: 1.3; }
 
 #confirm.info .confirm-sheet { width: min(560px, 100%); }
-.rules-art { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: -2px 0 16px; }
-.rules-art figure { margin: 0; display: flex; flex-direction: column; gap: 6px; }
-.rules-art img { width: 100%; aspect-ratio: 1; object-fit: cover; object-position: var(--fp, center 25%); border-radius: 8px; box-shadow: 0 0 0 2px var(--gold), 0 0 0 4px #0a0505, 0 0 0 5px rgba(225,27,27,.6), 0 10px 22px rgba(0,0,0,.5); }
-.rules-art figcaption { font: 700 11px/1.2 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; text-align: center; color: var(--gold-bright); }
 #confirm.info #confirmText { white-space: pre-line; font: 600 16px/1.45 var(--f-ui); color: var(--paper); }
 .sec-title .chip-btn { align-self: center; }
 .ava.fr-ui { background: conic-gradient(from 0deg, #ffffff, #9fb8ff, #e6f0ff, #7df3ff, #c9b6ff, #ffffff); box-shadow: 0 0 22px rgba(160,200,255,.9), 0 0 4px #fff, 0 4px 14px rgba(0,0,0,.5); animation: frSpin 2.4s linear infinite; }

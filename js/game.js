@@ -3192,15 +3192,15 @@ const ROOM_MAX = SLOTS.length;
 const MODE_OF_KEY = { gw: "classic", hb: "headbanz", im: "imposter", uno: "uno" };
 const MODES = {
     classic:  { key: "gw",  name: "Guess Who", tag: "CASE FILE", kanji: "探", min: 2, max: 8, seats: "1v1 · rest spectate", short: "1v1", color: "#f0c869", sub: "Hide. Ask. Accuse.", blurb: "1v1 deduction duel. Hide a character, ask yes/no questions, accuse first.",
-        art: ["images/anime/naruto/na2.jpg", "images/special/onepiece_ultimate.jpg", "images/anime/bleach/bc6.jpg"], cast: ["Naruto Uzumaki", "Monkey D. Luffy", "Ichigo Kurosaki"] },
+        art: ["images/anime/naruto/na2.jpg", "images/special/onepiece_ultimate.jpg", "images/anime/bleach/bc6.jpg"] },
     headbanz: { key: "hb",  name: "Headbanz", tag: "MIND LINK", kanji: "心", min: 2, max: 8, color: "#ff4040", sub: "Read the room. Read yourself.", blurb: "Everyone sees your character but you. Ask, deduce, name yourself first.",
-        art: ["images/anime/dragonball/db7.jpg", "images/anime/jjk/jk12.jpg", "images/special/demonslayer_ultimate.jpg"], cast: ["Goku", "Yuji Itadori", "Tanjiro Kamado"] },
+        art: ["images/anime/dragonball/db7.jpg", "images/anime/jjk/jk12.jpg", "images/special/demonslayer_ultimate.jpg"] },
     imposter: { key: "im",  name: "Imposter", tag: "SHADOW TRIAL", kanji: "偽", min: 3, max: 8, color: "#e11b1b", sub: "Someone here is lying.", blurb: "All but one know the character. Give clues, vote, unmask the fake.",
-        art: ["images/anime/naruto/na23.jpg", "images/anime/jjk/jk6.jpg", "images/anime/demonslayer/ds15.jpg"], cast: ["Madara Uchiha", "Ryomen Sukuna", "Muzan Kibutsuji"] },
+        art: ["images/anime/naruto/na23.jpg", "images/anime/jjk/jk6.jpg", "images/anime/demonslayer/ds15.jpg"] },
     uno:      { key: "uno", name: "Anime UNO", tag: "ARENA CLASH", kanji: "札", min: 2, max: 8, color: "#d9a441", sub: "Every anime a colour. No mercy.", blurb: "Classic: 4 anime, 4 colours. Chaos: up to 8. Stack +2s, special moves.",
-        art: ["images/special/dragonball_ultimate.jpg", "images/anime/dragonball/db9.jpg", "images/anime/naruto/na9.jpg"], cast: ["Goku", "Frieza", "Sasuke Uchiha"] }
+        art: ["images/special/dragonball_ultimate.jpg", "images/anime/dragonball/db9.jpg", "images/anime/naruto/na9.jpg"] }
 };
-/* the mode art shows only each series' main protagonists and main villains (cast = their names, for the how-to-play dialog) */
+/* the mode art shows only each series' main protagonists and main villains */
 const RULES = {
     classic: ["Two players duel 1v1 (with more people in the room, the host picks the duelists and everyone else spectates). Both secretly pick a character from the same board.", "On your turn, ask one yes/no question out loud, then flip down every character it rules out.", "Press END TURN when you are done. Think you know it? Press ACCUSE and tap their character.", "A right accusation wins. A wrong one hands the win to your opponent."],
     headbanz: ["Everyone gets a character card that all the others can see, except you.", "Take turns asking yes/no questions about your own card; the others answer.", "Guess your character whenever you like. Three wrong guesses and you sit out the round.", "2 to 8 players, everyone at once. Points per round follow the guessing order: with N players the 1st right guess scores N, the next N-1 and so on (8 players: 8, 7, 6 ... 1). Giving up or three strikes scores 0."],
@@ -3209,7 +3209,7 @@ const RULES = {
 };
 function showRules(t) {
     const M = MODES[t] || MODES.classic;
-    uiConfirm({ title: M.name + ": how to play", text: RULES[t].map((r, i) => (i + 1) + ".  " + r).join("\n\n"), ok: "Got it", cancel: "", info: true, art: M.art.map((src, i) => [src, (M.cast || [])[i] || ""]) });
+    uiConfirm({ title: M.name + ": how to play", text: RULES[t].map((r, i) => (i + 1) + ".  " + r).join("\n\n"), ok: "Got it", cancel: "", info: true });
 }
 window.showRules = () => showRules(currentRoomData && MODES[currentRoomData.gameType] ? currentRoomData.gameType : "classic");
 const pNode = (d, i) => (d && d["player" + i]) || null;
@@ -3270,11 +3270,9 @@ function closeOverlay(id) {
 window.closeOverlay = closeOverlay;
 function closeAllOverlays() { ["pause", "settings", "profile", "confirm"].forEach(id => $(id).classList.add("hidden")); overlayStack.length = 0; $("emotePanel").classList.add("hidden"); }
 let confirmResolve = null;
-function uiConfirm({ title, text, ok = "OK", cancel = "Cancel", danger = false, info = false, art = null }) {
+function uiConfirm({ title, text, ok = "OK", cancel = "Cancel", danger = false, info = false }) {
     if (confirmResolve) confirmResolve(false);
     $("confirmTitle").textContent = title || ""; $("confirmText").textContent = text || "";
-    const ab = $("confirmArt"); ab.textContent = ""; ab.classList.toggle("hidden", !art);
-    if (art) art.forEach(([src, name]) => { const f = hbEl("figure"), im = makeImg(src); im.alt = name; f.append(im, hbEl("figcaption", null, name)); ab.appendChild(f); });
     const yes = $("confirmYes"), no = $("confirmNo");
     yes.textContent = ok; no.textContent = cancel; no.classList.toggle("hidden", !cancel); yes.className = "btn" + (danger ? " danger" : ""); $("confirm").classList.toggle("info", info);
     openOverlay("confirm");
