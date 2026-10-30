@@ -22,6 +22,7 @@ A browser party game for a squad of up to 8 friends with four anime modes in one
   - **Chaos deck:** 4–8 series. It adds pink, orange, purple and light blue, and every series adds its 31 cards (248 at 8).
   - **Draw-2s stack:** answer a +2 with a +2 to pass on +4, +6, +8 … or take the whole stack and lose the turn.
   - **Finishing:** a player who empties their hand takes the next place and watches the table, seeing card counts but never hands. The round goes on until every place is decided, then shows the full ranking.
+  - **Special cards:** the host picks *Once* (the default: a played Freeze, Swap Hands, Ultimate or Future Sight is out for the rest of the game) or *Reusable* (played specials go back into the draw pile with the rest of the discard pile when it is reshuffled, so they can come round again).
   - **No UNO call:** down to one card, you just keep playing. There is no UNO button and no catch penalty.
   - **Future Sight** reveals the *next* player's hand to the player who used it (everyone else sees the same scene with card backs), then gives one extra play: play one more card or end the turn. Drawing isn't allowed during the extra play. Until it is used, a small reminder of the hand you saw stays next to the table, visible only to you.
   - **Swap Hands** opens an exchange portal: the other players orbit you with their real card counts, and hovering one shows what you'd get.

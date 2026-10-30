@@ -153,7 +153,9 @@
 <div id="imBox" class="field hidden"><label class="field-label">Laps</label><div class="sizes"><button class="modebtn lapbtn selected" data-l="1" onclick="setLaps(1)">1 lap</button><button class="modebtn lapbtn" data-l="2" onclick="setLaps(2)">2 laps</button></div>
 <p class="anime-hint">In one lap everyone is the imposter once, so 5 players on 1 lap = 5 rounds.</p></div>
 <div id="unoBox" class="field hidden"><label class="field-label">Deck</label><div class="sizes"><button class="modebtn unobtn selected" data-k="classic" onclick="setUnoDeck('classic')">Classic · 4 series</button><button class="modebtn unobtn" data-k="chaos" onclick="setUnoDeck('chaos')">Chaos · 4–8 series</button></div>
-<p class="anime-hint">Classic: red, green, yellow, dark blue. Chaos adds pink, orange, purple and light blue: one colour per series, and every extra series adds its 31 cards to the deck.</p></div>
+<p class="anime-hint">Classic: red, green, yellow, dark blue. Chaos adds pink, orange, purple and light blue: one colour per series, and every extra series adds its 31 cards to the deck.</p>
+<label class="field-label" style="margin-top:14px">Special cards</label><div class="sizes"><button class="modebtn unospbtn selected" data-k="once" onclick="setUnoSp('once')">Once · then gone</button><button class="modebtn unospbtn" data-k="reuse" onclick="setUnoSp('reuse')">Reusable</button></div>
+<p class="anime-hint">Once: a special card (Freeze, Swap Hands, Ultimate, Future Sight) that has been played is out for the rest of the game. Reusable: played specials go back into the draw pile when the discard pile is reshuffled, so they can come round again.</p></div>
 </div>
 </section>
 </div>
@@ -371,7 +373,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=16"></script>
+<script type="module" src="js/game.js?v=17"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){

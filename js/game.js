@@ -1645,6 +1645,11 @@ window.setUnoDeck = function (k) {
     document.querySelectorAll(".unobtn").forEach(b => b.classList.toggle("selected", b.dataset.k === k));
     sfx("pick"); lobbySet({ unoDeck: k, animes: fixSeries("uno", arr(d.animes), k) });
 };
+window.setUnoSp = function (k) {
+    const d = currentRoomData; if (!d || !amHost() || d.status !== "waiting") return;
+    document.querySelectorAll(".unospbtn").forEach(b => b.classList.toggle("selected", b.dataset.k === k));
+    sfx("pick"); lobbySet({ unoSp: k === "reuse" ? "reuse" : "once" });
+};
 window.setLaps = function (n) { homeLaps = n; document.querySelectorAll(".lapbtn").forEach(b => b.classList.toggle("selected", Number(b.dataset.l) === n)); lobbySet({ laps: n }); };
 
 /* ---------- rounds (host only) ---------- */
@@ -1967,6 +1972,8 @@ const UNO_SUIT = ["#e11b1b", "#2e9e5b", "#f2c200", "#1f3fae", "#ff5fae", "#ff8a1
 const UNO_SUIT_NAME = ["RED", "GREEN", "YELLOW", "DARK BLUE", "PINK", "ORANGE", "PURPLE", "LIGHT BLUE"];
 const UNO_DECK_RANGE = { classic: [4, 4], chaos: [4, 8] };
 const unoDeckType = d => d && d.unoDeck === "chaos" ? "chaos" : "classic";
+/* special cards: "once" (a played special is out for the rest of the game) or "reuse" (it goes back into the draw pile on a reshuffle) */
+const unoSpType = d => d && d.unoSp === "reuse" ? "reuse" : "once";
 const UNO_DECKS = {
     onepiece: "Buggy|Franky,Jinbe|Usopp,Brook|Tony Tony Chopper,Rob Lucci|Nico Robin,Crocodile|Sabo,Portgas D. Ace|Sanji,Donquixote Doflamingo|Dracule Mihawk,Shanks|Roronoa Zoro,Kaido|Edward Newgate,Gol D. Roger;Aokiji,Boa Hancock;Trafalgar Law,Bartholomew Kuma;Nami,Charlotte Linlin;Monkey D. Luffy;Marshall D. Teach",
     naruto: "Konohamaru Sarutobi|Choji Akimichi,Hinata Hyuga|Tenten,Sakura Haruno|Kiba Inuzuka,Temari|Jiraiya,Orochimaru|Neji Hyuga,Gaara|Rock Lee,Might Guy|Tsunade,Kakashi Hatake|Sasuke Uchiha,Tobi|Pain,Tobirama Senju;Shikamaru Nara,Hashirama Senju;Minato Namikaze,Itachi Uchiha;Kakuzu,Hidan;Naruto Uzumaki;Madara Uchiha",
@@ -2196,7 +2203,7 @@ function unoCan(u, hand, ci) {
 function unoDraw(u, p, n) {
     const h = u.hands["p" + p];
     for (let i = 0; i < n; i++) {
-        if (!u.draw.length) { const keep = u.disc.pop(); u.draw = unoShuf(u.disc.filter(i => !u.cards[i].sp)); u.disc = [keep]; }   // used special cards never go back into the draw pile
+        if (!u.draw.length) { const keep = u.disc.pop(); u.draw = unoShuf(u.disc.filter(i => u.spReuse || !u.cards[i].sp)); u.disc = [keep]; }   // used special cards only go back into the draw pile when the room plays them as reusable
         if (!u.draw.length) break;
         h.push(u.draw.pop());
     }
@@ -2290,7 +2297,7 @@ async function unoStart() {
     if (seats.length < 2) { toast("Need at least 2 players."); return; }
     if (!d.uno || !d.uno.cards || d.uno.key !== unoDeckKey(arr(d.animes))) { toast("The deck is still being prepared."); return; }
     const names = {}; seats.forEach(i => { names["p" + i] = d["player" + i].name; });
-    const st = unoDealState(arr(d.uno.cards), arr(d.uno.anime), seats, names, 1); st.key = d.uno.key; st.missing = d.uno.missing || null; st.deck = unoDeckType(d);
+    const st = unoDealState(arr(d.uno.cards), arr(d.uno.anime), seats, names, 1); st.key = d.uno.key; st.missing = d.uno.missing || null; st.deck = unoDeckType(d); st.spReuse = unoSpType(d) === "reuse";
     try { await update(ref(db, "rooms/" + room), { status: "playing", matchId: Date.now(), uno: st }); }
     catch (e) { toast("Could not start the game."); }
 }
@@ -3209,7 +3216,7 @@ const RULES = {
     classic: ["Two players duel 1v1 (with more people in the room, the host picks the duelists and everyone else spectates). Both secretly pick a character from the same board.", "On your turn, ask one yes/no question out loud, then flip down every character it rules out.", "Press END TURN when you are done. Think you know it? Press ACCUSE and tap their character.", "A right accusation wins. A wrong one hands the win to your opponent."],
     headbanz: ["Everyone gets a character card that all the others can see, except you.", "Take turns asking yes/no questions about your own card; the others answer.", "Guess your character whenever you like. Three wrong guesses and you sit out the round.", "2 to 8 players, everyone at once. Points per round follow the guessing order: with N players the 1st right guess scores N, the next N-1 and so on (8 players: 8, 7, 6 ... 1). Giving up or three strikes scores 0."],
     imposter: ["Everyone sees the same secret character, except one imposter.", "Two clue rounds: on your call, say one clue out loud. Never say the name.", "Then vote. Catch the imposter and the crew scores; if they slip away, they score big.", "A caught imposter can still steal points by naming the character."],
-    uno: ["Classic deck: pick exactly 4 anime (red, green, yellow, dark blue). Chaos deck: pick 4 to 8 (adds pink, orange, purple, light blue). Match the colour, or the attribute or action of the top card.", "Skip, Reverse, Wild and Wild +4 work like classic UNO. Draw-2s stack: answer a +2 with a +2 to pass on +4, +6, +8... or take the whole stack.", "Specials: Freeze (next player loses 2 turns), Swap Hands, Ultimate (+5) and Future Sight (see the next player's hand, then play one more card).", "No UNO call: down to one card, just keep playing. Empty your hand to take the next place; the round goes on until every place is decided."]
+    uno: ["Classic deck: pick exactly 4 anime (red, green, yellow, dark blue). Chaos deck: pick 4 to 8 (adds pink, orange, purple, light blue). Match the colour, or the attribute or action of the top card.", "Skip, Reverse, Wild and Wild +4 work like classic UNO. Draw-2s stack: answer a +2 with a +2 to pass on +4, +6, +8... or take the whole stack.", "Specials: Freeze (next player loses 2 turns), Swap Hands, Ultimate (+5) and Future Sight (see the next player's hand, then play one more card). The host picks whether a played special is gone for good or goes back into the draw pile.", "No UNO call: down to one card, just keep playing. Empty your hand to take the next place; the round goes on until every place is decided."]
 };
 function showRules(t) {
     const M = MODES[t] || MODES.classic;
@@ -3393,9 +3400,9 @@ const PREF_KEY = "gw_lobby_prefs";
 function lobbyPrefs() {
     let p = {}; try { p = JSON.parse(localStorage.getItem(PREF_KEY) || "{}") || {}; } catch (e) {}
     const gameType = MODES[p.gameType] ? p.gameType : "classic";
-    return { gameType, animes: fixSeries(gameType, arr(p.animes).length ? arr(p.animes) : ["onepiece"], p.unoDeck), boardSize: [24, 48, 96].includes(Number(p.boardSize)) ? Number(p.boardSize) : 24, difficulty: ["easy", "normal", "hard"].includes(p.difficulty) ? p.difficulty : "normal", rounds: [3, 5, 7, 10].includes(Number(p.rounds)) ? Number(p.rounds) : 5, laps: Number(p.laps) === 2 ? 2 : 1, unoDeck: p.unoDeck === "chaos" ? "chaos" : "classic" };
+    return { gameType, animes: fixSeries(gameType, arr(p.animes).length ? arr(p.animes) : ["onepiece"], p.unoDeck), boardSize: [24, 48, 96].includes(Number(p.boardSize)) ? Number(p.boardSize) : 24, difficulty: ["easy", "normal", "hard"].includes(p.difficulty) ? p.difficulty : "normal", rounds: [3, 5, 7, 10].includes(Number(p.rounds)) ? Number(p.rounds) : 5, laps: Number(p.laps) === 2 ? 2 : 1, unoDeck: p.unoDeck === "chaos" ? "chaos" : "classic", unoSp: p.unoSp === "reuse" ? "reuse" : "once" };
 }
-function saveLobbyPrefs(d) { try { localStorage.setItem(PREF_KEY, JSON.stringify({ gameType: d.gameType, animes: arr(d.animes), boardSize: d.boardSize, difficulty: d.difficulty, rounds: d.rounds, laps: d.laps, unoDeck: unoDeckType(d) })); } catch (e) {} }
+function saveLobbyPrefs(d) { try { localStorage.setItem(PREF_KEY, JSON.stringify({ gameType: d.gameType, animes: arr(d.animes), boardSize: d.boardSize, difficulty: d.difficulty, rounds: d.rounds, laps: d.laps, unoDeck: unoDeckType(d), unoSp: unoSpType(d) })); } catch (e) {} }
 function busy(sel, on, label) {
     const b = document.querySelector(sel); if (!b) return;
     if (on) { b.dataset.label = b.dataset.label || b.innerHTML; b.disabled = true; b.textContent = label; b.setAttribute("aria-busy", "true"); }
@@ -3505,7 +3512,7 @@ function modeReq(d) {
         const packs = d.packs || {}, missing = activeSlots(d).filter(i => Number(packs["p" + i]) < 100 || packs["p" + i] == null);
         if (missing.length) return { ok: false, wait: true, msg: "Loading characters for " + missing.map(i => pName(d, i)).join(", ") + "…" };
     }
-    const extra = t === "headbanz" ? " · " + (d.rounds || 5) + " rounds, everyone at once" : t === "imposter" ? " · " + n * (Number(d.laps) || 1) + " rounds" : t === "classic" ? " · " + (d.boardSize || 24) + " cards" + (n > 2 ? " · " + gwDuelists(d).map(i => pName(d, i)).join(" vs ") + ", " + (n - 2) + " spectating" : "") : " · " + (unoDeckType(d) === "chaos" ? "Chaos" : "Classic") + " deck · " + arr(d.uno && d.uno.anime).join(" · ");
+    const extra = t === "headbanz" ? " · " + (d.rounds || 5) + " rounds, everyone at once" : t === "imposter" ? " · " + n * (Number(d.laps) || 1) + " rounds" : t === "classic" ? " · " + (d.boardSize || 24) + " cards" + (n > 2 ? " · " + gwDuelists(d).map(i => pName(d, i)).join(" vs ") + ", " + (n - 2) + " spectating" : "") : " · " + (unoDeckType(d) === "chaos" ? "Chaos" : "Classic") + " deck · " + (unoSpType(d) === "reuse" ? "reusable specials · " : "") + arr(d.uno && d.uno.anime).join(" · ");
     return { ok: true, msg: M.name + extra };
 }
 let modeCardsBuilt = false, seatSig = "";
@@ -3671,6 +3678,7 @@ function lobbyRender(d) {
     homeRounds = Number(d.rounds) || 5; document.querySelectorAll(".rbtn").forEach(b => { b.classList.toggle("selected", Number(b.dataset.r) === homeRounds); b.disabled = lock; });
     homeLaps = Number(d.laps) || 1; document.querySelectorAll(".lapbtn").forEach(b => { b.classList.toggle("selected", Number(b.dataset.l) === homeLaps); b.disabled = lock; });
     document.querySelectorAll(".unobtn").forEach(b => { b.classList.toggle("selected", b.dataset.k === unoDeckType(d)); b.disabled = lock; });
+    document.querySelectorAll(".unospbtn").forEach(b => { b.classList.toggle("selected", b.dataset.k === unoSpType(d)); b.disabled = lock; });
     gwDuelRenderPick(d, lock || t !== "classic");
     applyModeUI(M.key);   // again, so the 4/4 counter reflects the boxes just ticked
     // background prep for the chosen mode
