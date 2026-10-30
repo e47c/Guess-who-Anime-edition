@@ -2170,7 +2170,9 @@ const unoNext = (u, p, k) => {
     for (let s = 0; s < k; s++) { let g = 0; do { i = (((i + u.dir) % n) + n) % n; t = u.seats[i]; } while (out.includes(t) && ++g < n); }
     return t;
 };
-/* Who plays next: k seats after p, but a FROZEN player is skipped and loses one of their frozen turns each time. */
+/* Who plays next: k seats after p, but a FROZEN player is skipped and loses one of their frozen turns each time.
+   u.fzk["p<n>"] = which Freeze card froze them; it stays until they actually get the turn back, so the card's effect over the page
+   lasts through both lost turns (the first one is lost the moment the card is played). */
 function unoAdv(u, p, k, notes) {
     u.frozen = u.frozen || {};
     let t = unoNext(u, p, k), guard = 0;
@@ -2180,6 +2182,7 @@ function unoAdv(u, p, k, notes) {
         if (notes) notes.push(m); else u.msg = (u.msg || "") + " " + m;
         t = unoNext(u, t, 1);
     }
+    if (u.fzk && u.fzk["p" + t]) delete u.fzk["p" + t];      // the frozen player is up again: both lost turns are over, the freeze's effect can end
     return t;
 }
 function unoCan(u, hand, ci) {
@@ -2718,10 +2721,11 @@ function unoSpecialFx(u, f) {
     const hook = UNO_FX_HOOKS[c.sk + "_" + c.k];
     if (hook) { try { hook(box, close, c, u); } catch (e) { console.warn(e); close(); } } else setTimeout(close, 1700);
 }
-/* FREEZES THAT HOLD THE WHOLE PAGE (all nine Freeze cards: DIO's ZA WARUDO, Aokiji's Ice Age, Haku's mirrors, Hit's grey...): while the player frozen by that card still has turns to lose,
+/* FREEZES THAT HOLD THE WHOLE PAGE (all nine Freeze cards: DIO's ZA WARUDO, Aokiji's Ice Age, Haku's mirrors, Hit's grey...): from the card until the player it froze
+   gets the turn back (both of their lost turns over),
    one fixed layer over everything (backdrop-filter + its own texture) holds the page for every player: grey for DIO, ice for Aokiji.
    The card's scene hands over to it without a seam (Aokiji's grows it outward from his palm), the others play on under it, and the
-   moment the frozen player's last skipped turn is spent it plays its release: DIO's reversal, or the ice cracking and shattering. */
+   moment the frozen player is up again it plays its release: DIO's reversal, or the ice cracking and shattering. */
 const TS = {
     jojo_f: { cls: "zw-veil", outMs: 2300,
         build: el => el.append(hbEl("i", "zw-holo"), hbEl("i", "zw-ring"), hbEl("span", "zw-say", "時は動き出す")),
@@ -2779,7 +2783,7 @@ function tsVeil(key) {
     const s = tsOf(key); if (!s.el) { s.el = hbEl("div", "ts-veil " + TS[key].cls); s.el.setAttribute("aria-hidden", "true"); TS[key].build(s.el); document.body.appendChild(s.el); }
     return s.el;
 }
-const tsActive = (u, key) => !!u && u.phase === "play" && unoLive(u).some(p => (u.frozen || {})["p" + p] > 0 && (u.fzk || {})["p" + p] === key);
+const tsActive = (u, key) => !!u && u.phase === "play" && unoLive(u).some(p => (u.fzk || {})["p" + p] === key);
 let tsU = null;
 function tsSync(u, instant) {
     tsU = u; hitAfterTrack(u);
@@ -2835,7 +2839,7 @@ window.addEventListener("resize", () => { const st = tsSt.jjk_f; if (st && st.on
    on a static layer, the yellow Nen pulsing along them and sparks flickering on a live layer; the release loosens them, snaps them
    into pieces that fall away and dissolves them into yellow particles */
 const CH = { origins: null, plate: null, routes: null, key: "", raf: 0, iv: 0 };
-function chainBound() { const u = tsU; if (!u) return 0; return unoLive(u).find(p => (u.frozen || {})["p" + p] > 0 && (u.fzk || {})["p" + p] === "hxh_f") || 0; }
+function chainBound() { const u = tsU; if (!u) return 0; return unoLive(u).find(p => (u.fzk || {})["p" + p] === "hxh_f") || 0; }
 function chainCanvas(c) { const dpr = Math.min(1.5, devicePixelRatio || 1), w = innerWidth, h = innerHeight; if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); } const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); return g; }
 function chainStatic(force) {
     const st = tsSt.hxh_f; if (!st || !st.el) return; const w = innerWidth, h = innerHeight, M = Math.min(w, h), p = chainBound();
