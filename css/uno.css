@@ -617,3 +617,83 @@ body.fx-lite .snow-fall, body.fx-lite .snow-veil .ice-mist, body.fx-lite .snow-v
 .hyo-veil.out { opacity: 1; transition: none; }
 .hyo-veil.out.cracking { --f: saturate(.45) brightness(1.1) contrast(.96) hue-rotate(-8deg); }
 .hyo-veil.out.broken { opacity: 0; transition: opacity 1s cubic-bezier(.3,.6,.4,1); }
+
+/* ===== the layers a veil paints above its own filter (Haku's mirrors, Hit's red ice, Julius's bracelet) ===== */
+.ts-veil .vl-a, .ts-veil .vl-b { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+
+/* ===== CRYSTAL ICE MIRRORS (Haku's Freeze): blue ice over the page, frameless mirrors round it, crystals stuck in the table ===== */
+.mirror-veil { --f: saturate(.55) brightness(1.05) contrast(.96) hue-rotate(-10deg);
+    position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0; overflow: hidden;
+    -webkit-backdrop-filter: var(--f); backdrop-filter: var(--f); transition: opacity 1s ease; }
+.mirror-veil::before { content: ""; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(186,228,255,.24), rgba(120,188,250,.1) 50%, rgba(196,234,255,.24)); }
+.mirror-veil::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, transparent 54%, rgba(214,240,255,.26) 86%, rgba(236,248,255,.46) 100%); }
+.mirror-veil .ice-cool { position: absolute; inset: 0; background: #5fb4ff; mix-blend-mode: soft-light; opacity: .4; }
+.mirror-veil .ice-tex { opacity: .5; }
+.mirror-veil.on { opacity: 1; }
+.mirror-veil.now, .mirror-veil.pause { transition: none; }
+.mirror-veil.pause { opacity: 0 !important; }
+.mirror-veil.grow { opacity: 1; transition: none;
+    -webkit-mask-image: radial-gradient(circle at var(--x, 50%) var(--y, 50%), #000 calc(var(--r, 0px) - 50px), transparent var(--r, 0px));
+    mask-image: radial-gradient(circle at var(--x, 50%) var(--y, 50%), #000 calc(var(--r, 0px) - 50px), transparent var(--r, 0px)); }
+/* the melt: ice, then slush, then water, then gone, softly; the frost lines blur away first */
+.mirror-veil.out { opacity: 1; transition: none; animation: hkMelt 2.9s cubic-bezier(.45,0,.35,1) both; }
+.mirror-veil.out .ice-tex { opacity: 0; filter: blur(2px); transition: opacity 1.4s ease .25s, filter 1.4s ease .25s; }
+.mirror-veil.out .ice-mist { opacity: 0; transition: opacity 1.6s ease; }
+@keyframes hkMelt {
+    0%   { -webkit-backdrop-filter: saturate(.55) brightness(1.05) contrast(.96) hue-rotate(-10deg) blur(0px); backdrop-filter: saturate(.55) brightness(1.05) contrast(.96) hue-rotate(-10deg) blur(0px); opacity: 1; }
+    38%  { -webkit-backdrop-filter: saturate(.7) brightness(1.06) contrast(.97) hue-rotate(-7deg) blur(.8px); backdrop-filter: saturate(.7) brightness(1.06) contrast(.97) hue-rotate(-7deg) blur(.8px); opacity: 1; }
+    72%  { -webkit-backdrop-filter: saturate(.9) brightness(1.03) contrast(.99) hue-rotate(-2deg) blur(.3px); backdrop-filter: saturate(.9) brightness(1.03) contrast(.99) hue-rotate(-2deg) blur(.3px); opacity: .55; }
+    100% { -webkit-backdrop-filter: saturate(1) brightness(1) contrast(1) hue-rotate(0deg) blur(0px); backdrop-filter: saturate(1) brightness(1) contrast(1) hue-rotate(0deg) blur(0px); opacity: 0; }
+}
+
+/* ===== TIME-SKIP FREEZE (Hit's Freeze): light-red ice from the edges, then a washed-out light grey; the colours barely show through ===== */
+.skip-veil { --f: grayscale(.86) brightness(1.1) contrast(.86);
+    position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0; overflow: hidden;
+    -webkit-backdrop-filter: var(--f); backdrop-filter: var(--f); transition: opacity 1s ease; }
+.skip-veil::before { content: ""; position: absolute; inset: 0; background: rgba(238,234,244,.16); opacity: var(--wash, 1); }
+.skip-veil .skip-red { position: absolute; inset: 0; opacity: var(--red, 1); background: radial-gradient(ellipse at 50% 50%, rgba(255,170,186,0) 50%, rgba(255,150,170,.14) 84%, rgba(255,186,198,.3) 100%); }
+.skip-veil.on { opacity: 1; }
+.skip-veil.now, .skip-veil.pause, .skip-veil.grow, .skip-veil.out { transition: none; }
+.skip-veil.pause { opacity: 0 !important; }
+.skip-veil.grow, .skip-veil.out { opacity: 1; }
+.hit-after { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 9001; pointer-events: none; }
+
+/* ===== FROZEN LOTUS (Doma's Freeze): heavy, rough frost with specks of blood, cold air and a thin purple poison mist sitting on it ===== */
+.lotus-veil { --f: saturate(.58) brightness(1.03) contrast(.95) hue-rotate(-4deg);
+    position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0; overflow: hidden;
+    -webkit-backdrop-filter: var(--f); backdrop-filter: var(--f); transition: opacity 1s ease; }
+.lotus-veil::before { content: ""; position: absolute; inset: 0; background: linear-gradient(170deg, rgba(222,238,252,.24), rgba(170,205,236,.1) 50%, rgba(228,241,252,.26)); }
+.lotus-veil::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(234,244,255,.3) 84%, rgba(248,252,255,.54) 100%); }
+.lotus-veil .ice-cool { position: absolute; inset: 0; background: #9fc8ef; mix-blend-mode: soft-light; opacity: .3; }
+.lotus-veil .ice-tex { opacity: .82; }
+.poison { position: absolute; width: 72vmax; height: 38vmax; border-radius: 50%; background: radial-gradient(ellipse at 50% 50%, rgba(152,64,204,.24), rgba(122,42,172,.1) 45%, transparent 70%); animation: poisonDrift 26s ease-in-out infinite alternate; }
+.poison.a { left: -12vmax; top: 6%; } .poison.b { right: -16vmax; top: 40%; animation-duration: 33s; animation-delay: -11s; } .poison.c { left: 18%; bottom: -14vmax; animation-duration: 29s; animation-delay: -5s; }
+@keyframes poisonDrift { from { transform: translate(0, 0) scale(1); } to { transform: translate(14vmax, -4vmax) scale(1.18); } }
+.lotus-veil.on { opacity: 1; }
+.lotus-veil.now, .lotus-veil.pause, .lotus-veil.grow { transition: none; }
+.lotus-veil.pause { opacity: 0 !important; }
+.lotus-veil.grow { opacity: 1; }
+/* the release: the wind carries the mist and the cold air away, then the ice shatters (the pieces fly on #iceShatter) */
+.lotus-veil.out { opacity: 1; transition: none; }
+.lotus-veil.blow .poison, .lotus-veil.blow .ice-mist { translate: 150vw -8vh; opacity: 0; transition: translate 1.3s cubic-bezier(.55,0,.85,.45), opacity 1.3s ease-in; }
+.lotus-veil.out.broken { opacity: 0; transition: opacity .7s ease; }
+body.fx-lite .poison { animation: none; } @media (prefers-reduced-motion: reduce) { .poison { animation: none; } }
+
+/* ===== TIME STOP (Julius's Freeze): the page inside a blue sphere of time, a bracelet of Roman numerals round it ===== */
+.chrono-veil { --f: saturate(.82) brightness(1.03) contrast(.97);
+    position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0; overflow: hidden;
+    -webkit-backdrop-filter: var(--f); backdrop-filter: var(--f); transition: opacity 1s ease; }
+.chrono-veil::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(120,190,255,.05) 35%, rgba(110,180,255,.15) 75%, rgba(170,220,255,.3) 100%); }
+.chrono-veil::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 70px rgba(140,205,255,.35), inset 0 0 0 2px rgba(220,240,255,.22); }
+.chrono-veil .chrono-tint { position: absolute; inset: 0; background: #3d9bff; mix-blend-mode: soft-light; opacity: .36; }
+.chrono-veil .chrono-glass { position: absolute; inset: -10%; background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.07) 41%, transparent 49%, transparent 61%, rgba(255,255,255,.045) 68%, transparent 75%); animation: chronoGlass 16s ease-in-out infinite alternate; }
+@keyframes chronoGlass { from { transform: translateX(-6%); } to { transform: translateX(6%); } }
+.chrono-veil.on { opacity: 1; }
+.chrono-veil.now, .chrono-veil.pause, .chrono-veil.out { transition: none; }
+.chrono-veil.pause { opacity: 0 !important; }
+.chrono-veil.grow { opacity: 1; transition: none;
+    -webkit-mask-image: radial-gradient(circle at var(--x, 50%) var(--y, 50%), #000 calc(var(--r, 0px) - 40px), transparent var(--r, 0px));
+    mask-image: radial-gradient(circle at var(--x, 50%) var(--y, 50%), #000 calc(var(--r, 0px) - 40px), transparent var(--r, 0px)); }
+.chrono-veil.out { opacity: 1; }
+.chrono-veil.gone { opacity: 0 !important; }
+body.fx-lite .chrono-glass { animation: none; } @media (prefers-reduced-motion: reduce) { .chrono-glass { animation: none; } }

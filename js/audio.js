@@ -153,7 +153,20 @@ const FX = {
     rush(o, t) { for (let i = 0; i < 10; i++) { V.kick(o, t + i * .07, .7); V.snare(o, t + i * .07 + .02, .45, .05); } },
     slash(o, t) { V.sweep(o, t, 1200, 7000, .18, 1, 2); V.sweep(o, t + .12, 4000, 500, .3, .7, 1); },
     warp(o, t) { V.sweep(o, t, 200, 3000, .4, .8, 7); V.sweep(o, t + .3, 3000, 150, .4, .7, 7); V.bell(o, t + .35, 84, .5, 1.4); },
-    drum(o, t) { V.tom(o, t, 90, 1.3); V.tom(o, t + .25, 70, 1.1); V.kick(o, t, 1); }
+    drum(o, t) { V.tom(o, t, 90, 1.3); V.tom(o, t + .25, 70, 1.1); V.kick(o, t, 1); },
+    // the page-wide freezes (Haku, Hit, Doma, Julius): hand seals, the holds and their releases
+    seal(o, t) { V.snare(o, t, .45, .05); V.hat(o, t + .01, .35); },
+    drip(o, t) { const m = 84 + Math.floor(Math.random() * 9); V.pluck(o, t, m, .06, .5, "sine", 9000, .5); V.pluck(o, t + .035, m + 7, .04, .25, "sine", 9000, .5); },
+    melt(o, t) { V.sweep(o, t, 1800, 500, 2.2, .32, 1.2); V.sweep(o, t + .6, 900, 300, 1.8, .22, 1); },
+    hum(o, t) { V.pad(o, t, [31, 38], 2.6, .5, 240); },
+    sparkle(o, t) { [100, 104, 107, 111].forEach((m, i) => V.bell(o, t + i * .06, m, .3, 1.3)); V.sweep(o, t, 6000, 12000, .6, .25, 4); },
+    restore(o, t) { V.sweep(o, t, 250, 2600, 1.1, .5, 1.5); [72, 79, 84, 88].forEach((m, i) => V.bell(o, t + .25 + i * .09, m, .4, 2.2)); },
+    aura(o, t) { V.sweep(o, t, 120, 900, 1.2, .6, 3); V.pad(o, t, [43, 50, 55], 1.4, .5, 500); V.bell(o, t + .1, 86, .35, 1.6); },
+    teleport(o, t) { V.sweep(o, t, 400, 10000, .14, 1, 5); V.pluck(o, t + .12, 98, .06, .6, "square", 9000, .1); V.hat(o, t + .12, .9, true); V.kick(o, t + .12, .5); },
+    spin(o, t) { V.sweep(o, t, 300, 5000, .65, .7, 8); },
+    gust(o, t) { V.sweep(o, t, 150, 1600, 1.5, 1.1, 1.1); V.sweep(o, t + .5, 400, 2600, 1.1, .9, 1.3); },
+    tock(o, t) { V.hat(o, t, .3); V.pluck(o, t, 79, .03, .2, "square", 3000, 0); },
+    toll(o, t) { V.bell(o, t, 48, 1, 4); V.pad(o, t, [36, 43], 2.5, .7, 400, "sine"); V.kick(o, t, .6); }
 };
 // the old two-oscillator "tone" helper, now routed through the sfx bus so volume settings apply
 function tone(f1, f2, dur, type = "square", vol = .06, delay = 0) {

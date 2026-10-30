@@ -605,12 +605,12 @@ export function crystalField(w, h) {
     for (let j = 0; j < 46; j++) { const x = w * (.08 + .84 * hs(j * 2.3 + 40)), y = h * (.1 + .8 * hs(j * 3.7 + 41)); L.push({ x, y, a: hs(j * 5.1) * TAU, sz: M * (.012 + .016 * hs(j * 7.9)), kind: "gem", i: L.length }); }
     return L;
 }
-/* one crystal, grown to q (0..1); glint 0..1 flashes a highlight */
-export function crystalDraw(g, c, q, glint) {
+/* one crystal, grown to q (0..1); glint 0..1 flashes a highlight; pal = [light, mid, dark, edge] recolours it (Hit's light-red ice) */
+export function crystalDraw(g, c, q, glint, pal) {
     if (q <= 0) return; const e = 1 - Math.pow(1 - Math.min(1, q), 3); g.save(); g.translate(c.x, c.y); g.rotate(c.a);
     const gem = (L, W, f) => { g.beginPath(); g.moveTo(0, 0); g.lineTo(L * .32, -W); g.lineTo(L, 0); g.lineTo(L * .32, W); g.closePath();
-        const gr = g.createLinearGradient(0, -W, 0, W); gr.addColorStop(0, "rgba(235,248,255,.95)"); gr.addColorStop(.5, "rgba(120,190,245,.85)"); gr.addColorStop(1, "rgba(60,130,215,.9)"); g.fillStyle = gr; g.globalAlpha *= f; g.fill();
-        g.strokeStyle = "rgba(20,70,140,.85)"; g.lineWidth = 1.2; g.stroke(); g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 1; g.beginPath(); g.moveTo(0, 0); g.lineTo(L, 0); g.moveTo(L * .32, -W); g.lineTo(L * .6, 0); g.stroke(); };
+        const gr = g.createLinearGradient(0, -W, 0, W); gr.addColorStop(0, pal ? pal[0] : "rgba(235,248,255,.95)"); gr.addColorStop(.5, pal ? pal[1] : "rgba(120,190,245,.85)"); gr.addColorStop(1, pal ? pal[2] : "rgba(60,130,215,.9)"); g.fillStyle = gr; g.globalAlpha *= f; g.fill();
+        g.strokeStyle = pal ? pal[3] : "rgba(20,70,140,.85)"; g.lineWidth = 1.2; g.stroke(); g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 1; g.beginPath(); g.moveTo(0, 0); g.lineTo(L, 0); g.moveTo(L * .32, -W); g.lineTo(L * .6, 0); g.stroke(); };
     if (c.kind === "spike") gem(c.sz * 1.3 * e, c.sz * .22 * e, 1);
     else if (c.kind === "flower") { for (let p = 0; p < 6; p++) { g.rotate(TAU / 6); gem(c.sz * e, c.sz * .3 * e, .95); } g.fillStyle = "#f4fbff"; g.beginPath(); g.arc(0, 0, c.sz * .14 * e, 0, TAU); g.fill(); }
     else { for (let p = 0; p < 2; p++) { gem(c.sz * e, c.sz * .45 * e, .7); g.rotate(Math.PI); } }

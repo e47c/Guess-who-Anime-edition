@@ -22,9 +22,10 @@ import { audio } from "./audio.js";
 import { ambient, titleCard, shake, ring, burstText, motionOK, setReduced, isReduced } from "./fx.js";
 import { profile, avatarEl, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js";
 import { showResults, closeResults } from "./results.js";
-import { initCine, cineHook, cineHas } from "./cine/engine.js?v=10";
-import { hand as cineHand } from "./cine/hands.js?v=10";
-import * as CK from "./cine/kit.js?v=10";
+import { initCine, cineHook, cineHas } from "./cine/engine.js?v=11";
+import { hand as cineHand } from "./cine/hands.js?v=11";
+import * as CK from "./cine/kit.js?v=11";
+import * as HOLD from "./cine/holds.js?v=11";
 
 
 /* =========================================
@@ -2717,7 +2718,7 @@ function unoSpecialFx(u, f) {
     const hook = UNO_FX_HOOKS[c.sk + "_" + c.k];
     if (hook) { try { hook(box, close, c, u); } catch (e) { console.warn(e); close(); } } else setTimeout(close, 1700);
 }
-/* FREEZES THAT HOLD THE WHOLE PAGE (DIO's ZA WARUDO, Aokiji's Ice Age): while the player frozen by that card still has turns to lose,
+/* FREEZES THAT HOLD THE WHOLE PAGE (all nine Freeze cards: DIO's ZA WARUDO, Aokiji's Ice Age, Haku's mirrors, Hit's grey...): while the player frozen by that card still has turns to lose,
    one fixed layer over everything (backdrop-filter + its own texture) holds the page for every player: grey for DIO, ice for Aokiji.
    The card's scene hands over to it without a seam (Aokiji's grows it outward from his palm), the others play on under it, and the
    moment the frozen player's last skipped turn is spent it plays its release: DIO's reversal, or the ice cracking and shattering. */
@@ -2746,8 +2747,32 @@ const TS = {
         build: el => { const tx = hbEl("i", "ice-tex"); tx.style.backgroundImage = "url(" + iceTexture() + ")"; const a = document.createElement("canvas"), b = document.createElement("canvas"); a.className = "hyo-crys"; b.className = "hyo-live"; el.append(hbEl("i", "ice-cool"), tx, a, b); },
         onStopped: d => { HYO.start = d.start || null; },
         hold: on => hyoHold(on),
-        release: v => hyoRelease(v) }
+        release: v => hyoRelease(v) },
+    naruto_f: { cls: "mirror-veil", outMs: 3200, grow: true,
+        build: el => { const tx = hbEl("i", "ice-tex"); tx.style.backgroundImage = "url(" + iceTexture() + ")"; el.append(hbEl("i", "ice-cool"), tx, hbEl("i", "ice-mist"), hbEl("i", "ice-mist b")); tsCanvases(el); },
+        hold: on => hakuHold(on),
+        release: v => hakuMelt(v) },
+    dragonball_f: { cls: "skip-veil", outMs: 2700, grow: true, startCss: { "-webkit-mask-image": "linear-gradient(transparent, transparent)", "mask-image": "linear-gradient(transparent, transparent)", "--f": "none", "--wash": "0", "--red": "0" },
+        build: el => { el.append(hbEl("i", "skip-red")); tsCanvases(el); },
+        hold: on => hitHold(on),
+        release: v => hitRelease(v),
+        reset: () => hitAfterStop(true) },
+    demonslayer_f: { cls: "lotus-veil", outMs: 2700, grow: true, startCss: { "-webkit-mask-image": "linear-gradient(transparent, transparent)", "mask-image": "linear-gradient(transparent, transparent)" },
+        build: el => { const tx = hbEl("i", "ice-tex"); tx.style.backgroundImage = "url(" + domaTexture() + ")"; el.append(hbEl("i", "ice-cool"), tx, hbEl("i", "ice-mist"), hbEl("i", "ice-mist b"), hbEl("i", "poison a"), hbEl("i", "poison b"), hbEl("i", "poison c"));
+            for (let i = 0; i < 8; i++) { const gl = hbEl("i", "ice-glint"); gl.style.cssText = "left:" + (6 + 88 * CK.hs(i * 5.3)) + "%;top:" + (8 + 84 * CK.hs(i * 2.9)) + "%;animation-delay:" + (CK.hs(i * 6.1) * 7).toFixed(2) + "s"; el.appendChild(gl); } },
+        hold: on => domaHold(on),
+        release: v => domaWind(v) },
+    blackclover_f: { cls: "chrono-veil", outMs: 1400, grow: true,
+        build: el => { el.append(hbEl("i", "chrono-tint"), hbEl("i", "chrono-glass")); tsCanvases(el); },
+        onStopped: d => { JUH.rot = d.rot || 0; },
+        hold: on => chronoHold(on),
+        release: v => chronoTeleport(v) }
 };
+/* the two layers a veil draws on above its own filter: a static one and a live one (the card's scene paints the live one while it grows) */
+function tsCanvases(el) { const a = document.createElement("canvas"), b = document.createElement("canvas"); a.className = "vl-a"; b.className = "vl-b"; el.append(a, b); }
+/* inline styles a scene put on its veil (mask, filter...): set them, and clear them all once the hold takes over */
+function tsCss(s, v, css) { Object.keys(css).forEach(k => { v.style.setProperty(k, css[k]); (s.inl || (s.inl = new Set())).add(k); }); }
+function tsCssClear(s, v) { if (s.inl) { s.inl.forEach(k => v.style.removeProperty(k)); s.inl = null; } }
 const tsSt = {};
 const tsOf = key => tsSt[key] || (tsSt[key] = { on: false, cine: false, el: null, tm: 0 });
 function tsVeil(key) {
@@ -2757,25 +2782,28 @@ function tsVeil(key) {
 const tsActive = (u, key) => !!u && u.phase === "play" && unoLive(u).some(p => (u.frozen || {})["p" + p] > 0 && (u.fzk || {})["p" + p] === key);
 let tsU = null;
 function tsSync(u, instant) {
-    tsU = u;
+    tsU = u; hitAfterTrack(u);
     Object.keys(TS).forEach(key => {
         const s = tsOf(key), want = tsActive(u, key), D = TS[key];
         if (want && !s.cine && (!s.on || s.el.classList.contains("pause") || s.el.classList.contains("grow"))) {
-            s.on = true; const v = tsVeil(key); clearTimeout(s.tm); v.classList.remove("out", "pause", "grow"); v.style.removeProperty("--r"); v.style.webkitMaskImage = ""; v.style.maskImage = ""; v.classList.toggle("now", !!instant); void v.offsetWidth; v.classList.add("on"); D.hold && D.hold(true);
+            s.on = true; const v = tsVeil(key); clearTimeout(s.tm); v.classList.remove("out", "pause", "grow", "gone", "blow", "broken"); v.style.removeProperty("--r"); tsCssClear(s, v); v.style.webkitMaskImage = ""; v.style.maskImage = ""; v.classList.toggle("now", !!instant); void v.offsetWidth; v.classList.add("on"); D.hold && D.hold(true);
         }
         if (want && s.on && D.refresh) { const v = s.el; requestAnimationFrame(() => requestAnimationFrame(() => { if (s.on) D.refresh(v); })); }
         if (!want && s.on && D.refresh) { const c = s.el.querySelector(".snow-caps"); if (c) c.getContext("2d").clearRect(0, 0, c.width, c.height); }
         if (!want && s.on) {
             s.on = false; const v = tsVeil(key); D.hold && D.hold(false);
-            if (motionOK() && currentScreen === "uno") { v.classList.remove("out", "now", "pause", "grow"); void v.offsetWidth; v.classList.add("out"); v.classList.remove("on"); D.release(v); clearTimeout(s.tm); s.tm = setTimeout(() => v.classList.remove("out"), D.outMs); }
+            if (motionOK() && currentScreen === "uno") { v.classList.remove("out", "now", "pause", "grow"); void v.offsetWidth; v.classList.add("out"); v.classList.remove("on"); D.release(v); clearTimeout(s.tm); s.tm = setTimeout(() => v.classList.remove("out", "gone"), D.outMs); }
             else v.classList.remove("on", "now", "pause", "grow");
         }
     });
 }
-function tsReset() { Object.keys(tsSt).forEach(key => { const s = tsSt[key]; s.on = false; s.cine = false; TS[key].hold && TS[key].hold(false); if (s.el) s.el.classList.remove("on", "now", "pause", "out", "grow"); }); const c = $("iceShatter"); if (c) c.remove(); }
+function tsReset() { Object.keys(tsSt).forEach(key => { const s = tsSt[key]; s.on = false; s.cine = false; TS[key].hold && TS[key].hold(false); if (s.el) { s.el.classList.remove("on", "now", "pause", "out", "grow", "gone", "blow", "broken"); tsCssClear(s, s.el); } }); Object.keys(TS).forEach(key => TS[key].reset && TS[key].reset()); const c = $("iceShatter"); if (c) c.remove(); }
 document.addEventListener("timestop", e => {
     const d = e.detail || {}, D = TS[d.key]; if (!D) return; const s = tsOf(d.key);
-    if (d.ph === "start") { s.cine = true; const v = tsVeil(d.key); v.classList.remove("on", "out", "now"); if (D.grow) { v.classList.add("grow"); v.style.setProperty("--r", "0px"); } else v.classList.add("pause"); }
+    if (d.ph === "start") { s.cine = true; const v = tsVeil(d.key); v.classList.remove("on", "out", "now", "gone", "blow", "broken"); if (D.grow) { v.classList.add("grow"); v.style.setProperty("--r", "0px"); if (D.startCss) tsCss(s, v, D.startCss); } else v.classList.add("pause"); }
+    else if (d.ph === "grow" && s.cine && D.grow && !d.circles && d.x == null) {       // a scene styling its veil (mask, filter) and painting its top layer for this frame
+        const v = tsVeil(d.key); if (d.css) tsCss(s, v, d.css);
+        if (d.paint) { const c = v.querySelector(".vl-b"); if (c) { const g = chainCanvas(c); g.clearRect(0, 0, innerWidth, innerHeight); try { d.paint(g, innerWidth, innerHeight); } catch (e) { console.warn(e); } } } }
     else if (d.ph === "grow" && s.cine && D.grow && d.circles) { const v = tsVeil(d.key), m = d.circles.length ? d.circles.map(([x, y, r]) => "radial-gradient(circle at " + x.toFixed(0) + "px " + y.toFixed(0) + "px, #000 " + Math.max(0, r - 50).toFixed(0) + "px, transparent " + Math.max(1, r).toFixed(0) + "px)").join(",") : "linear-gradient(transparent, transparent)"; v.style.webkitMaskImage = m; v.style.maskImage = m; }
     else if (d.ph === "grow" && s.cine && D.grow) { const v = tsVeil(d.key); v.style.setProperty("--x", d.x.toFixed(1) + "px"); v.style.setProperty("--y", d.y.toFixed(1) + "px"); v.style.setProperty("--r", d.r.toFixed(1) + "px"); }
     else if (d.ph === "stopped") { s.cine = false; D.onStopped && D.onStopped(d); tsSync(tsU, true); }
@@ -2897,6 +2925,193 @@ function hyoRelease(v) {
     setTimeout(() => { if (v.classList.contains("out")) iceShatter(v); }, ONE + 250);     // stage 2, after a beat: the frozen sheet cracks like glass and falls away
 }
 window.addEventListener("resize", () => { const st = tsSt.bleach_f; if (st && st.on) hyoHold(true); });
+/* HAKU's Crystal Ice Mirrors held over the page: blue ice (the veil), the frameless mirrors round the edges and the long crystals stuck
+   in the table round the piles (holds.js, the same ones the scene ended on) on a static layer; on a live layer a glint travels over each
+   mirror and ice motes twinkle. The release is a melt, not a shatter: the crystals soften and shrink, the mirrors lose their edges and
+   sink, the ice turns to slush (the veil's own keyframes), then to drops of water that run off, with a little steam. */
+const HKH = { M: null, S: null, art: null, raf: 0, iv: 0 };
+function hakuArt(cb) { if (!HKH.art) { HKH.art = new Image(); HKH.art.src = "images/special/naruto_freeze.jpg"; } const im = HKH.art; if (im.complete && im.naturalWidth) return im; if (cb) im.addEventListener("load", cb, { once: true }); return null; }
+function hakuHold(on) {
+    cancelAnimationFrame(HKH.raf); clearInterval(HKH.iv); HKH.raf = 0; const st = tsSt.naruto_f; if (!on || !st || !st.el) return;
+    const w = innerWidth, h = innerHeight, M = Math.min(w, h); HKH.M = HOLD.hakuMirrors(w, h); HKH.S = HOLD.hakuSpikes(w, h, HKH.M, HOLD.hakuKeep(w, h));
+    const still = () => { if (!st.on) return; const g = chainCanvas(st.el.querySelector(".vl-a")); g.clearRect(0, 0, w, h); const art = hakuArt(still); HKH.M.forEach(m => HOLD.iceMirror(g, m, { art, focus: [.58, .25], glint: false })); HKH.S.forEach(s => HOLD.iceSpike(g, s, 1)); };
+    still(); const live = st.el.querySelector(".vl-b"); let last = 0;
+    const frame = now => {
+        HKH.raf = requestAnimationFrame(frame); if (now - last < 42 || document.hidden) return; last = now;
+        const g = chainCanvas(live), t = now / 1000; g.clearRect(0, 0, w, h); if (!motionOK()) return;
+        HKH.M.forEach(m => HOLD.iceMirror(g, m, { sheen: true, t }));                                              // the shimmer travelling over the ice
+        const s = HKH.S[Math.floor(t / 2.6) % HKH.S.length], q = (t / 2.6) % 1; if (s && q < .5) { const L = s.len * .93, k = q * 2; CK.glow(g, s.tx + Math.cos(s.a + Math.PI) * L * (1 - k), s.ty + Math.sin(s.a + Math.PI) * L * (1 - k), s.wd * 1.6, "#ffffff", Math.sin(k * Math.PI) * .7); }
+        g.save(); g.globalCompositeOperation = "lighter"; for (let i = 0; i < 18; i++) { const u = (t * (.18 + .1 * CK.hs(i)) + CK.hs(i * 3)) % 1, x = CK.hs(i * 7.1) * w + Math.sin(t * .3 + i) * 12, y = CK.hs(i * 4.3) * h - u * M * .05;
+            g.globalAlpha = Math.pow(Math.sin(u * Math.PI), 3) * .85; g.fillStyle = "#fff"; g.save(); g.translate(x, y); g.rotate(i + t * .2); g.fillRect(-.8, -4, 1.6, 8); g.fillRect(-4, -.8, 8, 1.6); g.restore(); } g.restore();
+    };
+    HKH.raf = requestAnimationFrame(frame);
+    let k = 0; HKH.iv = setInterval(() => { if (motionOK() && !document.hidden) sfx(k++ % 2 ? "creak" : "wind"); }, 6600);
+}
+function hakuMelt(v) {
+    cancelAnimationFrame(HKH.raf); clearInterval(HKH.iv); const st = tsSt.naruto_f; if (!st || !st.el) return;
+    const w = innerWidth, h = innerHeight, M = Math.min(w, h), mir = HKH.M || HOLD.hakuMirrors(w, h), spk = HKH.S || HOLD.hakuSpikes(w, h, mir, HOLD.hakuKeep(w, h)), art = hakuArt();
+    chainCanvas(st.el.querySelector(".vl-a")).clearRect(0, 0, w, h); const live = st.el.querySelector(".vl-b"), ALL = 2900, t0 = performance.now();
+    sfx("melt"); [380, 720, 1010, 1330, 1640, 2050, 2420].forEach(d => setTimeout(() => sfx("drip"), d));
+    const drops = []; for (let i = 0; i < 80; i++) { const fromSpike = i % 4 === 0, m = mir[i % mir.length], s = spk[i % spk.length];
+        const x = fromSpike ? s.tx + Math.cos(s.a + Math.PI) * s.len * CK.hs(i * 1.7) * .8 : m.x + (CK.hs(i * 2.3) - .5) * m.w * .8, y = fromSpike ? s.ty + Math.sin(s.a + Math.PI) * s.len * CK.hs(i * 1.7) * .8 : m.y + m.h * (CK.hs(i * 3.1) - .2) * .5;
+        drops.push({ x, y, d: .12 + .55 * CK.hs(i * 4.9), v: .5 + CK.hs(i * 6.1), r: 1.6 + 2.2 * CK.hs(i * 8.3) }); }
+    const frame = now => {
+        const el = now - t0, p = Math.min(1, el / ALL), g = chainCanvas(live); g.clearRect(0, 0, w, h); if (el > ALL || !live.isConnected) return;
+        spk.forEach((s, i) => HOLD.iceSpike(g, s, 1, { melt: CK.ss(.02 + i * .015, .62 + i * .015, p) }));                                  // the crystals soften and shrink first
+        mir.forEach(m => HOLD.iceMirror(g, m, { art, focus: [.58, .25], glint: false, melt: CK.ss(.08 + m.i * .012, .78 + m.i * .01, p) }));   // the mirrors lose their edges and sink
+        g.save(); drops.forEach(D => { const q = (p - D.d) / (1 - D.d); if (q <= 0) return; const fall = q * q * h * .55 * D.v, a = 1 - CK.ss(.6, 1, q), len = D.r * (1.6 + q * 5);   // water running off
+            const gr = g.createLinearGradient(0, D.y + fall - len, 0, D.y + fall + D.r); gr.addColorStop(0, "rgba(200,232,255,0)"); gr.addColorStop(1, "rgba(225,244,255," + .85 * a + ")"); g.fillStyle = gr; g.beginPath(); g.moveTo(D.x, D.y + fall - len); g.quadraticCurveTo(D.x + D.r, D.y + fall, D.x, D.y + fall + D.r); g.quadraticCurveTo(D.x - D.r, D.y + fall, D.x, D.y + fall - len); g.fill();
+            g.fillStyle = "rgba(255,255,255," + .8 * a + ")"; g.beginPath(); g.arc(D.x - D.r * .3, D.y + fall, D.r * .3, 0, 6.283); g.fill(); }); g.restore();
+        g.save(); for (let i = 0; i < 14; i++) { const m = mir[i % mir.length], u = (p * 1.4 + CK.hs(i)) % 1; CK.pool(g, m.x + (CK.hs(i * 5) - .5) * m.w, m.y + m.h * .3 - u * M * .2, M * (.05 + .08 * u), "#f4faff", .16 * CK.bell(p, .1, .85) * Math.sin(u * Math.PI)); } g.restore();   // light steam
+        requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+}
+window.addEventListener("resize", () => { const st = tsSt.naruto_f; if (st && st.on) hakuHold(true); });
+
+/* HIT's Time-Skip Freeze held over the page: the washed-out light grey (the veil's backdrop), the light-red ice round the edges and over
+   the table (static layer), faint purple energy flickering and the ice glinting (live layer), a low hum now and then. The release:
+   white sparkles with a white aura rise off the table and the cards, the red ice breaks up into them, the colour comes back; then the
+   sparkles turn purple and stay on the table and cards for one more round (every player takes one turn), then fade. */
+const HTH = { crys: null, raf: 0, iv: 0 };
+function hitHold(on) {
+    cancelAnimationFrame(HTH.raf); clearInterval(HTH.iv); HTH.raf = 0; const st = tsSt.dragonball_f; if (!on || !st || !st.el) return;
+    const w = innerWidth, h = innerHeight; HTH.crys = HOLD.hitCrystals(w, h);
+    const gs = chainCanvas(st.el.querySelector(".vl-a")); gs.clearRect(0, 0, w, h); HTH.crys.forEach(c => CK.crystalDraw(gs, c, 1, 0, HOLD.HIT_PAL));
+    const live = st.el.querySelector(".vl-b"); let last = 0;
+    const frame = now => {
+        HTH.raf = requestAnimationFrame(frame); if (now - last < 42 || document.hidden) return; last = now;
+        const g = chainCanvas(live), t = now / 1000; g.clearRect(0, 0, w, h); if (!motionOK()) return;
+        HOLD.hitArcs(g, w, h, t, .4);
+        for (let i = 0; i < 6; i++) { const c = HTH.crys[Math.floor(CK.hs(i * 7.3 + Math.floor(t * .6 + i * .4)) * HTH.crys.length)], q = (t * .6 + i * .4) % 1; if (c) CK.crystalDraw(g, c, .0001, Math.sin(q * Math.PI) * .7, HOLD.HIT_PAL); }
+    };
+    HTH.raf = requestAnimationFrame(frame);
+    HTH.iv = setInterval(() => { if (motionOK() && !document.hidden) sfx("hum"); }, 6400);
+}
+const AF = { on: false, end: 0, raf: 0, p0: 0, left: false, seen: null, cv: null, anchors: [], at: 0, v: null, crys: null, t0: 0, reset: false };
+function hitRelease(v) {
+    cancelAnimationFrame(HTH.raf); clearInterval(HTH.iv); const st = tsSt.dragonball_f; if (st && st.el) st.el.querySelectorAll("canvas").forEach(c => c.getContext("2d").clearRect(0, 0, c.width, c.height));
+    cancelAnimationFrame(AF.raf); if (AF.cv) AF.cv.remove();
+    const cv = document.createElement("canvas"); cv.className = "hit-after"; document.body.appendChild(cv);
+    Object.assign(AF, { on: true, end: 0, p0: tsU ? Number(tsU.turn) : 0, left: false, seen: new Set(), cv, anchors: HOLD.sparkleAnchors(), at: performance.now(), v, crys: HTH.crys || HOLD.hitCrystals(innerWidth, innerHeight), t0: performance.now(), reset: false });
+    sfx("sparkle"); setTimeout(() => sfx("sparkle"), 420); setTimeout(() => sfx("restore"), 900); setTimeout(() => { if (AF.on && !AF.end) sfx("aura"); }, 2450);
+    AF.raf = requestAnimationFrame(hitAfterFrame);
+}
+const AF_W = ["#ffffff", "#ffffff"], AF_P = ["#f1e2ff", "#a35cff"];
+function hitAfterFrame(now) {
+    const cv = AF.cv; if (!cv || !cv.isConnected) return; AF.raf = requestAnimationFrame(hitAfterFrame);
+    const el = now - AF.t0, w = innerWidth, h = innerHeight, M = Math.min(w, h), mo = motionOK();
+    if (AF.v && el < 2700) { const q = CK.ss(900, 2400, el), k = 1 - q; AF.v.style.setProperty("--f", "grayscale(" + (.86 * k).toFixed(3) + ") brightness(" + (1 + .1 * k).toFixed(3) + ") contrast(" + (1 - .14 * k).toFixed(3) + ")"); AF.v.style.setProperty("--wash", k.toFixed(3)); AF.v.style.setProperty("--red", (1 - CK.ss(0, 900, el)).toFixed(3)); }
+    else if (AF.v) { ["--f", "--wash", "--red"].forEach(p => AF.v.style.removeProperty(p)); AF.v = null; }
+    const fade = AF.end ? 1 - CK.ss(0, 1200, now - AF.end) : 1; if (AF.end && fade <= 0) { cv.remove(); AF.cv = null; AF.on = false; return; }
+    if (now - AF.at > 500) { AF.anchors = HOLD.sparkleAnchors(); AF.at = now; }
+    const g = chainCanvas(cv); g.clearRect(0, 0, w, h);
+    const purple = CK.ss(2400, 3000, el), grow = CK.ss(0, 1000, el), t = now / 1000, A = AF.anchors;
+    if (el < 1100) AF.crys.forEach((c, i) => { const e = CK.ss(i % 7 * 40, 700 + i % 5 * 60, el); if (e < 1) CK.crystalDraw(g, c, 1 - e, e * .3, HOLD.HIT_PAL);      // the red ice breaking up into sparkles
+        if (e > 0 && e < 1 && i % 2 === 0) HOLD.sparkle(g, c.x + Math.cos(c.a) * c.sz * e, c.y + Math.sin(c.a) * c.sz * e - e * M * .03, M * .006 * (1 + e), 1 - e, e * 3, AF_W); });
+    // the aura on the cards and the table: a soft rim of light round each
+    g.save(); g.lineJoin = "round"; A.forEach((r, i) => { const pul = .75 + .25 * Math.sin(t * 2.2 + i); [[AF_W[1], (1 - purple) * .4], [AF_P[1], purple * .3]].forEach(([c, a]) => { if (a <= 0) return; g.shadowColor = c; g.shadowBlur = 16; g.strokeStyle = c; g.globalAlpha = a * pul * grow * fade; g.lineWidth = 1.5; g.strokeRect(r.x - 2, r.y - 2, r.w + 4, r.h + 4); }); }); g.restore();
+    // the sparkles: most of them on the cards and the table, a few drifting anywhere; each one twinkles in and out where it was born
+    const N = mo ? 70 : 26, live = Math.round(N * grow);
+    for (let i = 0; i < live; i++) {
+        const per = 1.4 + 1.2 * CK.hs(i * 3.7), ph = t / per + CK.hs(i * 1.3), gen = Math.floor(ph), u = ph - gen, sd = i * 31 + gen * 7, free = CK.hs(sd) < .16 || !A.length;
+        let x, y; if (free) { x = CK.hs(sd * 1.3) * w; y = CK.hs(sd * 2.9) * h; } else { const r = A[Math.floor(CK.hs(sd * 1.7) * A.length)]; x = r.x + CK.hs(sd * 2.3) * r.w; y = r.y + CK.hs(sd * 3.1) * r.h; }
+        const a = Math.pow(Math.sin(u * Math.PI), 2) * fade, R = M * (.004 + .006 * CK.hs(sd * 4.1)), rot = u * 1.2 + i, dy = mo ? -u * M * .025 : 0;
+        if (purple < 1) HOLD.sparkle(g, x, y + dy, R, a * (1 - purple), rot, AF_W);
+        if (purple > 0) HOLD.sparkle(g, x, y + dy, R, a * purple, rot, AF_P);
+    }
+    if (el > 2350 && el < 3200) { const q = (el - 2350) / 850; g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = Math.sin(q * Math.PI) * .22; const gr = g.createRadialGradient(w / 2, h / 2, M * .2, w / 2, h / 2, Math.hypot(w, h) * .6); gr.addColorStop(0, "rgba(163,92,255,0)"); gr.addColorStop(1, "rgba(163,92,255,1)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); g.restore(); }   // the change to purple
+}
+/* one more round after the colours come back: it ends when the turn has gone round and come back to whoever was up at the release */
+function hitAfterTrack(u) {
+    if (!AF.on || AF.end) return;
+    if (!u || u.phase !== "play" || currentScreen !== "uno") return hitAfterStop();
+    const turn = Number(u.turn), live = unoLive(u);
+    if (turn !== AF.p0) { AF.left = true; AF.seen.add(turn); } else if (AF.left) return hitAfterStop();
+    if (!live.includes(AF.p0) && AF.seen.size >= live.length) hitAfterStop();
+}
+function hitAfterStop(now) { if (!AF.on) return; if (now) { cancelAnimationFrame(AF.raf); if (AF.cv) AF.cv.remove(); AF.cv = null; AF.on = false; if (AF.v) ["--f", "--wash", "--red"].forEach(p => AF.v.style.removeProperty(p)); AF.v = null; return; } if (!AF.end) AF.end = performance.now(); }
+window.addEventListener("resize", () => { const st = tsSt.dragonball_f; if (st && st.on) hitHold(true); });
+
+/* DOMA's Frozen Lotus held over the page: the heavy, rough, layered frost with its specks of blood (the veil's texture, holds.js
+   domaFrost), cold air rolling over it and a thin purple poison mist sitting on it (drifting layers), glints, quiet cracking and wind.
+   The release: a wind rises and blows harder and harder, carrying the mist away and cracking the ice, then shatters it into pieces
+   that the wind carries off the screen, blood and all, while the colour comes back. */
+const DMH = { tex: null, url: "", iv: 0 };
+function domaTexture() { if (!DMH.tex) { const W = 1200, H = Math.round(1200 * Math.min(2.4, Math.max(.4, innerHeight / innerWidth))); DMH.tex = HOLD.domaFrost(W, H); DMH.url = DMH.tex.toDataURL("image/png"); } return DMH.url; }
+function domaHold(on) { clearInterval(DMH.iv); if (on) { let k = 0; DMH.iv = setInterval(() => { if (motionOK() && !document.hidden) sfx(k++ % 2 ? "creak" : "wind"); }, 6600); } }
+function domaWind(v) {
+    clearInterval(DMH.iv); const old = $("iceShatter"); if (old) old.remove();
+    const cv = document.createElement("canvas"); cv.id = "iceShatter"; cv.className = "ice-shatter"; const w = innerWidth, h = innerHeight, M = Math.min(w, h), dpr = Math.min(1.5, devicePixelRatio || 1);
+    cv.width = w * dpr; cv.height = h * dpr; document.body.appendChild(cv); const g = cv.getContext("2d"), tex = DMH.tex;
+    const CR = 700, BRK = 1300, ALL = 2700, t0 = performance.now(), lines = []; for (let k = 0; k < 14; k++) lines.push(CK.randLine(k + 120 + (Date.now() % 40), w, h));
+    const shards = CK.shardsOf(w, h, lines), cracks = []; for (let k = 0; k < 14; k++) { let x = CK.hs(k * 3.7) * w * .6, y = CK.hs(k * 5.1) * h, a = (CK.hs(k * 7.7) - .5) * 1.2; const P = [[x, y]]; for (let j = 0; j < 12; j++) { a += (CK.hs(k * 13 + j) - .5) * .9; x += Math.cos(a) * Math.hypot(w, h) / 20; y += Math.sin(a) * Math.hypot(w, h) / 20; P.push([x, y]); } cracks.push(P); }
+    sfx("gust"); setTimeout(() => sfx("crack"), CR); setTimeout(() => sfx("crack"), CR + 300); setTimeout(() => { sfx("shatter"); sfx("impact"); }, BRK);
+    v.classList.add("blow");
+    const frame = now => {
+        const el = now - t0; if (el > ALL || !cv.isConnected) { cv.remove(); return; }
+        g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+        const wind = Math.min(1, el / BRK), sp = wind * wind, after = 1 - CK.ss(BRK, ALL, el);
+        // the wind: streaks across the screen, more and faster every moment
+        g.save(); g.lineCap = "round"; const n = Math.round(14 + 70 * wind); for (let i = 0; i < n; i++) { const y = CK.hs(i * 2.3) * h, L = M * (.05 + .25 * sp) * (.5 + CK.hs(i)), x = ((CK.hs(i * 5.9) * (w + L) + el * (.4 + 2.6 * sp) * (.6 + .8 * CK.hs(i * 3.3))) % (w + L * 2)) - L;
+            const gr = g.createLinearGradient(x - L, y, x, y); gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(1, "rgba(236,246,255," + (.14 + .3 * sp) * after + ")"); g.strokeStyle = gr; g.lineWidth = 1 + 1.5 * CK.hs(i * 7.1); g.beginPath(); g.moveTo(x - L, y + Math.sin(el * .004 + i) * 6); g.lineTo(x, y); g.stroke(); } g.restore();
+        if (el < BRK) {                                                // the ice cracking under the wind
+            const q = CK.ss(CR - 200, BRK, el); g.lineCap = "round"; cracks.forEach(P => { const k = Math.max(1, Math.floor(P.length * q)); [[6, "rgba(150,200,240,.3)"], [1.8, "rgba(255,255,255,.95)"]].forEach(([lw, c]) => { g.strokeStyle = c; g.lineWidth = lw; g.beginPath(); for (let i = 0; i < k; i++) i ? g.lineTo(P[i][0], P[i][1]) : g.moveTo(P[i][0], P[i][1]); g.stroke(); }); });
+        } else {                                                       // the shatter: the pieces, frost and blood still on them, carried off by the wind
+            if (!v.classList.contains("broken")) v.classList.add("broken");
+            const p = (el - BRK) / (ALL - BRK), e = 1 - Math.pow(1 - p, 2.2);
+            shards.forEach((S, i) => { const kx = .7 + .9 * CK.hs(i * 3.1), dx = e * w * 1.15 * kx + p * p * w * .3, dy = (S.dy * .12 + (CK.hs(i * 5.3) - .55) * .35) * e * h, rot = (CK.hs(i * 7.9) - .3) * e * 2.4;
+                g.save(); g.globalAlpha = Math.max(0, 1 - p * 1.05); g.translate(S.cx + dx, S.cy + dy); g.rotate(rot); g.translate(-S.cx, -S.cy);
+                g.beginPath(); S.p.forEach((q, j) => j ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.closePath(); g.save(); g.clip();
+                const sg = g.createLinearGradient(S.cx - 80, S.cy - 80, S.cx + 80, S.cy + 80); sg.addColorStop(0, "rgba(236,246,255,.6)"); sg.addColorStop(.5, "rgba(180,214,242,.3)"); sg.addColorStop(1, "rgba(250,252,255,.55)"); g.fillStyle = sg; g.fillRect(S.cx - w, S.cy - h, w * 2, h * 2);
+                if (tex) { g.globalAlpha *= .9; g.drawImage(tex, 0, 0, w, h); } g.restore(); g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 1.6; g.stroke(); g.restore(); });
+            for (let i = 0; i < 70; i++) { const x0 = CK.hs(i * 1.7) * w, y0 = CK.hs(i * 3.3) * h, x = x0 + e * w * (1 + CK.hs(i * 4.1)), y = y0 + Math.sin(p * 5 + i) * 18 - e * h * .1 * CK.hs(i); g.globalAlpha = (1 - p) * .8; g.fillStyle = "#fff"; g.fillRect(x, y, 2.5, 2.5); } g.globalAlpha = 1;   // ice dust in the wind
+        }
+        requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+}
+
+/* JULIUS's Time Stop held over the page: everything inside the blue sphere (the veil's backdrop, tint and glassy rim), the bracelet of
+   Roman numerals turning slowly round it and gentle ripples on its inner surface (live layer), a quiet tick now and then. The release is
+   a teleport: the numerals flash, the bracelet spins faster and faster, then the whole sphere collapses into a point of light-blue light
+   and is gone in an instant, with a quick flash. */
+const JUH = { rot: 0, t0: 0, raf: 0, iv: 0 };
+function chronoHold(on) {
+    cancelAnimationFrame(JUH.raf); clearInterval(JUH.iv); JUH.raf = 0; const st = tsSt.blackclover_f; if (!on || !st || !st.el) return;
+    chainCanvas(st.el.querySelector(".vl-a")).clearRect(0, 0, innerWidth, innerHeight);
+    const live = st.el.querySelector(".vl-b"); JUH.t0 = performance.now(); let last = 0;
+    const frame = now => {
+        JUH.raf = requestAnimationFrame(frame); if (now - last < 42 || document.hidden) return; last = now;
+        const w = innerWidth, h = innerHeight, g = chainCanvas(live), mo = motionOK(), t = (now - JUH.t0) / 1000; g.clearRect(0, 0, w, h);
+        if (mo) HOLD.chronoRipples(g, w, h, now / 1000, 1);
+        HOLD.chronoRing(g, w, h, { rot: JUH.rot + (mo ? .05 * t : 0), flash: mo ? .12 * (.5 + .5 * Math.sin(t * 1.4)) : 0 });
+    };
+    JUH.raf = requestAnimationFrame(frame);
+    JUH.iv = setInterval(() => { if (motionOK() && !document.hidden) { sfx("tock"); setTimeout(() => sfx("tock"), 520); } }, 5200);
+}
+function chronoTeleport(v) {
+    cancelAnimationFrame(JUH.raf); clearInterval(JUH.iv); const st = tsSt.blackclover_f; if (!st || !st.el) return;
+    const live = st.el.querySelector(".vl-b"), w = innerWidth, h = innerHeight, M = Math.min(w, h), R0 = Math.hypot(w, h) * .62, rot0 = JUH.rot + .05 * (performance.now() - JUH.t0) / 1000, SPIN = 680, COL = 220, ALL = SPIN + COL + 420, t0 = performance.now();
+    const old = $("iceShatter"); if (old) old.remove(); const fc = document.createElement("canvas"); fc.id = "iceShatter"; fc.className = "ice-shatter"; document.body.appendChild(fc);
+    sfx("spin"); setTimeout(() => sfx("teleport"), SPIN);
+    const frame = now => {
+        const el = now - t0, g = chainCanvas(live); g.clearRect(0, 0, w, h); const f = chainCanvas(fc); f.clearRect(0, 0, w, h);
+        if (el > ALL || !fc.isConnected) { fc.remove(); v.style.removeProperty("-webkit-mask-image"); v.style.removeProperty("mask-image"); return; }
+        const sp = Math.min(1, el / SPIN), k = el < SPIN ? 0 : CK.iExpo(Math.min(1, (el - SPIN) / COL));
+        if (k < 1) {
+            HOLD.chronoRing(g, w, h, { rot: rot0 + 9 * sp * sp * sp, flash: Math.min(1, sp * 1.4), sc: 1 - k, a: 1 - k * .3 });       // the numerals flash, the bracelet spins faster
+            if (k > 0) { const r = R0 * (1 - k), m = "radial-gradient(circle at 50% 50%, #000 " + Math.max(0, r - 30).toFixed(0) + "px, transparent " + Math.max(1, r).toFixed(0) + "px)"; v.style.setProperty("-webkit-mask-image", m); v.style.setProperty("mask-image", m); }   // the sphere collapses
+        } else if (!v.classList.contains("gone")) v.classList.add("gone");
+        const q = (el - SPIN - COL * .7) / 420; if (q > -.4) { const a = q < 0 ? 1 + q / .4 : 1 - q;                                  // the point of light, then the flash
+            f.save(); f.globalCompositeOperation = "lighter"; CK.glow(f, w / 2, h / 2, M * (q < 0 ? .08 : .08 + q * .5), "#cfeaff", Math.max(0, a)); CK.glow(f, w / 2, h / 2, M * .03, "#ffffff", Math.max(0, a));
+            if (q > 0) { f.strokeStyle = "rgba(220,242,255," + (1 - q) + ")"; f.lineWidth = 2; for (let i = 0; i < 10; i++) { const an = i / 10 * 6.283 + .3, r1 = M * (.05 + q * .2), r2 = r1 + M * (.08 + .3 * q); f.beginPath(); f.moveTo(w / 2 + Math.cos(an) * r1, h / 2 + Math.sin(an) * r1); f.lineTo(w / 2 + Math.cos(an) * r2, h / 2 + Math.sin(an) * r2); f.stroke(); } }
+            f.restore(); if (q > 0 && q < .25) { f.fillStyle = "rgba(230,246,255," + (.35 * (1 - q * 4)) + ")"; f.fillRect(0, 0, w, h); } }
+        requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+}
+
 /* Uraume's snow settles on the top edges of the real cards, plates, piles and buttons (re-drawn when the table re-renders) */
 function snowCaps(v) {
     const c = v && v.querySelector(".snow-caps"); if (!c) return; const dpr = Math.min(1.5, devicePixelRatio || 1), w = innerWidth, h = innerHeight;

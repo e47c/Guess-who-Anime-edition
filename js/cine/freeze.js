@@ -1,11 +1,12 @@
 /* =====================================================================
-   FREEZE CARDS · nine ways to freeze the same real plate (the next player loses 2 turns)
+   FREEZE CARDS · nine ways to freeze the next player (they lose 2 turns)
    Every scene: a character beat (eye close-up / cut-in), the technique in first person, the hit on the target
    (staged at centre, then gliding back onto its real place on the table), and a seal(g, X, a, r) that the ending
    keeps on the real plate.
    ===================================================================== */
-import * as K from "./kit.js?v=10";
-import { hand, fist, handTips, handRings, handPoint } from "./hands.js?v=10";
+import * as K from "./kit.js?v=11";
+import { hand, handTips, handRings, handPoint } from "./hands.js?v=11";
+import * as H from "./holds.js?v=11";
 const { lin, ss, hit, hs, TAU, mid } = K;
 
 const back = t => 1 - ss(.86, .97, t);                       // staged plate -> real plate over the last beat of the main act
@@ -113,54 +114,6 @@ const aokiji = {
     }
 };
 
-/* ---------- HAKU · Demonic Ice Mirrors: a dome of mirrors, his reflection in every one, needles from every side ---------- */
-function mirror(g, X, x, y, W, H, rot, a, showArt, glint) {
-    g.save(); g.translate(x, y); g.rotate(rot); g.globalAlpha *= a;
-    const path = () => { g.beginPath(); g.moveTo(-W / 2, -H / 2 + W * .1); g.lineTo(-W / 2 + W * .1, -H / 2); g.lineTo(W / 2 - W * .1, -H / 2); g.lineTo(W / 2, -H / 2 + W * .1); g.lineTo(W / 2, H / 2 - W * .1); g.lineTo(W / 2 - W * .1, H / 2); g.lineTo(-W / 2 + W * .1, H / 2); g.lineTo(-W / 2, H / 2 - W * .1); g.closePath(); };
-    path(); g.fillStyle = "rgba(120,200,240,.25)"; g.fill(); g.save(); path(); g.clip();
-    if (showArt > .3 && X.art) { g.globalAlpha *= showArt; K.cover(g, X.art, -W / 2, -H / 2, W, H, X.focus[0], X.focus[1] + .1, 1.1); g.globalCompositeOperation = "color"; g.fillStyle = "rgba(120,210,255,.45)"; g.fillRect(-W / 2, -H / 2, W, H); g.globalCompositeOperation = "source-over"; g.globalAlpha /= showArt; }
-    const gr = g.createLinearGradient(-W / 2, -H / 2, W / 2, H / 2); gr.addColorStop(0, "rgba(255,255,255,.55)"); gr.addColorStop(.3, "rgba(200,240,255,.08)"); gr.addColorStop(.62, "rgba(255,255,255,0)"); gr.addColorStop(.7, "rgba(255,255,255,.3)"); gr.addColorStop(1, "rgba(160,220,255,.15)"); g.fillStyle = gr; g.fillRect(-W / 2, -H / 2, W, H);
-    g.restore(); path(); g.lineWidth = 3; g.strokeStyle = "#e9fbff"; g.stroke(); g.lineWidth = 1.2; g.strokeStyle = "#7fd6ff"; g.stroke();
-    if (glint > 0) K.glow(g, W * .3, -H * .4, W * .5, "#ffffff", glint); g.restore();
-}
-const haku = {
-    col: "#7fe0ff", ms: 7400,
-    seal(g, X, a, r) { r = r || X.env.r; mirror(g, X, r.x + r.w / 2, r.y + r.h / 2, r.w + 34, r.h + 34, 0, a * .9, 0, .4 * a); },
-    main(g, X, T) {
-        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r), N = 14;
-        X.cue(.02, "freeze", t); X.cue(.2, "whoosh", t); for (let v = 0; v < 4; v++) X.cue(.48 + v * .08, "strike", t); X.cue(.8, "crack", t);
-        g.save(); K.cam(g, X, { r: Math.sin(s * .5) * .05 * (1 - lin(.45, .5, t)), z: 1 + .05 * Math.sin(s * .8), shake: (t > .48 && t < .82 ? 3 : 0) + hit(t, .8, .1) * 18 });
-        K.radial(g, w / 2, h / 2, Math.hypot(w, h) * .6, ["#0a3346", "#041621", "#01070c"]);
-        g.strokeStyle = "rgba(160,230,255,.12)"; g.lineWidth = 1; for (let i = 0; i < 24; i++) { const an = i / 24 * TAU; g.beginPath(); g.moveTo(w / 2, h / 2); g.lineTo(w / 2 + Math.cos(an) * w, h / 2 + Math.sin(an) * w); g.stroke(); }
-        const pos = [], cur = Math.floor(s * 5) % N, br = 1 - lin(.8, .86, t);
-        for (let i = 0; i < N; i++) {                                         // the dome: two rings of mirrors
-            const ring = i % 2, an = i / N * TAU + .2 + s * .05, rx = w * (ring ? .3 : .45), ry = h * (ring ? .27 : .41), x = w / 2 + Math.cos(an) * rx, y = h / 2 + Math.sin(an) * ry, on = K.oBack(lin(.02 + i * .012, .1 + i * .012, t));
-            pos.push([x, y]); if (on <= 0 || br <= 0) continue;
-            const W = M * (ring ? .13 : .18) * on, H = W * 1.7, show = t < .2 ? .35 : i === cur || i === (cur + 7) % N ? 1 : .12;
-            mirror(g, X, x, y, W, H, an + 1.5708, br, show, hit((s * 5) % 1, 0, .3) * (i === cur ? 1 : 0));
-        }
-        if (br < 1) K.debris(g, w / 2, h / 2, lin(.8, .98, t), 60, 13, { speed: M * 1.4, size: M * .03, grav: M * .5, cols: ["rgba(220,250,255,.9)", "rgba(140,210,240,.85)"], edge: "#ffffff" });
-        const sealA = ss(0, .06, t) * (1 - ss(.16, .22, t));                     // Haku's one-handed seal, ice gathering on the two raised fingers
-        if (sealA > 0) { g.save(); g.globalAlpha = sealA; const sx = w * .5, sy = h * 1.06 - K.oBack(lin(0, .08, t)) * h * .12; hand(g, sx, sy, HS(X) * 1.2, -.08, "two", { skin: "pale", rim: "#bff2ff", sleeve: { c: "#33503f", s: "#1f3428", cuff: "#cfe8f4", len: 260 } });
-            const tip = handTips("two"), k2 = HS(X) * 1.2, cs = Math.cos(-.08), sn = Math.sin(-.08); [tip[0], tip[1]].forEach(([tx, ty]) => { const x = sx + (tx * cs - ty * sn) * k2, y = sy + (tx * sn + ty * cs) * k2; K.glow(g, x, y, M * .05, "#bff2ff", .9); K.snowflake(g, x, y - M * .03, M * .03, lin(.04, .14, t), s * 2, "#ffffff"); }); g.restore();
-            K.slam(g, "秘術", w * .2, h * .3, M * .1, lin(.02, .2, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#06304a", glow: "#7fe0ff" }); }
-        plate(g, X, r, ss(.42, .5, t), lin(.48, .56, t));
-        for (let v = 0; v < 4; v++) for (let k = 0; k < 12; k++) {          // senbon from every mirror at the target
-            const st = .46 + v * .08 + k * .004, q = K.ioCub(lin(st, st + .07, t)); if (q <= 0) continue; const src = pos[(v * 5 + k * 3) % N], tx = c.x + (hs(v * 9 + k) - .5) * r.w * .8, ty = c.y + (hs(v * 9 + k + 3) - .5) * r.h * .7, an = Math.atan2(ty - src[1], tx - src[0]);
-            if (q >= 1) { K.sparks(g, tx, ty, lin(st + .07, st + .14, t), 4, v * 20 + k, { speed: M * .12, col: "#bff2ff" }); g.save(); g.translate(tx, ty); g.rotate(an); g.strokeStyle = "#e9fbff"; g.lineWidth = 1.6; g.beginPath(); g.moveTo(-M * .03, 0); g.lineTo(0, 0); g.stroke(); g.restore(); continue; }
-            const x = K.mix(src[0], tx, q), y = K.mix(src[1], ty, q);
-            g.save(); g.translate(x, y); g.rotate(an); g.globalCompositeOperation = "lighter"; g.strokeStyle = "rgba(160,235,255,.5)"; g.lineWidth = 5; g.beginPath(); g.moveTo(-M * .14, 0); g.lineTo(0, 0); g.stroke(); g.strokeStyle = "#ffffff"; g.lineWidth = 1.6; g.beginPath(); g.moveTo(-M * .05, 0); g.lineTo(0, 0); g.stroke(); g.restore();
-        }
-        if (t > .8) haku.seal(g, X, lin(.82, .92, t), r);
-        g.restore();
-        K.cutIn(g, X, lin(.2, .44, t), { y: .5, hh: .3, dir: -1, ang: .08, kj: "魔鏡氷晶", name: "HAKU" });
-        if (t > .5) K.slam(g, "千殺水翔", w / 2, h * .86, M * .075, lin(.5, .8, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#06304a", glow: "#7fe0ff", from: 1.3 });
-        K.title(g, X, lin(.82, 1, t), { en: "DEMONIC ICE MIRRORS", kj: "魔鏡氷晶", y: .84 });
-        if (hit(t, .8, .025)) X.fx.inv = "#9fe8ff";
-        K.vignette(g, w, h, .6, "#00080e"); K.bars(g, w, h, 1 - lin(.92, 1, t));
-    }
-};
-
 /* ---------- URAUME · Ice Formation (氷凝呪法), first person, drawn OVER the real table: hands folded at the waist like a servant
    waiting; on 霜凪 they rise and hold together out in front, palms forward, a point of pale cold light gathering between the thumbs
    while the voice builds; on its peak they push forward and the ice bursts out in every direction with snow, across the real table,
@@ -249,51 +202,6 @@ const uraume = {
     }
 };
 
-/* ---------- DOMA · Lotus Leaf Ice (Hasuha Kori): golden fans open, freezing mist, a giant ice lotus blooms behind the target ---------- */
-function fan(g, x, y, R, ang, open) {
-    g.save(); g.translate(x, y); g.rotate(ang); const sp = 1.7 * open, n = 13;
-    g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, R, -Math.PI / 2 - sp / 2, -Math.PI / 2 + sp / 2); g.closePath(); const gr = g.createRadialGradient(0, 0, R * .2, 0, 0, R); gr.addColorStop(0, "#5a3a08"); gr.addColorStop(.3, "#f2c94c"); gr.addColorStop(.85, "#ffe8a0"); gr.addColorStop(1, "#c9902a"); g.fillStyle = gr; g.fill();
-    g.save(); g.clip(); for (let i = 0; i < 3; i++) { const an = -Math.PI / 2 + (i - 1) * sp * .28; K.pool(g, Math.cos(an) * R * .62, Math.sin(an) * R * .62, R * .2, "#d81b4a", .7); } g.restore();
-    g.strokeStyle = "#3a2200"; g.lineWidth = 2; for (let i = 0; i <= n; i++) { const an = -Math.PI / 2 - sp / 2 + sp * i / n; g.beginPath(); g.moveTo(Math.cos(an) * R * .14, Math.sin(an) * R * .14); g.lineTo(Math.cos(an) * R, Math.sin(an) * R); g.stroke(); }
-    g.lineWidth = 3; g.beginPath(); g.arc(0, 0, R, -Math.PI / 2 - sp / 2, -Math.PI / 2 + sp / 2); g.stroke(); g.fillStyle = "#3a2200"; g.beginPath(); g.arc(0, 0, R * .06, 0, TAU); g.fill(); g.restore();
-}
-function lotus(g, x, y, R, p, rot, a = 1) {
-    if (p <= 0) return; g.save(); g.translate(x, y); g.rotate(rot); g.globalAlpha *= a;
-    for (let ly = 3; ly >= 0; ly--) { const n = 9 - ly, L = R * (1 - ly * .17) * K.oBack(lin(ly * .12, .5 + ly * .12, p)), open = .3 + .7 * K.oCub(lin(ly * .1, 1, p));
-        for (let k = 0; k < n; k++) { g.save(); g.rotate((k / n) * Math.PI * open * 2 - Math.PI / 2 * open + ly * .2); const gr = g.createLinearGradient(0, 0, 0, -L); gr.addColorStop(0, "rgba(236,248,255,.95)"); gr.addColorStop(.6, ["rgba(150,205,250,.85)", "rgba(190,228,255,.85)", "rgba(170,215,252,.82)", "rgba(230,246,255,.85)"][ly]); gr.addColorStop(1, "rgba(255,255,255,.95)");
-            g.beginPath(); g.moveTo(0, 0); g.bezierCurveTo(L * .42, -L * .3, L * .3, -L * .85, 0, -L); g.bezierCurveTo(-L * .3, -L * .85, -L * .42, -L * .3, 0, 0); g.fillStyle = gr; g.fill(); g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 1.2; g.stroke();
-            g.strokeStyle = "rgba(90,150,215,.45)"; g.beginPath(); g.moveTo(0, -L * .1); g.lineTo(0, -L * .85); g.stroke(); g.restore(); } }
-    K.glow(g, 0, 0, R * .4, "#cfeaff", .6 * p); K.glow(g, R * .1, -R * .2, R * .25, "#ffd6f0", .25 * p); g.restore();     // pale blue ice, a faint rainbow sheen like his eyes
-}
-const doma = {
-    col: "#ff9ad0", ms: 7400,
-    seal(g, X, a, r) { r = r || X.env.r; const c = mid(r); g.save(); g.globalAlpha = a; [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([u, v], i) => lotus(g, c.x + u * r.w * .52, c.y + v * r.h * .55, Math.min(r.h, 60) * .7, 1, i)); K.iceBlock(g, r, .8, X.s, "#cfeaff"); g.restore(); },
-    main(g, X, T) {
-        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r);
-        X.cue(.02, "whoosh", t); X.cue(.22, "open", t); X.cue(.3, "wind", t); X.cue(.52, "freeze", t); X.cue(.7, "freeze", t);
-        K.sky(g, w, h, ["#1a0620", "#3f0f3c", "#12040c"]);
-        for (let i = 0; i < 9; i++) { const x = ((hs(i + 2) * w * 1.6 + s * 40 * (.5 + hs(i))) % (w * 1.6)) - w * .3, y = h * (.15 + .7 * hs(i + 8)); K.pool(g, x, y, M * (.35 + .2 * hs(i)), i % 2 ? "#ffb6dd" : "#c8ecff", .14 + .12 * lin(.3, .5, t)); }   // freezing clouds
-        K.drift(g, w, h, s, 80, 6, { up: 1, speed: .06, col: "#ffe4f3", size: 2.4, glow: 1, add: 1, a: .7 });
-        if (t > .44) {
-            g.save(); K.cam(g, X, { z: 1 + lin(.45, 1, t) * .06 * back(t), cx: c.x, cy: c.y, shake: hit(t, .52, .1) * 10 });
-            lotus(g, c.x, c.y + r.h * .3, M * .44 * (.5 + .5 * back(t)), lin(.48, .74, t), Math.sin(s * .3) * .05, .85);          // the giant lotus behind
-            for (let i = 0; i < 6; i++) { const p = lin(.5 + i * .025, .68 + i * .025, t), sx = c.x + (i - 2.5) * M * .14, sy = h * 1.02; g.save(); g.strokeStyle = "rgba(210,240,255,.9)"; g.lineWidth = 5; g.lineCap = "round"; g.beginPath(); for (let k = 0; k <= 20 * p; k++) { const u = k / 20; g.lineTo(K.mix(sx, c.x + (i - 2.5) * r.w * .16, u) + Math.sin(u * 8 + i) * 18, K.mix(sy, c.y + r.h * .6, u)); } g.stroke(); g.restore(); }
-            plate(g, X, r, ss(.44, .5, t), lin(.5, .6, t));
-            [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([u, v], i) => lotus(g, c.x + u * r.w * .52, c.y + v * r.h * .55, Math.min(r.h, 60) * .7, lin(.64 + i * .03, .8 + i * .03, t), i));
-            K.iceBlock(g, r, lin(.72, .86, t) * .8, s, "#cfeaff");
-            g.restore();
-        }
-        const op = K.oBack(lin(.16, .28, t)) * (1 - lin(.5, .6, t));           // the two golden fans in pale hands
-        if (op > 0) [-1, 1].forEach(sd => { const x = w / 2 + sd * w * .27, y = h * .98, a = sd * (.3 + .22 * Math.sin(s * 4)) * (1 - lin(.28, .4, t) * .5); fan(g, x, y - M * .06, M * .4, a, op); hand(g, x, y + M * .18, HS(X), a, "fist", { skin: "pale", flip: sd < 0, sleeve: { c: "#3c1230", s: "#200818", cuff: "#ffb0d8", len: 240 } }); });
-        if (op > 0) for (let i = 0; i < 40; i++) { const u = (s * .5 + hs(i)) % 1, sd = i % 2 ? -1 : 1, x = w / 2 + sd * w * .27 * (1 - u) + (hs(i + 3) - .5) * M * .5 * u, y = h * .8 - u * h * .6; K.glow(g, x, y, M * .02, sd > 0 ? "#ffd0ec" : "#d4f2ff", .6 * (1 - u) * op); }
-        K.cutIn(g, X, lin(0, .2, t), { y: .45, hh: .34, dir: -1, ang: -.12, kj: "血鬼術", name: "DOMA" });
-        if (t > .3 && t < .56) K.slam(g, "粉凍り", w / 2, h * .2, M * .1, lin(.3, .56, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#5a0a3a", glow: "#ff9ad0" });
-        K.title(g, X, lin(.6, 1, t), { en: "LOTUS LEAF ICE", kj: "蓮葉氷", sub: "DOMA · " + X.who, y: .86 });
-        if (hit(t, .52, .02)) X.fx.inv = "#ffc8e6";
-        K.vignette(g, w, h, .65, "#14020c"); K.bars(g, w, h, 1 - lin(.9, 1, t));
-    }
-};
-
 /* ---------- HITSUGAYA · Daiguren Hyorinmaru, first person, drawn OVER the real table: both hands, armoured in blue crystal ice, grip
    Hyorinmaru (four-pointed star guard, teal hilt, the crescent blade on its chain) in black shihakusho sleeves; frost creeps up the
    blade; he raises it and on the voice's peak swings it forward: a burst of freezing wind, and the winged ice dragon pours out of the
@@ -354,95 +262,6 @@ const hitsugaya = {
         if (t > .02 && t < HY.rel + .1) K.slam(g, "卍解", w / 2, h * .2, M * .14, lin(.02, HY.rel + .1, t), { font: K.F_JP, weight: "400", fill: "#f4fbff", stroke: "#0a2a54", glow: "#5aa9ff", from: 1.3 });
         if (t > HY.lock - .02) K.title(g, X, lin(HY.lock - .02, 1, t), { en: "DAIGUREN HYORINMARU", kj: "大紅蓮氷輪丸", sub: "HITSUGAYA · " + X.env.toName.toUpperCase() + " FROZEN FOR 2 TURNS", y: .2, col: "#5aa9ff" });
         if (hit(t, HY.rel, .012)) X.fx.flash = ["#e8f6ff", .5];
-    }
-};
-
-/* ---------- HIT · Time Skip: a ticking clock, jump cuts, his figure in moments that never happened, the Time Cage closes ---------- */
-function cage(g, r, p, col = "#b388ff") {
-    if (p <= 0) return; const x0 = r.x - 14, y0 = r.y - 14, W = r.w + 28, H = r.h + 28, d = Math.min(r.w, r.h * 3) * .18; g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = col; g.lineWidth = 2.4;
-    g.globalAlpha *= p; g.strokeRect(x0, y0, W, H); g.strokeRect(x0 + d, y0 - d, W, H); [[0, 0], [W, 0], [0, H], [W, H]].forEach(([a, b]) => { g.beginPath(); g.moveTo(x0 + a, y0 + b); g.lineTo(x0 + a + d, y0 + b - d); g.stroke(); });
-    for (let i = 1; i < 9; i++) { g.beginPath(); g.moveTo(x0 + W * i / 9, y0); g.lineTo(x0 + W * i / 9, y0 + H); g.stroke(); }
-    g.fillStyle = "rgba(140,90,240,.14)"; g.fillRect(x0, y0, W, H); g.fillStyle = "rgba(170,120,255,.1)"; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + d, y0 - d); g.lineTo(x0 + W + d, y0 - d); g.lineTo(x0 + W, y0); g.closePath(); g.fill();   // the lid of the cube
-    g.font = "700 " + Math.max(10, d * .6) + "px " + K.F_UI; g.fillStyle = col; g.textAlign = "center"; ["0.5", "0.5", "0.5"].forEach((s2, i) => g.fillText(s2 + "s", x0 + W * (.25 + i * .25), y0 + H + d * .9)); g.restore();
-}
-const HIT = { l: "#e6d0ff", b: "#a97ce2", s: "#774bb4", d: "#452274", ink: "#170628", nail: "#efe2ff" };     // Hit's purple skin
-const hitScene = {
-    col: "#b388ff", ms: 7200,
-    seal: (g, X, a, r) => cage(g, r || X.env.r, a),
-    main(g, X, T) {
-        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r), SK = [.22, .3, .37, .44, .5];
-        X.cue(.01, "tick", t); X.cue(.08, "tick", t); X.cue(.15, "tick", t); SK.forEach(a => X.cue(a, "skip2", t)); X.cue(.62, "punch", t); X.cue(.7, "chime", t);
-        K.sky(g, w, h, ["#0c0418", "#1a0b30", "#06020c"]); K.halftone(g, w, h, "rgba(179,136,255,.25)", .4, 10);
-        const cr = M * .32, ccx = w / 2, ccy = h * .5, jumps = SK.filter(a => t >= a).length, ang = -Math.PI / 2 + Math.floor(s * 2) / 2 * .52 + jumps * .9;        // the clock: ticks, then leaps
-        g.save(); g.globalAlpha = .35; g.strokeStyle = "#b388ff"; g.lineWidth = 3; g.beginPath(); g.arc(ccx, ccy, cr, 0, TAU); g.stroke(); for (let i = 0; i < 60; i++) { const a = i / 60 * TAU, l = i % 5 ? .95 : .88; g.beginPath(); g.moveTo(ccx + Math.cos(a) * cr * l, ccy + Math.sin(a) * cr * l); g.lineTo(ccx + Math.cos(a) * cr, ccy + Math.sin(a) * cr); g.stroke(); }
-        g.lineWidth = 5; g.beginPath(); g.moveTo(ccx, ccy); g.lineTo(ccx + Math.cos(ang) * cr * .85, ccy + Math.sin(ang) * cr * .85); g.stroke(); g.restore();
-        if (t < .2) K.cutIn(g, X, lin(0, .2, t), { y: .5, hh: .3, dir: 1, ang: -.05, kj: "時飛ばし", name: "HIT" });
-        plate(g, X, r, ss(.18, .24, t), jumps / SK.length * .6);
-        for (let k = 0; k < jumps; k++) { if (k < jumps - 1 && t > .56) continue; const x = w * (.15 + .7 * hs(k * 7 + 1)), y = h * (.42 + .3 * hs(k * 3 + 2)), W = M * .26, H = M * .36;   // the assassin, standing where he never walked
-            g.save(); g.globalAlpha = k === jumps - 1 ? 1 : .25; g.beginPath(); g.rect(x - W / 2, y - H / 2, W, H); g.clip(); K.art(g, X, x - W / 2, y - H / 2, W, H, 1.1, 0, .2); g.globalCompositeOperation = "color"; g.fillStyle = "rgba(120,70,220,.55)"; g.fillRect(x - W / 2, y - H / 2, W, H); g.restore();
-            g.strokeStyle = "#b388ff"; g.lineWidth = 2; g.strokeRect(x - W / 2, y - H / 2, W, H); K.txt(g, "0.5秒", x, y + H / 2 + M * .03, M * .03, { font: K.F_JP, weight: "400", fill: "#e6d9ff", sw: 2 }); }
-        SK.forEach((a, i) => { const q = lin(a, a + .035, t); if (q > 0 && q < 1) { X.fx.glitch = 1 - q; X.fx.rgb = (1 - q) * 14; K.flash(g, w, h, "#e6d9ff", (1 - q) * .35); }
-            const hq = lin(a + .01, a + .07, t); if (hq > 0 && hq < 1) { const hx2 = c.x + (hs(i + 70) - .5) * r.w * .8, hy2 = c.y + (hs(i + 71) - .5) * r.h * .6; K.shock(g, hx2, hy2, hq, M * .16, "#d9c6ff", 8); K.sparks(g, hx2, hy2, hq, 10, i * 9, { speed: M * .25, col: "#e6d9ff" }); fist(g, hx2 + (1 - hq) * M * .2 * (i % 2 ? 1 : -1), hy2 + (1 - hq) * M * .1, M * .0011, (i % 2 ? -.4 : .4), { skin: HIT, aura: "#b388ff" }); } });   // the skipped blows land, one per beat
-        if (t > .56) {                                                       // the strike from nowhere, then the cage
-            const q = lin(.56, .64, t), fx = K.mix(w * .5, c.x, K.oExpo(q)), fy = K.mix(h * 1.2, c.y + M * .04, K.oExpo(q)), sc = M * K.mix(.009, .0035, K.oExpo(q));
-            if (t < .7) { K.streaks(g, w, h, s, Math.atan2(c.y - h, c.x - w / 2), { n: 50, col: "#d9c6ff", a: .5 * (1 - q), speed: 5 }); fist(g, fx, fy, sc, 0, { skin: HIT, aura: "#b388ff" }); }
-            K.shock(g, c.x, c.y, lin(.63, .78, t), M * .6, "#b388ff", 22); K.sparks(g, c.x, c.y, lin(.63, .76, t), 24, 9, { speed: M * .6, col: "#d9c6ff" });
-            const cp = lin(.66, .8, t); [[0, 0], [w, 0], [0, h], [w, h]].forEach(([x, y], i) => { const tx = i % 2 ? r.x + r.w + 14 : r.x - 14, ty = i > 1 ? r.y + r.h + 14 : r.y - 14; g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = "#b388ff"; g.lineWidth = 2.5; g.beginPath(); g.moveTo(x, y); g.lineTo(K.mix(x, tx, cp), K.mix(y, ty, cp)); g.stroke(); g.restore(); });
-            cage(g, r, lin(.76, .86, t));
-            if (hit(t, .63, .02)) X.fx.inv = "#b388ff";
-        }
-        K.title(g, X, lin(.68, 1, t), { en: "TIME CAGE", kj: "時の檻", y: .84 });
-        K.vignette(g, w, h, .7, "#04010a"); K.bars(g, w, h, 1 - lin(.92, 1, t));
-    }
-};
-
-/* ---------- JULIUS · Chrono Stasis: the grimoire opens, a golden clock circle turns, then EVERYTHING stops and drains of colour ---------- */
-const ROMAN = ["XII", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI"];
-function clockCircle(g, x, y, R, spin, col) {
-    g.save(); g.translate(x, y); g.strokeStyle = col; g.lineWidth = 2; g.globalCompositeOperation = "lighter";
-    [1, .82, .62, .4].forEach((k, i) => { g.save(); g.rotate((i % 2 ? -1 : 1) * spin * (1 - i * .2)); g.beginPath(); g.arc(0, 0, R * k, 0, TAU); g.stroke();
-        const n = [12, 24, 8, 6][i]; for (let j = 0; j < n; j++) { const a = j / n * TAU; g.beginPath(); g.moveTo(Math.cos(a) * R * k * .92, Math.sin(a) * R * k * .92); g.lineTo(Math.cos(a) * R * k, Math.sin(a) * R * k); g.stroke(); }
-        if (i === 0) { g.font = "700 " + (R * .09) + "px " + K.F_UI; g.fillStyle = col; g.textAlign = "center"; g.textBaseline = "middle"; ROMAN.forEach((n2, j) => { const a = j / 12 * TAU - Math.PI / 2; g.fillText(n2, Math.cos(a) * R * .87, Math.sin(a) * R * .87); }); }
-        if (i === 2) for (let j = 0; j < 8; j++) { const a = j / 8 * TAU; g.strokeRect(Math.cos(a) * R * k - 5, Math.sin(a) * R * k - 5, 10, 10); }
-        g.restore(); });
-    g.lineWidth = 5; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(spin * 4 - 1.57) * R * .7, Math.sin(spin * 4 - 1.57) * R * .7); g.stroke(); g.lineWidth = 7; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(spin * .4 - 1.57) * R * .45, Math.sin(spin * .4 - 1.57) * R * .45); g.stroke();
-    g.restore();
-}
-function stasis(g, r, a) {
-    if (a <= 0) return; const c = mid(r), R = Math.hypot(r.w, r.h) * .62; g.save(); g.globalAlpha *= a;
-    g.fillStyle = "rgba(150,150,160,.32)"; g.fillRect(r.x - 6, r.y - 6, r.w + 12, r.h + 12); clockCircle(g, c.x, c.y, R, 2.2, "#ffe27a"); g.restore();
-}
-const julius = {
-    col: "#ffe27a", ms: 7400,
-    seal: (g, X, a, r) => stasis(g, r || X.env.r, a),
-    main(g, X, T) {
-        const { w, h, M } = X, t = T.t, s = T.s, r = K.stage(X, back(t)), c = mid(r), stop = t >= .55, st = stop ? .55 * X.main / 1000 : s;   // after the stop, time is frozen
-        X.cue(.02, "flip", t); X.cue(.06, "flip", t); X.cue(.1, "flip", t); X.cue(.2, "charge", t); X.cue(.55, "chime", t); X.cue(.56, "boom", t);
-        K.sky(g, w, h, ["#0a0c22", "#151a40", "#05060f"]); K.drift(g, w, h, st, 60, 3, { up: 1, speed: .05, col: "#ffe9a0", size: 2.4, glow: 1, add: 1 });
-        const R = M * .44 * K.oBack(lin(.18, .34, t)); if (R > 0) clockCircle(g, w / 2, h * .46, R, st * (stop ? 1 : 1 + lin(.3, .55, t) * 4), "#ffe27a");
-        if (t < .3) {                                                        // the grimoire, pages racing
-            const op = K.oBack(lin(0, .12, t)), bx = w / 2, by = h * .74, bw = M * .4, bh = M * .28;
-            g.save(); g.translate(bx, by); g.scale(op, op);
-            [-1, 1].forEach(sd => { g.save(); g.scale(sd, 1); g.beginPath(); g.moveTo(0, -bh / 2); g.quadraticCurveTo(bw * .25, -bh * .6, bw / 2, -bh / 2 + 6); g.lineTo(bw / 2, bh / 2); g.quadraticCurveTo(bw * .25, bh * .4, 0, bh / 2); g.closePath(); g.fillStyle = "#f6ecd2"; g.fill(); g.strokeStyle = "#5a3a10"; g.lineWidth = 2; g.stroke();
-                g.strokeStyle = "rgba(90,58,16,.35)"; for (let i = 0; i < 6; i++) { g.beginPath(); g.moveTo(bw * .08, -bh * .3 + i * bh * .1); g.lineTo(bw * .42, -bh * .28 + i * bh * .1); g.stroke(); } g.restore(); });
-            for (let i = 0; i < 5; i++) { const q = (s * 3 + i / 5) % 1, a = Math.PI * q; g.save(); g.transform(Math.cos(a), 0, 0, 1, 0, 0); g.fillStyle = "rgba(250,244,226," + (1 - q * .5) + ")"; g.fillRect(0, -bh / 2, bw / 2, bh); g.strokeStyle = "rgba(90,58,16,.4)"; g.strokeRect(0, -bh / 2, bw / 2, bh); g.restore(); }
-            g.restore();
-            K.glow(g, bx, by - bh * .4, M * .25, "#ffe27a", .5 * op); for (let i = 0; i < 12; i++) { const u = (s * .6 + i / 12) % 1; K.txt(g, ROMAN[i], bx + (hs(i) - .5) * bw, by - bh * .5 - u * h * .4, M * .03, { font: K.F_UI, fill: "#ffe9a0", sw: 0, glow: "#ffe27a" }); }
-            [-1, 1].forEach(sd => hand(g, bx + sd * bw * .56, by + bh * .62, HS(X), sd * .45, "relax", { view: "palm", flip: sd < 0, skin: "base", sleeve: { c: "#f4efe6", s: "#c9bfa6", cuff: "#d9a82a", len: 220 } }));
-        }
-        K.cutIn(g, X, lin(.26, .5, t), { y: .3, hh: .26, dir: 1, ang: -.06, kj: "時間魔法", name: "JULIUS" });
-        plate(g, X, r, ss(.4, .5, t), lin(.5, .6, t));
-        const hg = K.oBack(lin(.34, .44, t)), hx = c.x + Math.min(r.w * .7, M * .3), hy = c.y + M * .05, HG = M * .07 * hg;       // the hourglass: sand falls... then hangs
-        if (hg > 0) { g.save(); g.strokeStyle = "#fff"; g.lineWidth = 2.5; g.beginPath(); g.moveTo(hx - HG, hy - HG * 1.7); g.lineTo(hx + HG, hy - HG * 1.7); g.lineTo(hx + 3, hy); g.lineTo(hx + HG, hy + HG * 1.7); g.lineTo(hx - HG, hy + HG * 1.7); g.lineTo(hx - 3, hy); g.closePath(); g.stroke(); g.fillStyle = "#ffe27a";
-            for (let i = 0; i < 20; i++) { const u = (st * 1.2 + i / 20) % 1; g.fillRect(hx - 1.5 + (hs(i) - .5) * 4, hy + u * HG * 1.5, 3, 3); } g.restore(); }
-        if (stop) {                                                          // STASIS: the dome spreads, colour drains from everything
-            const q = lin(.55, .8, t), R2 = Math.hypot(w, h) * K.oExpo(q); g.save(); g.beginPath(); g.arc(c.x, c.y, R2, 0, TAU); g.clip(); g.globalCompositeOperation = "saturation"; g.fillStyle = "rgba(0,0,0," + (.85 * q) + ")"; g.fillRect(0, 0, w, h); g.globalCompositeOperation = "source-over"; g.fillStyle = "rgba(255,226,122,.07)"; g.fillRect(0, 0, w, h); g.restore();
-            K.shock(g, c.x, c.y, q, Math.hypot(w, h), "#ffe27a", 30); stasis(g, r, lin(.62, .76, t));
-            if (hit(t, .55, .03)) X.fx.inv = "#ffe27a";
-        }
-        if (t > .55) K.slam(g, "時よ  止まれ", w / 2, h * .62, M * .08, lin(.55, .8, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#4a3a00", glow: "#ffe27a" });
-        K.title(g, X, lin(.7, 1, t), { en: "CHRONO STASIS", kj: "時間魔法", y: .86 });
-        K.vignette(g, w, h, .6, "#03040c"); K.bars(g, w, h, 1 - lin(.92, 1, t));
     }
 };
 
@@ -590,6 +409,343 @@ const dio = {
         if (grey > 0) { g.save(); g.globalAlpha = grey * .5; K.vignette(g, w, h, .55, "#000", .4); g.restore(); }
         if (hit(t, ZW.open, .02)) X.fx.flash = ["#fff6c8", .7];
         K.bars(g, w, h, 1);
+    }
+};
+
+/* the page's veil for a card that holds the whole page: style it for this frame (mask, filter...) and paint its top layer (mirrors,
+   crystals, the bracelet: above the veil's own filter, the same layer the hold keeps drawing). In a preview there is no page, so the
+   paint goes straight onto the scene. */
+function veil(X, key, css, paint) {
+    if (X.env && X.env.box) document.dispatchEvent(new CustomEvent("timestop", { detail: { key, ph: "grow", css, paint } }));
+    else if (paint) { X.g.save(); paint(X.g, X.w, X.h); X.g.restore(); }
+}
+const tsEv = (key, ph, more) => document.dispatchEvent(new CustomEvent("timestop", { detail: Object.assign({ key, ph }, more) }));
+const frozenTail = (col, stroke) => (g, X, T) => { X.reveal(T.tt, .35); K.slam(g, X.env.toName + " · FROZEN ×2", X.w / 2, Math.min(X.h * .5, X.env.r.y + X.env.r.h + X.M * .12), X.M * .055, K.lin(0, 1, T.tt), { fill: "#fff", stroke, glow: col, from: 1.2 }); };
+/* a front line with a cold shimmer and a slight colour split. pts(off) returns the line's points pushed off px outward */
+function shimmer(g, pts, a, w0 = 2.2) {
+    if (a <= 0) return; g.save(); g.globalCompositeOperation = "screen"; g.globalAlpha *= a; g.lineJoin = "round";
+    [["rgba(255,90,180,.5)", -3, 3], ["rgba(90,235,255,.6)", 3, 3], ["rgba(255,255,255,.95)", 0, w0]].forEach(([c, off, lw]) => { const P = pts(off); g.strokeStyle = c; g.lineWidth = lw; g.beginPath(); P.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke(); });
+    g.restore();
+}
+/* time that runs normally, then brakes smoothly to a dead stop between a and b (first derivative 1 → 0) */
+const brake = (a, b) => t => { if (t < a) return t; const u = Math.min(1, (t - a) / (b - a)); return a + (b - a) * (u - u * u / 2); };
+
+/* ---------- HAKU · Secret Jutsu: Crystal Ice Mirrors, first person, drawn OVER the real table: Haku's pale hands in the dark-green
+   sleeves of his hunter-nin outfit start apart, come together and run through the seals (Ram, Dog, Horse) to Tiger, cold mist and ice
+   motes gathering on his fingers; the final seal lands on the peak of the voice. Blue ice spreads out from his hands in a wave over the
+   table, cards, UI and page (the page's .mirror-veil, revealed by a mask that grows with it); tall frameless ice mirrors rise round
+   the screen, long crystals fly out of them into the middle of the table and stick there, and the world slows to a stop. The mirrors
+   and crystals are painted on the veil's top layer, the same one the hold keeps (holds.js hakuMirrors / hakuSpikes). ---------- */
+const HK = { join: .065, s1: .115, s2: .16, s3: .205, seal: .256, edge: .38, rise: .4, risen: .5, thr: .552, stab: .59, lock: .726, still: .82 };
+const hkSlow = brake(HK.lock - .06, HK.still);
+const HK_SLEEVE = { c: "#35513f", s: "#1d3226", cuff: "#cfe0d4", len: 420, w: 70 };
+const HK_ICE = { c: "#e2f4ff", s: "#a6d2f0", cuff: "#d8efff", len: 420, w: 70 };
+/* the seals as two hands about a centre (dx, dy in units of the hand scale; ang; pose; view). Right hand first, then the left (mirrored) */
+const SEALS = [
+    { k: "", R: [165, 70, .26, "relax"], L: [-165, 70, -.26, "relax"] },                              // apart, calm
+    { k: "未", R: [26, 40, -.1, "two"], L: [-18, 6, .06, "two"], top: "R" },                          // Ram: two fingers up, the right hand over the left
+    { k: "戌", R: [74, -92, -1.52, "blade"], L: [-6, 40, .1, "fist"], top: "R" },                      // Dog: the right palm flat on the left fist
+    { k: "午", R: [88, 40, -.36, "pointT"], L: [-88, 40, .36, "pointT"], top: "L" },                  // Horse: index fingers and thumbs meet in a triangle
+    { k: "寅", R: [20, 26, -.07, "two"], L: [-20, 26, .07, "two"], top: "R" }                         // Tiger: both pairs of fingers up, pressed together
+];
+const HK_AT = [0, HK.s1, HK.s2, HK.s3, HK.seal];
+function hakuHands(X, t) {      // which seal, and how far into the snap from the last one
+    let i = 0; while (i < HK_AT.length - 1 && t >= HK_AT[i + 1] - (i === 0 ? .05 : .022)) i++;
+    const len = i === 1 ? .05 : .022, q = i ? K.ioCub(lin(HK_AT[i] - len, HK_AT[i], t)) : 1;
+    return { i, q, A: SEALS[Math.max(0, i - 1)], B: SEALS[i] };
+}
+const haku = {
+    col: "#8fdcff", ms: 8100, voiceAt: 2600, voiceEnd: 5.6, mainPlus: 600, grain: 0, breath: t => t < HK.seal,
+    seal: () => {},
+    begin() { tsEv("naruto_f", "start"); },
+    tailStart(X) { tsEv("naruto_f", "stopped"); },
+    tail: frozenTail("#8fdcff", "#0a2a44"),
+    main(g, X, T) {
+        const { w, h, M } = X, t = T.t, st = hkSlow(t), sM = st * X.main / 1000, sealed = t >= HK.seal;
+        X.cue(.0, "wind", t); [HK.s1, HK.s2, HK.s3].forEach(a => X.cue(a, "seal", t)); X.cue(HK.seal, "seal", t); X.cue(HK.seal + .002, "freeze", t); X.cue(HK.seal + .03, "crack", t);
+        X.cue(HK.rise, "shing", t); X.cue(HK.rise + .03, "chime", t); X.cue(HK.rise + .07, "shing", t); X.cue(HK.thr, "whoosh", t); X.cue(HK.stab, "strike", t); X.cue(HK.stab + .006, "crack", t); X.cue(HK.lock, "freeze", t);
+        if (t < .03) { g.fillStyle = "rgba(0,0,0," + (1 - t / .03) * .85 + ")"; g.fillRect(0, 0, w, h); }
+        const sc = HS(X) * .78, C = [w / 2, h * .74 - K.ioCub(lin(0, HK.join, t)) * h * .04], S = hakuHands(X, t);
+        const core = [C[0], C[1] - sc * 150];                                              // where the cold gathers: just above the joined fingers
+        const R = Math.hypot(w, h) * 1.06 * K.oCub(lin(HK.seal, HK.edge, st)), fr = lin(HK.seal, HK.edge, st);
+        const mirrors = X.env._hkM || (X.env._hkM = H.hakuMirrors(w, h)), spikes = X.env._hkS || (X.env._hkS = H.hakuSpikes(w, h, mirrors, H.hakuKeep(w, h)));
+        veil(X, "naruto_f", sealed ? { "--x": core[0].toFixed(1) + "px", "--y": core[1].toFixed(1) + "px", "--r": R.toFixed(1) + "px" } : { "--r": "0px" }, (gg) => {
+            mirrors.forEach(m => H.iceMirror(gg, m, { rise: lin(HK.rise + m.i * .007, HK.risen + m.i * .007, t), t: sM, art: X.art, focus: X.focus }));
+            spikes.forEach(s => { if (t >= HK.stab + s.k * .002) H.iceSpike(gg, s, 1, { glint: lin(HK.stab, HK.stab + .1, t) }); });
+        });
+        // cold mist pooling round the hands and ice motes drawn in, thicker with every seal
+        const gather = lin(HK.join, HK.seal, t);
+        g.save(); for (let i = 0; i < 9; i++) { const u = (sM * .22 + i / 9) % 1, an = i * 2.4; K.pool(g, core[0] + Math.cos(an) * M * .18 * (1 - u), core[1] + sc * 60 + Math.sin(an) * M * .1 * (1 - u), M * (.05 + .1 * u), "#e2f4ff", (.1 + .22 * gather) * Math.sin(u * Math.PI) * (1 - lin(HK.lock, 1, t) * .6)); } g.restore();
+        // the hands: a quick, clean snap from one seal to the next, held still on each
+        const pose = (P, side) => ({ x: C[0] + P[0] * sc, y: C[1] + P[1] * sc, a: P[2], pose: P[3], side });
+        const lerp = (a, b, q) => ({ x: K.mix(a.x, b.x, q), y: K.mix(a.y, b.y, q), a: K.mix(a.a, b.a, q), pose: q < .5 ? a.pose : b.pose, side: a.side });
+        const hR = lerp(pose(S.A.R, 1), pose(S.B.R, 1), S.q), hL = lerp(pose(S.A.L, -1), pose(S.B.L, -1), S.q), snap = S.i && S.q < 1 ? Math.sin(S.q * Math.PI) : 0;
+        const settle = S.i ? K.hit(t, HK_AT[S.i], .03) : 0, iced = ss(HK.seal + .005, HK.seal + .09, t);
+        const draw1 = H1 => { const y = H1.y + settle * M * .006, o = { view: "back", skin: "pale", flip: H1.side < 0, sleeve: HK_SLEEVE };
+            hand(g, H1.x, y, sc, H1.a, H1.pose, o); if (iced > 0) { g.save(); g.globalAlpha *= iced * .78; hand(g, H1.x, y, sc, H1.a, H1.pose, Object.assign({}, o, { skin: "ice", rim: "#e6f6ff", sleeve: HK_ICE })); g.restore(); } };
+        if (snap > .05) K.streaks(g, w, h, sM, -Math.PI / 2, { n: 14, col: "#e6f6ff", a: .18 * snap, speed: 6 });
+        if ((S.B.top || "R") === "R") { draw1(hL); draw1(hR); } else { draw1(hR); draw1(hL); }
+        // frost creeping over the fingers and motes glinting on the tips as the seals go by
+        const tipsR = handTips(hR.pose).slice(0, 2), sn = Math.sin(hR.a), cs = Math.cos(hR.a);
+        if (gather > 0 && !sealed) tipsR.forEach(([x0, y0], k) => { const x = hR.x + (x0 * cs - y0 * sn) * sc, y = hR.y + (x0 * sn + y0 * cs) * sc; K.glow(g, x, y, M * (.02 + .03 * gather), "#cfeeff", .5 * gather); K.snowflake(g, x + (k ? 8 : -8), y - M * .02, M * .012 * (.5 + gather), Math.min(1, gather * 1.4), sM + k, "#ffffff"); });
+        g.save(); g.globalCompositeOperation = "lighter"; for (let i = 0; i < 26; i++) { const u = (sM * (.35 + .2 * hs(i)) + hs(i * 3)) % 1, an = hs(i * 5) * TAU + sM * .3, d = M * (.32 - .28 * u); const x = core[0] + Math.cos(an) * d, y = core[1] + sc * 40 + Math.sin(an) * d * .6;
+            g.globalAlpha = gather * Math.sin(u * Math.PI) * .9 * (sealed ? 1 - lin(HK.seal, HK.seal + .05, t) : 1); g.fillStyle = "#ffffff"; g.fillRect(x - 1.2, y - 1.2, 2.4, 2.4); } g.restore();
+        if (S.i && S.B.k && S.q >= 1 && t < HK.seal + .07) { const k = lin(HK_AT[S.i], HK_AT[S.i] + .05, t); K.txt(g, S.B.k, C[0] + sc * (S.i % 2 ? 150 : -150), C[1] - sc * 120, M * .05, { font: K.F_JP, weight: "400", fill: "#f2fbff", stroke: "#0a2a44", glow: "#8fdcff", sw: 3 }); }
+        if (t > .02 && t < HK.seal + .1) { g.save(); g.globalAlpha = 1 - lin(HK.seal + .04, HK.seal + .1, t); K.column(g, "秘術", w * .08, h * .16, M * .07, lin(.02, .1, t), { fill: "#f4fbff", stroke: "#0a2a44", glow: "#8fdcff", sw: 3 }); g.restore(); }
+        if (sealed) {
+            const bq = lin(HK.seal, HK.seal + .05, t); if (bq < 1) { K.glow(g, core[0], core[1], M * .4 * (1 - bq * .4), "#e6f6ff", 1 - bq); K.shock(g, core[0], core[1], bq, M * .55, "#dff4ff", 22); }
+            // frost lines branching out ahead of the ice
+            g.save(); g.lineCap = "round"; const fa = 1 - lin(HK.edge, HK.lock, t);
+            for (let k = 0; k < 12; k++) { let an = k / 12 * TAU + .2, x = core[0], y = core[1]; const Lk = Math.min(R * .96, Math.hypot(w, h) * (.4 + .45 * hs(k + 2))); if (Lk < 6) continue;
+                g.globalAlpha = fa * .8; g.strokeStyle = "#f2faff"; g.lineWidth = 1.3; g.beginPath(); g.moveTo(x, y);
+                for (let j = 1; j <= 10; j++) { an += (hs(k * 11 + j) - .5) * .4; const nx = x + Math.cos(an) * Lk / 10, ny = y + Math.sin(an) * Lk / 10; g.lineTo(nx, ny); if (j % 3 === 0) { g.moveTo(nx, ny); g.lineTo(nx + Math.cos(an + .9) * Lk / 16, ny + Math.sin(an + .9) * Lk / 16); g.moveTo(nx, ny); } x = nx; y = ny; } g.stroke(); }
+            g.restore();
+            if (fr < 1) {                                                         // the wave's front: glassy, with a cold shimmer and a slight colour split, small crystals riding it
+                const front = (an, off) => R * (1 + .04 * Math.sin(an * 7 + 1.1) + .025 * Math.sin(an * 15)) + off;
+                shimmer(g, off => { const P = []; for (let i = 0; i <= 140; i++) { const an = i / 140 * TAU, rr = front(an, off); P.push([core[0] + Math.cos(an) * rr, core[1] + Math.sin(an) * rr]); } return P; }, 1);
+                g.save(); for (let i = 0; i < 60; i++) { const an = (i + hs(i) * .6) / 60 * TAU, rr = front(an, 0), sz = M * (.014 + .022 * hs(i + 9)); g.translate(core[0] + Math.cos(an) * rr, core[1] + Math.sin(an) * rr); g.rotate(an);
+                    g.beginPath(); g.moveTo(sz * 1.3, 0); g.lineTo(-sz * .2, -sz * .3); g.lineTo(-sz * .5, 0); g.lineTo(-sz * .2, sz * .3); g.closePath(); g.fillStyle = "rgba(235,248,255,.8)"; g.fill(); g.setTransform(X.dpr || 1, 0, 0, X.dpr || 1, 0, 0); } g.restore();
+            }
+            // the crystals in flight: a cold streak behind each, a burst of frost where it bites into the table
+            spikes.forEach(s => { const t0 = HK.thr + s.k * .004, t1 = HK.stab + s.k * .002, q = K.ioCub(lin(t0, t1, t)); if (t < t0) return;
+                if (q < 1) { const x = K.mix(s.sx, s.tx, q), y = K.mix(s.sy, s.ty, q), bx = x - Math.cos(s.a) * s.len * 1.6, by = y - Math.sin(s.a) * s.len * 1.6; g.save(); g.globalCompositeOperation = "lighter"; const tg = g.createLinearGradient(bx, by, x, y); tg.addColorStop(0, "rgba(160,220,255,0)"); tg.addColorStop(1, "rgba(220,244,255,.55)"); g.strokeStyle = tg; g.lineWidth = s.wd * 1.4; g.lineCap = "round"; g.beginPath(); g.moveTo(bx, by); g.lineTo(x, y); g.stroke(); g.restore();
+                    H.iceSpike(g, s, q, {}); }
+                const bq = lin(t1, t1 + .06, t); if (bq > 0 && bq < 1) { K.glow(g, s.tx, s.ty, M * .05, "#e6f6ff", .8 * (1 - bq)); K.sparks(g, s.tx, s.ty, bq, 12, s.k * 7, { speed: M * .16, col: "#e6f6ff" }); } });
+            // cold mist drifting and ice motes glinting, both braking to a stop
+            g.save(); for (let i = 0; i < 12; i++) { const u = (hs(i + 30) + sM * .04) % 1, x = w * (hs(i + 5) + sM * .015 * (hs(i) - .5)), y = h * (.15 + .8 * hs(i + 11)); K.pool(g, x, y, M * (.12 + .1 * hs(i)), "#eef8ff", .1 * Math.min(1, fr * 2) * Math.sin(u * Math.PI)); } g.restore();
+            g.save(); g.globalCompositeOperation = "lighter"; for (let i = 0; i < 40; i++) { const d0 = hs(i + 70) * Math.hypot(w, h) * .7; if (d0 > R) continue; const an = hs(i + 80) * TAU, x = core[0] + Math.cos(an) * d0 + Math.sin(sM * .4 + i) * 8, y = core[1] + Math.sin(an) * d0;
+                g.globalAlpha = .65 * (.5 + .5 * Math.sin(sM * 4 + i * 2.3)); g.fillStyle = "#fff"; g.save(); g.translate(x, y); g.rotate(i); g.fillRect(-1, -4, 2, 8); g.fillRect(-4, -1, 8, 2); g.restore(); } g.restore();
+        }
+        if (t > HK.seal - .01 && t < HK.rise) K.slam(g, "魔鏡氷晶", w / 2, h * .2, M * .11, lin(HK.seal - .01, HK.rise, t), { font: K.F_JP, weight: "400", fill: "#f4fbff", stroke: "#0a2a44", glow: "#8fdcff", from: 1.4 });
+        if (t > HK.still - .04) K.title(g, X, lin(HK.still - .04, 1, t), { en: "CRYSTAL ICE MIRRORS", kj: "秘術・魔鏡氷晶", sub: "HAKU · " + X.env.toName.toUpperCase() + " FROZEN FOR 2 TURNS", y: .2, col: "#8fdcff" });
+        if (hit(t, HK.seal, .012)) X.fx.flash = ["#eaf8ff", .5];
+        if (hit(t, HK.stab, .01)) X.fx.flash = ["#ffffff", .25];
+    }
+};
+
+/* ---------- HIT · Time-Skip Freeze, first person, drawn OVER the real table: Hit's purple hands out of the long sleeves of his dark
+   coat, calm and cold; a deep purple aura swells round his arms, crackling out to the screen's edges, and peaks with the voice (his hands
+   close into fists). Light-red ice grows in from every edge of the screen to the middle (the page's .skip-veil, revealed from the edges,
+   its crystals painted on the veil's top layer), then every colour fades to a washed-out light grey while time brakes to a stop. ---------- */
+const HT = { pulse: .128, peak: .324, ice: .33, edge: .52, gray0: .53, gray1: .68, still: .76 };
+const htSlow = brake(.6, HT.still);
+const HIT_SKIN = { l: "#e6d0ff", b: "#a97ce2", s: "#774bb4", d: "#452274", ink: "#170628", nail: "#efe2ff" };     // Hit's purple skin
+const HIT_SLEEVE = { c: "#2b2235", s: "#140e1b", cuff: "#43345a", len: 440, w: 70 };
+/* the edge-in front of the ice: e (0 at the edges .. max at the centre) → a CSS mask of four bands growing from the four edges */
+function edgeMask(D) { const a = Math.max(0, D - 46).toFixed(0) + "px", b = Math.max(1, D).toFixed(0) + "px"; return ["bottom", "top", "right", "left"].map(d => "linear-gradient(to " + d + ", #000 " + a + ", transparent " + b + ")").join(","); }
+const hitScene = {
+    col: "#b07cff", ms: 8180, mainPlus: 2600, grain: 0, breath: t => t < HT.peak + .04,
+    seal: () => {},
+    begin() { tsEv("dragonball_f", "start"); },
+    tailStart(X) { tsEv("dragonball_f", "stopped"); },
+    tail: frozenTail("#d9c6ff", "#2a1040"),
+    main(g, X, T) {
+        const { w, h, M } = X, t = T.t, st = htSlow(t), sM = st * X.main / 1000, peaked = t >= HT.peak;
+        X.cue(.0, "rumble", t); X.cue(.06, "charge", t); X.cue(HT.pulse, "zap", t); X.cue(.22, "charge", t); X.cue(HT.peak - .003, "boom", t); X.cue(HT.peak, "zap", t);
+        X.cue(HT.ice, "freeze", t); [.37, .42, .47].forEach(a => X.cue(a, "crack", t)); X.cue(HT.edge - .01, "shing", t); [HT.gray0, .58, .64, .71].forEach(a => X.cue(a, "tick", t));
+        if (t < .03) { g.fillStyle = "rgba(0,0,0," + (1 - t / .03) * .85 + ")"; g.fillRect(0, 0, w, h); }
+        const ch = lin(.02, HT.peak, t), pw = Math.pow(ch, 1.4), boost = hit(t, HT.pulse, .05) * .4 + hit(t, HT.peak, .08), aura = Math.min(1.2, pw + boost * .6 + X.vox * .25) * (peaked ? 1 - lin(HT.gray0, HT.gray1, t) * .55 : 1);
+        // the aura reaching the edges of the screen: a deep purple glow breathing in from the borders
+        g.save(); g.globalCompositeOperation = "lighter"; K.vignette(g, w, h, .55 * aura, "#7a2cff", .4); g.restore();
+        if (aura > .1) H.hitArcs(g, w, h, sM, Math.min(1, aura) * (1 - lin(HT.gray1, HT.still, t)));
+        // the hands: calm at his sides, slowly rising, trembling as the power peaks, closing into fists on it
+        const sc = HS(X) * .82, trem = (hs(Math.floor(sM * 30)) - .5) * M * .004 * pw * (peaked ? 1 - lin(HT.peak, HT.peak + .08, t) : 1), up = K.ioCub(lin(.05, HT.peak, t)), fistQ = ss(HT.peak - .015, HT.peak + .005, t);
+        const arm = side => {
+            const x = w / 2 + side * K.mix(w * .3, w * .23, up) + trem * side, y = K.mix(h * .9, h * .76, up) + trem, a = side * K.mix(-.42, -.22, up) - side * fistQ * .08;
+            const pose = fistQ > .5 ? "claw" : up > .5 ? "open" : "relax", o = { view: "back", skin: HIT_SKIN, flip: side < 0, sleeve: HIT_SLEEVE };
+            // flames of aura licking up off the arm
+            g.save(); g.globalCompositeOperation = "lighter"; for (let i = 0; i < 16; i++) { const u = (sM * (1.1 + hs(i + side * 9)) + hs(i * 3 + side)) % 1, px = x + (hs(i * 7 + side) - .5) * sc * 150, py = y + sc * (60 - 230 * hs(i * 5)) - u * sc * 160;
+                const L = sc * (30 + 50 * hs(i)) * aura; g.globalAlpha = Math.sin(u * Math.PI) * .55 * Math.min(1, aura); const fg = g.createLinearGradient(px, py, px, py - L); fg.addColorStop(0, "rgba(140,60,255,.0)"); fg.addColorStop(.4, "rgba(170,90,255,.8)"); fg.addColorStop(1, "rgba(235,215,255,0)");
+                g.fillStyle = fg; g.beginPath(); g.moveTo(px - L * .16, py); g.quadraticCurveTo(px - L * .1, py - L * .6, px + Math.sin(sM * 6 + i) * L * .12, py - L); g.quadraticCurveTo(px + L * .12, py - L * .5, px + L * .16, py); g.closePath(); g.fill(); } g.restore();
+            g.save(); g.globalCompositeOperation = "lighter"; K.glow(g, x + Math.sin(a) * sc * 70, y - Math.cos(a) * sc * 70, sc * 150, "#8a3cff", .5 * Math.min(1, aura)); g.restore();   // the aura behind the hand
+            hand(g, x, y, sc, a, pose, Object.assign(o, { rim: aura > .2 ? "#cfa8ff" : null }));
+            // crackling energy round the hand
+            if (aura > .3) { g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = "rgba(225,200,255,.85)"; g.lineWidth = 1.4; const fr = Math.floor(sM * 14) + (side > 0 ? 0 : 50);
+                for (let k = 0; k < 3; k++) { if (hs(fr + k * 7) < .4) continue; let bx = x + (hs(fr * 3 + k) - .5) * sc * 140, by = y - sc * (40 + 120 * hs(fr + k * 5)); g.beginPath(); g.moveTo(bx, by); for (let j = 0; j < 5; j++) { bx += (hs(fr * 5 + k * 3 + j) - .5) * sc * 50; by += (hs(fr * 7 + k + j) - .5) * sc * 50; g.lineTo(bx, by); } g.globalAlpha = Math.min(1, aura - .3); g.stroke(); } g.restore(); }
+        };
+        arm(-1); arm(1);
+        // the peak: the aura bursts
+        const bq = lin(HT.peak, HT.peak + .07, t); if (bq > 0 && bq < 1) { K.shock(g, w / 2, h * .8, bq, Math.hypot(w, h) * .8, "#b07cff", 40); K.glow(g, w / 2, h * .82, M * .7 * (1 - bq * .3), "#9c5cff", .6 * (1 - bq)); }
+        // the light-red ice: crystals grow in from the edges, the page's veil follows the same front
+        const front = 1.12 * K.oCub(lin(HT.ice, HT.edge, st)), D = front * M / 2, g1 = ss(HT.gray0, HT.gray1, t);
+        const crys = X.env._htC || (X.env._htC = H.hitCrystals(w, h));
+        const full = D >= M / 2 + 48;
+        veil(X, "dragonball_f", { "-webkit-mask-image": full ? "none" : edgeMask(D), "mask-image": full ? "none" : edgeMask(D),
+            "--f": "grayscale(" + (.86 * g1).toFixed(3) + ") brightness(" + (1 + .1 * g1).toFixed(3) + ") contrast(" + (1 - .14 * g1).toFixed(3) + ")", "--wash": g1.toFixed(3), "--red": Math.min(1, front * 1.5).toFixed(3) }, gg => {
+            if (front > 0) crys.forEach(c => { const q = (front - Math.max(0, c.e)) / .14; if (q > 0) K.crystalDraw(gg, c, Math.min(1, q), q < 1.4 ? .5 * (1 - (q - .4)) : 0, H.HIT_PAL); });
+            if (peaked) H.hitArcs(gg, w, h, sM, .55 * (1 - lin(HT.gray1, HT.still, t) * .7));
+        });
+        if (front > 0 && D < M / 2 - 6) {                                   // the front: a cold shimmer and a slight colour split running round the screen, inward
+            shimmer(g, off => { const i = Math.max(0, D - off); return [[i, i], [w - i, i], [w - i, h - i], [i, h - i], [i, i]]; }, 1 - ss(.55, .85, D / (M / 2)), 2);
+        }
+        if (t > .02 && t < HT.peak + .1) K.slam(g, "時飛ばし", w / 2, h * .2, M * .12, lin(.02, HT.peak + .1, t), { font: K.F_JP, weight: "400", fill: "#f2e8ff", stroke: "#2a1040", glow: "#b07cff", from: 1.3 });
+        if (t > HT.still - .03) K.title(g, X, lin(HT.still - .03, 1, t), { en: "TIME-SKIP FREEZE", kj: "時飛ばし", sub: "HIT · " + X.env.toName.toUpperCase() + " FROZEN FOR 2 TURNS", y: .2, col: "#c9a6ff" });
+        X.fx.rgb = hit(t, HT.peak, .06) * 14;
+        if (hit(t, HT.peak, .014)) X.fx.flash = ["#efe2ff", .55];
+    }
+};
+
+/* ---------- DOMA · Frozen Lotus, first person, drawn OVER the real table: Doma's pale hands in the wide black sleeves of his robes hold
+   his two sharp golden fans (a maroon lotus and a green leaf on each); smiling and lazy, he fans himself, then on the voice's peak sweeps
+   both fans outward in one smooth arc and the ice pours off their edges: heavy, rough, layered frost with cold air rolling over it, a
+   few specks of blood and a thin purple poison mist sitting on it (the page's .lotus-veil, revealed along the sweep). ---------- */
+/* the ice revealed as a union of growing circles (a CSS mask) */
+const maskOf = circ => circ.some(c => c[2] > 1) ? circ.map(([x, y, r]) => "radial-gradient(circle at " + x.toFixed(0) + "px " + y.toFixed(0) + "px, #000 " + Math.max(0, r - 60).toFixed(0) + "px, transparent " + Math.max(1, r).toFixed(0) + "px)").join(",") : "linear-gradient(transparent, transparent)";
+const DM = { sweep: .296, rel: .402, end: .47, edge: .58, lock: .64, still: .72 };
+const dmSlow = brake(DM.lock - .04, DM.still);
+const DM_SLEEVE = { c: "#231a20", s: "#0d0a0c", cuff: "#c79a3a", len: 440, w: 86 };
+const DM_ICE = { c: "#e6f3fb", s: "#a9cbe3", cuff: "#d9ecf8", len: 440, w: 86 };
+function domaFan(g, x, y, R, ang, open, frost) {
+    const sp = 2.5 * open, a0 = -Math.PI / 2 - sp / 2, a1 = -Math.PI / 2 + sp / 2, n = 15;
+    g.save(); g.translate(x, y); g.rotate(ang); g.lineJoin = "round";
+    const leaf = () => { g.beginPath(); g.arc(0, 0, R * .3, a0, a1); for (let k = 24; k >= 0; k--) { const an = a0 + sp * k / 24, rr = R * (k % 2 ? .955 : 1.04); g.lineTo(Math.cos(an) * rr, Math.sin(an) * rr); } g.closePath(); };   // the sharp edge: a row of small blades
+    leaf(); const gr = g.createRadialGradient(0, 0, R * .3, 0, 0, R * 1.04); gr.addColorStop(0, "#9a6a14"); gr.addColorStop(.25, "#e8bc48"); gr.addColorStop(.7, "#ffe49a"); gr.addColorStop(.93, "#f0c860"); gr.addColorStop(1, "#fff4c8"); g.fillStyle = gr; g.fill();
+    g.save(); leaf(); g.clip();
+    const pt = (f, r) => { const an = a0 + sp * f; return [Math.cos(an) * R * r, Math.sin(an) * R * r]; };
+    const lp = pt(.34, .63), lr = R * .27;                                                      // the maroon lotus
+    g.save(); g.translate(lp[0], lp[1]); g.rotate(a0 + sp * .36 + Math.PI / 2);
+    [[-1.05, .8], [1.05, .8], [-.55, .95], [.55, .95], [0, 1]].forEach(([an, k]) => { g.save(); g.rotate(an); g.beginPath(); g.moveTo(0, 0); g.bezierCurveTo(lr * .42 * k, -lr * .3, lr * .3 * k, -lr * .85, 0, -lr * k); g.bezierCurveTo(-lr * .3 * k, -lr * .85, -lr * .42 * k, -lr * .3, 0, 0); const pg = g.createLinearGradient(0, 0, 0, -lr); pg.addColorStop(0, "#5a0c22"); pg.addColorStop(.7, "#8c1a36"); pg.addColorStop(1, "#c04a68"); g.fillStyle = pg; g.fill(); g.strokeStyle = "#3a0614"; g.lineWidth = 1; g.stroke(); g.restore(); });
+    g.fillStyle = "#e8b83a"; g.beginPath(); g.ellipse(0, -lr * .12, lr * .16, lr * .1, 0, 0, TAU); g.fill(); g.restore();
+    const gp = pt(.72, .62), gR = R * .2;                                                       // the green leaf
+    g.save(); g.translate(gp[0], gp[1]); g.rotate(a0 + sp * .7); g.beginPath(); g.arc(0, 0, gR, .35, TAU - .35); g.lineTo(0, 0); g.closePath(); const lg = g.createRadialGradient(0, 0, 0, 0, 0, gR); lg.addColorStop(0, "#5f9a44"); lg.addColorStop(1, "#2e5e2a"); g.fillStyle = lg; g.fill(); g.strokeStyle = "#1c3c1a"; g.lineWidth = 1; g.stroke();
+    g.strokeStyle = "rgba(200,235,170,.55)"; g.lineWidth = .9; for (let k = 0; k < 7; k++) { const an = .5 + k / 6 * (TAU - 1); g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(an) * gR * .9, Math.sin(an) * gR * .9); g.stroke(); } g.restore();
+    const sh = g.createLinearGradient(-R, -R, R, R * .2); sh.addColorStop(0, "rgba(255,255,255,0)"); sh.addColorStop(.48, "rgba(255,255,255,.28)"); sh.addColorStop(.56, "rgba(255,255,255,0)"); g.fillStyle = sh; g.fillRect(-R * 1.1, -R * 1.1, R * 2.2, R * 1.2);   // the metal's sheen
+    if (frost > 0) { g.globalAlpha = frost; g.fillStyle = "rgba(225,242,255,.55)"; g.fillRect(-R * 1.1, -R * 1.1, R * 2.2, R * 1.2); g.strokeStyle = "rgba(255,255,255,.8)"; g.lineWidth = 1; g.beginPath(); for (let k = 0; k < 9; k++) K.frost(g, Math.cos(a0 + sp * hs(k)) * R * .95, Math.sin(a0 + sp * hs(k)) * R * .95, a0 + sp * hs(k) + Math.PI + (hs(k * 3) - .5), R * .3, frost, 0, k); g.stroke(); g.globalAlpha = 1; }
+    g.restore();
+    g.strokeStyle = "#4a2e06"; for (let i = 0; i <= n; i++) { const an = a0 + sp * i / n; g.lineWidth = i === 0 || i === n ? 3.4 : 1.3; g.beginPath(); g.moveTo(Math.cos(an) * R * .05, Math.sin(an) * R * .05); g.lineTo(Math.cos(an) * R * (i === 0 || i === n ? 1.0 : .3), Math.sin(an) * R * (i === 0 || i === n ? 1.0 : .3)); g.stroke(); }   // the sticks and the two guards
+    leaf(); g.strokeStyle = "#5a3a08"; g.lineWidth = 1.6; g.stroke();
+    g.fillStyle = "#3a2200"; g.beginPath(); g.arc(0, 0, R * .045, 0, TAU); g.fill(); g.fillStyle = "#ffe7a0"; g.beginPath(); g.arc(-R * .012, -R * .012, R * .015, 0, TAU); g.fill();   // the rivet
+    g.restore();
+}
+/* where Doma's hands are: lazy fanning → the two fans crossed in front → one smooth sweep outward (fastest on the peak) */
+function domaPose(X, t, side) {
+    const { w, h } = X, lazy = 1 - ss(DM.sweep - .05, DM.sweep, t), sw = K.ioCub(lin(DM.sweep, DM.end, t)), gath = ss(DM.sweep - .06, DM.sweep, t) * (1 - sw);
+    const x0 = w / 2 + side * w * (side > 0 ? .25 : .27), y0 = h * (side > 0 ? .86 : .92), a0 = side * (side > 0 ? -.35 : .25) + (side > 0 ? Math.sin(t * X.main / 1000 * 2.4) * .14 * lazy : 0);
+    const xc = w / 2 - side * w * .05, yc = h * .8, ac = -side * .55, x1 = w / 2 + side * w * .27, y1 = h * .78, a1 = side * .72;
+    if (t < DM.sweep) return { x: K.mix(x0, xc, gath), y: K.mix(y0, yc, gath), a: K.mix(a0, ac, gath) };
+    const arc = Math.sin(sw * Math.PI) * h * .1;
+    return { x: K.mix(xc, x1, sw), y: K.mix(yc, y1, sw) - arc, a: K.mix(ac, a1, sw) };
+}
+function domaFanAt(X, t, side) { const P = domaPose(X, t, side), sc = HS(X) * .86, p = handPoint(-4, -104, P.x, P.y, sc, P.a, side < 0); return { P, sc, px: p[0], py: p[1], R: X.M * .3, a: P.a }; }
+const doma = {
+    col: "#c9a6ff", ms: 7590, mainPlus: 3000, grain: 0, breath: t => t < DM.rel,
+    seal: () => {},
+    begin() { tsEv("demonslayer_f", "start"); },
+    tailStart(X) { tsEv("demonslayer_f", "stopped"); },
+    tail: frozenTail("#d8b8ff", "#2a0a2a"),
+    main(g, X, T) {
+        const { w, h, M } = X, t = T.t, st = dmSlow(t), sM = st * X.main / 1000, rel = t >= DM.rel;
+        X.cue(.0, "wind", t); X.cue(.03, "open", t); X.cue(DM.sweep, "whoosh", t); X.cue(DM.rel - .02, "whoosh", t); X.cue(DM.rel, "freeze", t); X.cue(DM.rel + .003, "crack", t); [.44, .49, .54].forEach(a => X.cue(a, "crack", t)); X.cue(DM.edge, "creak", t); X.cue(DM.lock, "shing", t);
+        if (t < .03) { g.fillStyle = "rgba(0,0,0," + (1 - t / .03) * .85 + ")"; g.fillRect(0, 0, w, h); }
+        // the sweep's path: where the fans' edges cut through the air; the ice pours out of it
+        const arcPts = X.env._dmA || (X.env._dmA = (() => { const L = []; [1, -1].forEach(sd => { for (let k = 0; k <= 4; k++) { const tt = DM.sweep + (DM.end - DM.sweep) * (.2 + .2 * k), F = domaFanAt(X, tt, sd), an = F.a - Math.PI / 2; L.push([F.px + Math.cos(an) * F.R * .9, F.py + Math.sin(an) * F.R * .9, k * .012]); } }); return L; })());
+        const Rmax = Math.hypot(w, h) * .95, circ = arcPts.map(([x, y, d]) => [x, y, Rmax * K.oCub(lin(DM.rel + d, DM.edge + d, st))]);
+        veil(X, "demonslayer_f", rel ? { "-webkit-mask-image": maskOf(circ), "mask-image": maskOf(circ) } : null, null);
+        // the cold before: a breath of frost and a few lotus-shaped ice motes drifting off the fans
+        g.save(); for (let i = 0; i < 7; i++) { const u = (sM * .04 + i / 7) % 1; K.pool(g, w * (-.1 + 1.2 * u), h * (.62 + .1 * Math.sin(i * 2.1)), M * .26, "#eef6ff", .08 * Math.sin(u * Math.PI)); } g.restore();
+        if (rel) {
+            // frost lines, rough and branching, racing out of the sweep
+            g.save(); g.lineCap = "round"; const fa = 1 - lin(DM.edge, DM.lock + .04, t);
+            circ.forEach(([x0, y0, r], k) => { if (r < 8) return; for (let j = 0; j < 3; j++) { let an = hs(k * 5 + j) * TAU, x = x0, y = y0; const Lk = Math.min(r * .95, M * (.3 + .4 * hs(k * 3 + j))); g.globalAlpha = fa * .7; g.strokeStyle = "#f4fbff"; g.lineWidth = 1.6; g.beginPath(); g.moveTo(x, y);
+                for (let s = 1; s <= 8; s++) { an += (hs(k * 31 + j * 7 + s) - .5) * .6; x += Math.cos(an) * Lk / 8; y += Math.sin(an) * Lk / 8; g.lineTo(x, y); if (s % 2 === 0) { g.lineTo(x + Math.cos(an + 1.1) * Lk / 14, y + Math.sin(an + 1.1) * Lk / 14); g.moveTo(x, y); } } g.stroke(); } });
+            g.restore();
+            // the front: only where it is the outermost, a cold shimmer and a slight colour split, rough crystals riding it
+            const fq = 1 - lin(DM.edge - .05, DM.edge, st);
+            if (fq > 0) circ.forEach(([x0, y0, r], k) => { if (r < 10) return; const segs = []; let cur = null;
+                for (let i = 0; i <= 90; i++) { const an = i / 90 * TAU, px = x0 + Math.cos(an) * r, py = y0 + Math.sin(an) * r, out = circ.every(([x1, y1, r1], j) => j === k || Math.hypot(px - x1, py - y1) > r1 - 2) && px > -20 && py > -20 && px < w + 20 && py < h + 20;
+                    if (out) { if (!cur) segs.push(cur = []); cur.push(an); } else cur = null; }
+                segs.forEach(sg => { if (sg.length < 2) return; shimmer(g, off => sg.map(an => [x0 + Math.cos(an) * (r + off), y0 + Math.sin(an) * (r + off)]), fq, 2.4);
+                    sg.forEach((an, i) => { if (i % 3) return; const x = x0 + Math.cos(an) * r, y = y0 + Math.sin(an) * r, sz = M * (.012 + .016 * hs(k * 50 + i)); g.save(); g.globalAlpha = fq * .85; g.translate(x, y); g.rotate(an); g.beginPath(); g.moveTo(sz * 1.4, 0); g.lineTo(sz * .2, -sz * .5); g.lineTo(-sz * .6, -sz * .2); g.lineTo(-sz * .4, sz * .4); g.lineTo(sz * .3, sz * .45); g.closePath(); g.fillStyle = "rgba(236,246,255,.85)"; g.fill(); g.restore(); }); }); });
+            // cold air rolling over the ice in the sweep's direction, and the purple poison mist settling on it
+            const sp = ss(DM.rel, DM.edge, st);
+            g.save(); for (let i = 0; i < 12; i++) { const u = (hs(i + 9) + sM * .05 * (i % 2 ? 1 : -1) + 1) % 1, x = w * (-.1 + 1.2 * u), y = h * (.12 + .8 * hs(i + 3)); K.pool(g, x, y, M * (.14 + .1 * hs(i)), i % 3 ? "#eef7ff" : "#b98cf0", (i % 3 ? .12 : .1) * sp); } g.restore();
+            const bq = lin(DM.rel, DM.rel + .06, t); if (bq < 1) arcPts.forEach(([x, y], k) => { if (k % 2) return; K.glow(g, x, y, M * .14 * (1 - bq * .5), "#e6f2ff", .7 * (1 - bq)); });
+        }
+        // the fans and the hands that hold them: lazy, then the sweep; the ice takes them as it passes
+        const iced = ss(DM.rel + .01, DM.rel + .1, t);
+        if (t > DM.sweep - .02 && t < DM.end + .03) { const q = K.bell(t, DM.sweep, DM.end); g.save(); g.globalCompositeOperation = "lighter"; [1, -1].forEach(sd => { for (let k = 0; k < 7; k++) { const tt = t - k * .006, F = domaFanAt(X, tt, sd), an = F.a - Math.PI / 2; K.glow(g, F.px + Math.cos(an) * F.R * .85, F.py + Math.sin(an) * F.R * .85, M * .06, k % 2 ? "#e2f0ff" : "#c9a6ff", q * .3 * (1 - k / 7)); } }); g.restore(); }
+        [-1, 1].forEach(sd => { const F = domaFanAt(X, t, sd), o = { view: "back", skin: "pale", flip: sd < 0, sleeve: DM_SLEEVE };
+            domaFan(g, F.px, F.py, F.R, F.a, K.oBack(lin(.0, .08, t), 1.2), iced);
+            hand(g, F.P.x, F.P.y, F.sc, F.P.a, "fist", o); if (iced > 0) { g.save(); g.globalAlpha *= iced * .75; hand(g, F.P.x, F.P.y, F.sc, F.P.a, "fist", Object.assign({}, o, { skin: "ice", rim: "#e6f2ff", sleeve: DM_ICE })); g.restore(); } });
+        if (t < DM.sweep) { g.save(); for (let i = 0; i < 14; i++) { const u = (sM * .12 + hs(i)) % 1, x = w * (.55 + .4 * hs(i + 3)) + Math.sin(sM + i) * 20, y = h * (.75 - u * .6); g.globalAlpha = Math.sin(u * Math.PI) * .7; K.snowflake(g, x, y, M * (.008 + .008 * hs(i)), 1, sM * .5 + i, "#ffffff"); } g.restore(); }
+        if (t > .01 && t < DM.rel + .05) { g.save(); g.globalAlpha = 1 - lin(DM.rel, DM.rel + .05, t); K.column(g, "血鬼術", w * .08, h * .16, M * .07, lin(.01, .1, t), { fill: "#fff", stroke: "#3a0a2a", glow: "#c9a6ff", sw: 3 }); g.restore(); }
+        if (t > DM.rel - .02 && t < DM.edge) K.slam(g, "蓮葉氷", w / 2, h * .2, M * .12, lin(DM.rel - .02, DM.edge, t), { font: K.F_JP, weight: "400", fill: "#f4fbff", stroke: "#2a0a2a", glow: "#c9a6ff", from: 1.4 });
+        if (t > DM.still - .03) K.title(g, X, lin(DM.still - .03, 1, t), { en: "FROZEN LOTUS", kj: "蓮葉氷", sub: "DOMA · " + X.env.toName.toUpperCase() + " FROZEN FOR 2 TURNS", y: .2, col: "#c9a6ff" });
+        if (hit(t, DM.rel, .012)) X.fx.flash = ["#f2f6ff", .45];
+    }
+};
+
+/* ---------- JULIUS · Time Magic: Time Stop, first person, drawn OVER the real table: Julius's hands in the white sleeves of the Wizard
+   King's robe with their gold cuffs, his grimoire open in his left hand, its pages glowing faintly while he speaks; he lifts it, the
+   pages race, light-blue magic gathers round the book and his free hand, and on the voice's peak the magic is released: a sphere of time
+   swells out of the book until the whole screen is inside it (the page's .chrono-veil, a mask growing from the book), a light-blue
+   bracelet with white Roman numerals wraps round it, and time brakes to a stop. The bracelet is painted on the veil's top layer, the same
+   one the hold keeps turning (holds.js chronoRing). ---------- */
+const JU = { lift: .284, flip0: .32, rel: .5, edge: .6, ring: .56, ringed: .66, stop: .685, still: .78 };
+const juSlow = brake(.62, JU.still), JU_ROT = .05;
+const JU_SLEEVE = { c: "#f4efe6", s: "#cdc3ad", cuff: "#d9a82a", len: 440, w: 76 };
+/* the grimoire, open, seen from above: dark leather cover, gold corners, two pages (glowing script on them), one page turning (f 0..1) */
+function grimoire(g, x, y, W, Hh, tilt, f, glo, s) {
+    g.save(); g.translate(x, y); g.rotate(tilt);
+    const top = .86, cw = W * .54, pg = (sd, inset) => { const k = 1 - inset; g.beginPath(); g.moveTo(0, -Hh / 2 * k + 4); g.quadraticCurveTo(sd * cw * .5 * k, -Hh / 2 * k - Hh * .05, sd * cw * top * k, -Hh / 2 * k); g.lineTo(sd * cw * k, Hh / 2 * k); g.quadraticCurveTo(sd * cw * .5 * k, Hh / 2 * k - Hh * .04, 0, Hh / 2 * k + 3); g.closePath(); };
+    [-1, 1].forEach(sd => { pg(sd, -.06); const cg = g.createLinearGradient(0, -Hh / 2, 0, Hh / 2); cg.addColorStop(0, "#4a2e1a"); cg.addColorStop(1, "#24140a"); g.fillStyle = cg; g.fill(); g.strokeStyle = "#140a04"; g.lineWidth = 2; g.stroke(); });   // the cover
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => { const cx = sx * (sy < 0 ? cw * top * 1.06 : cw * 1.06), cy = sy * Hh / 2 * 1.06; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx - sx * W * .07, cy); g.lineTo(cx, cy - sy * W * .07); g.closePath(); g.fillStyle = "#d4a937"; g.fill(); g.strokeStyle = "#6a4a10"; g.lineWidth = 1; g.stroke(); });   // gold corners
+    for (let l = 3; l >= 0; l--) [-1, 1].forEach(sd => { pg(sd, l * .008); const pgr = g.createLinearGradient(0, 0, sd * cw, 0); pgr.addColorStop(0, "#c9b78e"); pgr.addColorStop(.12, "#f1e6c8"); pgr.addColorStop(1, "#f7eed6"); g.fillStyle = pgr; g.fill(); g.strokeStyle = "rgba(90,60,20,.45)"; g.lineWidth = 1; g.stroke(); });   // the page block
+    g.save(); g.globalCompositeOperation = "lighter"; [-1, 1].forEach(sd => { for (let r = 0; r < 8; r++) { const yy = -Hh * .36 + r * Hh * .095, x0 = sd * cw * .14, x1 = sd * cw * (.78 - (r === 7 ? .3 : 0)); for (let k = 0; k < 7; k++) { const a = x0 + (x1 - x0) * k / 7, b = a + (x1 - x0) / 7 * (.55 + .3 * hs(r * 13 + k + sd)); g.strokeStyle = "rgba(120,200,255," + (.25 + .6 * glo) * (.6 + .4 * Math.sin(s * 3 + r + k)) + ")"; g.lineWidth = 1.6; g.beginPath(); g.moveTo(a, yy); g.lineTo(b, yy); g.stroke(); } } }); g.restore();   // the glowing script
+    if (glo > .2) { g.save(); g.globalCompositeOperation = "lighter"; K.glow(g, 0, 0, W * .6, "#7cc4ff", (glo - .2) * .6); g.restore(); }
+    if (f > 0 && f < 1) { const k = Math.cos(f * Math.PI); g.save(); g.scale(k, 1); g.translate(0, -Math.sin(f * Math.PI) * Hh * .04); pg(1, .02); const fg = g.createLinearGradient(0, 0, cw, 0); fg.addColorStop(0, "#d8c8a0"); fg.addColorStop(1, k > 0 ? "#fbf3dc" : "#e6d8b4"); g.fillStyle = fg; g.fill(); g.strokeStyle = "rgba(90,60,20,.5)"; g.lineWidth = 1; g.stroke(); g.restore(); }   // a page turning on the spine
+    g.strokeStyle = "rgba(60,30,10,.6)"; g.lineWidth = 2; g.beginPath(); g.moveTo(0, -Hh / 2 + 4); g.lineTo(0, Hh / 2 + 3); g.stroke();
+    g.restore();
+}
+function juBook(X, t) { const { w, h, M } = X, up = K.ioCub(lin(JU.lift, JU.rel - .04, t)), push = K.oBack(lin(JU.rel - .01, JU.rel + .02, t)); return { x: K.mix(w * .4, w * .44, up), y: K.mix(h * .86, h * .64, up) - push * h * .015, W: M * K.mix(.5, .46, up), Hh: M * K.mix(.3, .28, up), tilt: K.mix(-.1, -.05, up) }; }
+const julius = {
+    col: "#8fd0ff", ms: 8100, voiceEnd: 8.2, mainPlus: 600, grain: 0, breath: t => t < JU.rel,
+    seal: () => {},
+    begin() { tsEv("blackclover_f", "start"); },
+    tailStart(X) { tsEv("blackclover_f", "stopped", { rot: julius.rot(X, 1) }); },
+    rot: (X, t) => JU_ROT * (juSlow(t) - JU.ring) * X.main / 1000,
+    tail: frozenTail("#8fd0ff", "#06243e"),
+    main(g, X, T) {
+        const { w, h, M } = X, t = T.t, st = juSlow(t), sM = st * X.main / 1000, rel = t >= JU.rel, B = juBook(X, t);
+        X.cue(.0, "wind", t); X.cue(JU.lift, "charge", t); [.33, .36, .39, .42, .45, .475].forEach(a => X.cue(a, "flip", t)); X.cue(JU.rel - .004, "chime", t); X.cue(JU.rel, "toll", t); X.cue(JU.rel + .002, "warp", t); X.cue(JU.ring, "shing", t); X.cue(JU.stop, "chime", t); X.cue(JU.stop + .004, "boom", t);
+        [JU.stop + .02, JU.stop + .05, JU.stop + .09].forEach(a => X.cue(a, "tock", t));
+        if (t < .03) { g.fillStyle = "rgba(0,0,0," + (1 - t / .03) * .85 + ")"; g.fillRect(0, 0, w, h); }
+        const build = lin(JU.lift, JU.rel, t), glo = .15 + .25 * Math.sin(sM * 1.3) * .5 + .85 * build * (rel ? 1 - lin(JU.rel, JU.rel + .1, t) * .6 : 1);
+        const core = [B.x, B.y - B.Hh * .1], R = Math.hypot(w, h) * 1.05 * K.oExpo(lin(JU.rel, JU.edge, st)), fr = lin(JU.rel, JU.edge, st);
+        const rot = julius.rot(X, t), form = K.ioCub(lin(JU.ring, JU.ringed, t));
+        veil(X, "blackclover_f", rel ? { "--x": core[0].toFixed(1) + "px", "--y": core[1].toFixed(1) + "px", "--r": R.toFixed(1) + "px" } : { "--r": "0px" }, gg => {
+            if (form > 0) H.chronoRing(gg, w, h, { form, rot, flash: K.hit(t, JU.stop, .08) + K.bell(t, JU.ring, JU.ringed) * .4 });
+            if (fr >= 1) H.chronoRipples(gg, w, h, sM, ss(JU.edge, JU.stop, t));
+        });
+        // the left hand under the book (the fingers hidden behind it, the thumb over the page's edge), the book, then the free right hand
+        const lh = HS(X) * .8; hand(g, B.x - B.W * .5, B.y + B.Hh * .5, lh, 1.15 + B.tilt, "relax", { view: "back", skin: "base", flip: true, sleeve: JU_SLEEVE });
+        const flipQ = t > JU.flip0 && t < JU.rel ? ((t - JU.flip0) / .03) % 1 : 0;
+        grimoire(g, B.x, B.y, B.W, B.Hh, B.tilt, flipQ, glo, sM);
+        g.save(); g.translate(B.x - B.W * .47, B.y + B.Hh * .16); g.rotate(.75 + B.tilt); g.lineJoin = "round";   // the thumb over the page's edge, holding it
+        g.beginPath(); g.moveTo(-lh * 9, lh * 22); g.quadraticCurveTo(-lh * 10, -lh * 14, 0, -lh * 20); g.quadraticCurveTo(lh * 10, -lh * 14, lh * 9, lh * 22); g.closePath(); const tg = g.createLinearGradient(-lh * 10, 0, lh * 10, 0); tg.addColorStop(0, "#fbd9c2"); tg.addColorStop(.62, "#fbd9c2"); tg.addColorStop(.63, "#e5a98e"); tg.addColorStop(1, "#e5a98e"); g.fillStyle = tg; g.fill(); g.strokeStyle = "#3d1a12"; g.lineWidth = 2; g.stroke();
+        g.beginPath(); g.moveTo(-lh * 5, -lh * 8); g.quadraticCurveTo(0, -lh * 18, lh * 5, -lh * 8); g.quadraticCurveTo(0, -lh * 5, -lh * 5, -lh * 8); g.fillStyle = "#ffe9e1"; g.fill(); g.strokeStyle = "rgba(61,26,18,.45)"; g.lineWidth = 1.2; g.stroke(); g.restore();
+        const up = K.ioCub(lin(JU.lift + .02, JU.rel - .03, t)), push = K.oBack(lin(JU.rel - .012, JU.rel + .015, t)), rx = K.mix(w * .82, w * .7, up) - push * w * .02, ry = K.mix(h * 1.06, h * .74, up) - push * h * .03, ra = K.mix(-.5, -.12, up);
+        const rp = rel ? "spread" : up > .5 ? "open" : "relax", rsc = HS(X) * (1 - push * .1);
+        hand(g, rx, ry, rsc, ra, rp, { view: "back", skin: "base", sleeve: JU_SLEEVE });
+        const palm = handPoint(0, -60, rx, ry, rsc, ra, false);
+        // the magic gathering: light-blue motes spiralling into the book and the open hand, numerals drifting up off the pages
+        if (build > 0 && t < JU.rel + .05) { g.save(); g.globalCompositeOperation = "lighter"; const fade = 1 - lin(JU.rel, JU.rel + .05, t);
+            [[core, 1], [palm, .7]].forEach(([c, k], j) => { for (let i = 0; i < 22; i++) { const u = (sM * (.6 + .3 * hs(i + j * 30)) + hs(i * 7 + j)) % 1, an = hs(i * 3 + j) * TAU + sM * 2 * (1 - u), d = M * .3 * (1 - u) * k; g.globalAlpha = Math.sin(u * Math.PI) * build * fade; K.glow(g, c[0] + Math.cos(an) * d, c[1] + Math.sin(an) * d * .7, M * .012, "#9fd8ff", 1); } K.glow(g, c[0], c[1], M * (.08 + .14 * build) * k, "#7cc4ff", .6 * build * fade); });
+            for (let i = 0; i < 8; i++) { const u = (sM * .3 + i / 8) % 1; g.globalAlpha = Math.sin(u * Math.PI) * build * fade; K.txt(g, H.ROMAN[(i * 5) % 12], core[0] + (hs(i) - .5) * B.W * .8, core[1] - u * M * .35, M * .028, { font: K.F_UI, fill: "#e6f6ff", sw: 0, glow: "#7cc4ff" }); }
+            g.restore(); }
+        if (rel) {
+            // the sphere's wall racing outward: a glassy rim, a band of refraction behind it, a shimmer and a slight colour split
+            if (fr < 1) { const wob = an => Math.sin(an * 5 + sM * 3) * M * .006;
+                g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = "rgba(120,190,255,.18)"; g.lineWidth = M * .08; g.beginPath(); g.arc(core[0], core[1], Math.max(1, R - M * .05), 0, TAU); g.stroke(); g.restore();
+                shimmer(g, off => { const P = []; for (let i = 0; i <= 120; i++) { const an = i / 120 * TAU, rr = R + off + wob(an); P.push([core[0] + Math.cos(an) * rr, core[1] + Math.sin(an) * rr]); } return P; }, 1, 2.6); }
+            const bq = lin(JU.rel, JU.rel + .05, t); if (bq < 1) { K.glow(g, core[0], core[1], M * .32 * (1 - bq * .3), "#cfeaff", .7 * (1 - bq)); K.shock(g, core[0], core[1], bq, M * .6, "#9fd8ff", 24); }
+            const sq = lin(JU.stop, JU.stop + .06, t); if (sq > 0 && sq < 1) K.shock(g, w / 2, h / 2, sq, Math.hypot(w, h) * .6, "#e6f6ff", 14);
+        }
+        if (t > JU.lift && t < JU.rel + .08) K.column(g, "時間魔法", w * .08, h * .14, M * .065, lin(JU.lift, JU.lift + .1, t), { fill: "#f2faff", stroke: "#06243e", glow: "#8fd0ff", sw: 3 });
+        if (t > JU.stop - .01 && t < JU.still + .02) K.slam(g, "時間停止", w / 2, h * .2, M * .12, lin(JU.stop - .01, JU.still + .02, t), { font: K.F_JP, weight: "400", fill: "#f4fbff", stroke: "#06243e", glow: "#8fd0ff", from: 1.3 });
+        if (t > JU.still - .02) K.title(g, X, lin(JU.still - .02, 1, t), { en: "TIME STOP", kj: "時間魔法 · 時間停止", sub: "JULIUS · " + X.env.toName.toUpperCase() + " FROZEN FOR 2 TURNS", y: .2, col: "#8fd0ff" });
+        if (hit(t, JU.rel, .012)) X.fx.flash = ["#eaf6ff", .28];
+        X.fx.rgb = hit(t, JU.rel, .05) * 10;
     }
 };
 

@@ -13,11 +13,11 @@
    ===================================================================== */
 import { audio } from "../audio.js";
 import { isReduced } from "../fx.js";
-import * as K from "./kit.js?v=10";
-import { FREEZE } from "./freeze.js?v=10";
-import { SWAP } from "./swap.js?v=10";
-import { ULT } from "./ult.js?v=10";
-import { PEEK } from "./peek.js?v=10";
+import * as K from "./kit.js?v=11";
+import { FREEZE } from "./freeze.js?v=11";
+import { SWAP } from "./swap.js?v=11";
+import { ULT } from "./ult.js?v=11";
+import { PEEK } from "./peek.js?v=11";
 
 let A = null;                 // game hooks (see initCine)
 /* api: { hbEl, unoCardEl, unoNext, plateRect(p), me(), arr } */
@@ -27,22 +27,24 @@ const SCENES = Object.assign({}, FREEZE, SWAP, ULT, PEEK);
 /* [ability, character, kanji, eye x, eye y] (where the eyes sit in the card art, 0..1, for the close-ups and cut-ins) */
 const META = {
     onepiece_f: ["Ice Age", "Aokiji", "氷河時代", .5, .33], onepiece_t: ["Room · Shambles", "Trafalgar Law", "シャンブルズ", .35, .38], onepiece_u: ["Hawk Gatling", "Luffy", "鷹銃乱打", .5, .38], onepiece_e: ["Conqueror's Haki", "Shanks", "覇王色", .45, .45],
-    naruto_f: ["Crystal Ice Mirrors", "Haku", "魔鏡氷晶", .58, .25], naruto_t: ["Flying Raijin", "Minato", "飛雷神", .62, .12], naruto_u: ["Rasengan", "Naruto", "螺旋丸", .5, .41], naruto_e: ["Byakugan", "Neji", "白眼", .5, .5],
-    dragonball_f: ["Time Skip", "Hit", "時飛ばし", .5, .12], dragonball_t: ["Temporal Do-Over", "Whis", "時間逆行", .4, .42], dragonball_u: ["Kamehameha", "Goku", "かめはめ波", .5, .33], dragonball_e: ["Power Gaze", "Jiren", "気", .64, .27],
+    naruto_f: ["Secret Jutsu: Crystal Ice Mirrors", "Haku", "秘術・魔鏡氷晶", .58, .25], naruto_t: ["Flying Raijin", "Minato", "飛雷神", .62, .12], naruto_u: ["Rasengan", "Naruto", "螺旋丸", .5, .41], naruto_e: ["Byakugan", "Neji", "白眼", .5, .5],
+    dragonball_f: ["Time-Skip Freeze", "Hit", "時飛ばし", .5, .12], dragonball_t: ["Temporal Do-Over", "Whis", "時間逆行", .4, .42], dragonball_u: ["Kamehameha", "Goku", "かめはめ波", .5, .33], dragonball_e: ["Power Gaze", "Jiren", "気", .64, .27],
     jjk_f: ["Ice Formation", "Uraume", "氷凝呪法", .35, .38], jjk_t: ["Boogie Woogie", "Aoi Todo", "不義遊戯", .48, .24], jjk_u: ["Malevolent Shrine", "Sukuna", "伏魔御廚子", .45, .36], jjk_e: ["Infinite Void", "Gojo", "無量空処", .45, .55],
-    demonslayer_f: ["Lotus Leaf Ice", "Doma", "蓮葉氷", .6, .47], demonslayer_t: ["Infinity Castle", "Nakime", "無限城", .4, .24], demonslayer_u: ["Hinokami Kagura", "Tanjiro", "ヒノカミ神楽", .45, .42], demonslayer_e: ["Transparent World", "Yoriichi", "透き通る世界", .5, .4],
+    demonslayer_f: ["Frozen Lotus", "Doma", "蓮葉氷", .6, .47], demonslayer_t: ["Infinity Castle", "Nakime", "無限城", .4, .24], demonslayer_u: ["Hinokami Kagura", "Tanjiro", "ヒノカミ神楽", .45, .42], demonslayer_e: ["Transparent World", "Yoriichi", "透き通る世界", .5, .4],
     bleach_f: ["Daiguren Hyorinmaru", "Hitsugaya", "大紅蓮氷輪丸", .5, .47], bleach_t: ["Kyoka Suigetsu", "Aizen", "鏡花水月", .52, .5], bleach_u: ["Getsuga Tensho", "Ichigo", "月牙天衝", .45, .36], bleach_e: ["The Almighty", "Yhwach", "全知全能", .5, .57],
     hxh_f: ["Chain Jail", "Kurapika", "束縛する中指の鎖", .55, .38], hxh_t: ["Hide and Seek", "Knov", "四次元マンション", .5, .42], hxh_u: ["100-Type Guanyin · Zero Hand", "Netero", "百式観音 零の掌", .5, .4], hxh_e: ["Lovely Ghostwriter", "Neon", "天使の自動筆記", .5, .47],
-    blackclover_f: ["Chrono Stasis", "Julius", "時間魔法", .45, .47], blackclover_t: ["Fallen Angel's Gate", "Finral", "堕天使の扉", .65, .37], blackclover_u: ["Dimension Slash", "Yami", "次元斬り", .36, .32], blackclover_e: ["Red Thread of Fate", "Vanessa", "運命の赤い糸", .5, .33],
+    blackclover_f: ["Time Magic: Time Stop", "Julius", "時間魔法", .45, .47], blackclover_t: ["Fallen Angel's Gate", "Finral", "堕天使の扉", .65, .37], blackclover_u: ["Dimension Slash", "Yami", "次元斬り", .36, .32], blackclover_e: ["Red Thread of Fate", "Vanessa", "運命の赤い糸", .5, .33],
     jojo_f: ["The World", "DIO", "ザ・ワールド", .36, .36], jojo_t: ["Sticky Fingers", "Bruno", "スティッキィ・フィンガーズ", .5, .35], jojo_u: ["Star Platinum", "Jotaro", "スタープラチナ", .45, .5], jojo_e: ["King Crimson", "Diavolo", "キング・クリムゾン", .5, .35]
 };
 const KANJI = { f: "凍", t: "換", u: "極", e: "眼" }, KLABEL = { f: "FREEZE", t: "SWAP HANDS", u: "ULTIMATE", e: "FUTURE SIGHT" };
 /* SYNC: [scene time 0..1, second of the voice line] pairs. Each one pins a beat of the scene (an impact, a clap, the ability
    being named...) to the moment the line says it. Taken from a word-level transcript of every clip; the scene's clock is
-   stretched between them. A clip that is replaced keeps working: pins that no longer fit are relaxed by the warp. */
+   stretched between them. A clip that is replaced keeps working: pins that no longer fit are relaxed by the warp.
+   A scene may start its line late (S.voiceAt, ms from the start of the opening shot: the pins move with it) and may end its main
+   act before a quiet end of the clip (S.voiceEnd, seconds of the clip that count; the rest plays on under the ending). */
 const SYNC = {
-    onepiece_f: [[.17, 2.62], [.39, 4.6], [.6, 6.15], [.74, 7.58]], naruto_f: [[.48, 2.0], [.72, 4.28]], jjk_f: [[.165, 3.1], [.24, 4.1], [.58, 8.45], [.705, 10.1]], demonslayer_f: [[.52, 3.23]], bleach_f: [[.159, 2.83], [.2225, 3.55], [.733, 9.4]],
-    dragonball_f: [[.3, 1.65], [.5, 2.95], [.62, 3.62]], blackclover_f: [[.56, 4.8]], hxh_f: [[.304, 3.58], [.534, 5.53], [.73, 7.2]], jojo_f: [[.1, 1.6], [.2, 2.25], [.42, 3.9]],
+    onepiece_f: [[.17, 2.62], [.39, 4.6], [.6, 6.15], [.74, 7.58]], naruto_f: [[.256, .47], [.444, 2.0], [.59, 3.18], [.726, 4.28]], jjk_f: [[.165, 3.1], [.24, 4.1], [.58, 8.45], [.705, 10.1]], demonslayer_f: [[.296, 3.25], [.402, 4.05]], bleach_f: [[.159, 2.83], [.2225, 3.55], [.733, 9.4]],
+    dragonball_f: [[.128, 2.05], [.324, 3.65]], blackclover_f: [[.284, 3.3], [.5, 5.05], [.685, 6.55]], hxh_f: [[.304, 3.58], [.534, 5.53], [.73, 7.2]], jojo_f: [[.1, 1.6], [.2, 2.25], [.42, 3.9]],
     onepiece_t: [[.22, 1.3], [.64, 6.24]], naruto_t: [[.3, 1.65], [.6, 3.68]], dragonball_t: [[.22, 3.15], [.62, 5.05], [.66, 5.9]], jjk_t: [[.28, 1.62], [.5, 3.95], [.72, 5.45]],
     demonslayer_t: [[.34, 2.94], [.5, 5.02], [.66, 6.18]], bleach_t: [[.3, 1.9], [.58, 6.4]], hxh_t: [[.3, 1.95], [.48, 5.1]], blackclover_t: [[.24, 2.02], [.46, 4.55]], jojo_t: [[.28, 2.2]],
     onepiece_u: [[.09, 1.9], [.14, 2.43], [.193, 3.0], [.48, 5.98], [.72, 8.4]], naruto_u: [[.22, 1.4], [.7, 9.12]], dragonball_u: [[.14, 1.35], [.38, 3.4], [.5, 4.15]], jjk_u: [[.3, 3.2], [.56, 5.8]], demonslayer_u: [[.3, 1.6], [.56, 3.6], [.72, 4.6]],
@@ -83,11 +85,11 @@ function voiceLoad(key, wait) {
 function voicePlay(info) { const a = new Audio(info.src); a.volume = audio.mediaVolume(1); audio.duck(Math.max(10000, info.dur * 1000 + 1500)); a.play().catch(() => {}); return a; }
 function voiceStop(a) { const f = setInterval(() => { if (a.volume > .15) a.volume -= .15; else { a.pause(); clearInterval(f); } }, 30); }
 /* the scene clock: elapsed ms -> scene time 0..1, piecewise linear through the SYNC pins (slopes kept within 1/3x..3x of even) */
-function warpOf(pins, info, I, main) {
+function warpOf(pins, info, I, main, off) {
     const pts = [[I, 0]], even = 1 / main, lo = even / 3, hi = even * 3;
     if (info) (pins || []).slice().sort((a, b) => a[0] - b[0]).forEach(([t, sec]) => {
         const [pe, pt] = pts[pts.length - 1]; if (t <= pt || t >= 1) return;
-        let el = sec * 1000; el = Math.max(el, pe + (t - pt) / hi, I + main - (1 - t) / lo); el = Math.min(el, pe + (t - pt) / lo, I + main - (1 - t) / hi);
+        let el = sec * 1000 + (off || 0); el = Math.max(el, pe + (t - pt) / hi, I + main - (1 - t) / lo); el = Math.min(el, pe + (t - pt) / lo, I + main - (1 - t) / hi);
         if (el > pe + 40 && el < I + main - 40) pts.push([el, t]);
     });
     pts.push([I + main, 1]);
@@ -297,9 +299,9 @@ export function cineHook(key) {
         Promise.all([voiceLoad(key, 900), fontsReady()]).then(([info]) => { if (!ended) run(info); }).catch(e => { console.warn(e); finish(); });
 
         function run(info) {
-            const tail = kd.tail(env) + (S.tailPlus || 0), I = INTRO;
-            const main = (info ? Math.min(V_MAX, Math.max(V_MIN, info.dur * 1000 + 300 - I)) : S.ms || V_MS) + (S.mainPlus || 0);   // mainPlus: extra screen time after the voice
-            const total = I + main + tail, warp = warpOf(SYNC[key], info, I, main), w = innerWidth, h = innerHeight, mk = z => { const cv = A.hbEl("canvas", "fx-cv"); cv.style.zIndex = z; box.appendChild(cv); return cv; };
+            const tail = kd.tail(env) + (S.tailPlus || 0), I = INTRO, VA = info ? S.voiceAt || 0 : 0, vd = info ? Math.min(info.dur, S.voiceEnd || 1e9) : 0;
+            const main = (info ? Math.min(V_MAX, Math.max(V_MIN, vd * 1000 + 300 + VA - I)) : S.ms || V_MS) + (S.mainPlus || 0);   // mainPlus: extra screen time after the voice
+            const total = I + main + tail, warp = warpOf(SYNC[key], info, I, main, VA), w = innerWidth, h = innerHeight, mk = z => { const cv = A.hbEl("canvas", "fx-cv"); cv.style.zIndex = z; box.appendChild(cv); return cv; };
             let dpr = Math.min(1.5, window.devicePixelRatio || 1); if (w * h * dpr * dpr > 2.4e6) dpr = Math.sqrt(2.4e6 / (w * h));
             const cv = mk(1), g = cv.getContext("2d"); cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
             let gf = null; if (S.fg) { const cf = mk(4); cf.width = cv.width; cf.height = cv.height; gf = cf.getContext("2d"); }
@@ -310,19 +312,20 @@ export function cineHook(key) {
             X.cards = fn => peekCards(env, fn);
             X.cue = (at, name, T) => { const id = name + at; if (!env.cues[id] && T >= at) { env.cues[id] = 1; if (T < at + .08) audio.sfx(name); } };
             X.reveal = (tt, len) => { if (env.snap) { g.save(); g.globalAlpha = 1 - K.ss(0, len, tt); g.drawImage(env.snap, 0, 0, w, h); g.restore(); } };
-            if (info) voice = voicePlay(info);
+            if (info && !VA) voice = voicePlay(info);
             let t0 = performance.now(), vox = 0;
             jump = () => { t0 = performance.now() - (I + main); };
             const frame = now => {
                 if (ended) return; if (!box.isConnected) { finish(); return; }
                 const el = now - t0, ph = el < I ? "intro" : el < I + main ? "main" : "tail";
+                if (info && VA && !voice && el >= VA) voice = voicePlay(info);
                 if (ph === "tail" && !env.tailed) {                  // freeze the last picture of the main act, the endings break/fade it away
                     env.tailed = 1; const sn = document.createElement("canvas"); sn.width = cv.width; sn.height = cv.height; sn.getContext("2d").drawImage(cv, 0, 0); env.snap = sn;
                     if (gf) { const s2 = sn.getContext("2d"); s2.drawImage(gf.canvas, 0, 0); gf.setTransform(1, 0, 0, 1, 0, 0); gf.clearRect(0, 0, cv.width, cv.height); }
                     if (S.tailFx === "shatter") { const L = []; for (let k = 0; k < 9; k++) L.push(K.randLine(k + 40 + (S.seed || 0), w, h)); env.shards = K.shardsOf(w, h, L); }
                     try { S.tailStart && S.tailStart(X); } catch (e) { console.warn(e); }
                 }
-                const ev = info && info.env, vi = Math.floor(el / 50), raw = ev && vi < ev.length ? ev[vi] : 0;
+                const ev = info && info.env, vi = Math.floor((el - VA) / 50), raw = ev && vi >= 0 && vi < ev.length ? ev[vi] : 0;
                 vox = raw > vox ? vox + (raw - vox) * .6 : vox * .88; X.vox = vox;              // the voice's loudness, fast attack, slow release
                 const T = { ph, t: ph === "intro" ? 0 : ph === "main" ? warp(el) : 1, tt: ph === "tail" ? Math.min(1, (el - I - main) / tail) : 0, s: el / 1000, el };
                 X.s = T.s; X.t = T.t; X.fx = {};
