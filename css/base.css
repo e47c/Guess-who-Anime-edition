@@ -206,8 +206,6 @@ input:focus { outline: none; background: rgba(0,0,0,.55); box-shadow: inset 0 0 
 .hb-only { display: none !important; }
 body.hb-mode .series-pick .anime-option.hb-only { display: flex !important; }
 body.uno-mode .series-pick .anime-option:not(.uno-ok) { display: none !important; }
-body .series-pick .anime-option.series-off, body.hb-mode .series-pick .anime-option.hb-only.series-off, body.uno-mode .series-pick .anime-option.series-off { display: none !important; }
-
 /* ---------- avatars ---------- */
 .ava { --ava: 48px; --ac: var(--red); position: relative; flex: none; width: var(--ava); height: var(--ava); border-radius: 50%; padding: calc(var(--ava) * .06); background: var(--ac); box-shadow: 0 4px 14px rgba(0,0,0,.5); }
 .ava-in { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: #140c12; display: grid; place-items: center; }
