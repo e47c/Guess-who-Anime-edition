@@ -1108,9 +1108,6 @@ function pickBalanced(keys, size) {
    with images. If it can't be reached, the built-in
    names below keep the mode working (name-only cards).
 ========================================= */
-/* Hidden for now in Headbanz + Imposter (tell me when to unhide): empty this list to bring them back */
-const HB_HIDDEN_SERIES = ["aot", "mha", "rezero"];
-const hbVisibleKeys = keys => (keys || []).filter(k => !HB_HIDDEN_SERIES.includes(k));
 let homeMode = "gw", homeDiff = "normal", homeRounds = 5;
 const HB_SERIES = {
     onepiece: { id: 21, re: /one piece/i, label: "One Piece", names: "Monkey D. Luffy|Roronoa Zoro|Nami|Usopp|Sanji|Tony Tony Chopper|Nico Robin|Franky|Brook|Portgas D. Ace|Trafalgar Law|Shanks|Dracule Mihawk|Boa Hancock|Kaido|Sabo" },
@@ -1390,7 +1387,7 @@ async function hbBegin(kind) {
     let keys = d.animes || [];
     if (kind !== "first") {
         const box = document.querySelector("#hbRound .anime-poll");
-        if (box) keys = hbVisibleKeys([...box.querySelectorAll("input:checked")].map(c => c.value));
+        if (box) keys = [...box.querySelectorAll("input:checked")].map(c => c.value);
         if (!keys.length) { toast("Pick at least one series."); return; }
     }
     $("hbLoading").classList.remove("hidden"); { const lt = document.querySelector("#hbLoading div"); if (lt) lt.textContent = "Summoning characters..."; }
@@ -1668,7 +1665,7 @@ async function imBegin(kind) {
     let keys = d.animes || [];
     if (kind !== "first") {
         const box = document.querySelector("#imPanel .anime-poll");
-        if (box) keys = hbVisibleKeys([...box.querySelectorAll("input:checked")].map(c => c.value));
+        if (box) keys = [...box.querySelectorAll("input:checked")].map(c => c.value);
         if (!keys.length) { toast("Pick at least one series."); return; }
     }
     $("hbLoading").classList.remove("hidden"); { const lt = document.querySelector("#hbLoading div"); if (lt) lt.textContent = "Summoning characters..."; }
@@ -3471,7 +3468,7 @@ function fixSeries(t, keys, deck) {
     keys = arr(keys);
     if (t === "classic") { keys = keys.filter(k => ANIME_LIBRARY[k]); if (!keys.length) keys = ["onepiece"]; }
     else if (t === "uno") { keys = keys.filter(k => UNO_DECKS[k]).slice(0, UNO_DECK_RANGE[deck === "chaos" ? "chaos" : "classic"][1]); for (const k of ["onepiece", "naruto", "dragonball", "jjk", "demonslayer", "bleach"]) { if (keys.length >= 4) break; if (!keys.includes(k)) keys.push(k); } }
-    else { keys = hbVisibleKeys(keys).filter(k => HB_SERIES[k]); if (!keys.length) keys = ["onepiece"]; }
+    else { keys = keys.filter(k => HB_SERIES[k]); if (!keys.length) keys = ["onepiece"]; }
     return keys;
 }
 function pickMode(t) {
@@ -4418,7 +4415,7 @@ function secretPower(text) {
 }
 async function initApp() {
     $("homeTitle").addEventListener("click", () => { const lg = $("homeTitle"); lg.classList.remove("zap"); void lg.offsetWidth; lg.classList.add("zap"); clearTimeout(logoTimer); logoTimer = setTimeout(() => { logoTaps = 0; }, 900); if (++logoTaps >= 5) { logoTaps = 0; secretPower(["PLUS ULTRA!", "DATTEBAYO!", "BANKAI!", "KAMEHAMEHA!", "DOMAIN EXPANSION!"][(Math.random() * 5) | 0]); } else sfx("tick"); });
-    initGallery(ANIME_LIBRARY, Object.fromEntries(Object.keys(HB_SERIES).filter(k => !HB_HIDDEN_SERIES.includes(k)).map(k => [k, HB_SERIES[k].label])));
+    initGallery(ANIME_LIBRARY, Object.fromEntries(Object.keys(HB_SERIES).map(k => [k, HB_SERIES[k].label])));
     setProfileHooks({ sfx: sfx, toast: toast, onAchievement: achToast });
     bindUpload(); bindSettings(); syncDock(); renderProfileCard(); buildHomeModes();
     $("name").value = profile.get().name || "";
@@ -4457,5 +4454,4 @@ async function initApp() {
     } else if (!profile.get().name) setTimeout(() => { if (!room) { openProfile(); toast("Welcome! Make your player card first."); } }, 700);
 }
 await initApp();
-
 

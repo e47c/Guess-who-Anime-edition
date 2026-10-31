@@ -232,9 +232,6 @@ body.uno-mode .series-pick .anime-option.hb-only.uno-ok{display:flex!important}
 @keyframes uWFloat{0%,100%{transform:scale(.72) translateY(0) rotate(-2deg)}50%{transform:scale(.72) translateY(-10px) rotate(2deg)}}
 @keyframes uWChip{from{opacity:0;transform:translateY(24px) skewX(-8deg)}}
 
-/* TEMPORARILY HIDDEN SERIES (Headbanz + Imposter): Attack on Titan, My Hero Academia, Re:Zero.
-   To bring them back: delete this rule, delete the three "series-off" classes in the series list, and empty HB_HIDDEN_SERIES in the script. */
-body .series-pick .anime-option.series-off,body.hb-mode .series-pick .anime-option.hb-only.series-off,body.uno-mode .series-pick .anime-option.hb-only.uno-ok.series-off{display:none!important}
 /* ===== swap cards: real card backs ===== */
 .ucard.cb{background:radial-gradient(circle at 50% 38%,#ff3b3b 0,#c10f15 38%,#2a0508 100%);border:3px solid #fff}
 .ucard.cb::before{content:"✦";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:46px;color:#fff;text-shadow:3px 3px 0 #000}
