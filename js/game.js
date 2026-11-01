@@ -4076,24 +4076,27 @@ function saveElim() {
         localStorage.setItem("gw_elim_" + room, JSON.stringify({ sig: boardSig(), list }));
     } catch (e) {}
 }
-/* ---- prank: one specific character shows another picture when crossed out ---- */
-const PRANK_TARGET = "images/anime/jjk/jk19.jpg";   // the card that triggers it
-const PRANK_IMAGE  = "images/prank.jpg";            // <- put your uploaded image here
-function prankKey() { return "gw_prank_" + room + "_" + boardSig(); }
-function prankState() { try { return localStorage.getItem(prankKey()); } catch (e) { return null; } }
-function setPrankState(v) { try { localStorage.setItem(prankKey(), v); } catch (e) {} }
+/* ---- one-time character picture swaps when a card is crossed out ---- */
+const PRANKS = {
+    gojo: { target: "images/anime/jjk/jk19.jpg", image: "images/prank.jpg" },
+    eren: { target: "images/anime/aot/aot1.jpg", image: "images/aot-prank.png" }
+};
+function prankKey(id) { return "gw_prank_" + (id === "gojo" ? "" : id + "_") + room + "_" + boardSig(); }
+function prankState(id) { try { return localStorage.getItem(prankKey(id)); } catch (e) { return null; } }
+function setPrankState(id, v) { try { localStorage.setItem(prankKey(id), v); } catch (e) {} }
 /* once per game: null -> "active" (first cross-out) -> "done" (after un-crossing). A new game has a new board, so it resets. */
 function applyPrank(card) {
     const img = card.querySelector("img");
-    if (!img || !(card.dataset.src || "").endsWith(PRANK_TARGET)) return;
-    const st = prankState();
+    const entry = Object.entries(PRANKS).find(([, prank]) => (card.dataset.src || "").endsWith(prank.target));
+    if (!img || !entry) return;
+    const [id, prank] = entry, st = prankState(id);
     if (card.classList.contains("eliminated")) {
         if (st === "done") return;
-        setPrankState("active");
+        setPrankState(id, "active");
         img.onerror = () => { img.onerror = null; card.classList.remove("prank"); img.src = card.dataset.src; };
-        card.classList.add("prank"); img.src = PRANK_IMAGE;
+        card.classList.add("prank"); img.src = prank.image;
     } else {
-        if (st === "active") setPrankState("done");
+        if (st === "active") setPrankState(id, "done");
         img.onerror = null; card.classList.remove("prank"); img.src = card.dataset.src;
     }
 }
