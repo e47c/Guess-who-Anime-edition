@@ -254,6 +254,33 @@ const CHARACTER_LIBRARY = [
 
 const ANIME_LIBRARY = {
 
+    aot: [
+        "images/anime/aot/aot1.jpg",
+        "images/anime/aot/aot2.jpg",
+        "images/anime/aot/aot3.jpg",
+        "images/anime/aot/aot4.jpg",
+        "images/anime/aot/aot5.jpg",
+        "images/anime/aot/aot6.jpg",
+        "images/anime/aot/aot7.jpg",
+        "images/anime/aot/aot8.jpg",
+        "images/anime/aot/aot9.jpg",
+        "images/anime/aot/aot10.jpg",
+        "images/anime/aot/aot11.jpg",
+        "images/anime/aot/aot12.jpg",
+        "images/anime/aot/aot13.jpg",
+        "images/anime/aot/aot14.jpg",
+        "images/anime/aot/aot15.jpg",
+        "images/anime/aot/aot16.jpg",
+        "images/anime/aot/aot17.jpg",
+        "images/anime/aot/aot18.jpg",
+        "images/anime/aot/aot19.jpg",
+        "images/anime/aot/aot20.jpg",
+        "images/anime/aot/aot21.jpg",
+        "images/anime/aot/aot22.jpg",
+        "images/anime/aot/aot23.jpg",
+        "images/anime/aot/aot24.jpg"
+    ],
+
     naruto: [
         "images/anime/naruto/na1.jpg",
         "images/anime/naruto/na2.jpg",
@@ -400,6 +427,30 @@ ANIME_LIBRARY.onepiece = CHARACTER_LIBRARY;
    Empty names are simply not shown.
 ========================================= */
 const CHARACTER_NAMES = {
+    "images/anime/aot/aot1.jpg": "Eren Jaeger",
+    "images/anime/aot/aot2.jpg": "Armin Arlert",
+    "images/anime/aot/aot3.jpg": "Sasha Blouse",
+    "images/anime/aot/aot4.jpg": "Annie Leonhart",
+    "images/anime/aot/aot5.jpg": "Miche Zacharias",
+    "images/anime/aot/aot6.jpg": "Zeke Jaeger",
+    "images/anime/aot/aot7.jpg": "Pieck Finger",
+    "images/anime/aot/aot8.jpg": "Dot Pixis",
+    "images/anime/aot/aot9.jpg": "Jean Kirstein",
+    "images/anime/aot/aot10.jpg": "Ymir (Freed)",
+    "images/anime/aot/aot11.jpg": "Onyankopon",
+    "images/anime/aot/aot12.jpg": "Floch Forster",
+    "images/anime/aot/aot13.jpg": "Historia Reiss",
+    "images/anime/aot/aot14.jpg": "Falco Grice",
+    "images/anime/aot/aot15.jpg": "Kenny Ackerman",
+    "images/anime/aot/aot16.jpg": "Hange Zoë",
+    "images/anime/aot/aot17.jpg": "Grisha Jaeger",
+    "images/anime/aot/aot18.jpg": "Bertholdt Hoover",
+    "images/anime/aot/aot19.jpg": "Levi Ackerman",
+    "images/anime/aot/aot20.jpg": "Erwin Smith",
+    "images/anime/aot/aot21.jpg": "Mikasa Ackerman",
+    "images/anime/aot/aot22.jpg": "Reiner Braun",
+    "images/anime/aot/aot23.jpg": "Connie Springer",
+    "images/anime/aot/aot24.jpg": "Gabi Braun",
     "images/character1.jpg": "Iceburg",
     "images/character2.jpg": "Rob Lucci",
     "images/character3.jpg": "Marcus Mars",
@@ -4454,4 +4505,3 @@ async function initApp() {
     } else if (!profile.get().name) setTimeout(() => { if (!room) { openProfile(); toast("Welcome! Make your player card first."); } }, 700);
 }
 await initApp();
-
