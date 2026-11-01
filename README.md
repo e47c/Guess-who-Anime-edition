@@ -32,7 +32,7 @@ A browser party game for a squad of up to 8 friends with four anime modes in one
 
 ## Customising
 
-- **Series art and names:** `ANIME_LIBRARY` and `CHARACTER_NAMES` at the top of `js/game.js`. Every character is named; a name left as `""` would show as *Secret character*.
+- **Series art and names:** `ANIME_LIBRARY` and `CHARACTER_NAMES` at the top of `js/game.js`. Every character is named; a name left as `""` would show as *Secret character*. The Guess Who Attack on Titan pack uses `images/anime/aot/aot1.jpg` through `aot24.jpg`, in order: Eren Jaeger, Armin Arlert, Sasha Blouse, Annie Leonhart, Miche Zacharias, Zeke Jaeger, Pieck Finger, Dot Pixis, Jean Kirstein, Ymir (Freed), Onyankopon, Floch Forster, Historia Reiss, Falco Grice, Kenny Ackerman, Hange Zoë, Grisha Jaeger, Bertholdt Hoover, Levi Ackerman, Erwin Smith, Mikasa Ackerman, Reiner Braun, Connie Springer, Gabi Braun.
 - **Series logos:** `images/logos/<series>.png`. A missing file falls back to the text name.
 - **Special-card art:** `images/special/<series>_<freeze|swap|ultimate|vision>.(png|jpg|webp)`. Until a file exists, the card shows a kanji emblem. Every cinematic opens on the full picture, framed and never cropped.
 - **Special-card voice lines:** `audio/special/<series>_<f|t|u|e>.mp3`. The cinematic lasts as long as the clip (up to 17 s), pulses with the voice's loudness, and pins its key beats to the words of the line (`SYNC` in `js/cine/engine.js`, taken from a transcript of each clip). If you replace a clip, update its pins; pins that no longer fit are relaxed automatically.
