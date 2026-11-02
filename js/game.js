@@ -3261,7 +3261,7 @@ const MODES = {
     imposter: { key: "im",  name: "Imposter", tag: "SHADOW TRIAL", kanji: "偽", min: 3, max: 8, color: "#e11b1b", sub: "Someone here is lying.", blurb: "All but one know the character. Give clues, vote, unmask the fake.",
         art: ["images/anime/naruto/na23.jpg", "images/anime/jjk/jk6.jpg", "images/anime/demonslayer/ds15.jpg"] },
     uno:      { key: "uno", name: "Anime UNO", tag: "ARENA CLASH", kanji: "札", min: 2, max: 8, color: "#d9a441", sub: "Every anime a colour. No mercy.", blurb: "Classic: 4 anime, 4 colours. Chaos: up to 8. Stack +2s, special moves.",
-        art: ["images/special/dragonball_ultimate.jpg", "images/anime/dragonball/db9.jpg", "images/anime/naruto/na9.jpg"] },
+        art: ["images/character73.jpg", "images/special/jojo_ultimate.jpg", "images/anime/naruto/na9.jpg"] },
     draft:    { key: "dr",  name: "Anime Draft", tag: "TEAM BUILDER", kanji: "選", min: 2, max: 8, color: "#fbf6ee", sub: "Six roles. One dream team.", blurb: "Draft or bid for random characters, fill six roles, win on role scores + rarity.",
         art: ["images/character36.jpg", "images/anime/jjk/jk19.jpg", "images/anime/aot/aot1.jpg"] }
 };

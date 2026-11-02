@@ -88,7 +88,7 @@ Build the strongest six-character team. Everything lives in `js/draft/` (rules, 
 - **Buttons** are one family across the site: red lacquer with a gold hairline (main), gold (alt), black and gold (ghost), dark red (danger). Hover lifts them with a glow and a shine sweep, pressing sinks them, disabled ones go flat charcoal.
 - **Logo.** A red coin with a gold rim and a gold star (the brand mark), *ANIME* in bold white with a red block shadow and a gold edge, *ARCADE* in polished gold and *PARTY* in white on a red band. The lobby header carries the same pieces as a one-line compact logo, and keeps it on phones.
 - **First-open splash.** The logo comes in, then a welcome fades in and out (*Welcome, player. Built with love by @e47. Have fun!*), then the menu. Returning players get a shorter one (*Welcome back*), and **Skip** (or a tap, Enter or Esc) goes straight to the menu. It doubles as the loading screen: it leaves only once the app is ready.
-- **Mode art** (the menu's cabinets and the lobby's mode cards) shows only each series' main protagonists and main villains, framed in gold: Guess Who has Naruto, Luffy and Ichigo; Headbanz has Goku, Yuji and Tanjiro; Imposter has Madara, Sukuna and Muzan; Anime UNO has Goku, Frieza and Sasuke; Anime Draft has Luffy, Gojo and Eren.
+- **Mode art** (the menu's cabinets and the lobby's mode cards) shows only each series' main protagonists and main villains, framed in gold: Guess Who has Naruto, Luffy and Ichigo; Headbanz has Goku, Yuji and Tanjiro; Imposter has Madara, Sukuna and Muzan; Anime UNO has Ace, Jotaro and Sasuke; Anime Draft has Luffy, Gojo and Eren.
 
 ## Menu and lobby
 
