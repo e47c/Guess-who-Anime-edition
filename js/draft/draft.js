@@ -12,7 +12,7 @@
    The rules engine (act / actorOf / newMatch / scoring) is pure and has no DOM, so it is unit-tested
    in Node (tools/draft-test.mjs). Rendering and the lobby panel follow below it.
    ===================================================================== */
-import { CHARS, ROLESETS, ROLE_ICONS, RARITIES, TIERS, DRAFT_VERSION } from "./data.js?v=1";
+import { CHARS, ROLESETS, ROLE_ICONS, RARITIES, RANKS, TIERS, DRAFT_VERSION } from "./data.js?v=2";
 
 /* tunable rules: see README "Anime Draft" for which ones are still open for balancing */
 export const DRAFT_RULES = {
@@ -55,16 +55,11 @@ export function buildDb(pop, packs) {
     rankRarity(db);
     return db;
 }
-/* global popularity rank: every draftable character of all 18 series in one list, most favourites first.
-   Equal favourites share a position, so they always share a rarity. */
+/* rarity from RANKS (data.js): per series, by power and story importance. Unlisted = Common. */
 export function rankRarity(db) {
-    const list = Object.values(db).sort((a, b) => b.f - a.f), N = list.length;
-    let pos = 0;
-    list.forEach((c, i) => {
-        if (i && c.f !== list[i - 1].f) pos = i;
-        const k = RARITIES.findIndex(x => pos / N < x.top);
-        c.r = k < 0 ? RARITIES.length - 1 : k;
-    });
+    const idx = {};
+    Object.entries(RANKS).forEach(([key, tiers]) => RARITIES.forEach((R0, i) => String(tiers[R0.key] || "").split("|").filter(Boolean).forEach(n => { idx[key + "|" + n] = i; })));
+    Object.values(db).forEach(c => { const i = idx[c.s + "|" + c.n]; c.r = i == null ? RARITIES.length - 1 : i; });
     return db;
 }
 
@@ -281,7 +276,7 @@ export function initDraft(ctx) {
         drBid: () => { const v = Number(($("drBidAmt") || {}).dataset.v); move({ k: "bid", amount: v }); },
         drStep: k => { const b = $("drBidAmt"); if (b) setBid(Number(b.dataset.v) + k); },
         drSetBid: v => setBid(v),
-        drView: k => { viewKey = k; X.sfx("toggle"); const d = X.data(); if (d && d.draft) render(d, d.draft, true); },
+        drView: k => { if (k === "p" + X.me()) return; viewKey = k; X.sfx("toggle"); const d = X.data(); if (d && d.draft) render(d, d.draft, true); },
         drAgain: () => draftStart(true),
         drLobby: () => X.backToLobby(true)
     });
@@ -405,7 +400,7 @@ export function draftDuties(d) {
 
 /* ---------------- screen ---------------- */
 let seen = { mid: 0, evn: -1, turnMine: false, lot: 0, phase: "", over: 0 }, viewKey = "", layout = "";
-export function draftReset() { seen = { mid: 0, evn: -1, turnMine: false, lot: 0, phase: "", over: 0 }; viewKey = ""; layout = ""; clearTimeout(awayT); awayKey = ""; const o = $("drOver"); if (o) o.remove(); }
+export function draftReset() { overTimers.forEach(clearTimeout); overTimers = []; seen = { mid: 0, evn: -1, turnMine: false, lot: 0, phase: "", over: 0 }; viewKey = ""; layout = ""; clearTimeout(awayT); awayKey = ""; const o = $("drOver"); if (o) o.remove(); }
 export function showDraft(d) {
     X.showOnly("draft");
     if (!DB) { $("drTurn").textContent = "Loading characters…"; draftLoad().then(() => { const d2 = X.data(); if (d2 && d2.draft && d2.gameType === "draft") showDraft(d2); }); return; }
@@ -418,38 +413,41 @@ function teamName(d, s, key) {
     return X.pName(d, Number(key.slice(1)));
 }
 
-/* a collectible card. mode: "full" | "blind" | "mini" */
+/* corner ornaments, one design per rarity (drawn in the frame colour) */
+const ORN = {
+    common: '<circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="2.2" fill="#000" opacity=".35"/>',
+    rare: '<path d="M12 1 L21 12 L12 23 L3 12 Z"/><path d="M12 4 L18 12 L12 12 Z" fill="#fff" opacity=".5"/>',
+    epic: '<path d="M2 22 C2 9 9 2 22 2 C14 5 9 10 8 16 C11 12 15 11 19 12 C13 14 10 18 9 22 Z"/><circle cx="21" cy="3" r="2.6"/><circle cx="3" cy="21" r="2.6"/>',
+    legendary: '<path d="M1 23 L1 9 Q1 1 9 1 L23 1 L18 5 L10 5 Q5 5 5 10 L5 18 Z"/><path d="M12 7 L17 12 L12 17 L7 12 Z" fill="#fff" opacity=".85"/><circle cx="22" cy="1.8" r="1.8"/><circle cx="1.8" cy="22" r="1.8"/>',
+    mythical: '<path d="M0 24 L0 8 Q0 0 8 0 L24 0 L15 4 Q6 5 5 15 Z"/><path d="M12 6 L17 12 L12 18 L7 12 Z" fill="#fff"/><path d="M12 8.5 L14.8 12 L12 15.5 L9.2 12 Z" fill="#ff2a3d"/><path d="M0 0 L9 9" stroke="currentColor" stroke-width="2.2"/>'
+};
+const SEAL = "STATS SEALED · REVEALED AT THE FINAL SCORE";
+export const draftCard = (s, id, mode) => cardEl(s, id, mode);      // (also used by the card preview in tests)
+/* a collectible card. mode: "full" | "blind" (rarity hidden too) | "mini" (board slot). Stats are never shown in play. */
 function cardEl(s, id, mode) {
-    const c = DB[id], R0 = rarity(s, id), blind = mode === "blind";
-    const box = el("div", "dc " + (mode === "mini" ? "mini " : "") + (blind ? "blind" : "r-" + R0.key));
-    if (!c) { box.appendChild(el("div", "dc-name", "Unknown")); return box; }
+    const c = DB[id], R0 = rarity(s, id), blind = mode === "blind", key = blind ? "blind" : R0.key;
+    const box = el("div", "dc r-" + key + (mode === "mini" ? " mini" : ""));
+    if (!c) { box.appendChild(el("div", "dc-cap", "Unknown")); return box; }
     box.style.setProperty("--rc", blind ? "#8d8a86" : R0.color);
+    box.appendChild(el("div", "dc-aura"));
+    const inner = el("div", "dc-in");
     const art = el("div", "dc-art"), im = new Image(); im.alt = ""; im.draggable = false; im.decoding = "async";
     if (c.img) { im.src = c.img; im.onerror = () => { im.remove(); art.classList.add("noimg"); }; art.appendChild(im); } else art.classList.add("noimg");
-    art.appendChild(el("span", "dc-kj", c.n.slice(0, 1)));
-    box.appendChild(art);
-    box.appendChild(el("div", "dc-rar", blind ? "? ? ?" : R0.name.toUpperCase()));
-    const cap = el("div", "dc-cap"); cap.append(el("small", null, label(c.s)), el("b", null, c.n)); box.appendChild(cap);
-    if (mode === "mini") return box;
-    const st = el("div", "dc-stats"), names = roleNames(s.rs), sc = charRoles(c, s.rs, !!s.mixed);
-    names.forEach((r, i) => {
-        const row = el("div", "dc-st");
-        row.append(el("i", null, ROLE_ICONS[r] || "◆"), el("span", null, r));
-        const bar = el("em"), f = el("u");
-        if (blind) { row.classList.add("hid"); f.style.width = "100%"; bar.appendChild(f); row.append(bar, el("b", null, "??")); }
-        else { f.style.width = sc[i].score + "%"; bar.appendChild(f); const v = el("b", null, String(sc[i].score)); if (sc[i].mult !== 1) v.title = sc[i].raw + " × " + sc[i].mult + " (series tier)"; row.append(bar, v); }
-        st.appendChild(row);
-    });
-    box.appendChild(st);
-    const foot = el("div", "dc-foot");
-    foot.append(el("span", null, blind ? "Stats hidden until you keep it" : "♥ " + c.f.toLocaleString("en-US") + " fans"), el("span", null, blind ? "" : "+" + R0.bonus + " rarity"));
-    box.appendChild(foot);
+    art.append(el("span", "dc-kj", c.n.slice(0, 1)), el("i", "dc-fx"));
+    inner.appendChild(art);
+    const cap = el("div", "dc-cap"); cap.append(el("small", null, label(c.s)), el("b", null, c.n)); inner.appendChild(cap);
+    if (mode !== "mini") inner.appendChild(el("div", "dc-seal", blind ? "RARITY HIDDEN · KEEP OR REROLL" : SEAL));
+    box.appendChild(inner);
+    if (mode !== "mini") ["tl", "tr", "bl", "br"].forEach(k => { const o = el("span", "dc-o " + k); o.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + (ORN[key] || ORN.common) + "</svg>"; box.appendChild(o); });
+    const crest = el("div", "dc-crest");
+    crest.append(el("i", null, blind ? "?" : "★".repeat(R0.stars)), el("b", null, blind ? "? ? ?" : R0.name.toUpperCase()));
+    box.appendChild(crest);
     return box;
 }
 
-/* a six-role board. placing = the character id being placed by me (slots become buttons showing its score there) */
+/* a six-role board. placing = the character id I'm placing (free roles become buttons). No scores until the results. */
 function boardEl(d, s, key, placing) {
-    const ids = arr(s.team[key]), names = roleNames(s.rs), bd = teamBreakdown(s, ids), mine = key === myKey(s);
+    const ids = arr(s.team[key]), names = roleNames(s.rs), mine = key === myKey(s);
     const box = el("section", "dr-board" + (mine ? " mine" : "") + (placing ? " placing" : "") + (s.type === "build" ? " side-" + key : ""));
     box.dataset.key = key;
     const head = el("div", "drb-head"), who = el("div", "drb-who");
@@ -460,24 +458,17 @@ function boardEl(d, s, key, placing) {
     const meta = el("div", "drb-meta");
     if (s.type === "build") { const left = Number(s.rr[key]) > 0; const tk = el("span", "dr-token" + (left ? "" : " used"), left ? "🎲 REROLL ×1" : "🎲 USED"); tk.title = left ? "One blind reroll for the whole match" : "This side's reroll is spent"; meta.appendChild(tk); }
     else meta.appendChild(el("span", "dr-cash", "$" + (Number(s.budget[key]) || 0)));
-    const sc = el("span", "drb-score"); sc.append(el("b", null, String(bd.total)), el("small", null, "pts")); meta.appendChild(sc);
+    meta.appendChild(el("span", "drb-count", ids.filter(Number).length + "/6"));
     head.appendChild(meta); box.appendChild(head);
-    const grid = el("div", "drb-grid"), pc = placing && DB[placing], pr = pc ? charRoles(pc, s.rs, !!s.mixed) : null;
-    let best = -1; if (pr) ids.forEach((x, i) => { if (!Number(x) && (best < 0 || pr[i].score > pr[best].score)) best = i; });
+    const grid = el("div", "drb-grid");
     names.forEach((r, i) => {
-        const id = Number(ids[i]) || 0, row = bd.rows[i];
-        const slot = el(pr && !id ? "button" : "div", "drb-slot" + (id ? " full r-" + RARITIES[row.rar].key : "") + (pr && !id ? " open" + (i === best ? " best" : "") : ""));
+        const id = Number(ids[i]) || 0, open = placing && !id;
+        const slot = el(open ? "button" : "div", "drb-slot" + (id ? " full r-" + RARITIES[rarOf(s, id)].key : "") + (open ? " open" : ""));
         slot.dataset.slot = key + i;
         slot.appendChild(el("span", "drs-role", (ROLE_ICONS[r] || "◆") + " " + r));
-        if (id) {
-            slot.appendChild(cardEl(s, id, "mini"));
-            const v = el("span", "drs-val"); v.append(el("b", null, String(row.score)), el("small", null, row.bonus ? "+" + row.bonus : "")); slot.appendChild(v);
-        } else if (pr) {
-            slot.type = "button"; slot.onclick = () => window.drPlace(i);
-            slot.setAttribute("aria-label", "Place in " + r + ": " + pr[i].score + " points");
-            slot.appendChild(el("span", "drs-prev", "+" + pr[i].score));
-            if (i === best) slot.appendChild(el("span", "drs-best", "BEST"));
-        } else slot.appendChild(el("span", "drs-empty", "empty"));
+        if (id) slot.appendChild(cardEl(s, id, "mini"));
+        else if (open) { slot.type = "button"; slot.onclick = () => window.drPlace(i); slot.setAttribute("aria-label", "Place in " + r); slot.appendChild(el("span", "drs-prev", "PLACE HERE")); }
+        else slot.appendChild(el("span", "drs-empty", "empty"));
         grid.appendChild(slot);
     });
     box.appendChild(grid);
@@ -511,7 +502,7 @@ function stageEl(d, s) {
     if (s.type === "build") {
         if (blind) {
             if (mine) {
-                act.appendChild(el("p", "dr-q", "Keep " + name + "? Stats and rarity stay hidden until you decide."));
+                act.appendChild(el("p", "dr-q", "Keep " + name + "? The rarity shows once you decide; the stats stay sealed until the final score."));
                 const row = el("div", "dr-btns"), k = el("button", "btn xl", "KEEP"), rr = el("button", "btn alt xl dr-rr");
                 k.onclick = () => window.drKeep(); rr.onclick = () => window.drReroll();
                 rr.append(el("span", null, "🎲 REROLL"), el("small", null, "one time only"));
@@ -545,11 +536,11 @@ function stageEl(d, s) {
     return st;
 }
 
-function playersEl(d, s) {
+function playersEl(d, s, leftKey) {
     const box = el("div", "dr-plist"), who = actorOf(s, presentIn(d)), L = s.lot || {};
     arr(s.players).map(Number).forEach(p => {
         const k = "p" + p, filled = arr(s.team[k]).filter(Number).length, out = arr(L.out).map(Number).includes(p);
-        const c = el("button", "dr-pl" + (p === who ? " turn" : "") + (s.phase === "bid" && Number(L.by) === p ? " high" : "") + (s.phase === "bid" && out ? " out" : "") + (filled === 6 ? " done" : "") + (p === X.me() ? " me" : "") + (viewKey === k ? " viewing" : ""));
+        const c = el("button", "dr-pl" + (p === who ? " turn" : "") + (s.phase === "bid" && Number(L.by) === p ? " high" : "") + (s.phase === "bid" && out ? " out" : "") + (filled === 6 ? " done" : "") + (p === X.me() ? " me" : "") + (viewKey === k || leftKey === k ? " viewing" : ""));
         c.type = "button"; c.dataset.p = p; c.onclick = () => window.drView(k);
         c.appendChild(X.avatarEl(X.pPub(d, p), { size: 34 }));
         const t = el("div", "dr-pl-t"); t.append(el("b", null, X.pName(d, p)), el("small", null, filled + "/6 · " + (filled === 6 ? "full" : s.phase === "bid" && out ? "passed" : s.phase === "bid" && Number(L.by) === p ? "high bid" : p === who ? "bidding" : "")));
@@ -584,10 +575,11 @@ function render(d, s, quiet) {
         a.classList.add("first"); g.append(stageEl(d, s), a, b);
         wrap.appendChild(g);
     } else {
-        if (!viewKey || !s.team[viewKey] || placingMine) viewKey = mk || "p" + arr(s.players)[0];
-        wrap.appendChild(playersEl(d, s));
-        const g = el("div", "dr-grid");
-        g.append(stageEl(d, s), boardEl(d, s, viewKey, placingMine ? s.win.c : 0));
+        const keys = arr(s.players).map(p => "p" + p), leftKey = mk || keys[0];
+        if (!viewKey || !s.team[viewKey] || viewKey === leftKey) viewKey = keys.find(k => k !== leftKey);
+        wrap.appendChild(playersEl(d, s, leftKey));
+        const g = el("div", "dr-grid"), a = boardEl(d, s, leftKey, placingMine ? s.win.c : 0);
+        a.classList.add("first"); g.append(stageEl(d, s), a, boardEl(d, s, viewKey, 0));
         wrap.appendChild(g);
     }
     // events
@@ -620,9 +612,9 @@ function playEvent(d, s, ev, flyFrom, flyNode) {
     } else if (ev.k === "place") {
         const key = s.type === "build" ? ev.side : "p" + ev.p, slot = document.querySelector('[data-slot="' + key + ev.slot + '"]');
         if (!slot) return;
-        const sc = teamBreakdown(s, s.team[key]).rows[ev.slot];
+        const R0 = rarity(s, ev.c), role = roleNames(s.rs)[ev.slot];
         slot.classList.add("landing");
-        const done = () => { slot.classList.remove("landing"); slot.classList.add("slam"); const [x, y] = centerOf(slot); X.burstText("+" + sc.total, x, y, RARITIES[sc.rar].color); X.sfx("slam"); };
+        const done = () => { slot.classList.remove("landing"); slot.classList.add("slam"); const [x, y] = centerOf(slot); X.burstText(role.toUpperCase() + " LOCKED", x, y, R0.color); X.sfx("slam"); };
         if (flyFrom && flyNode) X.flyClone(flyNode, flyFrom, slot.getBoundingClientRect(), { ms: 520, rot: -6 }).then(done); else done();
         if (s.phase !== "over" && s.type === "build") setTimeout(() => revealAnim(s, s.cur), 560);
         else if (s.phase === "bid") setTimeout(() => revealAnim(s, s.lot.c), 560);
@@ -634,54 +626,116 @@ function playEvent(d, s, ev, flyFrom, flyNode) {
     else if (ev.k === "unsold") { X.sfx("skip"); X.toast("No bids: " + ((DB[ev.c] || {}).n || "the character") + " goes back to the void."); if (s.phase === "bid") setTimeout(() => revealAnim(s, s.lot.c), 200); }
 }
 
-/* ---------------- results ---------------- */
+/* ---------------- results: the final reveal ----------------
+   1. every team in seat order, roles face down; role by role the stats unseal and the totals count up
+   2. the winner splash: rays, gold title, the MVP card, confetti
+   3. the teams re-sort into the ranking, place badges stamp in, the buttons appear. A tap skips to the end. */
+let overTimers = [];
 function showOver(d, s) {
     if (seen.over === s.mid && $("drOver")) return;
     seen.over = s.mid;
     const old = $("drOver"); if (old) old.remove();
-    const teams = standings(s), mk = myKey(s), mine = teams.find(t => t.key === mk);
-    const ov = el("div", "dr-over"); ov.id = "drOver"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "Draft results");
-    const top = teams[0], tie = teams.length > 1 && teams[1].place === 1;
-    const head = el("div", "dro-head");
-    head.appendChild(el("div", "dro-kick", "ANIME DRAFT · FINAL SCORES"));
-    const title = tie ? "DEAD EVEN" : s.type === "build" ? teamName(d, s, top.key).toUpperCase() + (top.players.length > 1 ? " WIN" : " WINS") : X.pName(d, top.players[0]).toUpperCase() + " WINS";
-    const h = el("h1", "dro-title", title); h.dataset.text = title; head.appendChild(h);
-    head.appendChild(el("p", "dro-sub", mine ? (mine.place === 1 ? (tie ? "Shared first place." : "Your team is the strongest.") : "You finished " + ord(mine.place) + ".") + " Score = six role scores + six rarity bonuses." : "Score = six role scores + six rarity bonuses."));
-    ov.appendChild(head);
-    const list = el("div", "dro-list");
-    teams.forEach((t, i) => {
-        const card = el("section", "dro-team p" + Math.min(t.place, 4) + (t.key === mk ? " me" : "")); card.style.setProperty("--i", i);
+    overTimers.forEach(clearTimeout); overTimers = [];
+    const ranked = standings(s), byKey = Object.fromEntries(ranked.map(t => [t.key, t])), mk = myKey(s), mine = byKey[mk];
+    const seat = s.type === "build" ? SIDES : arr(s.players).map(p => "p" + p);
+    const lite = document.body.classList.contains("fx-lite"), at = (ms, f) => overTimers.push(setTimeout(f, ms));
+    const ov = el("div", "dr-over tallying"); ov.id = "drOver"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "Draft results");
+    const cv = el("canvas", "dro-cv"); ov.appendChild(cv);
+    const hero = el("div", "dro-hero");
+    hero.append(el("div", "dro-kick", "ANIME DRAFT"), goldTitle("FINAL REVEAL"), el("p", "dro-sub", "The stats are unsealed role by role: role score + rarity bonus."));
+    ov.appendChild(hero);
+    const list = el("div", "dro-list"), cards = {}, shown = {};
+    seat.forEach((k, i) => {
+        const t = byKey[k], card = el("section", "dro-team"); card.style.setProperty("--i", i); cards[k] = card; shown[k] = 0;
         const th = el("div", "dro-th");
-        th.appendChild(el("span", "dro-place", ord(t.place)));
-        const who = el("div", "dro-who"); who.appendChild(el("b", null, teamName(d, s, t.key)));
+        th.appendChild(el("span", "dro-place", "?"));
+        const who = el("div", "dro-who"); who.appendChild(el("b", null, teamName(d, s, k)));
         const av = el("span", "drb-ppl"); t.players.forEach(p => av.appendChild(X.avatarEl(X.pPub(d, p), { size: 24 }))); who.appendChild(av);
         th.appendChild(who);
-        const tot = el("div", "dro-tot"), num = el("b", null, "0");
-        tot.append(num, el("small", null, "roles " + t.roles + " + rarity " + t.bonus + (t.money != null ? " · $" + t.money + " left" : "")));
+        const tot = el("div", "dro-tot"); tot.append(el("b", null, "0"), el("small", null, "roles " + t.roles + " + rarity " + t.bonus + (t.money != null ? " · $" + t.money + " left" : "")));
         th.appendChild(tot); card.appendChild(th);
         const tb = el("div", "dro-rows");
         t.rows.forEach(r => {
             const row = el("div", "dro-row" + (r.c ? " r-" + RARITIES[r.rar].key : " none"));
             row.appendChild(el("span", "dro-role", (ROLE_ICONS[r.role] || "◆") + " " + r.role));
             if (r.c) {
-                const ch = el("span", "dro-ch"); const im = new Image(); im.alt = ""; if (r.c.img) im.src = r.c.img; im.onerror = () => im.remove();
-                ch.append(im, el("b", null, r.c.n), el("i", null, RARITIES[r.rar].name)); row.appendChild(ch);
+                const ch = el("span", "dro-ch"), im = new Image(); im.alt = ""; if (r.c.img) im.src = r.c.img; im.onerror = () => im.remove();
+                ch.append(im, el("b", null, r.c.n), el("i", null, "★".repeat(RARITIES[r.rar].stars) + " " + RARITIES[r.rar].name)); row.appendChild(ch);
                 row.appendChild(el("span", "dro-sc", r.mult !== 1 ? r.raw + "×" + r.mult + " = " + r.score : String(r.score)));
-                row.appendChild(el("span", "dro-bo", "+" + r.bonus));
-                row.appendChild(el("b", "dro-rt", String(r.total)));
-            } else { row.appendChild(el("span", "dro-ch", "empty role")); row.append(el("span", "dro-sc", "0"), el("span", "dro-bo", "+0"), el("b", "dro-rt", "0")); }
+            } else { row.appendChild(el("span", "dro-ch", "empty role")); row.appendChild(el("span", "dro-sc", "0")); }
+            row.append(el("span", "dro-bo", "+" + r.bonus), el("b", "dro-rt", String(r.total)));
             tb.appendChild(row);
         });
-        card.appendChild(tb);
-        list.appendChild(card);
-        setTimeout(() => X.countUp(num, 0, t.total, 1100), 300 + i * 220);
+        card.appendChild(tb); list.appendChild(card);
     });
     ov.appendChild(list);
     const btns = el("div", "dro-btns");
     if (X.amHost()) { const a = el("button", "btn xl", "DRAFT AGAIN"), b = el("button", "btn ghost", "Back to lobby"); a.onclick = () => window.drAgain(); b.onclick = () => window.drLobby(); btns.append(a, b); }
     else btns.appendChild(el("p", "dr-wait", "Waiting for " + X.pName(d, X.hostSlot(d)) + " to draft again or go back to the lobby."));
-    ov.appendChild(btns);
+    ov.append(btns, el("div", "dro-skip", "tap to skip"));
     $("draft").appendChild(ov);
-    X.sfx(!mine ? "reveal" : mine.place === 1 ? "win" : "lose");
+
+    const setTotal = (k, v, ms) => { const b = cards[k].querySelector(".dro-tot b"); X.countUp(b, shown[k], v, ms); shown[k] = v; };
+    const revealRow = (i, ms) => {
+        seat.forEach(k => { const row = cards[k].querySelectorAll(".dro-row")[i]; if (!row || row.classList.contains("on")) return; row.classList.add("on"); setTotal(k, byKey[k].rows.slice(0, i + 1).reduce((n, r) => n + r.total, 0), ms); });
+        X.sfx(i === 5 ? "slam" : "flip");
+        const lead = Math.max(...seat.map(k => shown[k]));
+        seat.forEach(k => cards[k].classList.toggle("ahead", shown[k] === lead && lead > 0));
+    };
+    let done = false;
+    const finale = () => {
+        if (done) return; done = true;
+        overTimers.forEach(clearTimeout); overTimers = [];
+        for (let i = 0; i < 6; i++) revealRow(i, 300);
+        ov.classList.remove("tallying"); ov.classList.add("won");
+        const top = ranked[0], tie = ranked.length > 1 && ranked[1].place === 1, winners = ranked.filter(t => t.place === 1);
+        const title = tie ? "DEAD EVEN" : teamName(d, s, top.key).toUpperCase() + (top.players.length > 1 ? " WIN" : " WINS");
+        const mvp = top.rows.filter(r => r.c).sort((a, b) => b.total - a.total)[0];
+        hero.innerHTML = "";
+        hero.appendChild(el("div", "dro-rays"));
+        hero.appendChild(el("div", "dro-kick", tie ? "SHARED FIRST PLACE" : "CHAMPION" + (top.players.length > 1 ? "S" : "")));
+        hero.appendChild(goldTitle(title));
+        const av = el("div", "dro-wav"); winners.forEach(w => w.players.forEach(p => av.appendChild(X.avatarEl(X.pPub(d, p), { size: 64, badge: true })))); hero.appendChild(av);
+        hero.appendChild(el("p", "dro-sub", top.total + " points · roles " + top.roles + " + rarity " + top.bonus + (ranked[1] && !tie ? " · " + (top.total - ranked[1].total) + " ahead of " + teamName(d, s, ranked[1].key) : "")));
+        if (mvp) {
+            const m = el("div", "dro-mvp"), c = cardEl(s, mvp.id, "full"); c.querySelector(".dc-seal").textContent = mvp.role.toUpperCase() + " · " + mvp.total + " PTS";
+            m.append(el("div", "dro-mvp-k", "MVP"), c); hero.appendChild(m);
+        }
+        if (!lite) confetti(cv);
+        X.sfx(!mine ? "reveal" : mine.place === 1 ? "win" : "lose");
+        if (mine && mine.place === 1 && !lite) X.shake($("drOver"), 6);
+        at(lite ? 0 : 1300, () => {
+            const rects = new Map(Object.entries(cards).map(([k, c]) => [k, c.getBoundingClientRect()]));
+            ranked.forEach(t => {
+                const c = cards[t.key]; list.appendChild(c);
+                c.classList.add("p" + Math.min(t.place, 4)); if (t.key === mk) c.classList.add("me");
+                const pl = c.querySelector(".dro-place"); pl.textContent = ord(t.place); pl.classList.add("stamp");
+            });
+            if (!lite) ranked.forEach(t => { const c = cards[t.key], a = rects.get(t.key), b = c.getBoundingClientRect(); if (c.animate) c.animate([{ transform: "translate(" + (a.left - b.left) + "px," + (a.top - b.top) + "px)" }, { transform: "none" }], { duration: 650, easing: "cubic-bezier(.2,.9,.3,1)" }); });
+            ov.classList.add("ranked"); X.sfx("stamp");
+        });
+    };
+    const t0 = lite ? 80 : 1100, step = lite ? 40 : 750;
+    for (let i = 0; i < 6; i++) at(t0 + i * step, () => revealRow(i, Math.max(200, step - 150)));
+    at(t0 + 6 * step + 700, finale);
+    ov.addEventListener("click", e => { if (!done && !e.target.closest("button")) finale(); });
+}
+function goldTitle(text) {
+    const h = el("h1", "dro-title"); h.setAttribute("aria-label", text);
+    let k = 0;          // letters drop in one by one, but a word never breaks across lines
+    text.split(" ").forEach(word => { const w = el("span", "w"); w.setAttribute("aria-hidden", "true"); [...word].forEach(ch => { const l = el("i", null, ch); l.style.setProperty("--k", k++); w.appendChild(l); }); k++; h.appendChild(w); });
+    return h;
+}
+function confetti(cv, ms = 4200) {
+    const g = cv.getContext("2d"), dpr = Math.min(2, window.devicePixelRatio || 1), W = cv.width = innerWidth * dpr, H = cv.height = innerHeight * dpr;
+    const cols = ["#f0c869", "#ff2a3d", "#fbf6ee", "#d9a441", "#ff7a3d", "#fff3cc"];
+    const P = Array.from({ length: 190 }, (_, i) => { const side = i % 2 ? 1 : -1; return { x: W / 2 + side * W * (.18 + Math.random() * .12), y: H * .42, vx: -side * (2 + Math.random() * 9) * dpr, vy: -(8 + Math.random() * 15) * dpr, w: (6 + Math.random() * 8) * dpr, h: (3 + Math.random() * 5) * dpr, r: Math.random() * 6, vr: (Math.random() - .5) * .35, c: cols[i % cols.length] }; });
+    const t0 = performance.now();
+    const tick = now => {
+        const k = now - t0; g.clearRect(0, 0, W, H);
+        P.forEach(p => { p.vy += .32 * dpr; p.vx *= .992; p.x += p.vx; p.y += p.vy; p.r += p.vr; g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.globalAlpha = Math.max(0, 1 - k / ms); g.fillStyle = p.c; g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.r * 2))); g.restore(); });
+        if (k < ms && cv.isConnected) requestAnimationFrame(tick); else g.clearRect(0, 0, W, H);
+    };
+    requestAnimationFrame(tick);
 }
 const ord = n => n + (n % 10 === 1 && n % 100 !== 11 ? "st" : n % 10 === 2 && n % 100 !== 12 ? "nd" : n % 10 === 3 && n % 100 !== 13 ? "rd" : "th");

@@ -3,7 +3,7 @@
 
    HOW THE RATINGS WORK (read before editing a number)
    - Every draftable character is keyed by its AniList character id, so name, picture and
-     popularity (favourites) come from AniList (packs.json / draft-pop.json), never from here.
+     the fan count come from AniList (packs.json / draft-pop.json), never from here.
    - Scores are 1..100 and measured INSIDE the character's own series: 100 is the best that
      series has shown in that category (feats on screen / in the manga), 50 an average named
      fighter of that series, 1..10 "can't do this at all" (a non-user of the power system).
@@ -14,7 +14,7 @@
      IQ, Combat Skill, Captain, Vice Captain, Healer and Support are NOT scaled: they are skill
      and character qualities, not raw power. The breakdown on the results screen shows the
      multiplier, so nothing is hidden.
-   - Popularity never feeds a rating. Rarity (from favourites) is a separate, small bonus.
+   - Popularity never feeds a rating or a rarity. Rarity (RANKS: power + story importance per series) is a separate, small bonus.
 
    ROW FORMAT
    Standard series:  [aniListId, "Name", STR, SPD, IQ, DUR, CMB, SPC, R5, R6, CAP, VC, TANK, DUEL, HEAL, SUP]
@@ -61,16 +61,129 @@ export const ROLE_ICONS = {
     "Divine Protection / Authority": "👑", "Ignition Ability": "🔥", "Adolla Power": "🌑", "Mana Control": "💠", "Magic Mastery": "📖", "Vital Instrument": "🧰", "Fighting Technique": "👊", Endurance: "🧱"
 };
 
-/* ---------- rarity (global popularity rank over every draftable character) ---------- */
-// top: the share of the ranked list a rarity reaches down to (Mythical = top 2%, Legendary = next 8% ...).
-// bonus: added to the role score of a character of that rarity. Both are balancing values, easy to tune.
+/* ---------- rarity ----------
+   Rarity is decided PER SERIES by how strong and how important a character is in their own story
+   (RANKS below), not by popularity: a series' strongest figures and central protagonists / villains
+   are Mythical, its top tier Legendary, then Epic, Rare, and everyone else Common.
+   bonus: added to the role score of a character of that rarity (balancing value, easy to tune). */
 export const RARITIES = [
-    { key: "mythical",  name: "Mythical",  top: .02, bonus: 8, color: "#ff2a3d" },
-    { key: "legendary", name: "Legendary", top: .10, bonus: 6, color: "#f0c869" },
-    { key: "epic",      name: "Epic",      top: .25, bonus: 4, color: "#b56cff" },
-    { key: "rare",      name: "Rare",      top: .50, bonus: 2, color: "#3ea6ff" },
-    { key: "common",    name: "Common",    top: 1.0, bonus: 0, color: "#a7a3a0" }
+    { key: "mythical",  name: "Mythical",  stars: 5, bonus: 8, color: "#ff2a3d" },
+    { key: "legendary", name: "Legendary", stars: 4, bonus: 6, color: "#f0c869" },
+    { key: "epic",      name: "Epic",      stars: 3, bonus: 4, color: "#b56cff" },
+    { key: "rare",      name: "Rare",      stars: 2, bonus: 2, color: "#3ea6ff" },
+    { key: "common",    name: "Common",    stars: 1, bonus: 0, color: "#a7a3a0" }
 ];
+/* names exactly as in CHARS; anyone not listed is Common */
+export const RANKS = {
+    onepiece: {
+        mythical: "Monkey D. Luffy|Gol D. Roger|Edward Newgate",
+        legendary: "Shanks|Kaido|Marshall D. Teach|Dracule Mihawk|Silvers Rayleigh|Monkey D. Garp|Roronoa Zoro",
+        epic: "Trafalgar Law|Sanji|Charlotte Katakuri|Donquixote Doflamingo|Kuzan|Borsalino|Marco|Boa Hancock|Sabo|Eustass Kid",
+        rare: "Portgas D. Ace|Yamato|Bartholomew Kuma|Crocodile|Jinbe|Rob Lucci|Enel|Nico Robin|Smoker|Franky|Brook"
+    },
+    naruto: {
+        mythical: "Naruto Uzumaki|Sasuke Uchiha|Madara Uchiha",
+        legendary: "Hashirama Senju|Itachi Uchiha|Obito Uchiha|Minato Namikaze|Pain|Kurama",
+        epic: "Kakashi Hatake|Jiraiya|Tobirama Senju|Might Guy|Shisui Uchiha|Gaara|Tsunade|Orochimaru|Killer Bee",
+        rare: "Kabuto Yakushi|Hiruzen Sarutobi|Rock Lee|Sakura Haruno|Kisame Hoshigaki|Shikamaru Nara|Deidara|Sasori|Neji Hyuga|Konan"
+    },
+    dragonball: {
+        mythical: "Goku|Beerus|Whis",
+        legendary: "Vegeta|Jiren|Broly|Frieza|Gohan|Cell",
+        epic: "Majin Buu|Goku Black|Zamasu|Hit|Piccolo|Android 17|Trunks",
+        rare: "Caulifla|Android 18|Krillin|Bardock|Master Roshi|Goten|Tien Shinhan|Bulma"
+    },
+    jjk: {
+        mythical: "Ryomen Sukuna|Satoru Gojo",
+        legendary: "Yuta Okkotsu|Kenjaku|Toji Fushiguro|Yuji Itadori|Yuki Tsukumo",
+        epic: "Maki Zenin|Suguru Geto|Mahito|Megumi Fushiguro|Kinji Hakari|Hajime Kashimo|Aoi Todo",
+        rare: "Choso|Kento Nanami|Jogo|Hiromi Higuruma|Uraume|Hanami|Naoya Zenin|Mei Mei"
+    },
+    demonslayer: {
+        mythical: "Yoriichi Tsugikuni|Muzan Kibutsuji",
+        legendary: "Kokushibo|Tanjiro Kamado|Gyomei Himejima|Akaza|Doma",
+        epic: "Kyojuro Rengoku|Giyu Tomioka|Sanemi Shinazugawa|Muichiro Tokito|Tengen Uzui|Nezuko Kamado|Gyutaro",
+        rare: "Mitsuri Kanroji|Obanai Iguro|Shinobu Kocho|Zenitsu Agatsuma|Inosuke Hashibira|Kanao Tsuyuri|Daki|Tamayo"
+    },
+    bleach: {
+        mythical: "Yhwach|Sosuke Aizen|Ichigo Kurosaki",
+        legendary: "Genryusai Yamamoto|Ichibe Hyosube|Kisuke Urahara|Kenpachi Zaraki|Retsu Unohana",
+        epic: "Shunsui Kyoraku|Byakuya Kuchiki|Jugram Haschwalth|Ulquiorra Cifer|Yoruichi Shihoin|Toshiro Hitsugaya|Isshin Kurosaki",
+        rare: "Coyote Starrk|Mayuri Kurotsuchi|Grimmjow Jaegerjaquez|Gin Ichimaru|Tier Harribel|Rukia Kuchiki|Uryu Ishida|Shinji Hirako|Renji Abarai"
+    },
+    aot: {
+        mythical: "Eren Yeager|Ymir Fritz",
+        legendary: "Levi Ackerman|Zeke Yeager|Mikasa Ackerman|Erwin Smith",
+        epic: "Armin Arlert|Reiner Braun|Annie Leonhart|Bertholdt Hoover|Kenny Ackerman",
+        rare: "Hange Zoe|Pieck Finger|Grisha Yeager|Porco Galliard|Historia Reiss|Jean Kirstein|Ymir"
+    },
+    mha: {
+        mythical: "Izuku Midoriya|All Might|All For One",
+        legendary: "Tomura Shigaraki|Endeavor|Katsuki Bakugo|Shoto Todoroki",
+        epic: "Hawks|Dabi|Mirio Togata|Kai Chisaki|Shota Aizawa",
+        rare: "Stain|Mirko|Himiko Toga|Eijiro Kirishima|Gran Torino|Tamaki Amajiki|Twice|Fumikage Tokoyami|Momo Yaoyorozu|Eri"
+    },
+    hxh: {
+        mythical: "Meruem|Isaac Netero",
+        legendary: "Gon Freecss|Killua Zoldyck|Hisoka Morow|Chrollo Lucilfer|Neferpitou",
+        epic: "Kurapika|Ging Freecss|Zeno Zoldyck|Silva Zoldyck|Alluka Zoldyck|Illumi Zoldyck|Menthuthuyoupi",
+        rare: "Shaiapouf|Biscuit Krueger|Feitan Portor|Uvogin|Kite|Pariston Hill|Knuckle Bine|Morel Mackernasey"
+    },
+    deathnote: {
+        mythical: "Light Yagami|L Lawliet",
+        legendary: "Near|Ryuk|Mello",
+        epic: "Misa Amane|Rem|Teru Mikami|Watari",
+        rare: "Naomi Misora|Soichiro Yagami|Kiyomi Takada|Halle Lidner|Stephen Gevanni"
+    },
+    chainsaw: {
+        mythical: "Pochita|Makima",
+        legendary: "Denji|Reze|Kishibe",
+        epic: "Power|Aki Hayakawa|Curse Devil|Samurai Sword",
+        rare: "Angel Devil|Himeno|Future Devil|Fox Devil|Violence Fiend"
+    },
+    blackclover: {
+        mythical: "Asta|Julius Novachrono",
+        legendary: "Yuno|Yami Sukehiro|Licht|Liebe",
+        epic: "Mereoleona Vermillion|Dante Zogratis|Vanica Zogratis|Zenon Zogratis|Nacht Faust|Noelle Silva",
+        rare: "Fuegoleon Vermillion|Nozel Silva|Charlotte Roselei|William Vangeance|Dorothy Unsworth|Luck Voltia|Vanessa Enoteca"
+    },
+    jojo: {
+        mythical: "Dio Brando|Jotaro Kujo|Giorno Giovanna",
+        legendary: "Enrico Pucci|Johnny Joestar|Funny Valentine|Diavolo|Kars|Joseph Joestar",
+        epic: "Josuke Higashikata|Yoshikage Kira|Jonathan Joestar|Gyro Zeppeli|Jolyne Cujoh|Bruno Bucciarati|Weather Report",
+        rare: "Wamuu|Lisa Lisa|Diego Brando|Jean Pierre Polnareff|Noriaki Kakyoin|Rohan Kishibe|Caesar Zeppeli|Mohammed Avdol"
+    },
+    rezero: {
+        mythical: "Satella|Reinhard van Astrea",
+        legendary: "Subaru Natsuki|Echidna|Regulus Corneas|Emilia",
+        epic: "Roswaal L Mathers|Puck|Priscilla Barielle|Beatrice|Wilhelm van Astrea",
+        rare: "Rem|Julius Juukulius|Petelgeuse Romanee-Conti|Shaula|Capella Emerada Lugnica|Garfiel Tinsel|Aldebaran"
+    },
+    fireforce: {
+        mythical: "Shinra Kusakabe|Benimaru Shinmon",
+        legendary: "Sho Kusakabe|Haumea|Leonard Burns|Joker",
+        epic: "Arthur Boyle|Charon|Iris|Konro Sagamiya|Nataku Son",
+        rare: "Yuichiro Kurono|Inca Kasugatani|Maki Oze|Akitaru Obi|Princess Hibana|Takehisa Hinawa|Dr. Giovanni"
+    },
+    frieren: {
+        mythical: "Serie|Frieren",
+        legendary: "Himmel|Flamme|Macht|South Hero",
+        epic: "Fern|Stark|Eisen|Aura|Denken|Ubel",
+        rare: "Heiter|Methode|Sense|Kraft|Wirbel|Genau|Qual"
+    },
+    gachiakuta: {
+        mythical: "Rudo",
+        legendary: "Enjin|Zodyl Typhon|Jabber Wonger",
+        epic: "Zanka Nijiku|Riyo Reaper|Semiu Grier",
+        rare: "Fu Orostor|Tamsy Caines|Amo Empool|Regto"
+    },
+    windbreaker: {
+        mythical: "Hajime Umemiya",
+        legendary: "Haruka Sakura|Chika Takiishi|Jo Togame",
+        epic: "Hayato Suo|Toma Hiragi|Yamato Endo|Choji Tomiyama",
+        rare: "Ren Kaji|Kyotaro Sugishita|Tasuku Tsubakino|Mitsuki Kiryu"
+    }
+};
 
 /* ---------- series power tiers (Mixed roles only) ----------
    p = physical scale (Strength, Speed, Durability, Tank, Duelist), s = Special Ability scale.

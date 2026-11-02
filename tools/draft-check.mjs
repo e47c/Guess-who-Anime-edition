@@ -1,7 +1,7 @@
 // Anime Draft: validates the rating database (js/draft/data.js).
 // Run: node tools/draft-check.mjs   (exit code 1 on any problem)
 import fs from "fs";
-import { CHARS, ROLESETS, TIERS } from "../js/draft/data.js";
+import { CHARS, ROLESETS, TIERS, RANKS, RARITIES } from "../js/draft/data.js";
 
 const packs = JSON.parse(fs.readFileSync(new URL("../packs.json", import.meta.url), "utf8"));
 const pop = fs.existsSync(new URL("../data/draft-pop.json", import.meta.url)) ? JSON.parse(fs.readFileSync(new URL("../data/draft-pop.json", import.meta.url), "utf8")) : null;
@@ -27,6 +27,21 @@ for (const [key, rows] of Object.entries(CHARS)) {
     });
     if (rows.length < 14) problems.push(key + ": only " + rows.length + " characters (a Build match needs 12 + 2 rerolls)");
 }
+// rarity table: every listed name must be a character of that series, listed once
+for (const [key, tiers] of Object.entries(RANKS)) {
+    if (!CHARS[key]) { problems.push("RANKS." + key + ": unknown series"); continue; }
+    const names = new Set(CHARS[key].map(r => r[1])), seenN = new Set();
+    for (const [t, list] of Object.entries(tiers)) {
+        if (!RARITIES.some(x => x.key === t)) problems.push("RANKS." + key + "." + t + ": unknown rarity");
+        String(list).split("|").filter(Boolean).forEach(n => {
+            if (!names.has(n)) problems.push("RANKS." + key + "." + t + ": '" + n + "' is not a " + key + " character");
+            if (seenN.has(n)) problems.push("RANKS." + key + ": '" + n + "' listed twice");
+            seenN.add(n);
+        });
+    }
+    if (!String(tiers.mythical || "")) problems.push("RANKS." + key + ": no Mythical");
+}
+Object.keys(CHARS).forEach(k => { if (!RANKS[k]) problems.push(k + ": no RANKS entry"); });
 warn.forEach(w => console.log("warn:", w));
 problems.forEach(p => console.log("ERROR:", p));
 console.log(total + " characters in " + Object.keys(CHARS).length + " series, " + problems.length + " errors, " + warn.length + " warnings");

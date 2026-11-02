@@ -13,17 +13,17 @@ const rarity = id => db[id].r, ctx = (present) => ({ present: present || (() => 
 let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
 const S = (k, ...rest) => Object.assign({}, ...rest, { k });
 
-/* ---- rarity: global ranking by favourites ---- */
+/* ---- rarity: per series, by power and story importance (RANKS), not popularity ---- */
 const by = RARITIES.map((R, i) => all.filter(c => c.r === i));
 console.log("rarity counts:", RARITIES.map((R, i) => R.name + " " + by[i].length).join(", "), "of", N);
-t(by[0].length >= Math.floor(N * .02) && by[0].length <= Math.ceil(N * .02) + 2, "Mythical is about the top 2%");
-t(by[4].length >= N * .45, "Common is about the bottom half");
-const minOf = i => Math.min(...by[i].map(c => c.f)), maxOf = i => Math.max(...by[i].map(c => c.f));
-for (let i = 0; i < 4; i++) t(minOf(i) > maxOf(i + 1), RARITIES[i].name + " are all more popular than every " + RARITIES[i + 1].name);
-t(["Satoru Gojo", "Levi Ackerman", "Monkey D. Luffy"].every(n => all.find(c => c.n === n).r === 0), "Gojo, Levi and Luffy are Mythical");
-const tieDb = buildDb({ chars: Object.fromEntries(all.map(c => [c.id, [c.id % 3 === 0 ? 5000 : c.f, ""]])) }, null);
-const tied = Object.values(tieDb).filter(c => c.f === 5000);
-t(new Set(tied.map(c => c.r)).size === 1, "identical favourites always share a rarity (" + tied.length + " tied)");
+const named = n => all.find(c => c.n === n);
+t(["Satoru Gojo", "Ryomen Sukuna", "Monkey D. Luffy", "Goku", "Light Yagami", "Yoriichi Tsugikuni"].every(n => named(n).r === 0), "series heavyweights are Mythical (Gojo, Sukuna, Luffy, Goku, Light, Yoriichi)");
+t(named("Levi Ackerman").r === 1 && named("Ymir Fritz").r === 0, "rarity ignores popularity: Levi (most-favourited AoT) Legendary, Ymir Fritz (few fans, the source of all Titans) Mythical");
+t(named("Buggy").r === 4 && named("Yamcha").r === 4, "minor fighters are Common (Buggy, Yamcha)");
+t(Object.keys(CHARS).every(k => all.some(c => c.s === k && c.r === 0)), "every series has its own Mythical");
+t(Object.keys(CHARS).every(k => { const cs = all.filter(c => c.s === k); return cs.filter(c => c.r === 0).length <= Math.ceil(cs.length * .12); }), "Mythical stays scarce in every series (12% at most)");
+const fresh = buildDb(null, null);
+t(all.every(c => fresh[c.id].r === c.r), "rarity does not depend on the popularity file");
 
 /* ---- role scores ---- */
 const luffy = db[40], light = db[80], tanjiro = db[126071], goku = db[246];
