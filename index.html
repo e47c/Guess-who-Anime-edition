@@ -157,7 +157,7 @@
 <p class="anime-hint">Classic: red, green, yellow, dark blue. Chaos adds pink, orange, purple and light blue: one colour per series, and every extra series adds its 31 cards to the deck.</p>
 <label class="field-label" style="margin-top:14px">Special cards</label><div class="sizes"><button class="modebtn unospbtn selected" data-k="once" onclick="setUnoSp('once')">Once · then gone</button><button class="modebtn unospbtn" data-k="reuse" onclick="setUnoSp('reuse')">Reusable</button></div>
 <p class="anime-hint">Once: a special card (Freeze, Swap Hands, Ultimate, Future Sight) that has been played is out for the rest of the game. Reusable: played specials go back into the draw pile when the discard pile is reshuffled, so they can come round again.</p></div>
-<div id="draftBox" class="field hidden"><label class="field-label">Draft type</label><div class="sizes"><button class="modebtn drtbtn selected" data-k="build" onclick="setDraftOpt('type','build')">Build · Left vs Right</button><button class="modebtn drtbtn" data-k="auction" onclick="setDraftOpt('type','auction')">Auction · $25 each</button></div>
+<div id="draftBox" class="field hidden"><label class="field-label">Draft type</label><div class="sizes"><button class="modebtn drtbtn selected" data-k="build" onclick="setDraftOpt('type','build')">Build · side vs side</button><button class="modebtn drtbtn" data-k="auction" onclick="setDraftOpt('type','auction')">Auction · $25 each</button></div>
 <div id="drFmtBox"><label class="field-label" style="margin-top:14px">Format</label><div class="sizes"><button class="modebtn drfbtn selected" data-k="1" onclick="setDraftOpt('fmt',1)">1v1</button><button class="modebtn drfbtn" data-k="2" onclick="setDraftOpt('fmt',2)">2v2</button><button class="modebtn drfbtn" data-k="3" onclick="setDraftOpt('fmt',3)">3v3</button><button class="modebtn drfbtn" data-k="4" onclick="setDraftOpt('fmt',4)">4v4</button></div>
 <div id="drTeams" class="dr-teams"></div></div>
 <label class="field-label" style="margin-top:14px">Roles</label>
@@ -391,7 +391,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=19"></script>
+<script type="module" src="js/game.js?v=20"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){

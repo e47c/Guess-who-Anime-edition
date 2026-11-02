@@ -1,7 +1,7 @@
 /* =====================================================================
    ANIME DRAFT (fifth mode)
    Build the strongest six-character team. Two game types:
-   - Build:   Left vs Right (1v1 to 4v4). Sides take turns drawing a random character and placing it
+   - Build:   two sides, 1v1 to 4v4, each shown by its players' names. Sides take turns drawing a random character and placing it
               in one of their six roles. Each side has ONE blind reroll, decided before the stats show.
    - Auction: everyone for themselves with $25. A random character is revealed, players bid in turn
               (+$1 at least) or pass; the winner places it in an empty role.
@@ -26,7 +26,9 @@ export const DRAFT_RULES = {
 };
 const R = DRAFT_RULES;
 const IMG = "https://s4.anilist.co/file/anilistcdn/character/large/";
-const SIDES = ["L", "R"], SIDE_NAME = { L: "Left", R: "Right" };
+const SIDES = ["L", "R"];
+/* a side is shown by its players' names: "Ayla", "Ayla & Cyd", "Ayla, Cyd & Eli" */
+const joinNames = names => names.length < 2 ? (names[0] || "") : names.slice(0, -1).join(", ") + " & " + names[names.length - 1];
 const arr = x => Array.isArray(x) ? x : (x ? Object.values(x) : []);
 
 /* ---------------- character database ---------------- */
@@ -331,14 +333,15 @@ export function draftLobby(d, lock) {
     const box = $("drTeams"); box.innerHTML = "";
     if (type === "build") {
         const sd = sidesOf(d);
-        [["L", "LEFT"], ["R", "RIGHT"], ["S", "SPECTATING"]].forEach(([k, t]) => {
+        ["L", "R", "S"].forEach(k => {
             const ids = sd[k]; if (k === "S" && !ids.length) return;
+            const t = k === "S" ? "SPECTATING" : ids.length ? joinNames(ids.map(p => X.pName(d, p))).toUpperCase() : "OPEN SIDE";
             const col = el("div", "drt-col drt-" + k); col.appendChild(el("b", null, t + (k === "S" ? "" : " · " + ids.length + "/" + N)));
             ids.forEach(p => { const c = el("button", "drt-chip"); c.type = "button"; c.disabled = lock; c.append(X.avatarEl(X.pPub(d, p), { size: 22 }), el("span", null, X.pName(d, p))); c.onclick = () => window.draftSideTap(p); col.appendChild(c); });
             for (let k2 = ids.length; k !== "S" && k2 < N; k2++) col.appendChild(el("span", "drt-empty", "open seat"));
             box.appendChild(col);
         });
-        if (!lock) box.appendChild(el("p", "anime-hint", "Tap a player to move them: Left → Right → spectate."));
+        if (!lock) box.appendChild(el("p", "anime-hint", "Tap a player to move them to the other side, tap again to spectate."));
     }
     $("drHint").textContent = type === "build" ? "Sides alternate: draw, then place in a free role. One blind reroll per side." : "Everyone starts with $" + R.budget + ". Bid at least $" + R.minRaise + " more than the last bid, or pass.";
 }
@@ -382,7 +385,7 @@ export function draftDuties(d) {
     const s = d.draft; if (!s || s.phase === "over" || !DB) return;
     if (s.type === "build") {
         const empty = SIDES.find(k => !arr(s.sides[k]).some(p => d["player" + p] && !d["player" + p].left));
-        if (empty) { const k = "g" + s.mid; if (goneKey !== k) { goneKey = k; X.toast("The " + SIDE_NAME[empty] + " side left. Back to the lobby."); X.backToLobby(true); } return; }
+        if (empty) { const k = "g" + s.mid; if (goneKey !== k) { goneKey = k; X.toast(joinNames(arr(s.sides[empty]).map(p => X.pName(d, Number(p)))) + " left. Back to the lobby."); X.backToLobby(true); } return; }
     }
     const present = presentIn(d), who = actorOf(s, present), key = s.mid + ":" + s.evn + ":" + s.phase + ":" + who;
     if (!who || present(who)) { clearTimeout(awayT); awayKey = ""; return; }
@@ -411,7 +414,7 @@ export function showDraft(d) {
 const rarity = (s, id) => RARITIES[rarOf(s, id)];
 const myKey = s => s.type === "build" ? SIDES.find(k => arr(s.sides[k]).map(Number).includes(X.me())) || "" : (arr(s.players).map(Number).includes(X.me()) ? "p" + X.me() : "");
 function teamName(d, s, key) {
-    if (s.type === "build") return SIDE_NAME[key] + " side";
+    if (s.type === "build") return joinNames(arr(s.sides[key]).map(p => X.pName(d, Number(p))));
     return X.pName(d, Number(key.slice(1)));
 }
 
@@ -499,7 +502,7 @@ function stageEl(d, s) {
     const id = s.type === "build" ? s.cur : s.phase === "won" ? s.win && s.win.c : s.lot && s.lot.c;
     const blind = s.type === "build" && s.phase === "blind";
     const kick = el("div", "dr-kick");
-    if (s.type === "build") kick.append(el("span", "dr-side-tag side-" + s.turn, SIDE_NAME[s.turn].toUpperCase() + " SIDE"), el("span", null, " draws · pick " + (arr(s.team[s.turn]).filter(Number).length + 1) + "/6"));
+    if (s.type === "build") kick.append(el("span", "dr-side-tag side-" + s.turn, teamName(d, s, s.turn).toUpperCase()), el("span", null, " draws · pick " + (arr(s.team[s.turn]).filter(Number).length + 1) + "/6"));
     else kick.append(el("span", null, "LOT " + (s.lotn || 1)), el("span", "dr-left", " · " + arr(s.deck).length + " left in the pool"));
     st.appendChild(kick);
     if (id) { const cw = el("div", "dr-cardwrap"); cw.id = "drCardWrap"; const card = cardEl(s, id, blind ? "blind" : "full"); card.id = "drCard"; cw.appendChild(card); if (s.phase === "won") cw.appendChild(el("div", "dr-sold", "SOLD $" + s.win.amt)); st.appendChild(cw); }
@@ -565,7 +568,7 @@ function render(d, s, quiet) {
     const ev = s.ev || {}, newEv = !fresh && !quiet && Number(ev.n) > seen.evn;
     const me = X.me(), present = presentIn(d), who = actorOf(s, present), mk = myKey(s);
     // header
-    const turnTxt = s.phase === "over" ? "DRAFT COMPLETE" : who === me ? (s.phase === "blind" ? "YOUR DRAW" : s.phase === "bid" ? "YOUR BID" : "PLACE YOUR PICK") : (s.type === "build" ? SIDE_NAME[s.turn].toUpperCase() + " SIDE · " : "") + X.pName(d, who).toUpperCase();
+    const turnTxt = s.phase === "over" ? "DRAFT COMPLETE" : who === me ? (s.phase === "blind" ? "YOUR DRAW" : s.phase === "bid" ? "YOUR BID" : "PLACE YOUR PICK") : (s.type === "build" && s.fmt > 1 ? teamName(d, s, s.turn).toUpperCase() + " · " : "") + X.pName(d, who).toUpperCase() + (s.type === "build" && s.fmt > 1 ? " PICKS" : "");
     $("drTurn").textContent = turnTxt;
     $("drStatus").textContent = (s.type === "build" ? s.fmt + "v" + s.fmt + " Build" : "Auction") + " · " + (s.rs === "classic" ? "Classic roles" : s.rs === "mixed" ? "Mixed roles" : label(s.rs) + " roles") + " · " + s.series.map(label).join(" · ") + (mk ? "" : " · spectating");
     // remember where the drawn card was, so a placement can fly from it
@@ -641,7 +644,7 @@ function showOver(d, s) {
     const top = teams[0], tie = teams.length > 1 && teams[1].place === 1;
     const head = el("div", "dro-head");
     head.appendChild(el("div", "dro-kick", "ANIME DRAFT · FINAL SCORES"));
-    const title = tie ? "DEAD EVEN" : s.type === "build" ? SIDE_NAME[top.key].toUpperCase() + " SIDE WINS" : X.pName(d, top.players[0]).toUpperCase() + " WINS";
+    const title = tie ? "DEAD EVEN" : s.type === "build" ? teamName(d, s, top.key).toUpperCase() + (top.players.length > 1 ? " WIN" : " WINS") : X.pName(d, top.players[0]).toUpperCase() + " WINS";
     const h = el("h1", "dro-title", title); h.dataset.text = title; head.appendChild(h);
     head.appendChild(el("p", "dro-sub", mine ? (mine.place === 1 ? (tie ? "Shared first place." : "Your team is the strongest.") : "You finished " + ord(mine.place) + ".") + " Score = six role scores + six rarity bonuses." : "Score = six role scores + six rarity bonuses."));
     ov.appendChild(head);
@@ -650,7 +653,7 @@ function showOver(d, s) {
         const card = el("section", "dro-team p" + Math.min(t.place, 4) + (t.key === mk ? " me" : "")); card.style.setProperty("--i", i);
         const th = el("div", "dro-th");
         th.appendChild(el("span", "dro-place", ord(t.place)));
-        const who = el("div", "dro-who"); who.appendChild(el("b", null, s.type === "build" ? SIDE_NAME[t.key] + " side" : X.pName(d, t.players[0])));
+        const who = el("div", "dro-who"); who.appendChild(el("b", null, teamName(d, s, t.key)));
         const av = el("span", "drb-ppl"); t.players.forEach(p => av.appendChild(X.avatarEl(X.pPub(d, p), { size: 24 }))); who.appendChild(av);
         th.appendChild(who);
         const tot = el("div", "dro-tot"), num = el("b", null, "0");
