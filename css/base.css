@@ -374,7 +374,7 @@ body[data-scene="home"] .arc-floor, body[data-scene="lobby"] .arc-floor { displa
 .pc-stat:nth-child(2) b { color: var(--red-hi); } .pc-stat:nth-child(3) b { color: #fff; } .pc-stat:nth-child(4) b { color: var(--gold-bright); }
 
 /* the cabinets: marquee, a CRT in attract mode, joystick and buttons, the coin door */
-.cab-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(12px, 2.2vw, 30px); max-width: 1180px; width: 100%; margin: 6px auto 0; padding: 22px 6px 26px; perspective: 1100px; }
+.cab-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: clamp(10px, 1.8vw, 26px); max-width: 1320px; width: 100%; margin: 6px auto 0; padding: 22px 6px 26px; perspective: 1100px; }
 .cab { --mc: var(--accent); --rx: 0deg; --ry: 0deg; --lift: 0px; position: relative; display: flex; flex-direction: column; align-items: stretch; cursor: pointer; outline: none;
     transform: translateY(var(--lift)) rotateX(var(--rx)) rotateY(var(--ry)); transform-style: preserve-3d; transition: transform .3s var(--e-out);
     animation: cabIn .7s var(--e-out) both; animation-delay: calc(.5s + var(--i) * .1s);
@@ -513,7 +513,7 @@ body.is-host .btn.host-only, body.is-host .pop.host-only { display: inline-flex 
 @keyframes chIn { 0% { transform: scaleY(0); opacity: 0; } 10% { transform: scaleY(1.15); opacity: 1; } 16%, 82% { transform: none; opacity: 1; } 100% { transform: translateX(-40%) scaleY(.2); opacity: 0; } }
 
 /* stage select */
-.lobby-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.lobby-modes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
 .mode-card { --mc: var(--accent); --rx: 0deg; --ry: 0deg; position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 236px; padding: 12px 14px; border: 0; text-align: left; color: #fff; background: #0a0707;
     box-shadow: inset 0 0 0 1px var(--line-2); border-radius: 10px; transform: perspective(800px) rotateX(var(--rx)) rotateY(var(--ry)); transition: transform .25s var(--e-out), box-shadow .25s ease; }
 .mc-art { position: absolute; inset: 0; z-index: -2; }
@@ -801,7 +801,7 @@ body.net-down .dock::before { content: "⚠ Connection lost. Reconnecting…"; p
     .pc-stats { margin-bottom: 12px; }
     .lobby-grid { grid-template-columns: 1fr; }
     .seats { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
-    .cab-row { grid-template-columns: repeat(4, minmax(190px, 1fr)); overflow-x: auto; scroll-snap-type: x mandatory; padding-left: 16px; padding-right: 16px; perspective: none; scrollbar-width: none; }
+    .cab-row { grid-template-columns: repeat(5, minmax(190px, 1fr)); overflow-x: auto; scroll-snap-type: x mandatory; padding-left: 16px; padding-right: 16px; perspective: none; scrollbar-width: none; }
     .cab-row::-webkit-scrollbar { display: none; }
     .cab { scroll-snap-align: center; -webkit-box-reflect: unset; }
     .lg-jp { display: none; }
@@ -809,7 +809,7 @@ body.net-down .dock::before { content: "⚠ Connection lost. Reconnecting…"; p
 }
 @media (max-width: 620px) {
     .screen { padding-left: 12px; padding-right: 12px; }
-    .cab-row { grid-template-columns: repeat(4, 62vw); margin: 0 -12px; width: auto; }
+    .cab-row { grid-template-columns: repeat(5, 62vw); margin: 0 -12px; width: auto; }
     .seats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .seat { min-height: 160px; padding-top: 28px; }
     .seat-id b { font-size: 18px; }

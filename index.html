@@ -9,9 +9,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Monoton&family=Press+Start+2P&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/base.css?v=7">
+<link rel="stylesheet" href="css/base.css?v=8">
 <link rel="stylesheet" href="css/modes.css?v=12">
 <link rel="stylesheet" href="css/uno.css?v=12">
+<link rel="stylesheet" href="css/draft.css?v=1">
 </head>
 <body class="anime-theme" data-scene="home">
 
@@ -59,7 +60,7 @@
 <span class="lg-neon" aria-hidden="true"><span class="lg-arcade">ARC<em>A</em>DE</span><span class="lg-party">PAR<em>T</em>Y</span></span>
 <span class="lg-jp" aria-hidden="true">アニメ・アーケード</span>
 </h1>
-<p class="tagline">Four anime party games. One room. <b>Insert coin.</b></p>
+<p class="tagline">Five anime party games. One room. <b>Insert coin.</b></p>
 <div class="home-cta">
 <button class="btn xl coin-btn" onclick="insertCoin()"><span class="coin-slot" aria-hidden="true"><i></i></span><span class="cb-txt">Host a party<small>insert coin · create a room</small></span></button>
 <div id="joinArea" class="join-box">
@@ -156,6 +157,13 @@
 <p class="anime-hint">Classic: red, green, yellow, dark blue. Chaos adds pink, orange, purple and light blue: one colour per series, and every extra series adds its 31 cards to the deck.</p>
 <label class="field-label" style="margin-top:14px">Special cards</label><div class="sizes"><button class="modebtn unospbtn selected" data-k="once" onclick="setUnoSp('once')">Once · then gone</button><button class="modebtn unospbtn" data-k="reuse" onclick="setUnoSp('reuse')">Reusable</button></div>
 <p class="anime-hint">Once: a special card (Freeze, Swap Hands, Ultimate, Future Sight) that has been played is out for the rest of the game. Reusable: played specials go back into the draw pile when the discard pile is reshuffled, so they can come round again.</p></div>
+<div id="draftBox" class="field hidden"><label class="field-label">Draft type</label><div class="sizes"><button class="modebtn drtbtn selected" data-k="build" onclick="setDraftOpt('type','build')">Build · Left vs Right</button><button class="modebtn drtbtn" data-k="auction" onclick="setDraftOpt('type','auction')">Auction · $25 each</button></div>
+<div id="drFmtBox"><label class="field-label" style="margin-top:14px">Format</label><div class="sizes"><button class="modebtn drfbtn selected" data-k="1" onclick="setDraftOpt('fmt',1)">1v1</button><button class="modebtn drfbtn" data-k="2" onclick="setDraftOpt('fmt',2)">2v2</button><button class="modebtn drfbtn" data-k="3" onclick="setDraftOpt('fmt',3)">3v3</button><button class="modebtn drfbtn" data-k="4" onclick="setDraftOpt('fmt',4)">4v4</button></div>
+<div id="drTeams" class="dr-teams"></div></div>
+<label class="field-label" style="margin-top:14px">Roles</label>
+<div class="dr-roles"><span class="dr-rolename" id="drRolesName">One Piece roles</span><button type="button" class="dr-switch" id="drRolesTg" role="switch" aria-checked="false" onclick="setDraftOpt('roles')"><span class="dr-knob"></span><b>Classic roles</b></button></div>
+<div id="drRolePrev" class="dr-roleprev"></div>
+<p class="anime-hint" id="drHint"></p></div>
 </div>
 </section>
 </div>
@@ -166,6 +174,15 @@
 <button id="startButton" class="btn xl arc-btn hidden" onclick="startGame()">START</button>
 </div>
 </footer>
+</div>
+
+<!-- =========================================
+     ANIME DRAFT (js/draft/draft.js renders into #drWrap)
+========================================= -->
+<div id="draft" class="hidden">
+<div class="dr-bg" aria-hidden="true"><i></i><i></i></div>
+<div class="game-header"><div class="game-header-inner"><div><div class="turn" id="drTurn"></div><div class="status" id="drStatus"></div></div><button class="pop ghost menu-btn" onclick="openPause()" aria-label="Menu">☰</button></div></div>
+<div id="drWrap" class="dr-wrap"></div>
 </div>
 
 <!-- =========================================
@@ -374,7 +391,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=18"></script>
+<script type="module" src="js/game.js?v=19"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){

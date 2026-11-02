@@ -1,0 +1,25 @@
+# Anime Draft: refresh character popularity (AniList favourites) once a week.
+# Rarity is ranked from data/draft-pop.json, so it follows popularity without touching live matches.
+name: Draft popularity sync
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/draft-check.mjs
+      - run: node tools/draft-sync.mjs
+      - name: Commit if popularity changed
+        run: |
+          git config user.name "draft-sync"
+          git config user.email "draft-sync@users.noreply.github.com"
+          git add data/draft-pop.json
+          git diff --cached --quiet || (git commit -m "Anime Draft: weekly popularity sync" && git push)

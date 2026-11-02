@@ -2,7 +2,7 @@
 
 *(formerly Guess Who: Anime Edition)*
 
-A browser party game for a squad of up to 8 friends with four anime modes in one room:
+A browser party game for a squad of up to 8 friends with five anime modes in one room:
 
 | Mode | Players | Identity |
 |---|---|---|
@@ -10,6 +10,7 @@ A browser party game for a squad of up to 8 friends with four anime modes in one
 | **Headbanz** | 2–8 | *Mind Link*: psychic, a red sky over a gold horizon grid |
 | **Imposter** | 3–8 | *Shadow Trial*: interrogation spotlight, crimson |
 | **Anime UNO** | 2–8 | *Arena Clash*: card-battle arena tinted by the active colour |
+| **Anime Draft** | 2–8 (Build 1v1–4v4, Auction free-for-all) | *Team Builder*: collectible cards in five rarities on a black and gold stage |
 
 ## How the modes scale
 
@@ -29,6 +30,38 @@ A browser party game for a squad of up to 8 friends with four anime modes in one
   - **Wilds** open a colour wheel with one slice per deck colour, showing each series' hero, kanji and name. It works with mouse, touch, and keyboard (arrow keys, then Enter).
 
 **Firebase rules note:** the current rules let any signed-in client read a whole room, `private/` included. The clients listen to the whole room, so Guess Who secrets reach every browser, the opponent's included. Spectator secrecy is therefore enforced by the client. Realtime Database read rules cascade, so a room-level `.read` can't be narrowed for `private/`. Enforcing it on the server would mean moving secrets to their own top-level path (for example `secrets/$room/$uid`, readable only by `auth.uid === $uid`).
+
+## Anime Draft
+
+Build the strongest six-character team. Everything lives in `js/draft/` (rules, screen, lobby panel) and `css/draft.css`; `js/game.js` only routes to it, so the draft can change without touching the other modes.
+
+- **Series pool.** Tick any of the 18 series (the same picker as Headbanz). Only characters from ticked series are drawn, never twice in a match.
+- **Roles (always six slots).**
+  - One series ticked: that series' own roles (One Piece: Strength, Speed, IQ, Durability, Haki, Devil Fruit … Death Note: Intelligence, Deduction, Manipulation, Planning, Deception, Psychological Warfare).
+  - Two or more: the Mixed roles (Strength, Speed, IQ, Durability, Combat Skill, Special Ability).
+  - The **Classic roles** switch replaces either set with Captain, Vice Captain, Tank, Duelist, Healer, Support.
+- **Build.** Left vs Right, 1v1 to 4v4; extra players spectate. The host taps players in the lobby to move them (Left → Right → spectate). Left draws first, then the sides alternate until both have six. On a team, the members take turns (rotating every pick).
+  - **Blind reroll:** each side has one per match. Right after a draw you see the name and the picture only; the stats and the rarity stay hidden until you **Keep**. **Reroll** discards it and draws again (the new one is final). A side whose reroll is spent skips straight to placing.
+- **Auction.** Everyone for themselves with $25. A random character is revealed with full stats; players bid in seat order, at least $1 above the last bid, or pass (out for that character). The last bidder standing pays and places it in a free role. If nobody bids it is discarded. The next character opens with the next player.
+- **Score** = the six role scores + the six rarity bonuses. An empty role scores 0. The results screen lists every role: character, role score (with the series multiplier when there is one), rarity bonus, row total, and the sums.
+- **Ranking ties:** the higher role-score sum wins (skill beats rarity), then in Auction the player with more money left; still level = shared place.
+
+**Ratings** (`js/draft/data.js`): 472 characters, 18 series, each keyed by its AniList id.
+- AniList has no combat stats, so the ratings are our own. Every score (1–100) is measured **inside the character's series**: 100 = the best that series has shown in that category, about 50 = an average named fighter, 1–10 = "can't do this at all". Rows hold the four shared stats, Combat Skill, Special Ability, the series' two own roles and the six Classic roles (Death Note rows hold its six intelligence roles instead).
+- **Mixed matches** multiply physical power (Strength, Speed, Durability, Tank, Duelist) and Special Ability by a **series power tier** (`TIERS`: Dragon Ball 1.00 … Wind Breaker 0.40, Death Note 0.30 physical), so Goku and Tanjiro aren't equals. IQ, Combat Skill, Captain, Vice Captain, Healer and Support are not scaled.
+- **Guard rails against made-up numbers:** a fixed per-series scale with anchors, one place to edit, and `node tools/draft-check.mjs`, which rejects a row with the wrong length, a value outside 1–100, a duplicate or missing AniList id, a series under 14 characters, or AoT / Gachiakuta "Combat Skill" roles that disagree with the shared Combat Skill. `node tools/draft-test.mjs` runs 109 rule checks (rarity bands, scaling, build turns, rerolls, auction bids, budgets, rankings).
+- **Adding characters:** add a row (AniList id, name, 14 scores), run the two tools above, then `node tools/draft-sync.mjs`.
+
+**Rarity** = global AniList popularity rank over every draftable character of all 18 series, never just the ticked ones (Gojo, Levi and Luffy are Mythical in every match). Top 2% Mythical (+8), next 8% Legendary (+6), next 15% Epic (+4), next 25% Rare (+2), the rest Common (+0). Equal favourites always share a rarity. Popularity comes from `data/draft-pop.json`, refreshed weekly by `.github/workflows/draft-sync.yml` (or by hand with `node tools/draft-sync.mjs`), with `packs.json` as the fallback. A match freezes the rarity of each character when it's drawn, so a refresh never changes a live game. Bands and bonuses are in `RARITIES`.
+
+**Multiplayer.** The match is `rooms/<code>/draft`. Every move (keep, reroll, place, bid, pass) runs in a Firebase transaction that checks the turn, the phase, the money and the free role, so double clicks and races can't both apply. The deck is shuffled once when the match starts and stored, and everyone, spectators included, renders the same state. A player who is offline for 8 s (1.5 s if they left the room) has their turn played by the host: keep, pass, or the best free role. If a whole Build side leaves, everyone returns to the lobby. Scores are never stored; every client computes them from the placements and the shared ratings.
+
+**Open assumptions (easy to change in `DRAFT_RULES`, `RARITIES` and `TIERS`):**
+- Auction turn order is seat order, the opening bid is at least $1, and the next character opens with the next player who can still buy. There is no bid timer. Ties can't happen because each bid must be strictly higher.
+- The auction ends when nobody with a free role has money left, or the pool runs out. Roles still empty then score 0 (spending everything early is a risk).
+- In Build, the reroll decision shows the name and picture but hides the rarity, since rarity is part of the character's information.
+- The power tiers, rarity bands and bonuses are first balancing values.
+- Not server-authoritative in the strict sense: like the other modes, the game has no server of its own. The transactions keep honest clients in sync, but a modified client could still write a move out of turn or read the shuffled deck. Real enforcement needs Firebase security rules that validate the move, or a Cloud Function.
 
 ## Customising
 
@@ -53,7 +86,7 @@ A browser party game for a squad of up to 8 friends with four anime modes in one
 - **Buttons** are one family across the site: red lacquer with a gold hairline (main), gold (alt), black and gold (ghost), dark red (danger). Hover lifts them with a glow and a shine sweep, pressing sinks them, disabled ones go flat charcoal.
 - **Logo.** A red coin with a gold rim and a gold star (the brand mark), *ANIME* in bold white with a red block shadow and a gold edge, *ARCADE* in polished gold and *PARTY* in white on a red band. The lobby header carries the same pieces as a one-line compact logo, and keeps it on phones.
 - **First-open splash.** The logo comes in, then a welcome fades in and out (*Welcome, player. Built with love by @e47. Have fun!*), then the menu. Returning players get a shorter one (*Welcome back*), and **Skip** (or a tap, Enter or Esc) goes straight to the menu. It doubles as the loading screen: it leaves only once the app is ready.
-- **Mode art** (the menu's cabinets and the lobby's mode cards) shows only each series' main protagonists and main villains, framed in gold: Guess Who has Naruto, Luffy and Ichigo; Headbanz has Goku, Yuji and Tanjiro; Imposter has Madara, Sukuna and Muzan; Anime UNO has Goku, Frieza and Sasuke.
+- **Mode art** (the menu's cabinets and the lobby's mode cards) shows only each series' main protagonists and main villains, framed in gold: Guess Who has Naruto, Luffy and Ichigo; Headbanz has Goku, Yuji and Tanjiro; Imposter has Madara, Sukuna and Muzan; Anime UNO has Goku, Frieza and Sasuke; Anime Draft has Luffy, Gojo and Eren.
 
 ## Menu and lobby
 
