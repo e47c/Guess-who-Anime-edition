@@ -176,6 +176,9 @@ function buildAct(s, a, ctx) {
     }
     return "Unknown move.";
 }
+// the only player who can still buy (everyone else is full or broke), or 0. Alone, a pass just redraws, so they get one pass for the rest of the draft.
+const lastBuyer = s => { const c = arr(s.players).map(Number).filter(p => hasEmpty(s, p) && money(s, p) >= R.openMin); return c.length === 1 ? c[0] : 0; };
+export const canPass = (s, p) => !(s && s.lot && !Number(s.lot.by) && lastBuyer(s) === Number(p) && Number((s.spass || {})["p" + p]));
 function contenders(s) {
     const L = s.lot, out = arr(L.out).map(Number), by = Number(L.by), need = Number(L.hi) ? Number(L.hi) + R.minRaise : R.openMin;
     return arr(s.players).map(Number).filter(p => p === by || (!out.includes(p) && hasEmpty(s, p) && money(s, p) >= need));
@@ -193,6 +196,8 @@ function aucAct(s, a, ctx) {
     }
     if (a.k === "pass") {
         if (s.phase !== "bid") return "No auction is running.";
+        if (!canPass(s, me)) return "You already used your one pass. You have to buy this one.";
+        if (lastBuyer(s) === me) s.spass = Object.assign({}, s.spass, { ["p" + me]: 1 });
         L.out = arr(L.out).concat(me); evt(s, { k: "pass", p: me, c: L.c });
         return aucNext(s, me, ctx);
     }
@@ -232,7 +237,7 @@ function newLot(s, rarity) {
 /* the move the host plays for an away player: keep, pass, or the best free role */
 export function autoMove(s, db) {
     if (s.phase === "blind") return { k: "keep" };
-    if (s.phase === "bid") return { k: "pass" };
+    if (s.phase === "bid") return canPass(s, actorOf(s)) ? { k: "pass" } : { k: "bid", amount: R.openMin };
     const p = actorOf(s), key = s.type === "build" ? s.turn : "p" + p, c = (db || DB)[s.type === "build" ? s.cur : s.win.c];
     const t = arr(s.team[key]), sc = c ? charRoles(c, s.rs, !!s.mixed) : [];
     let best = -1; t.forEach((x, i) => { if (!Number(x) && (best < 0 || (sc[i] || {}).score > (sc[best] || {}).score)) best = i; });
@@ -526,8 +531,10 @@ function stageEl(d, s) {
             [["+1", lim.min], ["+2", lim.min + 1], ["+5", lim.min + 4], ["ALL IN", lim.max]].forEach(([t, v]) => { if (v > lim.max && t !== "ALL IN") return; const b = el("button", "chip-btn", t + (t === "ALL IN" ? " $" + lim.max : "")); b.onclick = () => window.drSetBid(v); quick.appendChild(b); });
             const row = el("div", "dr-btns"), go = el("button", "btn xl", "BID $" + pick), ps = el("button", "btn ghost xl", "PASS");
             go.id = "drBidGo"; go.onclick = () => window.drBid(); ps.onclick = () => window.drPass();
+            const solo = lastBuyer(s) === me, free = canPass(s, me);
+            if (!free) { ps.disabled = true; ps.textContent = "PASS USED"; } else if (solo) ps.append(el("small", null, "one time only"));
             row.append(go, ps);
-            act.append(el("p", "dr-q", "Your bid. You have $" + (Number(s.budget["p" + me]) || 0) + "."), pad, quick, row);
+            act.append(el("p", "dr-q", "Your bid. You have $" + (Number(s.budget["p" + me]) || 0) + "." + (!free ? " You're the last buyer and used your pass: this one is yours." : solo ? " You're the last buyer: you can pass once, then you buy every lot." : "")), pad, quick, row);
         } else act.appendChild(el("p", "dr-wait", X.pName(d, who) + " is bidding…"));
     } else if (s.phase === "won") {
         act.appendChild(el("p", mine ? "dr-q" : "dr-wait", mine ? "You won " + name + " for $" + s.win.amt + ". Place it in a free role." : X.pName(d, s.win.p) + " won " + name + " for $" + s.win.amt + " and is placing it…"));

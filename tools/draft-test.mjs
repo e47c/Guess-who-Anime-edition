@@ -1,7 +1,7 @@
 // Anime Draft: unit tests for the rules engine (no browser, no Firebase).
 // Run: node tools/draft-test.mjs
 import fs from "fs";
-import { buildDb, charRoles, roleSetFor, newMatch, act, actorOf, standings, autoMove, teamBreakdown, DRAFT_RULES } from "../js/draft/draft.js";
+import { buildDb, charRoles, roleSetFor, newMatch, act, actorOf, standings, autoMove, teamBreakdown, canPass, DRAFT_RULES } from "../js/draft/draft.js";
 import { RARITIES, CHARS, ROLESETS } from "../js/draft/data.js";
 
 let ok = 0, bad = 0;
@@ -114,6 +114,21 @@ t(new Set(ids).size === ids.length, "no character owned twice");
 const sa = standings(a, db);
 t(sa.length === 3 && sa[0].place === 1 && sa.every((x, i) => !i || x.place >= sa[i - 1].place), "auction ranks every player (1st, 2nd, 3rd)");
 t(sa.find(x => x.key === "p3").rows.filter(r => !r.c).every(r => r.total === 0), "an empty role scores 0");
+
+/* ---- Auction: the last buyer gets one pass, then must buy every lot ---- */
+a = newMatch({ type: "auction", series: ["onepiece", "naruto"], classic: false, mid: 5, pool: poolA, players: [1, 2], rarity, rnd });
+act(a, { k: "bid", amount: 25, by: 1 }, ctx()); act(a, { k: "place", slot: 0, by: 1 }, ctx());
+t(a.phase === "bid" && a.lot.turn === 2 && canPass(a, 2), "player 2 is the last buyer and still has the pass");
+const c1 = a.lot.c;
+t(act(a, { k: "pass", by: 2 }, ctx()) === null && a.ev.k === "unsold" && a.lot.c !== c1 && a.lot.turn === 2, "the one pass redraws");
+t(!canPass(a, 2) && /one pass/.test(act(a, { k: "pass", by: 2 }, ctx())) && a.lot.turn === 2, "a second pass is refused");
+const mv = autoMove(a, db);
+t(mv.k === "bid" && mv.amount === 1, "an away last buyer auto-buys for $1 instead of passing");
+t(act(a, { k: "bid", amount: 1, by: 2 }, ctx()) === null && a.phase === "won" && a.win.p === 2, "the lot is bought");
+act(a, { k: "place", slot: 0, by: 2 }, ctx());
+t(!canPass(a, 2), "the pass stays used for the rest of the draft");
+a = newMatch({ type: "auction", series: ["onepiece", "naruto"], classic: false, mid: 6, pool: poolA, players: [1, 2], rarity, rnd });
+t(act(a, { k: "pass", by: 1 }, ctx()) === null && act(a, { k: "pass", by: 2 }, ctx()) === null && canPass(a, 1) && canPass(a, 2) && !a.spass, "with rivals still buying, passing is unlimited");
 
 console.log("PASS", ok, "FAIL", bad, "| rules:", JSON.stringify(DRAFT_RULES));
 process.exit(bad ? 1 : 0);

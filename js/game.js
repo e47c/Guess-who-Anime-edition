@@ -22,7 +22,7 @@ import { audio } from "./audio.js";
 import { ambient, titleCard, shake, ring, burstText, countUp, flyClone, motionOK, setReduced, isReduced } from "./fx.js";
 import { profile, avatarEl, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js";
 import { showResults, closeResults } from "./results.js";
-import * as DRAFT from "./draft/draft.js?v=4";
+import * as DRAFT from "./draft/draft.js?v=5";
 import { initCine, cineHook, cineHas } from "./cine/engine.js?v=11";
 import { hand as cineHand } from "./cine/hands.js?v=11";
 import * as CK from "./cine/kit.js?v=11";
