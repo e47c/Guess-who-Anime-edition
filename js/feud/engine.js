@@ -18,6 +18,13 @@ export const FEUD_RULES = {
     roundChoices: [3, 5, 7],
     timer: 30,                 // seconds per guess (setup offers TIMER_CHOICES)
     timerChoices: [20, 30, 45],
+    likelyRounds: 10, likelyRoundChoices: [5, 10, 15],      // Most Likely: duels per match
+    likelyTimer: 15, likelyTimerChoices: [10, 15, 20],      // seconds to vote
+    buzzMs: 15000,             // face-off: nobody buzzes in time = the round's starting team answers first
+    decideMs: 15000,           // play or pass: no decision in time = play
+    duelRevealMs: 5000,
+    duelGap: 6, duelCrossGap: 3,                            // how close two characters must be to make a duel
+    maxSd: { classic: 1, likely: 3 },                       // sudden-death questions before a tie stands
     strikes: 3,
     minAnswers: 5,             // a board shows 5 to 8 answers; fewer after filtering = the question is not used
     maxAnswers: 8,
@@ -207,6 +214,38 @@ export function qText(tpl, series, label = k => k) {
     const t = String(tpl).replace(/\{a\}/g, one ? names[0] + " " : "").replace(/\{s\}/g, s).replace(/\s+/g, " ").trim();
     return t.charAt(0).toUpperCase() + t.slice(1);
 }
+/* Most Likely duels: two characters who are CLOSE on a curated board ("who is smarter: Robin or Law?").
+   Same series: neighbours in the ranking (or one apart) a few points from each other. In a mix, also two characters of
+   two different ticked series with nearly the same score. The higher-ranked one is the "most likely" answer; ties are never used. */
+export function pairsFor(B, series) {
+    series = arr(series);
+    if (B.only && (series.length !== 1 || series[0] !== B.only)) return [];
+    if (B.generic) return [];
+    const by = {}; B.ans.filter(a => a.c && series.includes(a.s)).forEach(a => (by[a.s] = by[a.s] || []).push(a));
+    const out = [], add = (x, y, cross) => { const [w, l] = x.p > y.p ? [x, y] : [y, x]; out.push({ w: w.c, l: l.c, gap: w.p - l.p, cross: !!cross, ws: w.s, ls: l.s }); };
+    Object.values(by).forEach(list => {
+        list = list.slice().sort((x, y) => y.p - x.p);
+        for (let i = 0; i < list.length; i++) {
+            const n1 = list[i + 1], n2 = list[i + 2];
+            if (n1 && list[i].p > n1.p && list[i].p - n1.p <= R.duelGap) add(list[i], n1);
+            if (n2 && list[i].p > n2.p && list[i].p - n2.p <= R.duelGap - 2 && n1.p !== n2.p) add(list[i], n2);
+        }
+    });
+    if (series.length > 1) {
+        const keys = Object.keys(by);
+        for (let i = 0; i < keys.length; i++) for (let j = i + 1; j < keys.length; j++)
+            by[keys[i]].forEach(x => by[keys[j]].forEach(y => { if (x.p >= 10 && y.p >= 10 && x.p !== y.p && Math.abs(x.p - y.p) <= R.duelCrossGap) add(x, y, true); }));
+    }
+    return out;
+}
+export const duelPoints = gap => gap <= 2 ? 30 : gap <= 4 ? 20 : 10;        // the closer the call, the more it's worth
+// one duel for a question: random pair (in a mix, a cross-series pair half the time when there is one), random sides
+export function pickPair(lib, c, series, rnd = Math.random) {
+    const B = lib.boards[c.g], all = pairsFor(B, series); if (!all.length) return null;
+    const cross = all.filter(p => p.cross), pool = cross.length && arr(series).length > 1 && rnd() < .5 ? cross : all.filter(p => !p.cross).length ? all.filter(p => !p.cross) : all;
+    const p = pool[Math.floor(rnd() * pool.length)], left = rnd() < .5;
+    return { a: left ? p.w : p.l, b: left ? p.l : p.w, w: left ? "a" : "b", pts: duelPoints(p.gap) };
+}
 // every question of this type that works for these series
 export function eligible(lib, type, series) {
     series = arr(series);
@@ -215,8 +254,8 @@ export function eligible(lib, type, series) {
         if (q.questionType !== type) return;
         if ((q.wording === "S" && !single) || (q.wording === "M" && single)) return;
         const B = lib.boards[q.variantGroupId];
-        if (!(B.id in cache)) cache[B.id] = boardFor(B, series);
-        if (!cache[B.id]) return;
+        if (!(B.id in cache)) cache[B.id] = type === "likely" ? pairsFor(B, series) : boardFor(B, series);
+        if (!cache[B.id] || !cache[B.id].length) return;
         out.push({ key: q.questionId + "@" + scope, id: q.questionId, g: B.id, f: B.fam, opp: B.opp, n: cache[B.id].length, tpl: q.questionText });
     });
     return out;
@@ -314,8 +353,10 @@ function evt(s, o) { s.evn = (Number(s.evn) || 0) + 1; s.ev = Object.assign({ n:
 const teamOf = (s, p) => TEAMS.find(k => arr(s.teams[k]).map(Number).includes(Number(p))) || "";
 export const startTeam = (s, round) => (round % 2 === 1) === (s.first !== "B") ? "A" : "B";     // round 1 = s.first, then alternate
 export function newMatch(o) {
-    const s = { v: 1, lv: o.lv || "", mid: o.mid, type: o.type, series: arr(o.series).slice(), rounds: o.rounds || R.rounds, timer: o.timer || R.timer,
-        teams: { A: arr(o.teams.A).map(Number), B: arr(o.teams.B).map(Number) }, ptr: { A: 0, B: 0 }, score: { A: 0, B: 0 },
+    const likely = o.type === "likely";
+    const s = { v: 2, lv: o.lv || "", mid: o.mid, type: o.type, series: arr(o.series).slice(),
+        rounds: o.rounds || (likely ? R.likelyRounds : R.rounds), timer: o.timer || (likely ? R.likelyTimer : R.timer),
+        teams: { A: arr(o.teams.A).map(Number), B: arr(o.teams.B).map(Number) }, ptr: { A: 0, B: 0 }, fptr: { A: 0, B: 0 }, score: { A: 0, B: 0 },
         first: o.first === "B" ? "B" : "A", round: 0, sd: 0, used: [], log: [], phase: "pick", evn: 0, tk: 0 };
     if (o.q) startRound(s, o.q, o.now || Date.now());
     return s;
@@ -324,37 +365,87 @@ function startRound(s, c, now) {
     s.round = (Number(s.round) || 0) + 1;
     s.q = { key: c.key, id: c.id, g: c.g, f: c.f, opp: c.opp || "", at: now };
     s.used = arr(s.used).concat([{ key: c.key, g: c.g, f: c.f, opp: c.opp || "" }]);
-    s.turn = startTeam(s, s.round); s.strikes = 0; s.bank = 0; s.rev = {}; s.phase = "play";
-    s.tk = (Number(s.tk) || 0) + 1; s.dl = now + s.timer * 1000; s.nx = 0;
+    s.turn = startTeam(s, s.round); s.tk = (Number(s.tk) || 0) + 1; s.nx = 0;
+    if (s.type === "likely") {
+        s.duel = { a: Number(c.pair.a), b: Number(c.pair.b), w: c.pair.w, pts: Number(c.pair.pts) || 10 };
+        s.votes = {}; s.phase = "vote"; s.dl = now + s.timer * 1000;
+        evt(s, { k: "duel", round: s.round, sd: s.sd });
+        return;
+    }
+    // Classic: every round opens with a face-off. One player per team at the buzzers (rotating every face-off).
+    s.strikes = 0; s.bank = 0; s.rev = {}; s.fb = ""; s.fa = -2; s.ctrl = "";
+    s.phase = "buzz"; s.dl = now + R.buzzMs;
     evt(s, { k: "round", round: s.round, sd: s.sd, team: s.turn });
 }
-// who answers now: the team's pointer, skipping players who are away (they get their go back when they return)
-export function actorOf(s, present = () => true) {
-    if (!s || (s.phase !== "play" && s.phase !== "steal")) return 0;
-    const team = s.phase === "play" ? s.turn : other(s.turn), m = arr(s.teams[team]).map(Number);
-    if (!m.length) return 0;
-    const st = (Number((s.ptr || {})[team]) || 0) % m.length;
+const memberAt = (s, team, idx, present) => {
+    const m = arr(s.teams[team]).map(Number); if (!m.length) return 0;
+    const st = (Number(idx) || 0) % m.length;
     for (let k = 0; k < m.length; k++) { const p = m[(st + k) % m.length]; if (present(p)) return p; }
     return m[st];
+};
+// the team's face-off player this round
+export const faceOffOf = (s, team, present = () => true) => memberAt(s, team, ((s.fptr || {})[team] || 0), present);
+export const guessTeam = s => s.phase === "face" ? s.fb : s.phase === "face2" ? other(s.fb) : s.phase === "play" ? s.turn : s.phase === "steal" ? other(s.turn) : "";
+// who answers now: the face-off player, or the team's pointer (skipping players who are away: they get their go back when they return)
+export function actorOf(s, present = () => true) {
+    if (!s) return 0;
+    if (s.phase === "face" || s.phase === "face2") return faceOffOf(s, guessTeam(s), present);
+    if (s.phase !== "play" && s.phase !== "steal") return 0;
+    return memberAt(s, guessTeam(s), (s.ptr || {})[guessTeam(s)], present);
 }
-export const guessTeam = s => s.phase === "play" ? s.turn : s.phase === "steal" ? other(s.turn) : "";
 function nextGuesser(s, team, p) { const m = arr(s.teams[team]).map(Number), i = m.indexOf(Number(p)); s.ptr = Object.assign({ A: 0, B: 0 }, s.ptr, { [team]: ((i >= 0 ? i : Number(s.ptr[team]) || 0) + 1) % Math.max(1, m.length) }); }
+function nextFaceOff(s) { s.fptr = { A: ((s.fptr || {}).A || 0) + 1, B: ((s.fptr || {}).B || 0) + 1 }; }
 function endRound(s, winner, how, now) {
     const pts = Number(s.bank) || 0;
     s.score = Object.assign({ A: 0, B: 0 }, s.score); s.score[winner] = (Number(s.score[winner]) || 0) + pts;
-    s.log = arr(s.log).concat([{ r: s.round, sd: s.sd || 0, key: s.q.key, id: s.q.id, win: winner, how, pts, rev: Object.assign({}, s.rev) }]);
+    s.log = arr(s.log).concat([{ r: s.round, sd: s.sd || 0, key: s.q.key, id: s.q.id, win: winner, how, pts, ctrl: s.ctrl || "", rev: Object.assign({}, s.rev) }]);
     s.phase = "reveal"; s.nx = now + R.revealMs; s.tk = (Number(s.tk) || 0) + 1; s.dl = 0;
+    nextFaceOff(s);
     evt(s, { k: "end", win: winner, how, pts });
 }
-/* a = { k: "guess", by, tk, text | cid } | { k: "timeout", tk }.  ctx = { board, present, now, force }.
-   Returns "" when applied, or the reason it was refused (the transaction then aborts). */
+function toControl(s, team, now, why) {
+    s.ctrl = team; s.phase = "decide"; s.tk++; s.dl = now + R.decideMs;
+    evt(s, { k: "control", team, why });
+}
+/* Moves.
+   Classic: { k: "buzz", by } | { k: "guess", by, tk, text } | { k: "decide", by, tk, play } | { k: "timeout", tk }
+   Likely:  { k: "vote", by, pick: "a"|"b" } | { k: "timeout", tk }
+   ctx = { board, present, now, force }. Returns "" when applied, or the reason it was refused (the transaction then aborts). */
 export function act(s, a, ctx) {
-    if (!s || !ctx || !ctx.board) return "The board isn't ready.";
-    if (s.phase !== "play" && s.phase !== "steal") return "This round is over.";
+    if (!s || !ctx) return "Not ready.";
+    if (s.type === "likely") return actLikely(s, a, ctx);
+    if (!ctx.board) return "The board isn't ready.";
+    if (!["buzz", "face", "face2", "decide", "play", "steal"].includes(s.phase)) return "This round is over.";
+    const now = ctx.now || Date.now(), present = ctx.present || (() => true), board = ctx.board;
+    // --- the buzzer
+    if (a.k === "buzz") {
+        if (s.phase !== "buzz") return "stale";
+        const t = teamOf(s, a.by);
+        if (!t || (faceOffOf(s, t, present) !== Number(a.by) && !ctx.force)) return "Only the two face-off players can buzz.";
+        s.fb = t; s.phase = "face"; s.tk++; s.dl = now + s.timer * 1000;
+        evt(s, { k: "buzz", team: t, by: Number(a.by) }); return "";
+    }
     if (Number(a.tk) !== Number(s.tk)) return "stale";
-    const now = ctx.now || Date.now(), team = guessTeam(s), who = actorOf(s, ctx.present || (() => true)), board = ctx.board;
+    if (a.k === "timeout" && now < Number(s.dl) && !ctx.force) return "Time isn't up yet.";
+    if (s.phase === "buzz") {            // nobody buzzed: the round's starting team answers first
+        if (a.k !== "timeout") return "Buzz first!";
+        s.fb = s.turn; s.phase = "face"; s.tk++; s.dl = now + s.timer * 1000;
+        evt(s, { k: "buzz", team: s.turn, by: faceOffOf(s, s.turn, present), auto: true }); return "";
+    }
+    // --- play or pass
+    if (s.phase === "decide") {
+        if (a.k === "decide") { if (teamOf(s, a.by) !== s.ctrl && !ctx.force) return "The other team is deciding."; }
+        else if (a.k !== "timeout") return "Play or pass first.";
+        const play = a.k === "timeout" ? true : !!a.play;
+        s.turn = play ? s.ctrl : other(s.ctrl); s.phase = "play"; s.strikes = 0; s.tk++; s.dl = now + s.timer * 1000;
+        evt(s, { k: "decide", team: s.ctrl, play, by: Number(a.by) || 0, auto: a.k === "timeout" });
+        if (Object.keys(s.rev || {}).length >= board.length) endRound(s, s.turn, "clear", now);
+        return "";
+    }
+    // --- an answer (face-off, play or steal)
+    const team = guessTeam(s), who = actorOf(s, present);
     let r;
-    if (a.k === "timeout") { if (now < Number(s.dl) && !ctx.force) return "Time isn't up yet."; r = { k: "miss", timeout: true }; }
+    if (a.k === "timeout") r = { k: "miss", timeout: true };
     else if (a.k === "guess") {
         if (Number(a.by) !== who && !ctx.force) return teamOf(s, a.by) === team ? "It's another teammate's turn to answer." : "It's not your team's turn.";
         r = a.cid ? matchChar(board, a.cid) : matchText(board, a.text);
@@ -362,16 +453,30 @@ export function act(s, a, ctx) {
         if (r.k === "vague") return "Be more specific: that fits more than one answer.";
         if (r.k === "hit" && s.rev && s.rev[r.i] != null) return "Already on the board. Try another answer.";
     } else return "Unknown move.";
-    nextGuesser(s, team, who);
     const said = a.cid ? Number(a.cid) : String(a.text || "").slice(0, 60);
+    if (r.k === "hit") { s.rev = Object.assign({}, s.rev, { [r.i]: team }); s.bank = (Number(s.bank) || 0) + board[r.i].p; }
+    // face-off: the top answer wins control at once; otherwise the other face-off player answers, and the higher answer wins control
+    if (s.phase === "face" || s.phase === "face2") {
+        const i = r.k === "hit" ? r.i : -1;
+        evt(s, r.k === "hit" ? { k: "hit", team, by: who, i, said, face: 1, top: i === 0 } : { k: "miss", team, by: who, said, timeout: !!r.timeout, face: 1 });
+        if (s.phase === "face") {
+            if (i === 0) return toControl(s, team, now, "top"), "";
+            s.fa = i; s.phase = "face2"; s.tk++; s.dl = now + s.timer * 1000; return "";
+        }
+        const first = Number(s.fa);
+        if (i === 0 || (i >= 0 && (first < 0 || i < first))) return toControl(s, team, now, i === 0 ? "top" : "higher"), "";
+        if (first >= 0) return toControl(s, s.fb, now, "higher"), "";
+        // both missed: a new face-off with the next pair of players
+        nextFaceOff(s); s.fb = ""; s.fa = -2; s.phase = "buzz"; s.tk++; s.dl = now + R.buzzMs;
+        evt(s, { k: "refaceoff" }); return "";
+    }
+    nextGuesser(s, team, who);
     if (r.k === "hit") {
-        s.rev = Object.assign({}, s.rev, { [r.i]: team }); s.bank = (Number(s.bank) || 0) + board[r.i].p;
         evt(s, { k: "hit", team, by: who, i: r.i, said });
         if (s.phase === "steal") return endRound(s, team, "steal", now), "";
         if (Object.keys(s.rev).length >= board.length) return endRound(s, team, "clear", now), "";
         s.tk++; s.dl = now + s.timer * 1000; return "";
     }
-    // miss or timeout
     if (s.phase === "steal") { evt(s, { k: "miss", team, by: who, said, timeout: !!r.timeout }); return endRound(s, s.turn, "defend", now), ""; }
     s.strikes = (Number(s.strikes) || 0) + 1;
     evt(s, { k: "miss", team, by: who, said, timeout: !!r.timeout, strikes: s.strikes });
@@ -379,13 +484,56 @@ export function act(s, a, ctx) {
     s.tk++; s.dl = now + s.timer * 1000;
     return "";
 }
-/* host: after the reveal, the next round (c = the picked question) or the end. Ties after the last round get ONE sudden-death question. */
-export function needsQuestion(s) { if (!s || s.phase !== "reveal") return false; const last = s.sd || s.round >= s.rounds; return !last || (!s.sd && s.score.A === s.score.B); }
+/* ---------------- Most Likely: both teams vote at once ---------------- */
+// a team's pick = its members' majority; a split team goes with whoever voted first
+export function teamPick(s, team) {
+    const v = arr(s.teams[team]).map(Number).map(p => (s.votes || {})["p" + p]).filter(Boolean).map(arr);
+    if (!v.length) return "";
+    const na = v.filter(x => x[0] === "a").length, nb = v.filter(x => x[0] === "b").length;
+    if (na !== nb) return na > nb ? "a" : "b";
+    return v.slice().sort((x, y) => Number(x[1]) - Number(y[1]))[0][0];
+}
+const allVoted = (s, present) => TEAMS.every(t => arr(s.teams[t]).map(Number).filter(present).every(p => (s.votes || {})["p" + p]));
+function actLikely(s, a, ctx) {
+    const now = ctx.now || Date.now(), present = ctx.present || (() => true);
+    if (s.phase !== "vote") return "stale";
+    if (a.k === "vote") {
+        if (!teamOf(s, a.by)) return "Only players on a team can vote.";
+        if (a.pick !== "a" && a.pick !== "b") return "Pick one of the two.";
+        const prev = arr((s.votes || {})["p" + a.by]);
+        if (prev[0] === a.pick) return "stale";
+        s.votes = Object.assign({}, s.votes, { ["p" + a.by]: [a.pick, prev[1] || now] });
+        evt(s, { k: "vote", by: Number(a.by) });
+        if (allVoted(s, present)) resolveDuel(s, now);
+        return "";
+    }
+    if (a.k === "timeout") {
+        if (Number(a.tk) !== Number(s.tk)) return "stale";
+        if (now < Number(s.dl) && !ctx.force) return "Time isn't up yet.";
+        resolveDuel(s, now); return "";
+    }
+    return "Unknown move.";
+}
+function resolveDuel(s, now) {
+    const d = s.duel, picks = { A: teamPick(s, "A"), B: teamPick(s, "B") }, gain = { A: 0, B: 0 };
+    s.score = Object.assign({ A: 0, B: 0 }, s.score);
+    TEAMS.forEach(t => { if (picks[t] && picks[t] === d.w) { gain[t] = d.pts; s.score[t] = (Number(s.score[t]) || 0) + d.pts; } });
+    s.log = arr(s.log).concat([{ r: s.round, sd: s.sd || 0, key: s.q.key, id: s.q.id, a: d.a, b: d.b, w: d.w, pts: d.pts, picks, gain, votes: Object.assign({}, s.votes) }]);
+    s.phase = "reveal"; s.nx = now + R.duelRevealMs; s.tk = (Number(s.tk) || 0) + 1; s.dl = 0;
+    evt(s, { k: "result", picks, gain, w: d.w });
+}
+/* host: after the reveal, the next round (c = the picked question, with c.pair for Most Likely) or the end.
+   A tie after the last round plays sudden death: one question in Classic, up to three in Most Likely. */
+export function needsQuestion(s) {
+    if (!s || s.phase !== "reveal") return false;
+    if (s.round < s.rounds) return true;
+    return s.score.A === s.score.B && (Number(s.sd) || 0) < (R.maxSd[s.type] || 1);
+}
 export function advance(s, round, c, now = Date.now()) {
     if (!s || s.phase !== "reveal" || Number(s.round) !== Number(round)) return "stale";
     if (needsQuestion(s)) {
-        if (!c) return finish(s, "out"), "";
-        if (s.round >= s.rounds && !s.sd) s.sd = 1;
+        if (!c || (s.type === "likely" && !c.pair)) return finish(s, "out"), "";
+        if (s.round >= s.rounds) s.sd = (Number(s.sd) || 0) + 1;
         startRound(s, c, now); return "";
     }
     finish(s, ""); return "";

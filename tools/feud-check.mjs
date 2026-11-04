@@ -1,6 +1,6 @@
 // Anime Feud library check: node tools/feud-check.mjs   (exit code 1 on any error)
 // Validates every pack in js/feud/packs/ and prints what each series / mix can play.
-import { buildLibrary, eligible, poolInfo, norm, stem, boardFor, FEUD_RULES } from "../js/feud/engine.js";
+import { buildLibrary, eligible, poolInfo, norm, stem, boardFor, pairsFor, FEUD_RULES } from "../js/feud/engine.js";
 import { PACKS } from "../js/feud/packs/index.js";
 import { CHARS } from "../js/draft/data.js";
 
@@ -70,8 +70,9 @@ for (const type of ["classic", "likely"]) {
 }
 // every mixed board only shows ticked series
 for (const type of ["classic", "likely"]) for (const ps of [["onepiece", "naruto"], ["jjk", "aot", "mha"]]) eligible(lib, type, ps).forEach(c => {
-    const list = boardFor(lib.boards[c.g], ps);
-    if (list.some(a => a.s !== "any" && !ps.includes(a.s))) errors.push(`${c.g}: shows a series that wasn't ticked`);
+    const B = lib.boards[c.g], seriesOf = id => (B.ans.find(a => a.c === id) || {}).s;
+    const shown = type === "likely" ? pairsFor(B, ps).flatMap(p => [seriesOf(p.w), seriesOf(p.l)]) : boardFor(B, ps).map(a => a.s);
+    if (shown.some(x => x !== "any" && !ps.includes(x))) errors.push(`${c.g}: shows a series that wasn't ticked`);
 });
 
 const nb = B.length, nq = Q.length;

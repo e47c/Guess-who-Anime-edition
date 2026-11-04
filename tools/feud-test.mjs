@@ -1,6 +1,6 @@
 // Anime Feud rules + rotation tests: node tools/feud-test.mjs
 import { buildLibrary, eligible, boardFor, qText, matchText, matchChar, pickQuestion, remember, trimHist, digest, scoreCandidate, balanceTeams,
-    newMatch, act, actorOf, advance, needsQuestion, stateBoard, startTeam, poolInfo, FEUD_RULES as R } from "../js/feud/engine.js";
+    newMatch, act, actorOf, advance, needsQuestion, stateBoard, startTeam, poolInfo, faceOffOf, teamPick, pairsFor, pickPair, duelPoints, guessTeam, FEUD_RULES as R } from "../js/feud/engine.js";
 import { PACKS } from "../js/feud/packs/index.js";
 
 let ok = 0, bad = 0;
@@ -117,93 +117,178 @@ Object.entries(sizes).forEach(([n, [a, b]]) => { const T = balanceTeams(Array.fr
 const Tsaved = balanceTeams([1, 2, 3, 4], { p1: "B", p2: "B" }); t(Tsaved.B.join() === "1,2" && Tsaved.A.join() === "3,4", "host picks are kept");
 const Tempty = balanceTeams([1, 2, 3], { p1: "A", p2: "A", p3: "A" }); t(Tempty.B.length === 1, "a team is never left empty");
 
-sect("a round");
+sect("classic: the face-off");
 const C = (id, sc = ["onepiece"]) => eligible(lib, "classic", sc).find(c => c.id === id);
-let s = newMatch({ mid: 1, type: "classic", series: ["onepiece"], teams: { A: [1, 3], B: [2, 4] }, q: C("c-protect_1"), now: NOW, rounds: 2 });
+const T4 = { A: [1, 3], B: [2, 4] };
+let s = newMatch({ mid: 1, type: "classic", series: ["onepiece"], teams: T4, q: C("c-protect_1"), now: NOW, rounds: 2 });
 let bd = stateBoard(lib, s), ctx = (o = {}) => Object.assign({ board: bd, now: NOW, present: () => true }, o);
-t(s.phase === "play" && s.round === 1 && s.turn === "A" && actorOf(s) === 1 && bd.length >= 5, "round 1: team A, player 1 answers");
-t(act(s, { k: "guess", by: 2, tk: s.tk, text: "Luffy" }, ctx()) && s.bank === 0, "the other team can't answer");
-t(/teammate/.test(act(s, { k: "guess", by: 3, tk: s.tk, text: "Luffy" }, ctx())), "only the designated teammate answers");
-const tk0 = s.tk;
-t(act(s, { k: "guess", by: 1, tk: s.tk, text: "Luffy" }, ctx()) === "" && s.rev[0] === "A" && s.bank === bd[0].p, "a hit reveals and banks");
-t(act(s, { k: "guess", by: 3, tk: tk0, text: "Zoro" }, ctx()) === "stale", "a double submission with an old turn key is ignored");
-t(actorOf(s) === 3, "the guesser rotates");
-t(/Already/.test(act(s, { k: "guess", by: 3, tk: s.tk, text: "monkey d luffy" }, ctx())) && s.strikes === 0, "an answer already on the board costs nothing");
-act(s, { k: "guess", by: 3, tk: s.tk, text: "Buggy" }, ctx());
-t(s.strikes === 1 && actorOf(s) === 1, "a miss is a strike");
-t(act(s, { k: "timeout", tk: s.tk }, ctx()) === "Time isn't up yet.", "no timeout before the deadline");
+t(s.phase === "buzz" && faceOffOf(s, "A") === 1 && faceOffOf(s, "B") === 2 && actorOf(s) === 0, "round opens on the buzzers: player 1 vs player 2");
+t(/face-off/.test(act(s, { k: "buzz", by: 3 }, ctx())), "only the face-off players can buzz");
+t(act(s, { k: "guess", by: 1, tk: s.tk, text: "Luffy" }, ctx()) === "Buzz first!", "no answering before the buzzer");
+t(act(s, { k: "buzz", by: 2 }, ctx()) === "" && s.phase === "face" && s.fb === "B" && actorOf(s) === 2, "first buzz: Team B's player answers first");
+t(act(s, { k: "buzz", by: 1 }, ctx()) === "stale" && s.fb === "B", "a late buzz changes nothing");
+act(s, { k: "guess", by: 2, tk: s.tk, text: bd[0].t }, ctx());
+t(s.phase === "decide" && s.ctrl === "B" && s.rev[0] === "B" && s.bank === bd[0].p, "top answer: control at once, points in the pot");
+t(/deciding/.test(act(s, { k: "decide", by: 1, tk: s.tk, play: true }, ctx())), "only the controlling team decides");
+act(s, { k: "decide", by: 4, tk: s.tk, play: false }, ctx());
+t(s.phase === "play" && s.turn === "A" && actorOf(s) === 1 && s.strikes === 0, "pass: the other team plays the board");
+// second answer is lower than the first
+s = newMatch({ mid: 2, type: "classic", series: ["onepiece"], teams: T4, q: C("c-protect_1"), now: NOW });
+act(s, { k: "buzz", by: 1 }, ctx()); act(s, { k: "guess", by: 1, tk: s.tk, text: bd[2].t }, ctx());
+t(s.phase === "face2" && actorOf(s) === 2, "not the top answer: the other face-off player answers");
+act(s, { k: "guess", by: 2, tk: s.tk, text: bd[4].t }, ctx());
+t(s.phase === "decide" && s.ctrl === "A" && s.bank === bd[2].p + bd[4].p, "a lower answer: the first team keeps control");
+act(s, { k: "decide", by: 3, tk: s.tk, play: true }, ctx());
+t(s.phase === "play" && s.turn === "A", "play: they keep the board");
+// second answer is higher
+s = newMatch({ mid: 3, type: "classic", series: ["onepiece"], teams: T4, q: C("c-protect_1"), now: NOW });
+act(s, { k: "buzz", by: 1 }, ctx()); act(s, { k: "guess", by: 1, tk: s.tk, text: bd[3].t }, ctx()); act(s, { k: "guess", by: 2, tk: s.tk, text: bd[1].t }, ctx());
+t(s.ctrl === "B", "a higher answer: the second team takes control");
+// first misses, second hits anything
+s = newMatch({ mid: 4, type: "classic", series: ["onepiece"], teams: T4, q: C("c-protect_1"), now: NOW });
+act(s, { k: "buzz", by: 1 }, ctx()); act(s, { k: "guess", by: 1, tk: s.tk, text: "Buggy" }, ctx());
+t(s.phase === "face2" && !s.strikes, "a face-off miss is not a strike");
+act(s, { k: "guess", by: 2, tk: s.tk, text: bd[5].t }, ctx());
+t(s.ctrl === "B", "first missed, second on the board: second team takes control");
+// first hits, second misses
+s = newMatch({ mid: 5, type: "classic", series: ["onepiece"], teams: T4, q: C("c-protect_1"), now: NOW });
+act(s, { k: "buzz", by: 2 }, ctx()); act(s, { k: "guess", by: 2, tk: s.tk, text: bd[5].t }, ctx()); act(s, { k: "guess", by: 1, tk: s.tk, text: "Buggy" }, ctx());
+t(s.ctrl === "B", "second missed: the first team has control");
+// both miss: a fresh face-off with the next pair
+s = newMatch({ mid: 6, type: "classic", series: ["onepiece"], teams: T4, q: C("c-protect_1"), now: NOW });
+act(s, { k: "buzz", by: 1 }, ctx()); act(s, { k: "guess", by: 1, tk: s.tk, text: "Buggy" }, ctx()); act(s, { k: "guess", by: 2, tk: s.tk, text: "Enel" }, ctx());
+t(s.phase === "buzz" && faceOffOf(s, "A") === 3 && faceOffOf(s, "B") === 4, "both missed: the next two players face off");
+// nobody buzzes / nobody decides
+s = newMatch({ mid: 7, type: "classic", series: ["onepiece"], teams: T4, q: C("c-protect_1"), now: NOW });
+t(act(s, { k: "timeout", tk: s.tk }, ctx()) === "Time isn't up yet.", "the buzzer waits for its window");
 act(s, { k: "timeout", tk: s.tk }, ctx({ now: s.dl + 1 }));
-t(s.strikes === 2, "a timeout is a strike");
-act(s, { k: "guess", by: 3, tk: s.tk, text: "Crocodile" }, ctx());
-t(s.phase === "steal" && actorOf(s) === 2, "three strikes: the other team steals");
-const bank = s.bank, zoroI = bd.findIndex(a => a.c === 62);
-act(s, { k: "guess", by: 2, tk: s.tk, text: "Zoro" }, ctx());
-t(s.phase === "reveal" && s.score.B === bank + bd[zoroI].p && s.score.A === 0, "a steal takes the whole pot");
-t(s.log.length === 1 && s.log[0].how === "steal", "round logged");
-t(needsQuestion(s), "the host needs a second question");
+t(s.phase === "face" && s.fb === s.turn, "nobody buzzed: the round's starting team answers first");
+act(s, { k: "timeout", tk: s.tk }, ctx({ now: s.dl + 1 }));
+t(s.phase === "face2", "a face-off answer can time out too");
+act(s, { k: "guess", by: faceOffOf(s, "B"), tk: s.tk, text: bd[1].t }, ctx());
+act(s, { k: "timeout", tk: s.tk }, ctx({ now: s.dl + 1 }));
+t(s.phase === "play" && s.turn === "B", "no decision in time: they play");
+// the play phase, steal and the next round
+s = newMatch({ mid: 8, type: "classic", series: ["onepiece"], teams: T4, q: C("c-protect_1"), now: NOW, rounds: 2 });
+act(s, { k: "buzz", by: 1 }, ctx()); act(s, { k: "guess", by: 1, tk: s.tk, text: bd[1].t }, ctx()); act(s, { k: "guess", by: 2, tk: s.tk, text: "nope" }, ctx());
+act(s, { k: "decide", by: 1, tk: s.tk, play: true }, ctx());
+const tk0 = s.tk, first = actorOf(s);
+t(act(s, { k: "guess", by: first, tk: s.tk, text: "monkey d luffy" }, ctx()) === "" && s.rev[0] === "A", "play: a hit");
+t(act(s, { k: "guess", by: first, tk: tk0, text: "Zoro" }, ctx()) === "stale", "a double submission with an old turn key is ignored");
+t(actorOf(s) !== first, "the answerer rotates");
+t(/Already/.test(act(s, { k: "guess", by: actorOf(s), tk: s.tk, text: "Luffy" }, ctx())), "an answer already on the board costs nothing");
+for (let i = 0; i < 3; i++) act(s, { k: "guess", by: actorOf(s), tk: s.tk, text: "Buggy" + i }, ctx());
+t(s.phase === "steal" && guessTeam(s) === "B", "three strikes: the other team steals");
+const bank = s.bank, stealI = bd.findIndex((a, i) => s.rev[i] == null);
+act(s, { k: "guess", by: actorOf(s), tk: s.tk, text: bd[stealI].t }, ctx());
+t(s.phase === "reveal" && s.score.B === bank + bd[stealI].p && s.log[0].how === "steal", "a steal takes the whole pot, face-off points included");
 t(advance(s, 2, C("c-villain_1")) === "stale", "advance is guarded by the round number");
 advance(s, 1, C("c-villain_1"), NOW + 7000);
-t(s.round === 2 && s.turn === "B" && s.phase === "play" && actorOf(s) === 4, "round 2: the other team starts, next guesser");
-bd = stateBoard(lib, s);
-// team B misses three times, team A fails to steal
-["xx", "yy", "zz"].forEach(w => act(s, { k: "guess", by: actorOf(s), tk: s.tk, text: w }, ctx()));
-const aBefore = s.score.A, bBefore = s.score.B;
-act(s, { k: "guess", by: actorOf(s), tk: s.tk, text: "nope" }, ctx());
-t(s.phase === "reveal" && s.log[1].how === "defend" && s.score.A === aBefore && s.score.B === bBefore, "a failed steal leaves the pot (0 here) with the defenders");
-t(!needsQuestion(s) || s.score.A === s.score.B, "after the last round: over unless tied");
+t(s.round === 2 && s.phase === "buzz" && faceOffOf(s, "A") === 3 && faceOffOf(s, "B") === 4, "round 2: new face-off pair");
 
-sect("clearing the board, ties and sudden death");
-s = newMatch({ mid: 2, type: "likely", series: ["onepiece"], teams: { A: [1], B: [2] }, q: eligible(lib, "likely", ["onepiece"]).find(c => c.g === "x-loyal"), now: NOW, rounds: 1 });
+sect("classic: clears, ties and sudden death");
+s = newMatch({ mid: 9, type: "classic", series: ["onepiece"], teams: { A: [1], B: [2] }, q: C("c-protect_1"), now: NOW, rounds: 1 });
 bd = stateBoard(lib, s);
-bd.forEach(a => act(s, { k: "guess", by: 1, tk: s.tk, cid: a.c }, ctx()));
+act(s, { k: "buzz", by: 1 }, ctx()); act(s, { k: "guess", by: 1, tk: s.tk, text: bd[0].t }, ctx()); act(s, { k: "decide", by: 1, tk: s.tk, play: true }, ctx());
+bd.slice(1).forEach(a => act(s, { k: "guess", by: 1, tk: s.tk, text: a.t }, ctx()));
 t(s.phase === "reveal" && s.log[0].how === "clear" && s.score.A === bd.reduce((n, a) => n + a.p, 0), "clearing the board banks everything, no steal");
-s = newMatch({ mid: 3, type: "likely", series: ["onepiece"], teams: { A: [1], B: [2] }, q: eligible(lib, "likely", ["onepiece"]).find(c => c.g === "x-loyal"), now: NOW, rounds: 1 });
-bd = stateBoard(lib, s);
-for (let i = 0; i < 4; i++) act(s, { k: "guess", by: actorOf(s), tk: s.tk, cid: 999 }, ctx());
-t(s.phase === "reveal" && s.score.A === 0 && s.score.B === 0 && needsQuestion(s), "0-0 after the last round: sudden death");
-advance(s, 1, eligible(lib, "likely", ["onepiece"]).find(c => c.g === "x-party"), NOW);
-t(s.sd === 1 && s.round === 2 && s.turn === "B", "sudden death round, the other team starts");
-bd = stateBoard(lib, s);
-act(s, { k: "guess", by: 2, tk: s.tk, cid: bd[0].c }, ctx());
-for (let i = 0; i < 3; i++) act(s, { k: "guess", by: 2, tk: s.tk, cid: 999 }, ctx());
-act(s, { k: "guess", by: 1, tk: s.tk, cid: 998 }, ctx());
+s = newMatch({ mid: 10, type: "classic", series: ["onepiece"], teams: { A: [1], B: [2] }, q: C("c-protect_1"), now: NOW, rounds: 1 });
+act(s, { k: "buzz", by: 1 }, ctx()); act(s, { k: "guess", by: 1, tk: s.tk, text: "x1" }, ctx()); act(s, { k: "guess", by: 2, tk: s.tk, text: "x2" }, ctx());
+act(s, { k: "buzz", by: 1 }, ctx()); act(s, { k: "guess", by: 1, tk: s.tk, text: bd[3].t }, ctx()); act(s, { k: "guess", by: 2, tk: s.tk, text: "x3" }, ctx());
+act(s, { k: "decide", by: 1, tk: s.tk, play: false }, ctx());
+for (let i = 0; i < 3; i++) act(s, { k: "guess", by: 2, tk: s.tk, text: "nope" + i }, ctx());
+const pot = s.bank; act(s, { k: "guess", by: 1, tk: s.tk, text: "still no" }, ctx());
+t(s.phase === "reveal" && s.score.B === pot && s.log[0].how === "defend", "pass, three strikes, failed steal: the playing team keeps the pot");
+s.score = { A: 0, B: 0 };
+t(needsQuestion(s), "tied after the last round: sudden death");
+advance(s, 1, C("c-villain_1"), NOW);
+t(s.sd === 1 && s.round === 2 && s.phase === "buzz", "one sudden-death round");
+s.phase = "reveal"; s.score = { A: 5, B: 5 };
+t(!needsQuestion(s), "Classic plays only one sudden-death question");
 advance(s, 2, null, NOW);
-t(s.phase === "over" && s.winner === "B", "sudden death decides the winner");
-s = newMatch({ mid: 4, type: "likely", series: ["onepiece"], teams: { A: [1], B: [2] }, q: eligible(lib, "likely", ["onepiece"])[0], now: NOW, rounds: 3 });
-bd = stateBoard(lib, s); for (let i = 0; i < 4; i++) act(s, { k: "guess", by: actorOf(s), tk: s.tk, cid: 999 }, ctx());
+t(s.phase === "over" && s.winner === "", "still tied: a draw");
+s = newMatch({ mid: 11, type: "classic", series: ["onepiece"], teams: { A: [1], B: [2] }, q: C("c-protect_1"), now: NOW, rounds: 3 });
+s.phase = "reveal";
 advance(s, 1, null, NOW);
-t(s.phase === "over" && s.why === "out", "no question left: the match ends cleanly instead of breaking");
+t(s.phase === "over" && s.why === "out", "no question left: the match ends cleanly");
 
-sect("away players");
-s = newMatch({ mid: 5, type: "classic", series: ["onepiece"], teams: { A: [1, 3, 5], B: [2, 4] }, q: C("c-protect_1"), now: NOW });
+sect("classic: away players");
+s = newMatch({ mid: 12, type: "classic", series: ["onepiece"], teams: { A: [1, 3, 5], B: [2, 4] }, q: C("c-protect_1"), now: NOW });
 bd = stateBoard(lib, s);
-const away = p => p !== 1;
-t(actorOf(s, p => p !== 1) === 3, "an away guesser is skipped");
-act(s, { k: "guess", by: 3, tk: s.tk, text: "Luffy" }, ctx({ present: away }));
-t(actorOf(s) === 5, "rotation continues after the one who answered");
-t(actorOf(s, () => false) === 5, "nobody present: the timer runs on the designated player");
+t(faceOffOf(s, "A", p => p !== 1) === 3, "an away face-off player is replaced by the next teammate");
+t(act(s, { k: "buzz", by: 3 }, ctx({ present: p => p !== 1 })) === "", "...who can buzz");
+act(s, { k: "guess", by: 3, tk: s.tk, text: bd[0].t }, ctx({ present: p => p !== 1 })); act(s, { k: "decide", by: 5, tk: s.tk, play: true }, ctx());
+t(actorOf(s, p => p !== 1) === 3, "an away answerer is skipped in play");
+t(actorOf(s, () => false) === 1, "nobody present: the timer runs on the designated player");
+
+sect("most likely: duels");
+const scOP = ["onepiece"], eL = eligible(lib, "likely", scOP);
+t(eL.length > 20 && eL.every(c => pairsFor(lib.boards[c.g], scOP).length), "Most Likely questions all have a close pair (" + eL.length + ")");
+const pairs = pairsFor(lib.boards["x-smartest"], scOP), byId = {}; lib.boards["x-smartest"].ans.forEach(a => { byId[a.c] = a; });
+t(pairs.every(p => byId[p.w].p > byId[p.l].p && byId[p.w].p - byId[p.l].p <= R.duelGap && byId[p.w].s === "onepiece"), "pairs are close, never tied, the higher-ranked one wins");
+const mixP = pairsFor(lib.boards["x-smartest"], ["onepiece", "naruto"]);
+t(mixP.some(p => p.cross) && mixP.every(p => ["onepiece", "naruto"].includes(byId[p.w].s) && ["onepiece", "naruto"].includes(byId[p.l].s)), "mix: same-series and cross-series pairs, only from ticked series");
+t(duelPoints(1) === 30 && duelPoints(4) === 20 && duelPoints(6) === 10, "closer calls are worth more");
+const pp = pickPair(lib, eL.find(c => c.g === "x-smartest"), scOP, rnd);
+t(pp && pp.a !== pp.b && (pp.w === "a" ? byId[pp.a].p > byId[pp.b].p : byId[pp.b].p > byId[pp.a].p), "pickPair: two characters, the right winner, random sides");
+t(eligible(lib, "likely", ["gachiakuta"]).length < 3, "a thin series has (almost) no duels and says so");
+const LQ = (g, sc = scOP) => { const c = eligible(lib, "likely", sc).find(x => x.g === g); return Object.assign({}, c, { pair: pickPair(lib, c, sc, rnd) }); };
+const T6 = { A: [1, 3, 5], B: [2, 4, 6] };
+s = newMatch({ mid: 20, type: "likely", series: scOP, teams: T6, q: LQ("x-smartest"), now: NOW, rounds: 2 });
+const lc = (o = {}) => Object.assign({ now: NOW, present: () => true }, o);
+t(s.phase === "vote" && s.rounds === 2 && s.duel.a && s.duel.b && actorOf(s) === 0, "a duel opens with both teams voting");
+const W = s.duel.w, L2 = W === "a" ? "b" : "a";
+act(s, { k: "vote", by: 1, pick: W }, lc()); act(s, { k: "vote", by: 3, pick: W }, lc()); act(s, { k: "vote", by: 5, pick: L2 }, lc());
+act(s, { k: "vote", by: 2, pick: L2 }, lc());
+t(s.phase === "vote" && teamPick(s, "A") === W && teamPick(s, "B") === L2, "majority picks per team, still open until everyone voted");
+t(act(s, { k: "vote", by: 2, pick: L2 }, lc()) === "stale" && act(s, { k: "vote", by: 9, pick: "a" }, lc()) !== "", "repeat votes and outsiders change nothing");
+act(s, { k: "vote", by: 2, pick: W }, lc());
+t(teamPick(s, "B") === W, "a vote can be changed before the reveal");
+act(s, { k: "vote", by: 4, pick: L2 }, lc()); act(s, { k: "vote", by: 6, pick: L2 }, lc());
+t(s.phase === "reveal" && s.score.A === s.duel.pts && s.score.B === 0 && s.log[0].picks.B === L2, "everyone voted: revealed, only the right team scores");
+advance(s, 1, LQ("x-loyal"), NOW);
+t(s.round === 2 && s.phase === "vote" && Object.keys(s.votes || {}).length === 0, "next duel, fresh votes");
+act(s, { k: "vote", by: 1, pick: s.duel.w }, lc()); act(s, { k: "vote", by: 2, pick: s.duel.w }, lc());
+t(act(s, { k: "timeout", tk: s.tk }, lc()) === "Time isn't up yet." && s.phase === "vote", "the vote waits for its clock");
+act(s, { k: "timeout", tk: s.tk }, lc({ now: s.dl + 1 }));
+t(s.phase === "reveal" && s.log[1].gain.A === s.duel.pts && s.log[1].gain.B === s.duel.pts, "time up: the votes in count, both teams can score");
+s = newMatch({ mid: 21, type: "likely", series: scOP, teams: { A: [1, 3], B: [2, 4] }, q: LQ("x-smartest"), now: NOW, rounds: 1 });
+act(s, { k: "vote", by: 3, pick: "b" }, lc({ now: NOW + 5 })); act(s, { k: "vote", by: 1, pick: "a" }, lc({ now: NOW + 9 }));
+t(teamPick(s, "A") === "b", "a split team goes with whoever voted first");
+act(s, { k: "vote", by: 2, pick: "a" }, lc({ present: p => p !== 4 }));
+t(s.phase === "reveal", "away players don't hold up the vote");
+s = newMatch({ mid: 22, type: "likely", series: scOP, teams: { A: [1], B: [2] }, q: LQ("x-smartest"), now: NOW, rounds: 1 });
+act(s, { k: "vote", by: 1, pick: s.duel.w }, lc()); act(s, { k: "vote", by: 2, pick: s.duel.w }, lc());
+t(needsQuestion(s) && s.score.A === s.score.B, "tied: sudden death");
+let sdN = 0; while (needsQuestion(s)) { advance(s, s.round, LQ(["x-loyal", "x-kindest", "x-lazy", "x-party"][sdN]), NOW); sdN++; act(s, { k: "vote", by: 1, pick: s.duel.w }, lc()); act(s, { k: "vote", by: 2, pick: s.duel.w }, lc()); }
+t(sdN === 3, "up to three sudden-death duels (" + sdN + ")");
+advance(s, s.round, null, NOW);
+t(s.phase === "over" && s.winner === "", "still tied after three: a draw");
 
 sect("full matches, 2 to 8 players");
 for (let n = 2; n <= 8; n++) for (const type of ["classic", "likely"]) {
     const series = n % 2 ? ["onepiece", "naruto"] : ["jjk"], pool = eligible(lib, type, series);
+    const pick = used => { const c = pickQuestion(pool, { used, now: NOW, rnd, lib }); return c && type === "likely" ? Object.assign({}, c, { pair: pickPair(lib, c, series, rnd) }) : c; };
     const T = balanceTeams(Array.from({ length: n }, (_, i) => i + 1));
-    let st = newMatch({ mid: 10 + n, type, series, teams: T, q: pickQuestion(pool, { now: NOW, rnd, lib }), now: NOW }), guard = 0, answered = new Set(), err = "";
-    while (st.phase !== "over" && guard++ < 500) {
-        if (st.phase === "reveal") {
-            const c = needsQuestion(st) ? pickQuestion(pool, { used: st.used, now: NOW, rnd, lib }) : null;
-            advance(st, st.round, c, NOW); continue;
+    let st = newMatch({ mid: 100 + n, type, series, teams: T, q: pick([]), now: NOW }), guard = 0, acted = new Set(), err = "";
+    while (st.phase !== "over" && guard++ < 800) {
+        if (st.phase === "reveal") { advance(st, st.round, needsQuestion(st) ? pick(st.used) : null, NOW); continue; }
+        let r = "";
+        if (st.phase === "vote") { const p = [...T.A, ...T.B].find(x => !(st.votes || {})["p" + x]); r = act(st, { k: "vote", by: p, pick: rnd() < .5 ? "a" : "b" }, { now: NOW }); acted.add(p); }
+        else if (st.phase === "buzz") { const tm = rnd() < .5 ? "A" : "B", p = faceOffOf(st, tm); r = act(st, { k: "buzz", by: p }, { board: stateBoard(lib, st), now: NOW }); acted.add(p); }
+        else if (st.phase === "decide") { const p = st.teams[st.ctrl][0]; r = act(st, { k: "decide", by: p, tk: st.tk, play: rnd() < .7 }, { board: stateBoard(lib, st), now: NOW }); }
+        else {
+            const b = stateBoard(lib, st), who = actorOf(st), hidden = b.map((a, i) => i).filter(i => st.rev[i] == null);
+            const hit = rnd() < .55 && hidden.length, a = b[hidden[(rnd() * hidden.length) | 0]];
+            r = act(st, { k: "guess", by: who, tk: st.tk, text: hit ? a.t : "zzz wrong" }, { board: b, now: NOW }); acted.add(who);
         }
-        const b = stateBoard(lib, st), who = actorOf(st), hidden = b.map((a, i) => i).filter(i => st.rev[i] == null);
-        const hit = rnd() < .55 && hidden.length, a = b[hidden[(rnd() * hidden.length) | 0]];
-        const r = act(st, type === "likely" ? { k: "guess", by: who, tk: st.tk, cid: hit ? a.c : 1 } : { k: "guess", by: who, tk: st.tk, text: hit ? a.t : "zzz wrong" }, { board: b, now: NOW });
-        if (r) { err = r; break; }
-        answered.add(who);
+        if (r) { err = r + " @" + st.phase; break; }
     }
-    const banked = st.log.reduce((x, l) => x + l.pts, 0);
+    const banked = st.log.reduce((x, l) => x + (type === "likely" ? l.gain.A + l.gain.B : l.pts), 0);
     t(!err && st.phase === "over", `${n}p ${type}: match finishes (${err})`);
-    t(st.score.A + st.score.B === banked, `${n}p ${type}: scores = banked pots`);
+    t(st.score.A + st.score.B === banked, `${n}p ${type}: scores = points awarded`);
     t(st.round >= st.rounds && new Set(st.used.map(u => u.key)).size === st.used.length, `${n}p ${type}: ${st.round} rounds, no repeats`);
-    t(answered.size === n, `${n}p ${type}: everyone got to answer (${answered.size}/${n})`);
+    t(acted.size === n, `${n}p ${type}: everyone took part (${acted.size}/${n})`);
     t(st.winner === (st.score.A > st.score.B ? "A" : st.score.B > st.score.A ? "B" : ""), `${n}p ${type}: winner matches the score`);
 }
 

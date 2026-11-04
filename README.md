@@ -68,22 +68,27 @@ Build the strongest six-character team. Everything lives in `js/draft/` (rules, 
 
 ## Anime Feud
 
-A team game show. Two teams uncover a hidden board of 5 to 8 ranked answers. Everything lives in `js/feud/` (engine, screen, question packs) and `css/feud.css`; `js/game.js` only routes to it.
+A team game show with two game types and two looks. Everything lives in `js/feud/` (engine, screen, question packs) and `css/feud.css`; `js/game.js` only routes to it.
 
-- **Two game types** (picked in the lobby):
-  - **Classic Feud:** type answers ("Name a villain from One Piece"). Answers can be characters, groups, places, techniques, items or general ideas. Typing is forgiving: case, accents, punctuation and "the" are ignored, one typo is allowed (two on long answers, never on numbers: "Gear 3" is not "Gear 5"), and part of a long answer counts ("shadow clone" for "Shadow Clone Jutsu"). For a character, the first name, last name or a nickname works ("Blackbeard", "Deku"). A word that fits two answers ("Uchiha") asks you to be more specific, with no strike.
-  - **Most Likely:** "Who would betray their friends?", "Who would make the worst roommate?". The answerer searches the characters of the ticked series (name or nickname, portraits from the Anime Draft roster) and locks one in. It is a hidden-board guessing game like Classic, not a vote.
+- **Classic Feud** (a lively TV studio: sweeping spotlights, a board ringed by chasing marquee bulbs, buzzer podiums). The rules follow the classic survey-show format:
+  - **Face-off.** Every round opens with one player per team at the buzzers (they rotate, so everyone gets a turn). The first to buzz (button or space bar) answers. If nobody buzzes in 15 s, the round's starting team answers first.
+  - **Control.** The top answer wins control at once. Otherwise the other face-off player answers: a higher answer (or any answer after a miss) takes control, a lower one or a miss leaves it with the first team. If both miss, the next pair of players goes to the buzzers. Face-off answers count toward the pot; face-off misses are not strikes.
+  - **Play or pass.** The team in control chooses PLAY (answer the rest of the board) or PASS (the other team has to play it). No choice in 15 s = play.
+  - **The board.** The playing team answers one at a time (the answerer rotates, teammates can talk it through). A right answer opens its row; a wrong answer or running out of the 20/30/45 s clock is a strike. After 3 strikes the other team gets **one** answer: right = they steal the whole pot, wrong = the playing team keeps it. Clearing the board banks the pot with no steal.
+  - Typing is forgiving: case, accents, punctuation and "the" are ignored, one typo is allowed (two on long answers, never on numbers: "Gear 3" is not "Gear 5"), part of a long answer counts ("shadow clone"), and a character's first name, last name or nickname works ("Blackbeard", "Deku"). A word that fits two answers ("Uchiha") asks you to be more specific, with no strike.
+- **Most Likely** (a light, warm look: pastel sky, drifting petals, two framed character cards and a heart in the middle):
+  - Each duel shows **two characters who are close** on the question ("Who is the smartest?": Nami or Doflamingo).
+  - The pairs come from the curated Most Likely rankings: neighbours in a series' ranking a few points apart, and in an Anime Mix also two characters of two ticked series with nearly the same score. Ties are never used. The higher-ranked one is the "most likely" answer.
+  - **Both teams vote at the same time.** Tap a card; you can change your vote until everyone has voted or the 10/15/20 s clock runs out. Before the reveal you only see your own team's votes.
+  - A team's pick is its majority; a split team goes with whoever voted first. **Every** team that picks the more likely character scores: 30 points for a photo finish, 20 for a close call, 10 otherwise.
+  - 5, 10 (default) or 15 duels. A tie plays up to three sudden-death duels; still tied = a draw.
 - **Single anime or Anime Mix.** The same series checkboxes as Anime Draft.
-  - **One series ticked:** questions written for that series, plus the crossover questions that have at least 5 answers in it ("Which One Piece character is the most loyal?").
-  - **Two or more ticked:** crossover questions answered **only from the ticked series**. A mixed board needs answers from at least two of them and spreads its 8 slots across the ticked series. General anime questions ("Name something an anime villain would never forgive") only appear in a mix.
-  - The lobby shows the scope and how many questions fit. It blocks the start if fewer boards fit than the rounds chosen.
+  - **One series ticked:** questions written for that series, plus the crossover questions that work for it ("Which One Piece character is the most loyal?").
+  - **Two or more ticked:** crossover questions answered **only from the ticked series**. A mixed Classic board needs answers from at least two of them and spreads its 8 slots across them. General anime questions ("Name something an anime villain would never forgive") only appear in a mix.
+  - The lobby shows the scope and how many questions fit, and blocks the start if fewer fit than the rounds chosen.
 - **Teams.** 2–8 players are split as evenly as possible (1v1, 2v1, 2v2, 3v2, 3v3, 4v3, 4v4). The host can tap a player to move them, or shuffle.
-- **A round.**
-  - The team in play answers one at a time. The answerer rotates every guess, skipping anyone who is away. Teammates can talk it through, but only the answerer can submit.
-  - A right answer opens its row and adds its points to the pot. A wrong answer, or running out of the 20/30/45 s clock, is a strike. An answer already on the board costs nothing.
-  - After 3 strikes the other team gets **one** answer: right = they steal the whole pot (plus that answer), wrong = the defenders keep it. Clearing the board banks the pot with no steal.
-  - The full board is shown for a few seconds (the host can skip), then the next question. The starting team alternates.
-- **Match.** 3, 5 (default) or 7 rounds. A tie after the last round plays **one** sudden-death question; still tied = a draw. The final screen shows the winner, both scores, every round with its pot and who found which answer, and Rematch / Back to lobby for the host.
+- **Match.** Classic: 3, 5 (default) or 7 rounds, one sudden-death question on a tie. The final screen shows the winner, both scores and every round (Classic: who found which answer; Most Likely: both characters, the right one and each team's pick), with Rematch / Back to lobby for the host.
+- **Look.** Classic Feud's studio is an original design in the arcade's red, gold and black, not a copy of any TV show's set.
 
 ### Question rotation (nothing is banned for good)
 
@@ -111,7 +116,7 @@ Every player keeps a history: `"<questionId>@<scope>": [last seen, times seen]`.
 - **Answers** have stable IDs (`x-loyal~onepiece~roronoa-zoro`) and explicit points. Character answers point at Anime Draft roster IDs (AniList), so pictures and names are shared and nothing is downloaded twice.
 - **Labelling:** every board is labelled **Anime Arcade curated answers**. The rankings are our own picks, not survey results, and the game says so on the board and the final screen. `ranking: "curated"` and `votes: null` are reserved so real community votes can be added later without changing the format. No votes are invented.
 - **Initial library:** 188 questions on 91 boards (55 Classic, 36 Most Likely), 25 families, 10 opposite pairs.
-  - **Most Likely:** 23 to 31 boards for every series except Gachiakuta.
+  - **Most Likely:** 20 to 31 questions with close pairs for every series except Gachiakuta.
   - **Classic:** 8 to 16 boards per series. Wind Breaker has 5, enough for 3 rounds.
   - **Gachiakuta** can't be played on its own yet; it works inside a mix. Boards only list answers we are sure of, and there aren't enough of those for Gachiakuta yet.
 
@@ -143,14 +148,14 @@ Every player keeps a history: `"<questionId>@<scope>": [last seen, times seen]`.
    - blocked words.
 
    It warns about wordings that are near copies of another board, rewordings that are only a synonym swap, and opposites sharing most of their answers. It then prints what every series and a sample of mixes can play.
-4. Run `node tools/feud-test.mjs` (181 checks: matching, filtering, rotation and cooldowns, histories across players and rooms, teams for 2–8 players, strikes, steals, clears, ties, sudden death, away players, full simulated matches for every player count).
+4. Run `node tools/feud-test.mjs` (213 checks: matching, filtering, rotation and cooldowns, histories across players and rooms, teams for 2–8 players, every face-off outcome, play or pass, strikes, steals, clears, duel pairs, voting and majorities, ties, sudden death, away players, full simulated matches of both types for every player count).
 
 ### Multiplayer, history and what Firebase can and can't protect
 
 - **Room data:**
-  - `rooms/<code>/feud` holds the match: teams, scores, round, the question's ID, which slots are open, strikes, a turn key and the deadline.
-  - Every move (answer, timeout, next question) is a transaction that checks the turn key, phase and answerer. A double click, two teammates at once, or the host and a stale tab advancing together can never both apply.
-  - The host picks each question once and writes it. Every client then rebuilds the same board from the same library, so **unrevealed answers are never written to the room**.
+  - `rooms/<code>/feud` holds the match: teams, scores, round, the question's ID, the face-off state or the duel, which slots are open, strikes, votes, a turn key and the deadline.
+  - Every move (buzz, answer, play/pass, vote, timeout, next question) is a transaction that checks the turn key, phase and player. Two buzzes at the same instant give exactly one winner; eight players voting at once all count; a double click or the host and a stale tab advancing together can never both apply.
+  - The host picks each question once and writes it. In Classic every client then rebuilds the same board from the same library, so **unrevealed answers are never written to the room**. A Most Likely duel stores its two characters and which one is right (the vote is resolved inside the transaction), so a player reading the room data in developer tools could see it.
   - The countdown uses the server time offset, so every screen shows the same second. The host's client strikes a guess that runs out of time.
   - **Leaving and reconnecting:**
     - An away answerer is skipped.

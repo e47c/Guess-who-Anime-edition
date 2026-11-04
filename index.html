@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="css/modes.css?v=12">
 <link rel="stylesheet" href="css/uno.css?v=12">
 <link rel="stylesheet" href="css/draft.css?v=3">
-<link rel="stylesheet" href="css/feud.css?v=1">
+<link rel="stylesheet" href="css/feud.css?v=2">
 </head>
 <body class="anime-theme" data-scene="home">
 
@@ -166,10 +166,10 @@
 <div id="drRolePrev" class="dr-roleprev"></div>
 <p class="anime-hint" id="drHint"></p></div>
 <div id="feudBox" class="field hidden"><label class="field-label">Game type</label>
-<div class="fd-types"><button type="button" class="fd-type selected" data-k="classic" onclick="setFeudOpt('type','classic')"><span class="fd-ico" aria-hidden="true">答</span><b>Classic Feud</b><small>Type the top answers to anime survey-style questions.</small></button><button type="button" class="fd-type" data-k="likely" onclick="setFeudOpt('type','likely')"><span class="fd-ico" aria-hidden="true">誰</span><b>Most Likely</b><small>Pick the characters most likely to fit: who would betray, lead, survive…</small></button></div>
+<div class="fd-types"><button type="button" class="fd-type selected" data-k="classic" onclick="setFeudOpt('type','classic')"><span class="fd-ico" aria-hidden="true">答</span><b>Classic Feud</b><small>Buzzer face-off, play or pass, three strikes and the steal. Type the top answers.</small></button><button type="button" class="fd-type" data-k="likely" onclick="setFeudOpt('type','likely')"><span class="fd-ico" aria-hidden="true">誰</span><b>Most Likely</b><small>Two close characters per question. Both teams vote at once; pick the more likely one.</small></button></div>
 <div class="fd-scope" id="fdScope"></div>
-<div class="fd-opts"><div><label class="field-label">Rounds</label><div class="sizes"><button class="modebtn fdrbtn" data-k="3" onclick="setFeudOpt('rounds',3)">3</button><button class="modebtn fdrbtn selected" data-k="5" onclick="setFeudOpt('rounds',5)">5</button><button class="modebtn fdrbtn" data-k="7" onclick="setFeudOpt('rounds',7)">7</button></div></div>
-<div><label class="field-label">Answer time</label><div class="sizes"><button class="modebtn fdtbtn" data-k="20" onclick="setFeudOpt('timer',20)">20 s</button><button class="modebtn fdtbtn selected" data-k="30" onclick="setFeudOpt('timer',30)">30 s</button><button class="modebtn fdtbtn" data-k="45" onclick="setFeudOpt('timer',45)">45 s</button></div></div></div>
+<div class="fd-opts"><div><label class="field-label" id="fdRoundsLbl">Rounds</label><div class="sizes" id="fdRoundsBtns"></div></div>
+<div><label class="field-label" id="fdTimerLbl">Answer time</label><div class="sizes" id="fdTimerBtns"></div></div></div>
 <label class="field-label" style="margin-top:14px">Teams</label><div id="fdTeams" class="dr-teams fd-teams"></div>
 <p class="anime-hint" id="fdHint"></p></div>
 </div>
@@ -408,7 +408,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=25"></script>
+<script type="module" src="js/game.js?v=26"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){
