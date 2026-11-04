@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+<defs>
+<linearGradient id="g" x1="0" y1="0" x2=".35" y2="1"><stop offset="0" stop-color="#fff6d8"/><stop offset=".42" stop-color="#f0c869"/><stop offset=".78" stop-color="#c58a24"/><stop offset="1" stop-color="#8a5a10"/></linearGradient>
+<linearGradient id="f" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#a80a0a"/><stop offset=".4" stop-color="#ff2d17"/><stop offset=".75" stop-color="#ff8a24"/><stop offset="1" stop-color="#ffd76e"/></linearGradient>
+</defs>
+<path d="M60 5 L115 113 H84 L75.5 94 H44.5 L36 113 H5 Z" fill="url(#g)" stroke="#140606" stroke-width="4" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M60 27 C64 40 73.5 49 72.5 62.5 C72 70.5 66.5 77 60 77 C53 77 47.5 71.5 47.5 64.5 C47.5 56.5 52.5 52.5 54.5 44.5 C57.5 49 58.8 53 58.5 57.5 C62 50.5 62.5 40 60 27 Z" fill="url(#f)" stroke="#140606" stroke-width="2.6" paint-order="stroke"/>
+<path d="M60 63 C63 63.5 64.8 66 64.8 68.8 C64.8 71.8 62.6 73.6 60 73.6 C57.4 73.6 55.2 71.8 55.2 68.8 C55.2 66.4 57.4 63.8 60 63 Z" fill="#fff1c2"/>
+</svg>

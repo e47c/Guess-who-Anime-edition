@@ -3630,30 +3630,77 @@ function buildModeCards() {
         box.appendChild(b);
     });
 }
-/* the menu's arcade cabinets, one per mode: marquee, a CRT running the attract loop, joystick + buttons, coin door */
+/* the menu's "Pick your game": one card per mode (each with its own skin, css/menu.css) and the How to Play panel for the picked one.
+   The panel shows the same rules as the in-room rules sheet (RULES), each with a short headline so they read at a glance. */
+const GUIDE = {
+    classic:  { fmt: "1v1 duel", steps: ["Pick a secret", "Ask yes or no", "End turn or accuse", "Right wins, wrong loses"] },
+    headbanz: { fmt: "Everyone at once", steps: ["A card you can't see", "Ask about yourself", "Guess when you're sure", "Fastest scores most"] },
+    imposter: { fmt: "One of you is fake", steps: ["One imposter", "Two clue rounds", "Vote them out", "The last-second steal"] },
+    uno:      { fmt: "Free for all", steps: ["Match colour or action", "Stack the +2s", "Unleash specials", "Empty your hand"] },
+    draft:    { fmt: "Build or Auction", steps: ["Pick the pool", "Build: draw and place", "Auction: outbid them", "Roles + rarity = score"] },
+    feud:     { fmt: "Team vs Team", steps: ["Face-off at the buzzer", "Play or pass", "Three strikes, then steal", "Single anime or a Mix"] },
+    likely:   { fmt: "Teams or Free For All", steps: ["Two close picks", "Vote at the same time", "Closer call, bigger score", "Single anime or a Mix"] },
+    sketch:   { fmt: "Everyone draws in turn", steps: ["Pick a word, draw it", "Guess fast, score more", "Letters when you're stuck", "Everyone draws each round"] }
+};
+const NUMWORD = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
+const MODE_PICK_KEY = "aap_mode_pick";
+window.hostMode = function (t) {        // "Host a <mode> party": the new room opens on that mode
+    if (!MODES[t]) return;
+    try { const p = JSON.parse(localStorage.getItem(PREF_KEY) || "{}") || {}; p.gameType = t; localStorage.setItem(PREF_KEY, JSON.stringify(p)); } catch (e) {}
+    window.scrollTo({ top: 0, behavior: motionOK() ? "smooth" : "auto" });
+    setTimeout(() => insertCoin(), motionOK() ? 350 : 0);
+};
 function buildHomeModes() {
     const box = $("homeModes"); if (!box || box.childElementCount) return;
-    Object.entries(MODES).forEach(([t, M], i) => {
-        const c = hbEl("div", "cab"); c.style.setProperty("--mc", M.color); c.style.setProperty("--i", i);
-        const mq = hbEl("div", "cab-mq"); mq.append(hbEl("b", null, M.name), hbEl("i", null, M.kanji));
-        const scr = hbEl("div", "cab-scr"); M.art.forEach((src, k) => { const im = makeImg(src); if (k === 0) im.classList.add("on"); scr.appendChild(im); });
-        scr.append(hbEl("div", "cab-crt"), hbEl("span", "cab-tag", M.tag), hbEl("span", "cab-sub", M.sub), hbEl("span", "cab-ps", "PRESS START"));
-        const cp = hbEl("div", "cab-cp"); cp.append(hbEl("span", "cab-stick"), hbEl("span", "cab-b"), hbEl("span", "cab-b"), hbEl("span", "cab-b"));
-        const door = hbEl("div", "cab-door"); door.append(hbEl("span", "cab-slot"), hbEl("span", "cab-pl", M.min + "–" + M.max + "P" + (M.short ? " · " + M.short : "")), hbEl("span", "cab-slot"));
-        const body = hbEl("div", "cab-body"); body.append(scr, cp);
-        c.append(mq, body, door);
-        c.tabIndex = 0; c.setAttribute("role", "button"); c.setAttribute("aria-label", M.name + ": how to play");
-        c.onmouseenter = () => sfx("hover");
-        c.onclick = () => { sfx("click"); c.classList.remove("boot"); void c.offsetWidth; c.classList.add("boot"); setTimeout(() => showRules(t), motionOK() ? 260 : 0); };
-        c.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); c.click(); } };
-        box.appendChild(c);
+    const keys = Object.keys(MODES);
+    $("factModes").textContent = String(keys.length);
+    $("homeCount").textContent = NUMWORD[keys.length] || String(keys.length);
+    let cur = "classic"; try { const k = localStorage.getItem(MODE_PICK_KEY); if (MODES[k]) cur = k; } catch (e) {}
+    keys.forEach((t, i) => {
+        const M = MODES[t], G = GUIDE[t] || { fmt: "" };
+        const b = hbEl("button", "mtab"); b.type = "button"; b.id = "mtab-" + t; b.dataset.mode = t;
+        b.style.setProperty("--i", i);
+        b.setAttribute("role", "tab"); b.setAttribute("aria-controls", "modeGuide");
+        const art = hbEl("span", "mt-art"); (t === "likely" ? [M.art[0], M.art[2]] : [M.art[0]]).forEach(src => art.appendChild(makeImg(src)));
+        b.append(art, hbEl("span", "mt-deco"), hbEl("span", "mt-kanji", M.kanji), hbEl("span", "mt-tag", M.tag), hbEl("b", "mt-name", M.name), hbEl("small", "mt-pl", M.min + "–" + M.max + " players"));
+        b.setAttribute("aria-label", M.name + ", " + M.min + " to " + M.max + " players");
+        b.onmouseenter = () => sfx("hover");
+        b.onclick = () => { if (b.classList.contains("on")) return; sfx("click"); pickGuide(t, true); };
+        box.appendChild(b);
     });
-    let tick = 0;          // attract mode: each screen steps through its three shots, out of phase with its neighbours
-    setInterval(() => {
-        if (currentScreen !== "home" || document.hidden || !motionOK()) return;
-        tick++;
-        box.querySelectorAll(".cab").forEach((c, i) => { if ((tick + i) % 2) return; const ims = c.querySelectorAll(".cab-scr img"), on = [...ims].findIndex(im => im.classList.contains("on")); ims[on].classList.remove("on"); ims[(on + 1) % ims.length].classList.add("on"); });
-    }, 1700);
+    box.addEventListener("keydown", e => {          // arrows move between the games (a tablist)
+        const tabs = [...box.querySelectorAll(".mtab")], i = tabs.indexOf(document.activeElement); if (i < 0) return;
+        const n = e.key === "ArrowRight" || e.key === "ArrowDown" ? i + 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : null;
+        if (n == null) return;
+        e.preventDefault(); const tb = tabs[(n + tabs.length) % tabs.length]; tb.focus(); tb.click();
+    });
+    pickGuide(cur, false);
+}
+function pickGuide(t, animate) {
+    const M = MODES[t], G = GUIDE[t] || { fmt: "", steps: [] }, box = $("modeGuide"); if (!M || !box) return;
+    try { localStorage.setItem(MODE_PICK_KEY, t); } catch (e) {}
+    document.querySelectorAll("#homeModes .mtab").forEach(b => { const on = b.dataset.mode === t; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; if (on && animate && b.scrollIntoView) b.scrollIntoView({ block: "nearest", inline: "nearest", behavior: motionOK() ? "smooth" : "auto" }); });
+    box.dataset.mode = t; box.setAttribute("aria-labelledby", "mtab-" + t);
+    box.innerHTML = "";
+    const art = hbEl("div", "g-art"); art.setAttribute("aria-hidden", "true");
+    art.appendChild(hbEl("span", "g-kanji", M.kanji));
+    M.art.forEach((src, k) => { const im = makeImg(src); im.classList.add("g-img", "g" + k); art.appendChild(im); });
+    const main = hbEl("div", "g-main");
+    const head = hbEl("header", "g-head");
+    const chips = hbEl("div", "g-chips"); [M.min + "–" + M.max + " players", G.fmt].filter(Boolean).forEach(c => chips.appendChild(hbEl("span", null, c)));
+    head.append(hbEl("span", "g-tag", M.tag), hbEl("h3", "g-name", M.name), hbEl("p", "g-sub", M.sub), chips);
+    const ol = hbEl("ol", "g-steps");
+    (RULES[t] || []).forEach((r, i) => {
+        const li = hbEl("li", "g-step"), num = hbEl("span", "g-num"); num.appendChild(hbEl("span", null, String(i + 1)));
+        const tx = hbEl("div"); tx.append(hbEl("h4", null, G.steps[i] || "Step " + (i + 1)), hbEl("p", null, r));
+        li.append(num, tx); ol.appendChild(li);
+    });
+    const foot = hbEl("div", "g-foot");
+    const go = hbEl("button", "btn", "Host " + (/^[aeiou]/i.test(M.name) ? "an " : "a ") + M.name + " party"); go.type = "button"; go.onclick = () => { sfx("click"); window.hostMode(t); };
+    foot.append(go, hbEl("small", null, "Opens a room on " + M.name + ". Everyone else joins with the room code, and the host can still switch games in the lobby."));
+    main.append(head, ol, foot);
+    box.append(art, main);
+    box.classList.remove("swap"); if (animate && motionOK()) { void box.offsetWidth; box.classList.add("swap"); }
 }
 /* the room code as lit cells (the textContent stays the plain code) */
 function setRoomCode(code) {
@@ -3685,7 +3732,7 @@ function bindTilt() {
     let cur = null;
     const reset = el => { el.style.setProperty("--rx", "0deg"); el.style.setProperty("--ry", "0deg"); };
     document.addEventListener("pointermove", e => {
-        const el = e.target.closest && e.target.closest(".cab, .mode-card, [data-tilt]");
+        const el = e.target.closest && e.target.closest(".mode-card, [data-tilt]");
         if (cur && cur !== el) { reset(cur); cur = null; }
         if (!el || !motionOK()) return;
         cur = el; const r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height, k = el.classList.contains("mode-card") ? 6 : 9;
@@ -4575,6 +4622,9 @@ async function initApp() {
         $("joinCode").value = invite; renderJoinCells();
         toast(profile.get().name ? "Invite loaded. Tap Join." : "Invite loaded. Set your name, then tap Join.");
         $("joinCode").focus();
-    } else if (!profile.get().name) setTimeout(() => { if (!room) { openProfile(); toast("Welcome! Make your player card first."); } }, 700);
+    } else if (!profile.get().name) {     // first visit: once the intro has played, ask for a name (never on top of the intro)
+        const ask = () => setTimeout(() => { if (!room) { openProfile(); toast("Welcome! Make your player card first."); } }, 900);
+        if (window.__splashDone) ask(); else document.addEventListener("splashdone", ask, { once: true });
+    }
 }
 await initApp();

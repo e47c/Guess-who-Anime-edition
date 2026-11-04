@@ -18,7 +18,7 @@ document.body.classList.toggle("fx-lite", !motionOK());
 
 /* ---------------- ambient particles ---------------- */
 const PRESETS = {
-    home:  { n: 44, kinds: [["pixel", .55], ["spark", .2], ["mote", .25]], cols: ["#ff2e88", "#35e8ff", "#ffe14d", "#8a5cff"] },
+    home:  { n: 26, kinds: [["ember", .65], ["mote", .35]], cols: ["#ff5a1f", "#ffb347", "#f0c869", "#e11b1b"] },
     lobby: { n: 38, kinds: [["pixel", .6], ["mote", .4]], cols: ["#ff2e88", "#35e8ff", "#ffe14d", "#8a5cff"] },
     gw:    { n: 34, kinds: [["mote", 1]], cols: ["#f2c46b", "#fff1c9", "#d9a441"] },
     hb:    { n: 26, kinds: [["orb", 1]], cols: ["#b06bff", "#3ee8ff", "#ff6bd6"], links: true },

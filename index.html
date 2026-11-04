@@ -9,7 +9,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Monoton&family=Press+Start+2P&family=Special+Elite&family=Permanent+Marker&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/base.css?v=12">
+<link rel="icon" type="image/svg+xml" href="images/aa-mark.svg">
+<link rel="stylesheet" href="css/base.css?v=13">
+<link rel="stylesheet" href="css/menu.css?v=1">
 <link rel="stylesheet" href="css/modes.css?v=12">
 <link rel="stylesheet" href="css/uno.css?v=12">
 <link rel="stylesheet" href="css/draft.css?v=3">
@@ -21,26 +23,47 @@
 <body class="anime-theme" data-scene="home">
 
 <canvas id="ambient" aria-hidden="true"></canvas>
+<svg class="aa-sprite" width="0" height="0" aria-hidden="true" focusable="false">
+<defs>
+<linearGradient id="aaGold" x1="0" y1="0" x2=".35" y2="1"><stop offset="0" stop-color="#fff6d8"/><stop offset=".42" stop-color="#f0c869"/><stop offset=".78" stop-color="#c58a24"/><stop offset="1" stop-color="#8a5a10"/></linearGradient>
+<linearGradient id="aaFire" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#a80a0a"/><stop offset=".4" stop-color="#ff2d17"/><stop offset=".75" stop-color="#ff8a24"/><stop offset="1" stop-color="#ffd76e"/></linearGradient>
+<symbol id="aa-mark" viewBox="0 0 120 120">
+<path d="M60 5 L115 113 H84 L75.5 94 H44.5 L36 113 H5 Z" fill="url(#aaGold)" stroke="#140606" stroke-width="4" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M60 14 L15 106" stroke="#fffbe8" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
+<path d="M60 27 C64 40 73.5 49 72.5 62.5 C72 70.5 66.5 77 60 77 C53 77 47.5 71.5 47.5 64.5 C47.5 56.5 52.5 52.5 54.5 44.5 C57.5 49 58.8 53 58.5 57.5 C62 50.5 62.5 40 60 27 Z" fill="url(#aaFire)" stroke="#140606" stroke-width="2.6" paint-order="stroke"/>
+<path d="M60 63 C63 63.5 64.8 66 64.8 68.8 C64.8 71.8 62.6 73.6 60 73.6 C57.4 73.6 55.2 71.8 55.2 68.8 C55.2 66.4 57.4 63.8 60 63 Z" fill="#fff1c2" opacity=".92"/>
+</symbol>
+</defs>
+</svg>
 <div id="boot" class="boot" role="dialog" aria-label="Welcome">
-<div class="logo" aria-label="Anime Arcade Party">
-<span class="lg-anime" aria-hidden="true"><span class="lg-mark"></span><i style="--k:0">A</i><i style="--k:1">N</i><i style="--k:2">I</i><i style="--k:3">M</i><i style="--k:4">E</i></span>
-<span class="lg-neon" aria-hidden="true"><span class="lg-arcade">ARC<em>A</em>DE</span><span class="lg-party">PAR<em>T</em>Y</span></span>
+<div class="in-text">
+<p class="in-hi" id="spHi">Welcome, Player!</p>
+<p class="in-by">Anime Arcade Party — built with love by&nbsp;@e47. Have fun!</p>
 </div>
-<p class="sp-msg" id="spMsg"><span id="spHi">Welcome, player.</span> Built with <i>love</i> by <b>@e47</b>. Have fun!</p>
+<div class="aa-logo in-logo" role="img" aria-label="Anime Arcade Party">
+<svg class="aa-mark" viewBox="0 0 120 120" aria-hidden="true"><use href="#aa-mark"/></svg>
+<span class="aa-word" aria-hidden="true"><b class="aa-anime">ANIME</b><span class="aa-row"><b class="aa-arcade">ARCADE</b><i class="aa-party">PARTY</i></span></span>
+</div>
 <small class="sp-load">warming up the cabinets…</small>
 <button class="sp-skip" id="spSkip" type="button">Skip ›</button>
 </div>
 <script>
-/* the first-open splash: the logo, then the welcome, then the menu (the boot screen leaves when this is done AND the app is ready).
-   Returning players get a shorter one, and anyone can skip it. */
+/* the intro: "Welcome, Player!" (or "Welcome back, <name>!" once a display name is set on the Arcade Pass), the creator credit,
+   the logo, then the menu. The boot screen leaves when this is done AND the app is ready. Shorter for returning players; click,
+   Enter, Space, Esc or Skip jumps to the end. The name is read fresh from the saved profile every time the page opens. */
 (function () {
-    var b = document.getElementById("boot"), seen = false;
+    var b = document.getElementById("boot"), seen = false, name = "";
     try { seen = localStorage.getItem("aap_splash") === "1"; localStorage.setItem("aap_splash", "1"); } catch (e) {}
-    if (seen) document.getElementById("spHi").textContent = "Welcome back, player.";
-    var T = seen ? [700, 2300] : [1700, 4300], done = false;
-    function finish() { if (done) return; done = true; b.classList.add("msg-out"); window.__splashDone = true; document.dispatchEvent(new Event("splashdone")); }
-    setTimeout(function () { b.classList.add("msg"); }, T[0]);
-    setTimeout(finish, T[1]);
+    try { var pr = JSON.parse(localStorage.getItem("gw_profile_v1") || "null"); name = (pr && typeof pr.name === "string" && pr.name) || localStorage.getItem("gw_name") || ""; } catch (e) {}
+    name = String(name).replace(/\s+/g, " ").trim().slice(0, 20);
+    document.getElementById("spHi").textContent = name ? "Welcome back, " + name + "!" : "Welcome, Player!";
+    var T = seen ? [120, 1150, 2350, 3350] : [300, 1800, 3500, 4800], done = false, timers = [];
+    function stage(k) { b.classList.add(k); }
+    function finish() {
+        if (done) return; done = true; timers.forEach(clearTimeout); b.classList.add("s1", "s2", "s3", "done"); window.__splashDone = true; document.dispatchEvent(new Event("splashdone"));
+        setTimeout(function () { if (!b.classList.contains("ready")) b.querySelector(".sp-load").textContent = "still connecting to the game server… check your connection"; }, 10000);
+    }
+    timers.push(setTimeout(function () { stage("s1"); }, T[0]), setTimeout(function () { stage("s2"); }, T[1]), setTimeout(function () { stage("s3"); }, T[2]), setTimeout(finish, T[3]));
     document.getElementById("spSkip").addEventListener("click", function (e) { e.stopPropagation(); finish(); });
     b.addEventListener("click", finish);
     document.addEventListener("keydown", function k(e) { if (e.key === "Escape" || e.key === "Enter" || e.key === " ") { finish(); document.removeEventListener("keydown", k); } });
@@ -52,19 +75,18 @@
 ========================================= -->
 <div class="arc-floor" aria-hidden="true"></div>
 <div id="home" class="screen">
+<div class="home-fire" aria-hidden="true"><i></i><i></i></div>
 <header class="home-top">
-<div class="brand-mini">ANIME<span>✦</span>ARCADE<span>✦</span>PARTY</div>
 <div class="home-top-r"><span class="credit" id="credit" aria-label="Credits">CREDIT <b>00</b></span>
 <button class="icon-btn" onclick="openSettings()" aria-label="Settings">⚙</button></div>
 </header>
 <main class="home-main">
 <section class="home-hero">
-<h1 id="homeTitle" class="logo" aria-label="Anime Arcade Party">
-<span class="lg-anime" aria-hidden="true"><span class="lg-mark"></span><i style="--k:0">A</i><i style="--k:1">N</i><i style="--k:2">I</i><i style="--k:3">M</i><i style="--k:4">E</i></span>
-<span class="lg-neon" aria-hidden="true"><span class="lg-arcade">ARC<em>A</em>DE</span><span class="lg-party">PAR<em>T</em>Y</span></span>
-<span class="lg-jp" aria-hidden="true">アニメ・アーケード</span>
+<h1 id="homeTitle" class="aa-logo" aria-label="Anime Arcade Party">
+<svg class="aa-mark" viewBox="0 0 120 120" aria-hidden="true"><use href="#aa-mark"/></svg>
+<span class="aa-word" aria-hidden="true"><b class="aa-anime">ANIME</b><span class="aa-row"><b class="aa-arcade">ARCADE</b><i class="aa-party">PARTY</i></span></span>
 </h1>
-<p class="tagline">Eight anime party games. One room. <b>Insert coin.</b></p>
+<p class="tagline"><span id="homeCount">Eight</span> anime party games. One room. <b>Insert coin.</b></p>
 <div class="home-cta">
 <button class="btn xl coin-btn" onclick="insertCoin()"><span class="coin-slot" aria-hidden="true"><i></i></span><span class="cb-txt">Host a party<small>insert coin · create a room</small></span></button>
 <div id="joinArea" class="join-box">
@@ -74,10 +96,13 @@
 </div>
 <span class="coin-fly" id="coinFly" aria-hidden="true"></span>
 </div>
+<ul class="home-facts"><li><b id="factModes">8</b>games</li><li><b>2–8</b>players</li><li><b>1</b>room code</li></ul>
 </section>
-<aside class="profile-card" id="profileCard" aria-label="Your profile" data-tilt>
+<aside class="profile-card" id="profileCard" aria-label="Your Arcade Pass" data-tilt>
+<i class="pc-notch tr" aria-hidden="true"></i><i class="pc-notch bl" aria-hidden="true"></i>
 <div class="ic-foil" aria-hidden="true"></div>
-<div class="ic-head" aria-hidden="true"><span class="ic-brand">ARCADE PASS</span><span class="ic-chip"></span></div>
+<svg class="pc-wm" viewBox="0 0 120 120" aria-hidden="true"><use href="#aa-mark"/></svg>
+<div class="ic-head" aria-hidden="true"><span class="ic-brand"><svg class="aa-mark" viewBox="0 0 120 120"><use href="#aa-mark"/></svg>ARCADE PASS</span><span class="ic-chip"></span></div>
 <div class="pc-top">
 <div class="pc-ava" id="pcAva"></div>
 <div class="pc-id"><div class="pc-up">1UP</div><div class="pc-name" id="pcName">Player</div><div class="pc-title" id="pcTitle">Rookie</div></div>
@@ -89,7 +114,16 @@
 <input id="name" type="hidden">
 </aside>
 </main>
-<section class="cab-row" id="homeModes" aria-label="Game modes: tap a cabinet for its rules"></section>
+<section class="modes-sec" aria-labelledby="modesTitle">
+<header class="modes-head">
+<span class="sec-kick">How to play</span>
+<h2 id="modesTitle">Pick your game</h2>
+<p>Every game runs in the same room: the host picks one in the lobby. Tap a game to see how it plays.</p>
+</header>
+<div class="mode-rail" id="homeModes" role="tablist" aria-label="Game modes"></div>
+<article class="guide" id="modeGuide" role="tabpanel" tabindex="-1"></article>
+</section>
+<p class="home-discord">Discord: <b>@47</b></p>
 </div>
 
 <!-- =========================================
@@ -101,7 +135,7 @@
 <div class="room-tag"><small>ROOM</small><b id="roomCode" class="code-show">------</b>
 <span class="rt-btns"><button class="chip-btn" onclick="copyRoomCode()" aria-label="Copy room code">Copy</button>
 <button class="chip-btn" onclick="copyInviteLink()" aria-label="Copy invite link">Invite link</button></span></div>
-<div class="lobby-title"><span class="logo-mini" role="img" aria-label="Anime Arcade Party"><span class="lg-mark"></span><b>ANIME</b><span class="lm-ap"><em>ARCADE</em><i>PARTY</i></span></span><small aria-hidden="true">PLAYER SELECT</small></div>
+<div class="lobby-title"><span class="logo-mini" role="img" aria-label="Anime Arcade Party"><svg class="aa-mark" viewBox="0 0 120 120" aria-hidden="true"><use href="#aa-mark"/></svg><b>ANIME</b><span class="lm-ap"><em>ARCADE</em><i>PARTY</i></span></span><small aria-hidden="true">PLAYER SELECT</small></div>
 <div class="lobby-top-actions">
 <button class="icon-btn" onclick="openSettings()" aria-label="Settings">⚙</button>
 <button class="btn ghost sm" onclick="leaveRoom()">Leave</button>
@@ -440,7 +474,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=30"></script>
+<script type="module" src="js/game.js?v=31"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){
