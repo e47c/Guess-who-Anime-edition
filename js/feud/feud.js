@@ -3,8 +3,8 @@
    Rules and rotation live in engine.js (pure, tested in Node). js/game.js only routes here.
 
    Two game types with two looks:
-     Classic Feud  a TV game-show studio: buzzer face-off, play or pass, the hidden board, strikes, the steal.
-     Most Likely   a light, warm head-to-head: two close characters, both teams vote at once, the right pick scores.
+     Classic Feud  a classic blue TV game-show studio: buzzer face-off, play or pass, the hidden board, strikes, the steal.
+     Most Likely   a dark, fiery clash: two close characters, both teams vote at once, the right pick scores.
 
    Firebase layout (everything under rooms/<code>, the only path the current rules allow):
      feud            the match: teams, scores, round, the question's ID, revealed slots / the duel, strikes, turn key, deadline.
@@ -263,13 +263,13 @@ let seen = { mid: 0, evn: -1 }, built = "", tickT = 0, overShown = 0, lastTick =
 export function feudReset() {
     clearInterval(tickT); tickT = 0; clearTimeout(dutyT); dutyKey = ""; seen = { mid: 0, evn: -1 }; built = ""; overShown = 0; myVote = "";
     const o = $("fdOver"); if (o) o.remove();
-    const f = $("feud"); if (f) f.classList.remove("fd-light", "fd-studio");
+    const f = $("feud"); if (f) f.classList.remove("fd-clash", "fd-studio");
 }
 export function showFeud(d) {
     X.showOnly("feud");
     const s = d.feud; if (!s) return;
     if (s.lv && s.lv !== LIB.version && verWarned !== s.mid) { verWarned = s.mid; X.toast("The host has a different question library. Reload the page if boards look wrong."); }
-    $("feud").classList.toggle("fd-light", s.type === "likely"); $("feud").classList.toggle("fd-studio", s.type !== "likely");
+    $("feud").classList.toggle("fd-clash", s.type === "likely"); $("feud").classList.toggle("fd-studio", s.type !== "likely");
     if (built !== s.mid + ":" + s.type) { built = s.mid + ":" + s.type; seen = { mid: s.mid, evn: -1 }; myVote = ""; (s.type === "likely" ? buildDuel : buildStudio)(); }
     (s.type === "likely" ? renderDuel : renderStudio)(d, s);
     timerLoop();
@@ -497,11 +497,11 @@ function studioEvent(d, s, ev) {
 }
 
 /* =====================================================================
-   MOST LIKELY: the duel (light theme)
+   MOST LIKELY: the duel (the fiery clash theme)
    ===================================================================== */
 function buildDuel() {
     const w = $("fdWrap"); w.innerHTML = ""; w.className = "fd-wrap fd-duel";
-    const deco = el("div", "fd-petals"); deco.setAttribute("aria-hidden", "true"); for (let i = 0; i < 14; i++) { const p = el("i"); p.style.setProperty("--i", i); deco.appendChild(p); } w.appendChild(deco);
+    const deco = el("div", "fd-embers"); deco.setAttribute("aria-hidden", "true"); for (let i = 0; i < 20; i++) { const p = el("i"); p.style.setProperty("--i", i); deco.appendChild(p); } w.appendChild(deco);
     topBar(w);
     const sb = el("div", "fd-dscore"); sb.id = "fdDScore"; w.appendChild(sb);
     const arena = el("div", "fd-arena"); arena.id = "fdArena";
@@ -512,7 +512,7 @@ function buildDuel() {
         const rib = el("div", "fd-dribbon"); rib.append(el("b", "fd-dname"), el("small", "fd-dseries"));
         c.append(frame, rib, el("div", "fd-dvotes"), el("div", "fd-dstamp", "MOST LIKELY!"), el("div", "fd-dteams"));
         arena.appendChild(c);
-        if (i === 0) { const vs = el("div", "fd-vs"); vs.append(el("b", null, "OR"), el("small", "fd-worth")); arena.appendChild(vs); }
+        if (i === 0) { const vs = el("div", "fd-vs"); vs.append(el("b", null, "VS"), el("small", "fd-worth")); arena.appendChild(vs); }
     });
     w.appendChild(arena);
     const fb = el("p", "fd-feedback"); fb.id = "fdFeedback"; fb.setAttribute("role", "status"); fb.setAttribute("aria-live", "polite");
@@ -534,7 +534,7 @@ function renderDuel(d, s) {
         const m = el("div", "fd-dtm");
         arr(s.teams[k]).map(Number).forEach(p => { const a = el("span", "fd-dav" + ((s.votes || {})["p" + p] ? " voted" : "") + (presentIn(d)(p) ? "" : " off")); a.dataset.emote = "p" + p; a.title = X.pName(d, p); a.appendChild(X.avatarEl(X.pPub(d, p), { size: 28 })); m.appendChild(a); });
         t.appendChild(m); sb.appendChild(t);
-        if (k === "A") sb.appendChild(el("span", "fd-dheart", "♥"));
+        if (k === "A") sb.appendChild(el("span", "fd-dheart", "VS"));
     });
     // the two cards (rebuilt when the duel changes)
     const arena = $("fdArena"), key = s.round + ":" + du.a + ":" + du.b;
@@ -594,18 +594,18 @@ function duelEvent(d, s, ev) {
     else if (ev.k === "result") {
         const mine = myTeam(s), g = ev.gain || {}, c = $("fdCard" + ev.w);
         X.sfx(mine && g[mine] ? "win" : "reveal");
-        if (c) { const r = c.getBoundingClientRect(); X.burstText("♥", r.left + r.width / 2, r.top + r.height * .35, "#ff7aa8"); hearts(c); }
+        if (c) { const r = c.getBoundingClientRect(); X.burstText("+" + (s.duel || {}).pts, r.left + r.width / 2, r.top + r.height * .35, "#ffd36a"); sparks(c); }
         ["A", "B"].forEach(t => { if (g[t]) { const sc = $("fdScore" + t); if (sc) X.countUp(sc, Math.max(0, (s.score[t] || 0) - g[t]), s.score[t] || 0, 800); } });
     }
 }
-function hearts(card) {
+function sparks(card) {
     if (!X.motionOK()) return;
     const r = card.getBoundingClientRect(), fx = $("fdFx");
-    for (let i = 0; i < 16; i++) {
-        const h = el("i", "fd-heart", ["♥", "✦", "♥", "✧"][i % 4]);
-        h.style.left = (r.left + r.width * (.15 + Math.random() * .7)) + "px"; h.style.top = (r.top + r.height * (.3 + Math.random() * .5)) + "px";
-        h.style.setProperty("--dx", ((Math.random() - .5) * 160).toFixed(0) + "px"); h.style.setProperty("--d", (Math.random() * .4).toFixed(2) + "s");
-        fx.appendChild(h); setTimeout(() => h.remove(), 1700);
+    for (let i = 0; i < 26; i++) {
+        const h = el("i", "fd-spark"), ang = Math.random() * Math.PI * 2, dist = 80 + Math.random() * 160;
+        h.style.left = (r.left + r.width / 2) + "px"; h.style.top = (r.top + r.height * .4) + "px";
+        h.style.setProperty("--dx", (Math.cos(ang) * dist).toFixed(0) + "px"); h.style.setProperty("--dy", (Math.sin(ang) * dist - 60).toFixed(0) + "px"); h.style.setProperty("--d", (Math.random() * .25).toFixed(2) + "s");
+        fx.appendChild(h); setTimeout(() => h.remove(), 1500);
     }
 }
 
@@ -632,7 +632,7 @@ function timerLoop() {
 function showOver(d, s) {
     const old = $("fdOver"); if (old) old.remove();
     const likely = s.type === "likely";
-    const o = el("div", "fd-over" + (likely ? " light" : "")); o.id = "fdOver"; o.setAttribute("role", "dialog"); o.setAttribute("aria-label", "Final score");
+    const o = el("div", "fd-over " + (likely ? "clash" : "blue")); o.id = "fdOver"; o.setAttribute("role", "dialog"); o.setAttribute("aria-label", "Final score");
     const win = s.winner, card = el("div", "fd-ocard " + (win ? TEAM[win].cls : "draw"));
     card.appendChild(el("div", "fd-okick", s.why === "out" ? "OUT OF QUESTIONS · FINAL SCORE" : "FINAL SCORE"));
     card.appendChild(el("h2", "fd-otitle", win ? TEAM[win].name.toUpperCase() + " WINS!" : "IT'S A DRAW!"));
@@ -653,7 +653,7 @@ function showOver(d, s) {
         if (likely) {
             const g = L.gain || {};
             li.appendChild(el("span", "fd-orw " + (g.A && g.B ? "both" : g.A ? "fd-a" : g.B ? "fd-b" : ""), g.A && g.B ? "BOTH +" + L.pts : g.A ? "CRIMSON +" + L.pts : g.B ? "GOLD +" + L.pts : "—"));
-            ["a", "b"].forEach(k => { const tags = ["A", "B"].filter(t => (L.picks || {})[t] === k).map(t => TEAM[t].short).join(" & "); chips.appendChild(el("span", L.w === k ? "win" : "", (L.w === k ? "♥ " : "") + charName(L[k]) + (tags ? " · " + tags : ""))); });
+            ["a", "b"].forEach(k => { const tags = ["A", "B"].filter(t => (L.picks || {})[t] === k).map(t => TEAM[t].short).join(" & "); chips.appendChild(el("span", L.w === k ? "win" : "", (L.w === k ? "★ " : "") + charName(L[k]) + (tags ? " · " + tags : ""))); });
         } else {
             const board = stateBoard(LIB, { q: { id: L.id }, series: s.series }) || [];
             li.appendChild(el("span", "fd-orw " + (L.win ? TEAM[L.win].cls : ""), (L.win ? TEAM[L.win].short : "—") + " +" + L.pts + (L.how === "steal" ? " (steal)" : L.how === "clear" ? " (clear)" : "")));
@@ -670,7 +670,7 @@ function showOver(d, s) {
     o.appendChild(card); document.body.appendChild(o);
     const mt = myTeam(s);
     X.sfx(win && mt === win ? "win" : win && mt ? "lose" : "reveal");
-    if (win && X.motionOK()) confetti(o, likely ? ["#ff9ec4", "#ffd6a5", "#bde0fe", "#fff"] : win === "A" ? ["#ff3b3b", "#ffd36b", "#fff"] : ["#f0c869", "#fff4d6", "#ff5050"]);
+    if (win && X.motionOK()) confetti(o, likely ? ["#ff6a2a", "#ffc24a", "#fff1b8", "#d81a1a"] : win === "A" ? ["#ff3b3b", "#ffd36b", "#fff"] : ["#f0c869", "#fff4d6", "#ff5050"]);
     setTimeout(() => { const f = o.querySelector("button"); if (f) try { f.focus({ preventScroll: true }); } catch (e) {} }, 60);
 }
 function confetti(host, cols) {

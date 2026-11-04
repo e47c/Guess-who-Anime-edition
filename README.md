@@ -11,7 +11,7 @@ A browser party game for a squad of up to 8 friends with six anime modes in one 
 | **Imposter** | 3–8 | *Shadow Trial*: interrogation spotlight, crimson |
 | **Anime UNO** | 2–8 | *Arena Clash*: card-battle arena tinted by the active colour |
 | **Anime Draft** | 2–8 (Build 1v1–4v4, Auction free-for-all) | *Team Builder*: collectible cards in five rarities on a black and gold stage |
-| **Anime Feud** | 2–8 (two teams) | *Game Show*: a hidden ranked board under a spinning spotlight, Team Crimson vs Team Gold |
+| **Anime Feud** | 2–8 (two teams) | *Game Show*: Classic Feud in a blue studio with buzzers; Most Likely as a fiery red-and-gold clash |
 
 ## How the modes scale
 
@@ -70,13 +70,13 @@ Build the strongest six-character team. Everything lives in `js/draft/` (rules, 
 
 A team game show with two game types and two looks. Everything lives in `js/feud/` (engine, screen, question packs) and `css/feud.css`; `js/game.js` only routes to it.
 
-- **Classic Feud** (a lively TV studio: sweeping spotlights, a board ringed by chasing marquee bulbs, buzzer podiums). The rules follow the classic survey-show format:
+- **Classic Feud** (a classic blue TV studio: royal-blue answer tiles with gold trim, sweeping spotlights, a board ringed by chasing marquee bulbs, buzzer podiums). The rules follow the classic survey-show format:
   - **Face-off.** Every round opens with one player per team at the buzzers (they rotate, so everyone gets a turn). The first to buzz (button or space bar) answers. If nobody buzzes in 15 s, the round's starting team answers first.
   - **Control.** The top answer wins control at once. Otherwise the other face-off player answers: a higher answer (or any answer after a miss) takes control, a lower one or a miss leaves it with the first team. If both miss, the next pair of players goes to the buzzers. Face-off answers count toward the pot; face-off misses are not strikes.
   - **Play or pass.** The team in control chooses PLAY (answer the rest of the board) or PASS (the other team has to play it). No choice in 15 s = play.
   - **The board.** The playing team answers one at a time (the answerer rotates, teammates can talk it through). A right answer opens its row; a wrong answer or running out of the 20/30/45 s clock is a strike. After 3 strikes the other team gets **one** answer: right = they steal the whole pot, wrong = the playing team keeps it. Clearing the board banks the pot with no steal.
   - Typing is forgiving: case, accents, punctuation and "the" are ignored, one typo is allowed (two on long answers, never on numbers: "Gear 3" is not "Gear 5"), part of a long answer counts ("shadow clone"), and a character's first name, last name or nickname works ("Blackbeard", "Deku"). A word that fits two answers ("Uchiha") asks you to be more specific, with no strike.
-- **Most Likely** (a light, warm look: pastel sky, drifting petals, two framed character cards and a heart in the middle):
+- **Most Likely** (a dark, fiery argument: smoky glass panels, rising embers, a red-burning and a gold-burning card face off around a crackling VS crest; the winner blazes gold, the other card goes to smoke):
   - Each duel shows **two characters who are close** on the question ("Who is the smartest?": Nami or Doflamingo).
   - The pairs come from the curated Most Likely rankings: neighbours in a series' ranking a few points apart, and in an Anime Mix also two characters of two ticked series with nearly the same score. Ties are never used. The higher-ranked one is the "most likely" answer.
   - **Both teams vote at the same time.** Tap a card; you can change your vote until everyone has voted or the 10/15/20 s clock runs out. Before the reveal you only see your own team's votes.
@@ -88,7 +88,7 @@ A team game show with two game types and two looks. Everything lives in `js/feud
   - The lobby shows the scope and how many questions fit, and blocks the start if fewer fit than the rounds chosen.
 - **Teams.** 2–8 players are split as evenly as possible (1v1, 2v1, 2v2, 3v2, 3v3, 4v3, 4v4). The host can tap a player to move them, or shuffle.
 - **Match.** Classic: 3, 5 (default) or 7 rounds, one sudden-death question on a tie. The final screen shows the winner, both scores and every round (Classic: who found which answer; Most Likely: both characters, the right one and each team's pick), with Rematch / Back to lobby for the host.
-- **Look.** Classic Feud's studio is an original design in the arcade's red, gold and black, not a copy of any TV show's set.
+- **Look.** Classic Feud's blue studio is our own board design in classic game-show colours, not a copy of any TV show's set.
 
 ### Question rotation (nothing is banned for good)
 
