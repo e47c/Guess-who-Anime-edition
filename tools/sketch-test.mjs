@@ -1,6 +1,6 @@
 // Anime Sketch rules + word library tests: node tools/sketch-test.mjs
 import { SK, norm, maskOf, letters, hintMax, pickHint, hintAt, spans, buildWords, poolFor, pickOptions, newMatch, act, eligible, allGot, hasGot, gotList,
-    hintDue, standings, ptsFor, fp, prints, claim } from "../js/sketch/engine.js";
+    hintDue, standings, ptsFor, fp, prints, claim, near, wordPrints, del1, CATS, TYPO_MIN } from "../js/sketch/engine.js";
 import { EXTRAS, BLOCK } from "../js/sketch/words.js";
 import { CHARS } from "../js/draft/data.js";
 import { NICKNAMES } from "../js/feud/nicknames.js";
@@ -21,14 +21,20 @@ t(all.length > 700, "a big library (" + all.length + " words)");
 t(all.every(w => w.t && w.k && w.f.length && w.f.includes(w.k) && w.cat && w.s), "every word has text, category, series and accepted spellings");
 t(all.every(w => w.t.length <= SK.maxWord && letters(w.t) >= 3), "no word too long or too short");
 t(SERIES.every(s => new Set(W[s].map(w => w.k)).size === W[s].length), "no duplicates inside a series");
+t(SERIES.every(s => W[s].every(w => !W[s].some(x => x !== w && x.f.includes(w.k)))), "no word is just another word's alternate spelling");
+t(all.every(w => CATS.includes(w.cat)) && CATS.join() === "Character,Object,Weapon", "only characters, objects and weapons");
+t(!["Grand Line", "Marineford", "Hidden Leaf Village", "Kamehameha", "Rasengan", "Domain Expansion", "Straw Hat Pirates", "Super Saiyan", "Water Breathing", "Shibuya"].some(x => all.some(w => w.k === norm(x))), "no places, attacks, powers or groups");
+t(SERIES.every(s => W[s].filter(w => w.cat !== "Character").length >= 7), "every series has its objects and weapons: " + SERIES.map(s => s + " " + W[s].filter(w => w.cat !== "Character").length).join(", "));
+t(SERIES.every(s => W[s].filter(w => w.cat === "Character").length >= 17), "every series has plenty of characters");
 t(!all.some(w => BLOCK.map(norm).includes(w.k)), "blocked answers stay out");
 t(SERIES.every(s => W[s].some(w => w.cat === "Character") && W[s].some(w => w.cat !== "Character")), "every series mixes characters with other categories");
 const luffy = W.onepiece.find(w => w.c === 40);
-t(luffy && luffy.f.includes("luffy") && luffy.f.includes("straw hat") && !luffy.f.includes("monkey"), "Monkey D. Luffy: 'luffy' and the nickname count, the shared 'monkey' doesn't");
+t(luffy && luffy.f.includes("luffy") && !luffy.f.includes("monkey"), "Monkey D. Luffy: 'luffy' counts, the shared 'monkey' doesn't");
+t(!luffy.f.includes("straw hat") && W.onepiece.some(w => w.k === "straw hat" && w.cat === "Object"), "a spelling means one word only: 'straw hat' is the hat, not Luffy's nickname");
 const ita = W.naruto.find(w => w.t === "Itachi Uchiha");
 t(ita && ita.f.includes("itachi") && !ita.f.includes("uchiha"), "Itachi: 'itachi' alone counts, 'uchiha' alone doesn't");
-const kame = W.dragonball.find(w => w.t === "Kamehameha");
-t(!!kame && kame.cat === "Attack", "Feud board answers become words (Kamehameha, Attack)");
+t(W.dragonball.some(w => w.t === "Senzu Bean" && w.cat === "Object") && W.onepiece.some(w => w.t === "Yoru" && w.cat === "Weapon") && W.onepiece.some(w => w.t === "Big Mom" && w.f.includes("charlotte linlin")), "objects, weapons and extra characters with their spellings (Senzu Bean, Yoru, Big Mom)");
+t(W.jojo.some(w => w.t === "Star Platinum" && w.cat === "Character") && W.onepiece.some(w => w.t === "Gum-Gum Fruit" && w.cat === "Object"), "Feud boards: Stands as characters, devil fruits as objects");
 const wc = W.windbreaker.find(w => w.t === "Wind chime");
 t(!!wc && wc.f.includes("furin"), "curated extras with aliases (Wind chime / furin)");
 
@@ -54,7 +60,7 @@ t(JSON.stringify(hintAt({ i3: "a", i10: "k", x: "?" })) === JSON.stringify({ 3: 
 
 sect("secret word: fingerprints and guesses");
 const salt = "s4lt";
-const wh = prints(salt, luffy.f);
+const wh = prints(salt, luffy.f.concat(["straw hat"]));
 t(wh.length >= luffy.f.length && wh.every(h => /^[0-9a-z]+$/.test(h)), "fingerprints are opaque strings");
 t(!JSON.stringify(wh).includes("luffy"), "the fingerprints don't contain the word");
 t(fp("a", "luffy") !== fp("b", "luffy"), "a different salt every turn gives different fingerprints");
@@ -62,6 +68,18 @@ t(!!claim("LUFFY", salt, wh) && !!claim("  monkey   d.  luffy ", salt, wh), "exa
 t(!!claim("is it luffy?", salt, wh), "the answer inside a sentence counts (and is never posted to the chat)");
 t(!claim("luffyy", salt, wh) && !claim("zoro", salt, wh) && !claim("monkey", salt, wh), "near misses and wrong answers don't");
 t(!!claim("gumgum pistol", "x", prints("x", ["gum gum pistol"])), "spaces optional (gumgum pistol)");
+{
+    const P = wordPrints(salt, luffy.f.concat(["straw hat"]));
+    t(!JSON.stringify(P).includes("luff") && !JSON.stringify(P).includes("straw"), "the slip and 'close' fingerprints don't contain the word either");
+    t(!!claim("monkey d lufy", salt, P.wh, P.wv) && !!claim("strawhat", salt, P.wh, P.wv) && !!claim("stawr hat", salt, P.wh, P.wv), "one slip is fine on longer answers (monkey d lufy, stawr hat)");
+    const gk = wordPrints(salt, ["goku"]);
+    t(!claim("gok", salt, gk.wh, gk.wv) && !claim("goky", salt, gk.wh, gk.wv) && !!claim("Goku", salt, gk.wh, gk.wv), "short answers (under " + TYPO_MIN + " letters) must be exact");
+    t(["luffi", "luff", "lufy", "monkey", "is it luffi", "straw hats?"].every(m => near(m, salt, P.wt)), "close guesses are recognised (luffi, luff, monkey...)");
+    t(["zoro", "nice drawing", "lol", "is that a boat", "haha"].every(m => !near(m, salt, P.wt)), "ordinary chat isn't");
+    t(del1("abc").sort().join() === "ab,abc,ac,bc", "one-letter-missing variants");
+    const pk = wordPrints("z", ["charlotte katakuri", "katakuri"]);
+    t(near("kata", "z", pk.wt) && near("charlotte", "z", pk.wt) && near("katakuri", "z", pk.wt), "any word of the answer, or its first letters, is close");
+}
 t(spans("x y z").length === 7, "every run of words is checked");
 
 sect("word options");
@@ -69,8 +87,17 @@ const o1 = pickOptions(W, ["onepiece"], { rnd });
 t(o1.length === 3 && new Set(o1.map(w => w.id)).size === 3, "3 different words");
 t(o1.every(w => w.s === "onepiece"), "single anime: words from that series only");
 const o2 = pickOptions(W, ["onepiece", "naruto", "jjk"], { rnd });
-t(o2.every(w => ["onepiece", "naruto", "jjk"].includes(w.s)) && new Set(o2.map(w => w.s)).size === 3, "Anime Mix: only ticked series, spread across them");
-t(new Set(o1.map(w => w.cat)).size >= 2, "categories vary");
+t(o2.every(w => ["onepiece", "naruto", "jjk"].includes(w.s)), "Anime Mix: only the ticked series");
+{
+    let same = 0, mixed = 0, allCat = new Set(), mixSeries = new Set();
+    for (let i = 0; i < 400; i++) {
+        const o = pickOptions(W, ["onepiece", "naruto", "jjk"], { rnd });
+        const cats = new Set(o.map(w => w.cat)); cats.forEach(c => allCat.add(c)); o.forEach(w => mixSeries.add(w.s));
+        if (cats.size === 1) same++; else mixed++;
+    }
+    t(same > 0 && mixed > 0, "three random words: sometimes all one category (" + same + "/400), sometimes mixed (" + mixed + "/400)");
+    t(allCat.size === 3 && mixSeries.size === 3, "every category and every ticked series shows up");
+}
 const used = W.gachiakuta.slice(0, W.gachiakuta.length - 3).map(w => w.t);
 const o3 = pickOptions(W, ["gachiakuta"], { used, rnd });
 t(o3.length === 3 && o3.every(w => !used.includes(w.t)), "never a word already drawn this match");
@@ -78,8 +105,8 @@ t(o3.length === 3 && o3.every(w => !used.includes(w.t)), "never a word already d
 /* ---------------- match helpers ---------------- */
 const NOW = Date.UTC(2026, 10, 4, 12);
 function run(s, a, now, present) { const c = JSON.parse(JSON.stringify(s)); const err = act(c, a, { now, present: present || (() => true) }); return { err, s: err ? s : c }; }
-function pickWord(s, w, now) { const sa = "salt" + s.n; const r = run(s, { k: "pick", by: s.drawer, tk: s.n, mask: maskOf(w.t), salt: sa, wh: prints(sa, w.f), cat: w.cat, hm: hintMax(w.t) }, now); return r.s; }
-const guess = (s, p, text, now, present) => run(s, { k: "guess", by: p, tk: s.n, h: claim(text, s.salt, s.wh) || "nope" }, now, present);
+function pickWord(s, w, now) { const sa = "salt" + s.n, P = wordPrints(sa, w.f); const r = run(s, { k: "pick", by: s.drawer, tk: s.n, mask: maskOf(w.t), salt: sa, wh: P.wh, wv: P.wv, wt: P.wt, cat: w.cat, hm: hintMax(w.t) }, now); return r.s; }
+const guess = (s, p, text, now, present) => run(s, { k: "guess", by: p, tk: s.n, h: claim(text, s.salt, s.wh, s.wv) || "nope" }, now, present);
 
 sect("a turn: scoring, order, duplicates");
 let s = newMatch({ mid: 1, series: ["onepiece"], players: [1, 2, 3, 4, 5], rounds: 2, timer: 90, now: NOW, rnd });
@@ -95,7 +122,7 @@ t(guess(s, G[0], "zoro", NOW + 4000).err === "wrong", "a wrong guess changes not
 let r = guess(s, G[0], "Luffy", NOW + 10000); s = r.s;
 t(!r.err && s.score["p" + G[0]] === 100 && s.score["p" + D] === 25, "first right guess +100, drawer +25");
 t(guess(s, G[0], "luffy", NOW + 10500).err === "already", "a repeated right guess scores nothing");
-s = guess(s, G[1], "luffy", NOW + 12000).s; s = guess(s, G[2], "monkey d luffy", NOW + 12001).s;
+s = guess(s, G[1], "luffy", NOW + 12000).s; s = guess(s, G[2], "monkey d lufy", NOW + 12001).s;
 t(s.score["p" + G[1]] === 75 && s.score["p" + G[2]] === 50 && s.score["p" + D] === 75, "second +75, third +50, drawer +25 each");
 t(gotList(s).map(g => g.p).join() === [G[0], G[1], G[2]].join() && s.phase === "draw", "the order of correct guesses is kept");
 // two right guesses arriving at the same moment: each transaction sees the other's result, so the order is strict

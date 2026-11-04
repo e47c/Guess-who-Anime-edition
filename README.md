@@ -192,17 +192,17 @@ Every player keeps a history: `"<questionId>@<scope>": [last seen, times seen]`.
 The eighth mode: one player draws an anime word, everyone else races to guess it. Code: `js/sketch/sketch.js` (lobby, screen, live canvas, chat, duties), `js/sketch/engine.js` (rules, word library builder, tested by `tools/sketch-test.mjs`), `js/sketch/words.js` (a few extra words and a blocklist), `css/sketch.css`.
 
 - **Setup (host):** 1–5 rounds (default 3), 60 / 90 / 120 s to draw (default 90), and the series: one series = its own words, two or more = an Anime Mix from those series only. A round means every active player draws once, so 3 rounds with 4 players = 12 turns.
-- **Words:** built from what the site already has, no separate database:
-  - characters from the Anime Draft roster (`js/draft/data.js`, top 22 per series, with AniList ids so the reveal shows their picture) and the fan nicknames (`js/feud/nicknames.js`);
-  - attacks, powers, places, items, groups, titans, devils and stands from the Anime Feud answer boards, with their accepted aliases;
-  - a short curated list per series in `js/sketch/words.js` for terms neither covers (Sharingan, Shenron, Wind chime…), plus a blocklist for board answers you can't draw.
-  - About 870 words; every series has at least 26.
-  - A character's single name counts when no other character of that series shares it ("Itachi" for Itachi Uchiha, but not "Uchiha").
+- **Words:** only **characters, objects and weapons** (no places, attacks, powers, groups or terms), built from what the site already has:
+  - `js/sketch/words.js`: each series' recognisable objects and weapons (Senzu Bean, Yoru, Samehada, Death Note, Kurapika's chains…) and important characters the roster lacks (Big Mom, Kiba, Shenron, Mahoraga, Gyokko, Stands…), each with its other accepted spellings;
+  - characters from the Anime Draft roster (`js/draft/data.js`, top 30 per series, with AniList ids so the reveal shows their picture) and the fan nicknames;
+  - the Anime Feud item boards (items, devil fruits) and its titans, devils and Stands as characters.
+  - About 880 words: 40–73 for the big series, 26–27 for Gachiakuta and Wind Breaker (all of their roster plus their objects).
+  - A spelling means one word only (the Straw Hat is the hat, not Luffy). A character's single name counts when no other character of that series shares it ("Itachi" for Itachi Uchiha, but not "Uchiha").
 - **A turn:**
-  - The drawer privately gets 3 words (different categories, and different series in a mix; never one already drawn this match, preferably not one this browser saw lately) and has 15 s to pick, or one is picked for them.
-  - Tools: brush, eraser, 16 colours, 4 sizes, undo, clear (with a confirm). The drawing streams live to everyone, spectators included.
-  - Guessers type in the chat. Case, accents, punctuation and extra spaces are ignored, and the answer inside a sentence counts too ("is it luffy?"). A right guess is **never posted**: the player is told privately and everyone else sees "Ayla guessed the word!". Wrong guesses show as normal chat.
-  - The drawer can chat, but a message containing the word is blocked. Players who already have it can chat too; their messages are shown only to the drawer and the others who have it.
+  - The drawer privately gets 3 words picked at random from the whole pool: three characters, three weapons, or any mix (never one already drawn this match, preferably not one this browser saw lately). 15 s to pick, or one is picked for them.
+  - Tools: brush, eraser, 16 colours, 4 sizes, undo (also **Ctrl+Z** / **Cmd+Z** while drawing), clear (with a confirm). The drawing streams live to everyone, spectators included.
+  - Guessers type in the chat. Case, accents, punctuation and extra spaces are ignored, the answer inside a sentence counts ("is it luffy?"), and on answers of 6+ letters one slip is fine ("kenjak"). A right guess is **never posted**: the player is told privately and everyone else sees only "Ayla guessed the word!". A guess that is **close** (a word of the answer, nearly one, or its first letters) isn't posted either: only that player sees "so close!". Other wrong guesses show as normal chat.
+  - Players who already have it **can't type the answer or anything close to it**; their other messages are shown only to the drawer and the others who have it. The drawer can chat, but nothing close to the word.
   - The turn ends when every active guesser has it or time runs out. The answer and the points show for a few seconds, then the next drawer.
   - After everyone has drawn, a round summary shows each word, who got it and the top 3, then the next round starts.
 - **Letter hints:** blanks show the word's shape (spaces and punctuation kept). After 20 s with no right guess a letter is revealed, then another every 15 s still without a new right guess; a right guess restarts that clock. Up to 5 letters: 1 hint; 6–10: 2; 11+: 3. Hints pick distinct letters when possible and never reveal the whole word.
@@ -218,7 +218,7 @@ The eighth mode: one player draws an anime word, everyone else races to guess it
   - `sketchInk`: one child per stroke piece (colour, width, eraser, points on an 800×600 sheet, the turn it belongs to). Only the drawer writes it; long strokes go out in small pieces about 20 times a second.
   - `sketchChat`: the chat (last 80 shown).
   - All three are cleared when a match starts and when the room goes back to the lobby.
-- **How the word stays secret:** the word is not written anywhere in the room while it is being drawn. The drawer's browser publishes only the blanks, a random per-turn salt and salted fingerprints of the accepted spellings; each guesser's browser checks its own guess against those and only sends a match as a claim. The drawer's browser keeps the word (in localStorage, so a refresh mid-turn keeps it) and writes it to the room when the turn ends.
+- **How the word stays secret:** the word is not written anywhere in the room while it is being drawn. The drawer's browser publishes only the blanks, a random per-turn salt and salted fingerprints: of each accepted spelling (a right guess), of each spelling with one letter missing (a right guess with a slip), and of each answer word with one letter missing plus its first letters (close: never posted). Each browser checks its own messages against those and only sends a match as a claim. The drawer's browser keeps the word (in localStorage, so a refresh mid-turn keeps it) and writes it to the room when the turn ends.
 - **Honest limits:**
   - The word list ships with the page, so someone using the developer tools could test every word in the list against the fingerprints and find the answer, or send a fake "right guess". Like the other modes, real enforcement would need a trusted server (a Cloud Function), which this project doesn't have. A normal player never sees the word.
   - Hints are written by the drawer's browser; if the drawer drops, the turn ends.

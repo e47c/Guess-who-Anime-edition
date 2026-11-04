@@ -58,57 +58,51 @@ export function spans(msg, max = 16) {
     return [...out];
 }
 
-/* the word library: built from what Anime Arcade already has
+/* the word library: CHARACTERS and OBJECTS / WEAPONS only (no places, attacks, powers, groups or terms)
+   - js/sketch/words.js first: each series' recognisable objects and weapons and the important characters the roster lacks
+     (it goes first, so its category, Object or Weapon, wins over the boards' plain "Object")
    - characters: the Anime Draft roster (AniList ids, so the reveal can show the picture) plus the fan nicknames
-   - attacks, abilities, places, items, groups: the Anime Feud answer boards, with their accepted aliases
-   - a small curated list per series (js/sketch/words.js) for terms the boards don't cover */
-const FEUD_CATS = {
-    "c-technique": "Attack", "c-place": "Place", "c-item": "Item", "c-group": "Group",
-    "op-devil-fruit": "Item", "db-transform": "Power", "jjk-domains": "Power", "ds-breathing": "Power",
-    "aot-titans": "Titan", "csm-devils": "Devil", "jojo-stands": "Stand", "bc-squads": "Group"
-};
-export function buildWords({ chars = {}, nick = {}, lib = null, extras = {}, block = [], perSeries = 22 } = {}) {
+   - the Anime Feud item boards, and its titans, devils and Stands as characters */
+export const CATS = ["Character", "Object", "Weapon"];
+const FEUD_CATS = { "c-item": "Object", "op-devil-fruit": "Object", "aot-titans": "Character", "csm-devils": "Character", "jojo-stands": "Character" };
+export function buildWords({ chars = {}, nick = {}, lib = null, extras = {}, block = [], perSeries = 30 } = {}) {
     const out = {}, blocked = new Set(block.map(norm));
     const tokCount = {};       // a single name ("Itachi") is accepted when no other character of that series shares it ("Uchiha")
     Object.entries(chars).forEach(([s, rows]) => rows.forEach(r => new Set(norm(r[1]).split(" ")).forEach(t => { tokCount[s + ":" + t] = (tokCount[s + ":" + t] || 0) + 1; })));
-    const add = (s, w) => {
+    // src: 0 = words.js, 1 = the roster, 2 = the Feud boards. A spelling can only ever mean ONE word of a series:
+    // a board answer that is just another spelling of a curated word is skipped; otherwise the older word gives that spelling up.
+    const add = (s, w, src) => {
         const t = String(w.t || "").trim(), k = norm(t);
-        if (!t || !k || t.length > SK.maxWord || blocked.has(k) || letters(t) < 3) return;
+        if (!t || !k || t.length > SK.maxWord || blocked.has(k) || letters(t) < 3 || !CATS.includes(w.cat)) return;
         const list = out[s] || (out[s] = []);
         if (list.some(x => x.k === k)) return;
-        const forms = [...new Set([k, ...arr(w.al).map(norm)].filter(f => f && f.length >= 2))];
-        list.push({ id: s + ":" + k.replace(/ /g, "-"), t, k, s, cat: w.cat, c: w.c || 0, f: forms });
+        const owner = list.find(x => x.f.includes(k));
+        if (owner && src === 2 && owner.src === 0) return;
+        if (owner) owner.f = owner.f.filter(f => f !== k);
+        const forms = [...new Set([k, ...arr(w.al).map(norm)].filter(f => f && f.length >= 2 && (f === k || !list.some(x => x.k === f))))];
+        list.push({ id: s + ":" + k.replace(/ /g, "-"), t, k, s, cat: w.cat, c: w.c || 0, f: forms, src });
     };
+    Object.entries(extras).forEach(([s, rows]) => arr(rows).forEach(r => add(s, Array.isArray(r) ? { t: r[0], cat: r[1], al: r[2] || [] } : r, 0)));
     Object.entries(chars).forEach(([s, rows]) => rows.slice(0, perSeries).forEach(r => {
         const name = String(r[1]), toks = norm(name).split(" ");
         const solo = toks.filter(t => t.length >= 3 && tokCount[s + ":" + t] === 1 && !/^(the|van|von|king|devil|lord|man|god)$/.test(t));
-        add(s, { t: name, cat: "Character", c: Number(r[0]), al: solo.concat(arr(nick[r[0]])) });
+        add(s, { t: name, cat: "Character", c: Number(r[0]), al: solo.concat(arr(nick[r[0]])) }, 1);
     }));
     if (lib) Object.entries(FEUD_CATS).forEach(([bid, cat]) => {
         const b = lib.boards[bid]; if (!b) return;
-        arr(b.ans).forEach(a => { if (a && a.t && !a.c && a.s && a.s !== "any") add(a.s, { t: a.t, cat, al: arr(a.al) }); });
+        arr(b.ans).forEach(a => { if (a && a.t && !a.c && a.s && a.s !== "any") add(a.s, { t: a.t, cat, al: arr(a.al) }, 2); });
     });
-    Object.entries(extras).forEach(([s, rows]) => arr(rows).forEach(r => add(s, Array.isArray(r) ? { t: r[0], cat: r[1], al: r[2] || [] } : r)));
     return out;
 }
 export const poolFor = (words, series) => arr(series).flatMap(s => words[s] || []);
-// three different words for the drawer: different categories (and series, in a mix) when possible,
+// three different words for the drawer, picked at random from the whole pool (any mix of characters, objects and weapons):
 // never one already drawn this match, and preferably not one this browser saw recently
 export function pickOptions(words, series, { used = [], recent = [], rnd = Math.random, n = 3 } = {}) {
     const usedK = new Set(arr(used).map(norm)), rec = new Set(arr(recent));
     let pool = poolFor(words, series).filter(w => !usedK.has(w.k));
     if (pool.filter(w => !rec.has(w.id)).length >= n) pool = pool.filter(w => !rec.has(w.id));
-    const out = [], cats = new Set(), ser = new Set(), multi = arr(series).length > 1;
-    for (let pass = 0; pass < 3 && out.length < n; pass++) {
-        const shuffled = pool.slice().sort(() => rnd() - .5);
-        for (const w of shuffled) {
-            if (out.length >= n) break;
-            if (out.includes(w)) continue;
-            if (pass === 0 && (cats.has(w.cat) || (multi && ser.has(w.s)))) continue;
-            if (pass === 1 && cats.has(w.cat) && w.cat !== "Character") continue;
-            out.push(w); cats.add(w.cat); ser.add(w.s);
-        }
-    }
+    const out = [], left = pool.slice();
+    while (out.length < n && left.length) out.push(left.splice((rnd() * left.length) | 0, 1)[0]);
     return out;
 }
 
@@ -124,7 +118,7 @@ export function newMatch({ mid, lv = 0, series, rounds = SK.rounds, timer = SK.t
     return s;
 }
 function ev(s, k, x) { s.ev = Object.assign({ n: ((s.ev && s.ev.n) || 0) + 1, k }, x || {}); }
-const clearTurn = s => { ["mask", "salt", "wh", "cat", "hm", "hint", "hn", "ia", "hsa", "got", "gain", "word", "wc", "why", "nx", "t0"].forEach(k => { s[k] = null; }); };
+const clearTurn = s => { ["mask", "salt", "wh", "wv", "wt", "cat", "hm", "hint", "hn", "ia", "hsa", "got", "gain", "word", "wc", "why", "nx", "t0"].forEach(k => { s[k] = null; }); };
 function startTurn(s, ti, now) {
     clearTurn(s);
     s.ti = ti; s.drawer = Number(arr(s.order)[ti]); s.n = (Number(s.n) || 0) + 1;
@@ -186,6 +180,7 @@ export function act(s, a, ctx) {
             if (by !== Number(s.drawer)) return "Only the drawer picks the word.";
             if (typeof a.mask !== "string" || !a.mask || !Array.isArray(a.wh) || !a.wh.length || !a.salt) return "bad word";
             s.mask = a.mask; s.salt = String(a.salt); s.wh = a.wh.map(String).slice(0, 24); s.cat = String(a.cat || "");
+            s.wv = arr(a.wv).map(String).slice(0, 400); s.wt = arr(a.wt).map(String).slice(0, 600);
             s.hm = Math.max(0, Math.min(3, Number(a.hm) || 0)); s.hint = null; s.hn = 0; s.hsa = 0;
             s.phase = "draw"; s.t0 = now; s.ia = now; s.dl = now + Number(s.timer) * 1000; s.got = null; s.gain = null;
             ev(s, "draw", { p: s.drawer });
@@ -196,7 +191,7 @@ export function act(s, a, ctx) {
             if (by === Number(s.drawer)) return "You're drawing this one!";
             if (!arr(s.players).map(Number).includes(by)) return "Spectators can't guess.";
             if (hasGot(s, by)) return "already";
-            if (!arr(s.wh).includes(String(a.h))) return "wrong";
+            if (!arr(s.wh).includes(String(a.h)) && !arr(s.wv).includes(String(a.h))) return "wrong";
             if (Number(s.dl) && now > Number(s.dl) + 1500) return "stale";
             const order = gotList(s).length, pts = ptsFor(order), gain = Object.assign({}, s.gain);
             s.got = gotList(s).concat([{ p: by, pts, at: now }]);
@@ -268,11 +263,49 @@ function cyrb(str, seed) {
     return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
 }
 export const fp = (salt, form) => cyrb(salt + "|" + form, 7) + cyrb(form + "|" + salt, 131);
-// the fingerprints the drawer publishes: each accepted spelling, with and without its spaces
+const sfp = (salt, x) => cyrb(salt + "|" + x, 29);
+// a word plus every version of it with one letter missing: two words share one of these when they are a slip or two apart
+export const del1 = w => { const out = new Set([w]); for (let i = 0; i < w.length; i++) out.add(w.slice(0, i) + w.slice(i + 1)); return [...out]; };
+const STOP = new Set(["the", "and", "of", "no", "to", "an", "on", "in", "de"]);
+const answerTokens = f => f.split(" ").filter(t => t.length >= 3 && !STOP.has(t));
+export const TYPO_MIN = 6;            // one slip is accepted on answers of 6+ letters (shorter ones must be exact)
+/* what the drawer publishes for a word (never the word itself), all salted for this turn:
+   wh  each accepted spelling, with and without spaces                    -> a right guess
+   wv  each spelling of 6+ letters (no spaces) with one letter missing     -> a right guess with a slip
+   wt  each answer word (3+ letters) with one letter missing + its first 4+ letters -> "close": never posted to the chat */
 export const prints = (salt, forms) => [...new Set(arr(forms).flatMap(f => [f, f.replace(/ /g, "")]))].map(f => fp(salt, f));
-// does this message contain the answer? (returns the matching fingerprint, or "")
-export function claim(msg, salt, wh) {
-    const set = new Set(arr(wh));
-    for (const sp of spans(msg)) { for (const v of [sp, sp.replace(/ /g, "")]) { const h = fp(salt, v); if (set.has(h)) return h; } }
+export function wordPrints(salt, forms) {
+    const wv = new Set(), wt = new Set();
+    arr(forms).forEach(f => {
+        const j = f.replace(/ /g, "");
+        if (j.length >= TYPO_MIN) del1(j).forEach(v => wv.add(sfp(salt, "v:" + v)));
+        answerTokens(f).forEach(t => {
+            if (t.length < 5) { wt.add(sfp(salt, "x:" + t)); return; }     // short words ("hat", "goku"): only the word itself is close
+            del1(t).forEach(v => { if (v.length >= 4) wt.add(sfp(salt, "t:" + v)); });
+            for (let k = 4; k < t.length; k++) wt.add(sfp(salt, "p:" + t.slice(0, k)));
+        });
+    });
+    return { wh: prints(salt, forms), wv: [...wv], wt: [...wt] };
+}
+// does this message contain the answer (or the answer with one slip)? returns the matching fingerprint, or ""
+export function claim(msg, salt, wh, wv) {
+    const set = new Set(arr(wh)), vset = new Set(arr(wv)), sp = spans(msg);
+    for (const x of sp) for (const v of [x, x.replace(/ /g, "")]) { const h = fp(salt, v); if (set.has(h)) return h; }
+    if (vset.size) for (const x of sp) {
+        const j = x.replace(/ /g, ""); if (j.length < TYPO_MIN - 1) continue;
+        for (const v of del1(j)) { const h = sfp(salt, "v:" + v); if (vset.has(h)) return h; }
+    }
     return "";
+}
+// is any word of this message the answer, one of its words, nearly one of them, or the start of one?
+export function near(msg, salt, wt) {
+    const set = new Set(arr(wt)); if (!set.size) return false;
+    const n = norm(msg);
+    for (const t of n.split(" ")) {
+        if (t.length < 3 || STOP.has(t)) continue;
+        if (set.has(sfp(salt, "x:" + t))) return true;
+        if (t.length >= 4 && (set.has(sfp(salt, "p:" + t)) || del1(t).some(v => v.length >= 4 && set.has(sfp(salt, "t:" + v))))) return true;
+    }
+    const j = n.replace(/ /g, "");            // written without spaces, or split oddly
+    return j.length >= 4 && (set.has(sfp(salt, "x:" + j)) || set.has(sfp(salt, "p:" + j)) || del1(j).some(v => v.length >= 4 && set.has(sfp(salt, "t:" + v))));
 }

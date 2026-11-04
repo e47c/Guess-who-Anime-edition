@@ -12,8 +12,8 @@
    The word is never written to any of these while it is being drawn (see engine.js).
    ===================================================================== */
 import { SK, arr, maskOf, hintMax, pickHint, hintAt, buildWords, poolFor, pickOptions, newMatch, act, hasGot, gotList, allGot,
-    hintDue, standings, prints, claim, spans } from "./engine.js?v=1";
-import { EXTRAS, BLOCK } from "./words.js?v=1";
+    hintDue, standings, wordPrints, claim, near } from "./engine.js?v=2";
+import { EXTRAS, BLOCK } from "./words.js?v=2";
 import { CHARS } from "../draft/data.js?v=2";
 import { NICKNAMES } from "../feud/nicknames.js?v=1";
 import { LIB, el, srvNow, label, presentIn, pickOpt, seriesOf, initCommon, charOf, img, optButtons, confetti } from "../feud/common.js?v=1";
@@ -48,6 +48,13 @@ export function initSketch(ctx) {
         skJoin: () => joinNext(),
         skAgain: () => sketchStart(true),
         skLobby: () => X.backToLobby(true)
+    });
+    document.addEventListener("keydown", e => {
+        if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || (e.key || "").toLowerCase() !== "z") return;
+        if (document.getElementById("sketch").classList.contains("hidden") || !canDraw()) return;
+        const a = document.activeElement;
+        if (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) return;      // undoing typing in the chat box stays the browser's
+        e.preventDefault(); undoLast();
     });
 }
 
@@ -132,7 +139,8 @@ async function choose(i) {
     const salt = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
     save(SKEY(s, "w"), { t: w.t, c: w.c, f: w.f, cat: w.cat, n: s.n });
     try { await remove(inkRef()); } catch (e) {}           // a clean sheet (the last drawing is hidden anyway: strokes carry their turn)
-    const err = await tx({ k: "pick", tk: s.n, mask: maskOf(w.t), salt, wh: prints(salt, w.f), cat: w.cat, hm: hintMax(w.t) });
+    const P = wordPrints(salt, w.f);
+    const err = await tx({ k: "pick", tk: s.n, mask: maskOf(w.t), salt, wh: P.wh, wv: P.wv, wt: P.wt, cat: w.cat, hm: hintMax(w.t) });
     choosing = false;
     if (err && err !== "stale") feedback(err === "net" ? "Couldn't send that. Check your connection." : err, "warn");
 }
@@ -357,19 +365,24 @@ async function send(e) {
     if (Date.now() - lastSend < 350 || sending) return;
     lastSend = Date.now();
     const live = s.phase === "draw", drawer = Number(s.drawer) === me;
+    const hot = () => !!claim(text, s.salt, s.wh, s.wv) || near(text, s.salt, s.wt);   // the answer, or anything close to it
     if (live && drawer) {
         const sec = mySecret(s);
-        if (sec && sec.n === s.n && spans(text).some(x => sec.f.includes(x) || sec.f.some(f => f.replace(/ /g, "") === x.replace(/ /g, "")))) { feedback("No spoilers! That message gives the word away.", "warn"); return; }
+        if (hot() || (sec && sec.n === s.n && claim(text, s.salt, s.wh, s.wv))) { feedback("No spoilers! That message is too close to the word.", "warn"); return; }
         inp.value = ""; post("c", text); return;
     }
     if (live && hasGot(s, me)) {
-        if (claim(text, s.salt, s.wh)) { feedback("You already got it. Keep it secret!", "warn"); return; }
+        if (hot()) { feedback("You already got it! You can't type the answer or anything close to it.", "warn"); return; }
         inp.value = ""; post("w", text); return;
     }
     if (live) {
-        const h = claim(text, s.salt, s.wh);
+        const h = claim(text, s.salt, s.wh, s.wv);
         inp.value = "";
-        if (!h) { post("c", text); return; }
+        if (!h) {
+            // close but not right: only you see it, so nobody else learns from it
+            if (near(text, s.salt, s.wt)) { localLine("You: “" + text + "” · so close! (only you can see this)", "close"); feedback("So close! Keep going.", "ok"); X.sfx("skHint"); return; }
+            post("c", text); return;
+        }
         sending = true;
         save(SKEY(s, "g"), text);
         const err = await tx({ k: "guess", tk: s.n, h });
@@ -450,7 +463,7 @@ function buildTools(box) {
     const acts = el("div", "sk-acts");
     const pen = el("button", "sk-tool", "✏️ Brush"); pen.type = "button"; pen.dataset.t = "pen"; pen.onclick = () => { tool.e = false; X.sfx("toggle"); syncTools(); };
     const er = el("button", "sk-tool", "🧽 Eraser"); er.type = "button"; er.dataset.t = "eraser"; er.onclick = () => { tool.e = true; X.sfx("toggle"); syncTools(); };
-    const un = el("button", "sk-tool", "↶ Undo"); un.type = "button"; un.onclick = undoLast;
+    const un = el("button", "sk-tool", "↶ Undo"); un.type = "button"; un.onclick = undoLast; un.title = "Undo (Ctrl+Z)"; un.setAttribute("aria-keyshortcuts", "Control+Z Meta+Z");
     const cl = el("button", "sk-tool danger", "🗑 Clear"); cl.type = "button"; cl.onclick = clearSheet;
     acts.append(pen, er, un, cl);
     box.append(cols, sizes, acts);
