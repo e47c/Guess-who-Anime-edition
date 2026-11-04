@@ -166,7 +166,19 @@ const FX = {
     spin(o, t) { V.sweep(o, t, 300, 5000, .65, .7, 8); },
     gust(o, t) { V.sweep(o, t, 150, 1600, 1.5, 1.1, 1.1); V.sweep(o, t + .5, 400, 2600, 1.1, .9, 1.3); },
     tock(o, t) { V.hat(o, t, .3); V.pluck(o, t, 79, .03, .2, "square", 3000, 0); },
-    toll(o, t) { V.bell(o, t, 48, 1, 4); V.pad(o, t, [36, 43], 2.5, .7, 400, "sine"); V.kick(o, t, .6); }
+    toll(o, t) { V.bell(o, t, 48, 1, 4); V.pad(o, t, [36, 43], 2.5, .7, 400, "sine"); V.kick(o, t, .6); },
+    // Headbanz, the investigation: typewriter, camera flash, rubber stamp, the desk bell
+    typewriter(o, t) { [0, .07, .15, .21, .3, .36].forEach((d, i) => { V.hat(o, t + d, .9); V.pluck(o, t + d, 70 + (i % 3) * 3, .03, .45, "square", 2400, 0); }); V.bell(o, t + .48, 96, .45, .8); },
+    shutter(o, t) { V.sweep(o, t, 5200, 1400, .05, .9, 2); V.hat(o, t + .05, .9); V.snare(o, t + .07, .35, .04); V.sweep(o, t + .08, 900, 5000, .25, .25, 4); },
+    caseWrong(o, t) { V.kick(o, t, 1); V.snare(o, t, .7, .07); V.pluck(o, t + .14, 43, .45, .8, "sawtooth", 650, .2); V.pluck(o, t + .38, 42, .7, .8, "sawtooth", 520, .25); },
+    caseSolved(o, t) { V.bell(o, t, 93, .9, 1.6); V.keys(o, t + .12, [62, 65, 69, 72, 76], 1.4, .9); V.pluck(o, t + .12, 38, .9, .8, "sine", 900, .3); },
+    caseOpen(o, t) { V.sweep(o, t, 900, 300, .35, .6, 2); V.hat(o, t + .3, .7); V.pluck(o, t + .32, 60, .4, .5, "triangle", 2000, .4); V.pluck(o, t + .5, 63, .6, .45, "triangle", 2000, .4); },
+    // Imposter, the suspicion: whispers, a creaking floor, the horror stinger, the reveal
+    whisper(o, t) { V.sweep(o, t, 700, 2600, 1.1, .55, 10); V.sweep(o, t + .45, 2400, 600, 1, .45, 10); V.sweep(o, t + .9, 900, 3000, .7, .3, 12); },
+    floorCreak(o, t) { V.sweep(o, t, 170, 260, .55, .6, 26); V.sweep(o, t + .3, 250, 160, .5, .5, 26); },
+    sting(o, t) { V.stab(o, t, [49, 50, 55, 61], 1, 1); V.sweep(o, t, 4000, 180, .9, .7, 2); V.kick(o, t, 1.2); V.pad(o, t, [25, 26], 1.4, .9, 240, "sawtooth"); },
+    unmask(o, t) { V.pad(o, t, [37, 44], 1.3, .8, 320); V.sweep(o, t, 90, 3200, 1.1, .6, 3); V.kick(o, t + 1.05, 1.4); V.stab(o, t + 1.05, [49, 56, 61, 64], 1, .8); V.snare(o, t + 1.05, .8, .3); },
+    tickTense(o, t) { V.pluck(o, t, 86, .03, .5, "square", 4000, 0); V.kick(o, t, .25); }
 };
 // the old two-oscillator "tone" helper, now routed through the sfx bus so volume settings apply
 function tone(f1, f2, dur, type = "square", vol = .06, delay = 0) {
@@ -192,14 +204,18 @@ const THEMES = {
     gw: { bpm: 74, swing: .32, root: 50, prog: [[0, 3, 7, 10], [-4, 0, 3, 7], [2, 5, 8, 12], [-5, -1, 2, 5]], scale: [0, 2, 3, 5, 7, 8, 10, 12],
         kick: P("o.......x......."), snare: null, brush: P("..x.o.xx..x.o.x."), hat: P("x...x..xx...x..x"), walk: true, bassWave: "sine", bassCut: 900,
         chords: "keys", chordHits: [0, 7], lead: "bell", leadEvery: 4, leadVol: .5 },
-    // Headbanz: psychic synthwave
+    // Anime Draft and Anime Feud: synthwave (Headbanz now has its own "case" theme)
     hb: { bpm: 104, swing: 0, root: 52, prog: [[0, 3, 7], [-4, 0, 3], [3, 7, 10], [-2, 2, 5]], scale: [0, 3, 7, 10, 12],
         kick: P("o...x...o...x..."), snare: P("....o.......o..."), hat: P("..x...x...x...xx"), openHat: true, bassPat: [0, null, 12, null, 0, null, 12, null, 0, null, 12, null, 0, 12, 0, 12],
         bassWave: "sawtooth", bassCut: 420, chords: "pad", padCut: 1500, arp: true, arpWave: "square", lead: null },
-    // Imposter: interrogation-room tension
-    im: { bpm: 62, swing: 0, root: 49, prog: [[0, 7], [1, 8], [0, 7], [-1, 6]], scale: [0, 1, 5, 7, 8],
-        kick: P("o..x............"), snare: null, hat: P("x...x...x...x..."), hatVol: .3, bassPat: [0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
-        bassWave: "sine", bassCut: 300, chords: "pad", padCut: 500, padWave: "triangle", lead: "bell", leadEvery: 2, leadVol: .45, bellTension: true },
+    // Headbanz: the investigation. A ticking desk clock, a pizzicato bass figure, smoky keys, a vibraphone line.
+    case: { bpm: 84, swing: .18, root: 48, prog: [[0, 3, 7, 10], [-2, 2, 5, 9], [-4, 0, 3, 7], [-5, -1, 2, 7]], scale: [0, 2, 3, 5, 7, 8, 11, 12],
+        kick: P("o.......o......."), snare: null, brush: P("....x.......x..-"), hat: P("x...x...x...x..."), hatVol: .42, bassPat: [0, null, 7, null, 3, null, 7, null, 0, null, 7, null, 10, null, 7, null],
+        bassWave: "sine", bassCut: 700, chords: "keys", chordHits: [0, 10], lead: "pluck", leadEvery: 2, leadWave: "triangle", leadVol: .42 },
+    // Imposter: someone is among us. A heartbeat, a low semitone drone, a sick bell, and whispers in the dark.
+    im: { bpm: 56, swing: 0, root: 49, prog: [[0, 7], [1, 8], [0, 7], [-1, 6]], scale: [0, 1, 5, 6, 8],
+        kick: P("o..x............"), snare: null, hat: P("......x.......x."), hatVol: .2, bassPat: [0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+        bassWave: "sine", bassCut: 260, chords: "pad", padCut: 420, padWave: "triangle", lead: "bell", leadEvery: 2, leadVol: .4, bellTension: true, drone: true, whisper: true },
     // Anime UNO: arena battle drums
     uno: { bpm: 140, swing: 0, root: 55, prog: [[0, 7, 12], [-4, 3, 8], [-2, 5, 10], [-7, 0, 5]], scale: [0, 3, 5, 7, 10, 12, 15],
         kick: P("o...x...o...x.x."), snare: P("....o.......o..."), hat: P("x.x.x.x.x.x.x.x."), toms: true, bassPat: [0, null, 0, 12, 0, null, 0, 10, 0, null, 0, 12, 0, 7, 10, 12],
@@ -249,6 +265,8 @@ const music = {
         if (th.chords === "pad" && s === 0) V.pad(o, t, notes, spb * 15.5, 1, th.padCut || 900, th.padWave);
         if (th.chords === "keys" && th.chordHits.includes(s)) V.keys(o, t, notes, spb * (s === 0 ? 5 : 3), .9);
         if (th.chords === "stab" && th.chordHits.includes(s)) V.stab(o, t, notes.map(n => n + 12), .7, .16);
+        if (th.drone && s === 0 && bar % 2 === 0) V.pad(o, t, [root - 24, root - 23], spb * 31, .55, 200, "sawtooth");
+        if (th.whisper && s === 6 && bar % 4 === 3) V.sweep(o, t, 600, 2600, spb * 10, .28, 11);
         // arpeggio / lead
         if (th.arp) { const up = notes.concat(notes.map(n => n + 12)); V.pluck(o, t, up[(s * (bar % 2 ? 3 : 1)) % up.length] + 12, spb * 1.6, .45, th.arpWave, 1600 + 900 * Math.sin(bar * .7 + s * .2), .25); }
         if (th.lead && bar % (th.leadEvery || 2) === 1 && s % 2 === 0 && rnd() < (th.lead === "bell" ? .22 : .5)) {

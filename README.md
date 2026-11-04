@@ -7,8 +7,8 @@ A browser party game for a squad of up to 8 friends with six anime modes in one 
 | Mode | Players | Identity |
 |---|---|---|
 | **Guess Who** | 1v1 (2–8 in the room) | *Case File*: detective-noir board under a gold desk lamp, swing soundtrack |
-| **Headbanz** | 2–8 | *Mind Link*: psychic, a red sky over a gold horizon grid |
-| **Imposter** | 3–8 | *Shadow Trial*: interrogation spotlight, crimson |
+| **Headbanz** | 2–8 | *Investigation*: a detective's office at night (desk lamp, venetian-blind light, haze); the cards are suspect photos pinned to a cork case board with red string, stamped SOLVED or COLD CASE, your own card a CLASSIFIED folder; typewriter type, a ticking-clock investigation theme, typewriter / camera-flash / rubber-stamp / desk-bell sounds |
+| **Imposter** | 3–8 | *Suspicion*: a dark room in drifting fog, a bulb that won't stop flickering, red eyes opening in the corners; the secret character is a security-camera still (REC, timestamp, scanlines), the imposter sees a hooded silhouette; the vote is a line-up against a height chart; a heartbeat-and-drone theme with whispers, floor creaks and a horror stinger |
 | **Anime UNO** | 2–8 | *Arena Clash*: card-battle arena tinted by the active colour |
 | **Anime Draft** | 2–8 (Build 1v1–4v4, Auction free-for-all) | *Team Builder*: collectible cards in five rarities on a black and gold stage |
 | **Anime Feud** | 2–8 (two teams) | *Game Show*: Classic Feud in a blue studio with buzzers; Most Likely as a fiery red-and-gold clash |

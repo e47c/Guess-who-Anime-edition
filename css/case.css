@@ -1,0 +1,101 @@
+/* =====================================================================
+   HEADBANZ · THE INVESTIGATION
+   A detective's office at night: a desk lamp, venetian-blind light, cigarette haze.
+   The cards are suspect photos pinned to a cork case board, tied with red string,
+   stamped SOLVED or COLD CASE. Typewriter type everywhere.
+   (Guess Who keeps its own noir "Case File" look; this one is the board on the wall.)
+   ===================================================================== */
+#hb { --paper: #f4ead2; --paper-2: #e7d6ae; --ink: #2a1a0e; --ink-2: #5a4128; --red-ink: #b3121a; --brass: #e0a64a; --cork: #a8743f; --f-type: 'Special Elite', 'Courier New', monospace; }
+
+#hb .hb-wrap2 { position: relative; z-index: 1; }
+
+/* the room */
+.case-room { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.case-lamp { position: absolute; left: -10%; top: -20%; width: 70vw; height: 80vh; background: radial-gradient(ellipse at 30% 30%, rgba(255,200,120,.22), transparent 60%); animation: caseLamp 7s ease-in-out infinite alternate; }
+@keyframes caseLamp { 0% { opacity: .85; } 47% { opacity: 1; } 50% { opacity: .78; } 53% { opacity: 1; } 100% { opacity: .9; } }
+.case-blinds { position: absolute; inset: -20%; background: repeating-linear-gradient(-14deg, rgba(255,220,160,.06) 0 22px, transparent 22px 48px); mask-image: linear-gradient(100deg, transparent 15%, #000 40%, #000 60%, transparent 90%); -webkit-mask-image: linear-gradient(100deg, transparent 15%, #000 40%, #000 60%, transparent 90%); animation: caseBlinds 24s ease-in-out infinite alternate; }
+@keyframes caseBlinds { to { transform: translateX(6%); } }
+.case-smoke { position: absolute; left: 10%; bottom: -10%; width: 80vw; height: 60vh; background: radial-gradient(ellipse 30% 50% at 30% 60%, rgba(220,200,170,.07), transparent 70%), radial-gradient(ellipse 25% 40% at 70% 40%, rgba(220,200,170,.06), transparent 70%); filter: blur(20px); animation: caseSmoke 30s linear infinite alternate; }
+@keyframes caseSmoke { to { transform: translate(-8%, -12%) scale(1.15); } }
+
+/* the header: a dark desk with a brass rule */
+#hb .game-header { background: linear-gradient(180deg, rgba(26,16,9,.95), rgba(26,16,9,.78)); box-shadow: 0 1px 0 rgba(224,166,74,.4), 0 3px 0 #7a4a1c; }
+#hb .game-header .turn { font-family: var(--f-type); font-weight: 400; color: var(--paper); text-shadow: 2px 2px 0 #000; letter-spacing: .04em; }
+#hb .game-header .status { font-family: var(--f-type); color: #e8d5ae; border-left-color: var(--brass); }
+#hb .hb-hdr-actions .pop:not(.ghost) { font-family: var(--f-type); }
+
+/* the case board: cork in a wooden frame, red string between the pins */
+#hb .hb-cards { position: relative; padding: 34px 22px 26px; border-radius: 6px;
+    background: radial-gradient(circle at 20% 30%, rgba(0,0,0,.18) 0 1.5px, transparent 2px) 0 0 / 13px 11px, radial-gradient(circle at 70% 60%, rgba(255,230,190,.12) 0 1px, transparent 1.5px) 0 0 / 9px 13px, radial-gradient(ellipse at 50% 40%, #b47d47, #8f5d30 70%, #6e4421);
+    box-shadow: inset 0 0 0 10px #3b2312, inset 0 0 0 12px #6a4220, inset 0 0 40px rgba(0,0,0,.55), 0 24px 60px rgba(0,0,0,.6); }
+#hb .hb-cards::before, #hb .hb-cards::after { content: ""; position: absolute; left: 3%; right: 3%; height: 2px; z-index: 2; pointer-events: none; background: linear-gradient(90deg, #8e0c12, #d0262e 30%, #a3121a 60%, #d0262e); box-shadow: 0 2px 2px rgba(0,0,0,.45); }
+#hb .hb-cards::before { top: 36px; transform: rotate(-.6deg); }
+#hb .hb-cards::after { top: 40px; transform: rotate(.8deg); opacity: .8; }
+
+/* a suspect photo: paper print, a pin, a strip of tape */
+#hb .hb-pcard { --tilt: -1.6deg; isolation: isolate; padding: 14px 14px 18px; border-radius: 2px; color: var(--ink); text-align: center; transform: rotate(var(--tilt));
+    background: linear-gradient(180deg, rgba(255,255,255,.4), transparent 30%), linear-gradient(180deg, var(--paper), var(--paper-2));
+    box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 14px 26px rgba(0,0,0,.45), 0 2px 4px rgba(0,0,0,.4); transition: transform .25s var(--e-out); }
+#hb .hb-pcard:nth-child(even) { --tilt: 1.8deg; }
+#hb .hb-pcard:nth-child(3n) { --tilt: -.6deg; }
+#hb .hb-pcard:hover { transform: rotate(0) translateY(-4px) scale(1.01); z-index: 3; }
+#hb .hb-pcard::before { display: none; }
+.case-pin { position: absolute; top: -9px; left: 50%; z-index: 4; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff8a8a, #d0262e 45%, #6e0a0e); box-shadow: 0 3px 4px rgba(0,0,0,.55); }
+.case-pin::after { content: ""; position: absolute; left: 9px; top: 16px; width: 2px; height: 7px; background: linear-gradient(#999, #555); transform: rotate(12deg); }
+.case-tape { position: absolute; top: 6px; right: -12px; z-index: 3; width: 58px; height: 20px; transform: rotate(38deg); background: rgba(240,228,190,.6); box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+#hb .hb-pcard:nth-child(even) .case-tape { right: auto; left: -12px; transform: rotate(-38deg); }
+#hb .hb-who { margin-bottom: 10px; padding: 4px 8px; border-bottom: 1px dashed rgba(42,26,14,.35); }
+#hb .hb-pname { font: 400 clamp(17px, 2.4vw, 22px)/1.1 var(--f-type); letter-spacing: .02em; text-transform: uppercase; color: var(--ink); text-shadow: none; }
+#hb .hb-who::before { content: "SUBJECT"; font: 400 10px/1 var(--f-type); letter-spacing: .14em; color: var(--red-ink); }
+/* the photo: a print with a white border, a little faded at the edges */
+#hb .hb-pic { position: relative; padding: 8px 8px 0; border-radius: 1px; background: #fbf8f0; box-shadow: 0 0 0 1px rgba(0,0,0,.12), 0 3px 8px rgba(0,0,0,.25); max-height: 36vh; }
+#hb .hb-pic img { border-radius: 1px; filter: contrast(1.06) saturate(.92) sepia(.12); }
+#hb .hb-pic::after { content: ""; position: absolute; inset: 8px 8px 0; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(60,30,10,.35)); }
+.case-evid { position: absolute; left: -6px; bottom: 10px; z-index: 2; padding: 3px 8px 3px 10px; font: 400 11px/1 var(--f-type); letter-spacing: .08em; color: var(--ink); background: #f2c94c; clip-path: polygon(0 0, 100% 0, 92% 50%, 100% 100%, 0 100%); box-shadow: 0 2px 3px rgba(0,0,0,.3); }
+#hb .hb-name { margin-top: 12px; font: 400 clamp(19px, 2.2vw, 24px)/1.15 var(--f-type); letter-spacing: .02em; color: var(--ink); text-transform: uppercase; }
+#hb .hb-name.big { font-size: clamp(26px, 6vw, 38px); }
+#hb .hb-series { margin-top: 4px; font: 400 12px/1.2 var(--f-type); letter-spacing: .1em; color: var(--red-ink); }
+/* the evidence tag (#1 +8) */
+#hb .hb-badge { top: -14px; right: -10px; padding: 7px 12px 6px 18px; transform: rotate(6deg); color: var(--ink); background: #e9c46a; font: 400 15px/1 var(--f-type); letter-spacing: .04em; border-radius: 3px; clip-path: polygon(12px 0, 100% 0, 100% 100%, 12px 100%, 0 50%); box-shadow: none; filter: drop-shadow(0 3px 3px rgba(0,0,0,.4)); }
+#hb .hb-badge::before { content: ""; position: absolute; left: 7px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: #6e4421; }
+#hb .hb-badge.out { color: #fff; background: #5d6470; }
+/* rubber stamps */
+.case-stamp { position: absolute; left: 50%; top: 44%; z-index: 5; padding: 6px 14px; font: 400 clamp(26px, 3.4vw, 38px)/1 var(--f-type); letter-spacing: .08em; color: var(--red-ink); border: 4px double var(--red-ink); border-radius: 6px; transform: translate(-50%, -50%) rotate(-14deg); opacity: .92; pointer-events: none; animation: caseStamp .45s cubic-bezier(.2,1.6,.4,1) both; background: rgba(244,234,210,.78); box-shadow: 0 0 0 2px rgba(244,234,210,.5), 0 4px 10px rgba(0,0,0,.35); }
+.case-stamp.cold { color: #2f4b7a; border-color: #2f4b7a; }
+.case-stamp.cls { top: 30%; font-size: clamp(22px, 3vw, 30px); background: rgba(228,194,126,.85); }
+@keyframes caseStamp { from { opacity: 0; transform: translate(-50%, -50%) rotate(-14deg) scale(2.6); } }
+#hb .hb-pcard.solved { box-shadow: 0 14px 26px rgba(0,0,0,.45), 0 0 0 3px rgba(61,160,90,.6); }
+#hb .hb-pcard.busted { filter: grayscale(.75) brightness(.85) sepia(.2); }
+/* my own file: a closed manila folder */
+#hb .hb-pcard.hq { background: linear-gradient(180deg, #e4c27e, #d1a95c); box-shadow: 0 14px 26px rgba(0,0,0,.45), inset 0 0 0 1px rgba(90,60,20,.35); }
+#hb .hb-pcard.hq::after { content: ""; position: absolute; top: -14px; left: 14px; width: 38%; height: 16px; border-radius: 5px 5px 0 0; background: #d9b56c; box-shadow: inset 0 1px 0 rgba(255,255,255,.4); z-index: -1; }
+#hb .hb-q { padding: 22px 0 6px; font: 400 clamp(90px, 15vw, 140px)/1 var(--f-type); color: var(--ink); -webkit-text-stroke: 0; text-shadow: 3px 3px 0 rgba(255,255,255,.35); animation: caseQ 3s ease-in-out infinite; }
+@keyframes caseQ { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(4deg) scale(1.04); } }
+.case-redact { display: grid; gap: 6px; width: 74%; margin: 8px auto 6px; }
+.case-redact::before, .case-redact::after { content: ""; height: 11px; background: #1b120a; border-radius: 2px; }
+.case-redact::after { width: 70%; }
+#hb .hb-pcard.hq .hb-series { color: var(--ink-2); }
+
+/* the notes under the board and the round panel: an evidence box on the desk */
+#hb .hb-mine2, #hb .hb-panel { position: relative; border-radius: 4px; color: #f1e3c2; background: linear-gradient(180deg, rgba(43,28,16,.94), rgba(26,16,9,.96)); box-shadow: inset 0 0 0 1px rgba(224,166,74,.45), inset 0 0 0 5px rgba(26,16,9,.9), inset 0 0 0 6px rgba(224,166,74,.25), 0 20px 50px rgba(0,0,0,.55); font-family: var(--f-type); font-weight: 400; }
+#hb .hb-miss { color: #cdb894; }
+#hb .hb-ptitle { font: 400 clamp(24px, 4vw, 36px)/1 var(--f-type); color: var(--paper); text-shadow: 2px 2px 0 #000; border-bottom: 2px solid var(--red-ink); padding-bottom: 8px; }
+#hb .hb-ptitle.small { font-size: 20px; border-bottom-width: 1px; }
+#hb .hb-champ { font-family: var(--f-type); color: var(--brass); }
+#hb .hb-table td { border-bottom: 1px dashed rgba(224,166,74,.25); font-family: var(--f-type); font-weight: 400; color: #f1e3c2; }
+#hb .hb-pts { font-family: var(--f-type); color: #ffcf6a; }
+#hb .hb-wait { font-family: var(--f-type); font-weight: 400; color: #cdb894; }
+#hb .hb-panel label { font-family: var(--f-type); color: var(--brass); }
+/* naming your suspect: index cards */
+#hb .hb-picker { background: rgba(14,9,5,.92); }
+#hb .hb-picker input { font-family: var(--f-type); }
+#hb .hb-opt { color: var(--ink); background: linear-gradient(180deg, #fbf3df, #efe0bb); box-shadow: inset 0 -1px 0 rgba(0,0,0,.15), 0 2px 4px rgba(0,0,0,.35); font: 400 16px/1.2 var(--f-type); border-radius: 2px; }
+#hb .hb-opt:hover { background: linear-gradient(180deg, #fff8e8, #f6e6bf); }
+#hb .hb-opt img { border: 3px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); filter: sepia(.12); }
+
+@media (max-width: 640px) {
+    #hb .hb-cards { padding: 30px 12px 18px; }
+    .case-stamp { font-size: 22px; border-width: 3px; }
+}
+@media (prefers-reduced-motion: reduce) { .case-lamp, .case-blinds, .case-smoke, #hb .hb-q { animation: none; } }
+body.fx-lite .case-lamp, body.fx-lite .case-blinds, body.fx-lite .case-smoke, body.fx-lite #hb .hb-q { animation: none; }

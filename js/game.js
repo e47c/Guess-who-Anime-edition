@@ -769,13 +769,13 @@ document.addEventListener("pointerdown", () => {
    Plays only during gameplay (picking your secret character + the game / Headbanz rounds),
    only when exactly ONE series is ticked. Mixed series = no music. Fades out on results. */
 /* ---------- background music: every scene has its own procedural soundtrack (js/audio.js) ----------
-   lobby = lo-fi shonen groove · gw = detective noir swing · hb = psychic synthwave
+   lobby = lo-fi shonen groove · gw = detective noir swing · case = Headbanz investigation · im = Imposter suspicion · hb = Draft / Feud synthwave
    im = interrogation tension · uno = arena battle drums. Starts after the first tap (autoplay rules). */
 function musicWanted(d) {
     if (gwSpectating(d)) return d.status === "finished" ? "lobby" : "gw";
     if (!d || !d.status || d.status === "waiting" || !inMatch(d)) return "lobby";
     if (d.gameType === "imposter") return "im";
-    if (d.gameType === "headbanz") return "hb";
+    if (d.gameType === "headbanz") return "case";
     if (d.gameType === "uno") return d.uno && d.uno.phase === "over" ? "lobby" : "uno";
     if (d.gameType === "draft") return d.draft && d.draft.phase === "over" ? "lobby" : "hb";
     if (d.gameType === "feud") return d.feud && d.feud.phase === "over" ? "lobby" : "uno";
@@ -985,7 +985,7 @@ let rematchSize = 24;
    HELPERS
 ========================================= */
 
-const SCENE_OF = { home: "home", lobby: "lobby", secret: "gw", game: "gw", gwSpec: "gw", result: "gw", hb: "hb", im: "im", uno: "uno", draft: "hb", feud: "hb" };
+const SCENE_OF = { home: "home", lobby: "lobby", secret: "gw", game: "gw", gwSpec: "gw", result: "gw", hb: "case", im: "im", uno: "uno", draft: "hb", feud: "hb" };
 let currentScreen = "home";
 function showOnly(id) {
     document.querySelectorAll("#home,#lobby,#secret,#game,#gwSpec,#hb,#im,#uno,#draft,#feud,#result").forEach(el => el.classList.add("hidden"));
@@ -1566,15 +1566,18 @@ function hbCard(data, p, hb, opts) {
     const order = arr(hb.order).map(Number), out = arr(hb.out).map(Number);
     const card = hbEl("div", "hb-pcard" + (opts.hidden ? " hq" : "") + (order.includes(p) ? " solved" : "") + (out.includes(p) ? " busted" : ""));
     card.style.setProperty("--pc", HB_COLORS[p - 1]); card.dataset.emote = "p" + p;
+    card.append(hbEl("i", "case-pin"), hbEl("i", "case-tape"));
     const who = hbEl("div", "hb-who"); who.appendChild(avatarEl(pPub(data, p), { size: 40 }));
     who.appendChild(hbEl("div", "hb-pname", nm + (p === Number(myPlayer) ? " (you)" : "")));
     card.appendChild(who);
     if (order.includes(p)) card.appendChild(hbEl("div", "hb-badge", "#" + (order.indexOf(p) + 1) + "  +" + hbPointsFor(arr(hb.players).length, order.indexOf(p))));
     else if (out.includes(p)) card.appendChild(hbEl("div", "hb-badge out", "OUT"));
-    if (opts.hidden) { card.appendChild(hbEl("div", "hb-q", "?")); card.appendChild(hbEl("div", "hb-series", "Only you can't see this card")); return card; }
-    if (c.i) { const w = hbEl("div", "hb-pic"); w.appendChild(makeImg(hbImg(c))); card.appendChild(w); }
+    if (opts.hidden) { card.append(hbEl("div", "hb-q", "?"), hbEl("div", "case-redact"), hbEl("div", "hb-series", "Only you can't see this file"), hbEl("div", "case-stamp cls", "CLASSIFIED")); return card; }
+    if (c.i) { const w = hbEl("div", "hb-pic"); w.appendChild(makeImg(hbImg(c))); w.appendChild(hbEl("span", "case-evid", "EVIDENCE #" + String(p).padStart(2, "0"))); card.appendChild(w); }
     card.appendChild(hbEl("div", "hb-name" + (c.i ? "" : " big"), c.n));
-    card.appendChild(hbEl("div", "hb-series", c.s));
+    card.appendChild(hbEl("div", "hb-series", "FILE · " + c.s));
+    if (order.includes(p)) card.appendChild(hbEl("div", "case-stamp ok", "SOLVED"));
+    else if (out.includes(p)) card.appendChild(hbEl("div", "case-stamp cold", "COLD CASE"));
     return card;
 }
 function showHB(data) {
@@ -1610,13 +1613,13 @@ function showHB(data) {
     // feedback sounds
     const myWrong = wrong.filter(w => Number(w.p) === me).length;
     if (key === hbRoundKey && playing) {
-        if (myWrong > hbSeen.wrong && hbSeen.phase) { sfx("lose"); toast(strikes >= 3 ? "Three strikes. You're out this round." : "Not that one. " + (3 - strikes) + " guess" + (3 - strikes === 1 ? "" : "es") + " left."); }
-        if (order.length > hbSeen.order && hbSeen.phase) sfx(order[order.length - 1] === me ? "win" : "pick");
+        if (myWrong > hbSeen.wrong && hbSeen.phase) { sfx("caseWrong"); toast(strikes >= 3 ? "Three strikes. You're out this round." : "Not that one. " + (3 - strikes) + " guess" + (3 - strikes === 1 ? "" : "es") + " left."); }
+        if (order.length > hbSeen.order && hbSeen.phase) sfx(order[order.length - 1] === me ? "caseSolved" : "shutter");
     }
     if (hb.phase !== hbSeen.phase && hbSeen.phase) {
         if (hb.phase === "match") { if (Number(hb.winner) !== me) sfx("lose"); }
         else if (hb.phase === "round") { sfx(order.includes(me) ? "win" : "lose"); if (order.includes(me) && !strikes) achNow("hb_flawless"); }
-        else if (hb.phase === "play") titleCard({ kicker: "MIND LINK", title: "ROUND " + hb.round, sub: hb.round + " of " + hb.rounds + " · first guess +" + players.length, kanji: "心", color: "#b06bff", ms: 1300 });
+        else if (hb.phase === "play") { sfx("typewriter"); titleCard({ kicker: "THE INVESTIGATION", title: "CASE " + hb.round, sub: hb.round + " of " + hb.rounds + " · first to name their suspect +" + players.length, kanji: "証", color: "#e0a64a", ms: 1400 }); }
         if (hb.phase === "round") hbWinSound(hb);
     }
     if (hb.phase === "match") hbFinalSequence(data); else if (vxKey && vxKey.startsWith("hb:")) { closeResults(); vxKey = ""; }
@@ -1635,7 +1638,7 @@ function hbFinalSequence(data) {
     const rows = hbStandings(hb), won = !hb.tie && Number(hb.winner) === me;
     const prog = recordOnce(key, "hb", hb.tie ? null : won, { ach: won ? ["hb_win"] : [] });
     showResults({
-        outcome: hb.tie ? "draw" : won ? "win" : "lose", mode: "hb", color: "#b06bff", kicker: "HEADBANZ · FINAL",
+        outcome: hb.tie ? "draw" : won ? "win" : "lose", mode: "hb", color: "#e0a64a", kicker: "HEADBANZ · CASE CLOSED",
         title: hb.tie ? "DEAD HEAT" : won ? "VICTORY" : "DEFEAT", kanji: hb.tie ? "引分" : won ? "勝利" : "敗北",
         subtitle: hb.tie ? "Tied at the top. Sudden death decides it." : won ? "You read the room better than anyone." : pName(data, hb.winner) + " wins the match.",
         podium: rows.map(r => ({ player: pPub(data, r.p), score: r.score + " pts", label: r.firsts + " first" + (r.firsts === 1 ? "" : "s"), me: r.p === me, win: !hb.tie && r.p === Number(hb.winner) })),
@@ -1847,13 +1850,18 @@ function imCardEl(im, reveal) {
     const card = hbEl("div", "hb-pcard im-main" + (isImp && !reveal ? " hq" : ""));
     card.style.setProperty("--pc", isImp && !reveal ? "#ff4d6d" : "#ffd23f");
     if (isImp && !reveal) {
-        card.appendChild(hbEl("div", "hb-pname", "YOU ARE THE IMPOSTER"));
-        card.appendChild(hbEl("div", "hb-q", "?"));
+        card.appendChild(hbEl("div", "hb-pname sus-glitch", "YOU ARE THE IMPOSTER"));
+        const m = hbEl("div", "sus-mask"); m.append(hbEl("i", "sus-hood"), hbEl("i", "sus-eye l"), hbEl("i", "sus-eye r")); card.appendChild(m);
         card.appendChild(hbEl("div", "hb-series", "Everyone else can see the character. Blend in with your clues."));
         return card;
     }
     card.appendChild(hbEl("div", "hb-pname", reveal ? "THE CHARACTER WAS" : "THE SECRET CHARACTER"));
-    if (c.i) { const w = hbEl("div", "hb-pic"); w.appendChild(makeImg(hbImg(c))); card.appendChild(w); }
+    if (c.i) {
+        const w = hbEl("div", "hb-pic"); w.appendChild(makeImg(hbImg(c)));
+        const d = new Date(), ts = d.toISOString().slice(0, 10) + " " + d.toTimeString().slice(0, 8);
+        w.append(hbEl("span", "cam-rec", reveal ? "● IDENTIFIED" : "● REC"), hbEl("span", "cam-time", ts), hbEl("span", "cam-id", "CAM 0" + (1 + (Number(im.round) || 0) % 9)), hbEl("i", "cam-c tl"), hbEl("i", "cam-c tr"), hbEl("i", "cam-c bl"), hbEl("i", "cam-c br"));
+        card.appendChild(w);
+    }
     card.appendChild(hbEl("div", "hb-name" + (c.i ? "" : " big"), c.n));
     card.appendChild(hbEl("div", "hb-series", c.s));
     if (!reveal) card.appendChild(hbEl("div", "im-forbid", "🚫 Don't say: " + [c.n].concat(arr(c.a)).filter(Boolean).join(" · ")));
@@ -1890,9 +1898,9 @@ function showIM(data) {
     // sounds + celebration on phase changes
     if (im.phase !== imSeen.phase && imSeen.phase) {
         const imp = Number(im.imposter), oc = (im.result || {}).outcome, impWon = oc === "escaped" || oc === "stolen";
-        if (im.phase === "vote") { sfx("heartbeat"); titleCard({ kicker: "SHADOW TRIAL", title: "VOTE", sub: "Who is the imposter?", kanji: "審", color: "#ff3355", ms: 1300 }); }
-        else if (im.phase === "guess") { sfx("impact"); titleCard({ kicker: "UNMASKED", title: "CAUGHT!", sub: pName(data, imp) + " was the imposter", kanji: "露", color: "#ff3355", ms: 1500 }); }
-        else if (im.phase === "clues") titleCard({ kicker: "SHADOW TRIAL", title: "ROUND " + im.round, sub: me === imp ? "You are the imposter. Blend in." : "Give clues. Never say the name.", kanji: "偽", color: "#ff3355", ms: 1500 });
+        if (im.phase === "vote") { sfx("sting"); titleCard({ kicker: "SUSPICION", title: "VOTE", sub: "Who is the imposter?", kanji: "審", color: "#ff3355", ms: 1300 }); }
+        else if (im.phase === "guess") { sfx("unmask"); titleCard({ kicker: "UNMASKED", title: "CAUGHT!", sub: pName(data, imp) + " was the imposter", kanji: "露", color: "#ff3355", ms: 1500 }); }
+        else if (im.phase === "clues") (sfx("whisper"), titleCard({ kicker: "SUSPICION", title: "ROUND " + im.round, sub: me === imp ? "You are the imposter. Blend in." : "Give clues. Never say the name.", kanji: "偽", color: "#ff2a44", ms: 1500 }));
         else if (im.phase === "result") {
             const iWon = oc !== "cancelled" && (me === imp ? impWon : !impWon);
             sfx(iWon ? "win" : "lose");
@@ -1903,7 +1911,8 @@ function showIM(data) {
         }
     }
     if (im.phase === "match") imFinalSequence(data); else if (vxKey && vxKey.startsWith("im:")) { closeResults(); vxKey = ""; }
-    imSeen.phase = im.phase;
+    if (im.phase === "clues" && imSeen.phase === "clues" && Number(im.step) !== imSeen.step) sfx("floorCreak");     // the next speaker
+    imSeen.phase = im.phase; imSeen.step = Number(im.step) || 0;
 
     // host keeps the round moving when someone is offline
     if (amHost() && ["clues", "vote", "guess"].includes(im.phase)) {
@@ -3260,9 +3269,9 @@ const MODE_OF_KEY = { gw: "classic", hb: "headbanz", im: "imposter", uno: "uno",
 const MODES = {
     classic:  { key: "gw",  name: "Guess Who", tag: "CASE FILE", kanji: "探", min: 2, max: 8, seats: "1v1 · rest spectate", short: "1v1", color: "#f0c869", sub: "Hide. Ask. Accuse.", blurb: "1v1 deduction duel. Hide a character, ask yes/no questions, accuse first.",
         art: ["images/anime/naruto/na2.jpg", "images/special/onepiece_ultimate.jpg", "images/anime/bleach/bc6.jpg"] },
-    headbanz: { key: "hb",  name: "Headbanz", tag: "MIND LINK", kanji: "心", min: 2, max: 8, color: "#ff4040", sub: "Read the room. Read yourself.", blurb: "Everyone sees your character but you. Ask, deduce, name yourself first.",
+    headbanz: { key: "hb",  name: "Headbanz", tag: "INVESTIGATION", kanji: "証", min: 2, max: 8, color: "#e0a64a", sub: "Read the room. Read yourself.", blurb: "Everyone sees your character but you. Ask, deduce, name yourself first.",
         art: ["images/anime/dragonball/db7.jpg", "images/anime/jjk/jk12.jpg", "images/special/demonslayer_ultimate.jpg"] },
-    imposter: { key: "im",  name: "Imposter", tag: "SHADOW TRIAL", kanji: "偽", min: 3, max: 8, color: "#e11b1b", sub: "Someone here is lying.", blurb: "All but one know the character. Give clues, vote, unmask the fake.",
+    imposter: { key: "im",  name: "Imposter", tag: "SUSPICION", kanji: "偽", min: 3, max: 8, color: "#ff2a44", sub: "Someone here is lying.", blurb: "All but one know the character. Give clues, vote, unmask the fake.",
         art: ["images/anime/naruto/na23.jpg", "images/anime/jjk/jk6.jpg", "images/anime/demonslayer/ds15.jpg"] },
     uno:      { key: "uno", name: "Anime UNO", tag: "ARENA CLASH", kanji: "札", min: 2, max: 8, color: "#d9a441", sub: "Every anime a colour. No mercy.", blurb: "Classic: 4 anime, 4 colours. Chaos: up to 8. Stack +2s, special moves.",
         art: ["images/character73.jpg", "images/special/jojo_ultimate.jpg", "images/anime/naruto/na9.jpg"] },

@@ -7,8 +7,9 @@
    Every scene keeps its mood with the same four colours:
      home + lobby  "Red Arcade"    red / gold   (lacquer cabinets, player select)
      gw            "Case File"     gold / red   (detective noir, desk lamp)
-     hb            "Mind Link"     red / gold   (psychic, a gold horizon)
-     im            "Shadow Trial"  red / gold   (interrogation)
+     case          "Investigation" amber / brass (Headbanz: a detective's office, lamp and venetian blinds)
+     im            "Suspicion"     crimson / fog (Imposter: a dark room, a flickering bulb, eyes in the dark)
+     hb            (Anime Draft, Anime Feud) red / gold, a gold horizon
      uno           "Arena Clash"   gold / red   (card battle arena)
 ========================================================= */
 :root {
@@ -32,7 +33,8 @@
 }
 body[data-scene="gw"]  { --accent: #f0c869; --accent-2: #e11b1b; --on-accent: #1a0d02; }
 body[data-scene="hb"]  { --accent: #e11b1b; --accent-2: #f0c869; --on-accent: #fff; }
-body[data-scene="im"]  { --accent: #e11b1b; --accent-2: #f0c869; --on-accent: #fff; }
+body[data-scene="im"]  { --accent: #ff2a44; --accent-2: #c9c2d6; --on-accent: #fff; }
+body[data-scene="case"] { --accent: #e0a64a; --accent-2: #f2dfb4; --on-accent: #1c1007; }
 body[data-scene="uno"] { --accent: #ffcf4a; --accent-2: #e11b1b; --on-accent: #1a0a00; }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -68,10 +70,16 @@ body[data-scene="hb"]::before {     /* psychic: a red sky over a gold horizon gr
         repeating-linear-gradient(90deg, rgba(217,164,65,.07) 0 1px, transparent 1px 64px),
         radial-gradient(ellipse at 50% -20%, rgba(150,16,20,.4), transparent 60%),
         linear-gradient(180deg, #120606, #170808 55%, #050202); }
-body[data-scene="im"]::before {     /* interrogation: one hard spotlight from above */
-    background: conic-gradient(from 180deg at 50% -8%, transparent 152deg, rgba(255,51,85,.14) 172deg, rgba(255,225,210,.10) 180deg, rgba(255,51,85,.14) 188deg, transparent 208deg),
-        radial-gradient(ellipse at 50% 110%, rgba(255,51,85,.22), transparent 55%),
-        linear-gradient(180deg, #0d0507, #070304 60%, #030102); }
+body[data-scene="im"]::before {     /* suspicion: a dark room, cold haze, a red glow you can't place */
+    background: radial-gradient(ellipse 50% 40% at 50% -5%, rgba(200,200,230,.10), transparent 70%),
+        radial-gradient(ellipse 40% 30% at 12% 85%, rgba(255,42,68,.14), transparent 70%),
+        radial-gradient(ellipse 40% 30% at 88% 78%, rgba(120,90,200,.12), transparent 70%),
+        linear-gradient(180deg, #08070d, #050409 60%, #020204); }
+body[data-scene="case"]::before {   /* the investigation: a desk lamp, venetian blinds, an office at night */
+    background: radial-gradient(ellipse 45% 40% at 18% 8%, rgba(255,196,110,.30), transparent 70%),
+        repeating-linear-gradient(-14deg, rgba(255,214,150,.055) 0 26px, transparent 26px 52px),
+        radial-gradient(ellipse 70% 60% at 50% 110%, rgba(120,60,20,.35), transparent 70%),
+        linear-gradient(180deg, #1a110a, #110b07 55%, #080503); }
 body[data-scene="uno"]::before {    /* arena floor tinted by the active colour */
     background: radial-gradient(ellipse 80% 60% at 50% 55%, color-mix(in srgb, var(--ac, #ffcf4a) 22%, transparent), transparent 70%),
         radial-gradient(circle at 50% 55%, transparent 0 29%, rgba(255,207,74,.10) 29.3% 29.8%, transparent 30%, transparent 44%, rgba(255,207,74,.07) 44.3% 44.8%, transparent 45%),

@@ -22,7 +22,8 @@ const PRESETS = {
     lobby: { n: 38, kinds: [["pixel", .6], ["mote", .4]], cols: ["#ff2e88", "#35e8ff", "#ffe14d", "#8a5cff"] },
     gw:    { n: 34, kinds: [["mote", 1]], cols: ["#f2c46b", "#fff1c9", "#d9a441"] },
     hb:    { n: 26, kinds: [["orb", 1]], cols: ["#b06bff", "#3ee8ff", "#ff6bd6"], links: true },
-    im:    { n: 40, kinds: [["ash", .85], ["spark", .15]], cols: ["#9a8f86", "#c9bfb4", "#ff3355"] },
+    im:    { n: 36, kinds: [["ash", .9], ["spark", .1]], cols: ["#4c4558", "#6f6680", "#2c2834", "#ff2a44"] },
+    case:  { n: 40, kinds: [["mote", .85], ["ash", .15]], cols: ["#f2c27a", "#fff0cf", "#c98f45"] },
     uno:   { n: 44, kinds: [["ember", .7], ["spark", .3]], cols: ["#ffcf4a", "#ff6a1a", "#ffffff"] },
     none:  { n: 0, kinds: [], cols: [] }
 };

@@ -1,0 +1,86 @@
+/* =====================================================================
+   IMPOSTER · SUSPICION
+   Someone in this room is not who they say. A dark room in cold haze, one bulb that won't stop
+   flickering, red eyes that open in the corners. The secret character is a security-camera still;
+   the imposter sees only a hooded silhouette. Voting is a line-up against the height chart.
+   ===================================================================== */
+#im { --sus-red: #ff2a44; --sus-red-d: #8a0f1f; --sus-cold: #c9c2d6; --sus-glass: rgba(14,12,22,.72); --f-mono2: 'JetBrains Mono', ui-monospace, monospace; }
+#im .hb-wrap2 { position: relative; z-index: 1; }
+
+/* the room */
+.sus-room { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.sus-fog { position: absolute; left: -30%; right: -30%; bottom: -10%; height: 70%; background: radial-gradient(ellipse 25% 40% at 20% 70%, rgba(150,140,180,.13), transparent 70%), radial-gradient(ellipse 30% 45% at 60% 80%, rgba(120,110,150,.12), transparent 70%), radial-gradient(ellipse 20% 35% at 85% 65%, rgba(160,150,190,.10), transparent 70%); filter: blur(14px); animation: susFog 46s linear infinite alternate; }
+.sus-fog.f2 { bottom: auto; top: -15%; height: 55%; opacity: .7; animation-duration: 64s; animation-direction: alternate-reverse; }
+@keyframes susFog { to { transform: translateX(18%); } }
+.sus-bulb { position: absolute; left: 50%; top: -6%; width: 70vmin; height: 95vh; margin-left: -35vmin; background: conic-gradient(from 180deg at 50% 0%, transparent 155deg, rgba(220,215,255,.07) 170deg, rgba(240,235,255,.11) 180deg, rgba(220,215,255,.07) 190deg, transparent 205deg); animation: susFlicker 7s steps(1) infinite; }
+.sus-bulb::before { content: ""; position: absolute; left: 50%; top: 5%; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: #fff6e0; box-shadow: 0 0 20px 6px rgba(255,240,210,.55), 0 0 70px 20px rgba(200,190,255,.2); }
+@keyframes susFlicker { 0%, 31%, 35%, 63%, 100% { opacity: 1; } 32% { opacity: .2; } 33% { opacity: .85; } 34% { opacity: .1; } 64% { opacity: .35; } 65% { opacity: 1; } 88% { opacity: .55; } 89% { opacity: 1; } }
+/* eyes in the dark: they open, look, blink, close */
+.sus-eyes { position: absolute; width: 46px; height: 10px; opacity: 0; animation: susEyes 13s ease-in-out infinite; }
+.sus-eyes::before, .sus-eyes::after { content: ""; position: absolute; top: 0; width: 14px; height: 7px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: radial-gradient(circle at 50% 60%, #fff 0 1px, var(--sus-red) 2px, #8a0f1f 6px); box-shadow: 0 0 10px 2px rgba(255,42,68,.6); animation: susBlink 13s ease-in-out infinite; }
+.sus-eyes::before { left: 0; } .sus-eyes::after { right: 0; }
+.sus-eyes.e1 { left: 4%; top: 30%; animation-delay: 1s; } .sus-eyes.e1::before, .sus-eyes.e1::after { animation-delay: 1s; }
+.sus-eyes.e2 { right: 5%; top: 52%; animation-delay: 5.5s; transform: scale(.8); } .sus-eyes.e2::before, .sus-eyes.e2::after { animation-delay: 5.5s; }
+.sus-eyes.e3 { left: 9%; bottom: 12%; animation-delay: 9s; transform: scale(.65); } .sus-eyes.e3::before, .sus-eyes.e3::after { animation-delay: 9s; }
+.sus-eyes.e4 { right: 12%; top: 18%; animation-delay: 11.5s; transform: scale(.55); } .sus-eyes.e4::before, .sus-eyes.e4::after { animation-delay: 11.5s; }
+@keyframes susEyes { 0%, 12% { opacity: 0; } 18%, 34% { opacity: .9; } 40%, 100% { opacity: 0; } }
+@keyframes susBlink { 0%, 24%, 27%, 100% { transform: scaleY(1); } 25.5% { transform: scaleY(.1); } }
+
+/* header */
+#im .game-header { background: linear-gradient(180deg, rgba(8,7,13,.94), rgba(8,7,13,.7)); box-shadow: 0 1px 0 rgba(255,42,68,.35), 0 3px 0 var(--sus-red-d); }
+#im .game-header .turn { color: #f2eef8; text-shadow: 3px 3px 0 var(--sus-red-d), 0 0 18px rgba(255,42,68,.35); }
+#im .game-header .status { font-family: var(--f-mono2); font-size: 13px; color: var(--sus-cold); border-left-color: var(--sus-red); }
+
+/* the secret character: a security-camera still */
+#im .hb-pcard { --pc: var(--sus-red); }
+#im .im-main { position: relative; padding: 14px 14px 16px; border-radius: 6px; background: linear-gradient(180deg, rgba(18,16,28,.92), rgba(8,7,13,.95)); box-shadow: inset 0 0 0 1px rgba(201,194,214,.18), 0 24px 60px rgba(0,0,0,.7), 0 0 50px rgba(255,42,68,.1); }
+#im .im-main::before { display: none; }
+#im .im-main .hb-pname { font: 700 13px/1 var(--f-mono2); letter-spacing: .24em; color: var(--sus-cold); text-shadow: none; margin-bottom: 10px; }
+#im .hb-pic { position: relative; border-radius: 3px; overflow: hidden; background: #000; box-shadow: inset 0 0 0 1px rgba(255,255,255,.1); }
+#im .hb-pic img { filter: grayscale(.45) contrast(1.15) brightness(.92) hue-rotate(-8deg); animation: susCam 9s steps(1) infinite; }
+#im .hb-pic::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px), radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0,0,0,.6)), linear-gradient(180deg, rgba(120,140,255,.06), rgba(255,42,68,.06)); mix-blend-mode: multiply; }
+@keyframes susCam { 0%, 96%, 100% { transform: none; } 97% { transform: translateX(-3px) skewX(2deg); filter: grayscale(.45) contrast(1.4) hue-rotate(30deg); } 98% { transform: translateX(2px); } }
+.cam-rec, .cam-time, .cam-id { position: absolute; z-index: 2; font: 700 12px/1 var(--f-mono2); letter-spacing: .1em; color: #fff; text-shadow: 0 0 4px #000, 0 0 2px #000; }
+.cam-rec { top: 10px; left: 12px; color: var(--sus-red); animation: susRec 1.2s steps(1) infinite; }
+@keyframes susRec { 50% { opacity: .25; } }
+.cam-time { bottom: 10px; right: 12px; font-weight: 500; font-size: 11px; opacity: .9; }
+.cam-id { bottom: 10px; left: 12px; font-weight: 500; opacity: .85; }
+.cam-c { position: absolute; z-index: 2; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.75); }
+.cam-c.tl { top: 30px; left: 10px; border-right: 0; border-bottom: 0; } .cam-c.tr { top: 30px; right: 10px; border-left: 0; border-bottom: 0; }
+.cam-c.bl { bottom: 30px; left: 10px; border-right: 0; border-top: 0; } .cam-c.br { bottom: 30px; right: 10px; border-left: 0; border-top: 0; }
+#im .hb-name { margin: 12px auto 0; display: inline-block; padding: 6px 14px; font: 700 clamp(20px, 2.6vw, 26px)/1.1 var(--f-head); letter-spacing: .06em; color: #fff; background: #000; box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
+#im .hb-series { font-family: var(--f-mono2); color: var(--sus-cold); letter-spacing: .14em; }
+#im .im-forbid { margin-top: 12px; padding: 7px 12px; border-radius: 2px; font: 700 13px/1.35 var(--f-mono2); color: #ffd0d6; background: repeating-linear-gradient(-45deg, rgba(255,42,68,.22) 0 10px, rgba(255,42,68,.08) 10px 20px); box-shadow: inset 0 0 0 1px rgba(255,42,68,.5); }
+/* the imposter's own card: a hooded silhouette in the dark */
+#im .im-main.hq { background: radial-gradient(ellipse at 50% 60%, rgba(255,42,68,.18), transparent 65%), linear-gradient(180deg, #0d0a12, #050407); box-shadow: inset 0 0 0 1px rgba(255,42,68,.55), 0 0 70px rgba(255,42,68,.3), 0 24px 60px rgba(0,0,0,.7); }
+.sus-glitch { position: relative; font: 400 clamp(22px, 3.4vw, 30px)/1.1 var(--f-title) !important; letter-spacing: .02em !important; color: #fff !important; text-shadow: 2px 0 var(--sus-red), -2px 0 #3ee8ff !important; animation: susGlitch 3.2s steps(1) infinite; }
+@keyframes susGlitch { 0%, 88%, 100% { transform: none; text-shadow: 2px 0 #ff2a44, -2px 0 #3ee8ff; } 89% { transform: translateX(3px) skewX(-8deg); text-shadow: -4px 0 #ff2a44, 4px 0 #3ee8ff; } 91% { transform: translateX(-2px); } 93% { transform: none; opacity: .7; } }
+.sus-mask { position: relative; width: min(220px, 60%); aspect-ratio: 1 / 1.15; margin: 10px auto 6px; }
+.sus-hood { position: absolute; inset: 0; background: radial-gradient(ellipse 34% 30% at 50% 40%, #000 0 98%, transparent 100%), radial-gradient(ellipse 50% 46% at 50% 44%, #120e18 0 96%, transparent 100%), radial-gradient(ellipse 72% 40% at 50% 100%, #120e18 0 96%, transparent 100%); filter: drop-shadow(0 0 18px rgba(255,42,68,.35)); }
+.sus-eye { position: absolute; top: 38%; width: 18%; height: 6%; border-radius: 50%; background: radial-gradient(circle, #fff 0 8%, var(--sus-red) 30%, #6e0a16 90%); box-shadow: 0 0 14px 3px rgba(255,42,68,.75); animation: susBlink 6s ease-in-out infinite; }
+.sus-eye.l { left: 30%; } .sus-eye.r { right: 30%; }
+#im .im-main.hq .hb-series { color: #d9b7bf; font-size: 13px; letter-spacing: .04em; font-family: var(--f-ui); }
+
+/* panels: dark glass, a red edge, mono "transcript" tables */
+#im .hb-panel { background: var(--sus-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: inset 0 0 0 1px rgba(201,194,214,.14), inset 3px 0 0 var(--sus-red), 0 24px 60px rgba(0,0,0,.6); }
+#im .hb-ptitle { color: #f2eef8; text-shadow: 3px 3px 0 var(--sus-red-d), 0 0 20px rgba(255,42,68,.35); }
+#im .hb-table td { border-bottom: 1px solid rgba(201,194,214,.12); font-family: var(--f-mono2); font-size: 14px; }
+#im .hb-pts { font-family: var(--f-mono2); color: var(--sus-red); }
+#im .hb-wait { color: #a9a1b8; }
+#im .hb-champ { color: #f2eef8; }
+#im .hb-panel label { font-family: var(--f-mono2); color: var(--sus-red); }
+/* the line-up: everyone against the height chart */
+#im .im-votes { position: relative; padding: 14px 10px 10px; border-radius: 4px; background: repeating-linear-gradient(0deg, rgba(201,194,214,.10) 0 1px, transparent 1px 22px), linear-gradient(180deg, rgba(30,26,40,.7), rgba(12,10,18,.85)); box-shadow: inset 0 0 0 1px rgba(201,194,214,.12); }
+#im .im-vote { position: relative; background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(240,235,255,.14), transparent 70%), rgba(6,5,10,.75); box-shadow: inset 0 0 0 1px rgba(201,194,214,.2); }
+#im .im-vote .ava { filter: grayscale(.25) contrast(1.1); }
+#im .im-vote-n { color: #f2eef8; }
+#im .im-vote:hover:not(:disabled) { box-shadow: inset 0 0 0 2px var(--sus-red), 0 0 26px rgba(255,42,68,.35); }
+#im .im-vote.picked { background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(255,42,68,.35), transparent 70%), rgba(30,6,12,.85); box-shadow: inset 0 0 0 2px var(--sus-red), 0 0 34px rgba(255,42,68,.45); }
+#im .im-vote.picked::after { content: "YOUR SUSPECT"; position: absolute; inset: auto; top: 8px; right: 8px; z-index: 2; padding: 3px 7px; transform: none; transition: none; background: var(--sus-red); color: #fff; font: 700 10px/1.2 var(--f-mono2); letter-spacing: .12em; box-shadow: 0 0 12px rgba(255,42,68,.6); }
+/* the guess picker */
+#im .hb-picker { background: rgba(5,4,9,.93); }
+#im .hb-opt { background: rgba(30,26,40,.8); box-shadow: inset 0 0 0 1px rgba(201,194,214,.16); }
+#im .hb-opt:hover { background: rgba(255,42,68,.22); }
+
+@media (prefers-reduced-motion: reduce) { .sus-fog, .sus-bulb, .sus-eyes, .sus-eyes::before, .sus-eyes::after, #im .hb-pic img, .cam-rec, .sus-glitch, .sus-eye { animation: none; } .sus-eyes { opacity: .5; } }
+body.fx-lite .sus-fog, body.fx-lite .sus-bulb, body.fx-lite #im .hb-pic img, body.fx-lite .sus-glitch { animation: none; }

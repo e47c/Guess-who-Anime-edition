@@ -8,12 +8,14 @@
 <title>Anime Arcade Party</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Monoton&family=Press+Start+2P&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/base.css?v=9">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Monoton&family=Press+Start+2P&family=Special+Elite&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css?v=10">
 <link rel="stylesheet" href="css/modes.css?v=12">
 <link rel="stylesheet" href="css/uno.css?v=12">
 <link rel="stylesheet" href="css/draft.css?v=3">
 <link rel="stylesheet" href="css/feud.css?v=3">
+<link rel="stylesheet" href="css/case.css?v=1">
+<link rel="stylesheet" href="css/suspect.css?v=1">
 </head>
 <body class="anime-theme" data-scene="home">
 
@@ -257,9 +259,10 @@
      HEADBANZ
 ========================================= -->
 <div id="hb" class="hidden">
+<div class="case-room" aria-hidden="true"><i class="case-lamp"></i><i class="case-blinds"></i><i class="case-smoke"></i></div>
 
 <div class="game-header"><div class="game-header-inner"><div><div class="turn" id="hbTurn">Headbanz</div><div class="status" id="hbStatus"></div></div>
-<div class="hb-hdr-actions"><button id="hbGuessBtn" class="pop" onclick="hbOpenGuess()">🎯 GUESS MINE</button><button id="hbGiveBtn" class="pop secondary" onclick="hbGiveUp()">🏳️ GIVE UP</button><button class="pop ghost menu-btn" onclick="openPause()" aria-label="Menu">☰</button></div></div></div>
+<div class="hb-hdr-actions"><button id="hbGuessBtn" class="pop" onclick="hbOpenGuess()">🔍 SOLVE MINE</button><button id="hbGiveBtn" class="pop secondary" onclick="hbGiveUp()">🏳️ GIVE UP</button><button class="pop ghost menu-btn" onclick="openPause()" aria-label="Menu">☰</button></div></div></div>
 <div class="hb-wrap2">
 <div id="hbCards" class="hb-cards"></div>
 <div id="hbMine" class="hb-mine2"></div>
@@ -274,6 +277,7 @@
      IMPOSTER
 ========================================= -->
 <div id="im" class="hidden">
+<div class="sus-room" aria-hidden="true"><i class="sus-fog"></i><i class="sus-fog f2"></i><i class="sus-bulb"></i><span class="sus-eyes e1"></span><span class="sus-eyes e2"></span><span class="sus-eyes e3"></span><span class="sus-eyes e4"></span></div>
 
 <div class="game-header"><div class="game-header-inner"><div><div class="turn" id="imTurn">Imposter</div><div class="status" id="imStatus"></div></div>
 <div class="hb-hdr-actions"><button class="pop ghost menu-btn" onclick="openPause()" aria-label="Menu">☰</button></div></div></div>
@@ -408,7 +412,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=27"></script>
+<script type="module" src="js/game.js?v=28"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){
