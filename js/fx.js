@@ -25,6 +25,7 @@ const PRESETS = {
     im:    { n: 36, kinds: [["ash", .9], ["spark", .1]], cols: ["#4c4558", "#6f6680", "#2c2834", "#ff2a44"] },
     case:  { n: 40, kinds: [["mote", .85], ["ash", .15]], cols: ["#f2c27a", "#fff0cf", "#c98f45"] },
     uno:   { n: 44, kinds: [["ember", .7], ["spark", .3]], cols: ["#ffcf4a", "#ff6a1a", "#ffffff"] },
+    sketch: { n: 30, kinds: [["mote", .8], ["spark", .2]], cols: ["#38d39f", "#ffd21f", "#ff5fa8", "#2f8cff", "#ffffff"] },
     none:  { n: 0, kinds: [], cols: [] }
 };
 const ambient = (() => {

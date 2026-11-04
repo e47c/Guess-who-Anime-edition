@@ -35,6 +35,7 @@ body[data-scene="gw"]  { --accent: #f0c869; --accent-2: #e11b1b; --on-accent: #1
 body[data-scene="hb"]  { --accent: #e11b1b; --accent-2: #f0c869; --on-accent: #fff; }
 body[data-scene="im"]  { --accent: #ff2a44; --accent-2: #c9c2d6; --on-accent: #fff; }
 body[data-scene="case"] { --accent: #e0a64a; --accent-2: #f2dfb4; --on-accent: #1c1007; }
+body[data-scene="sketch"] { --accent: #38d39f; --accent-2: #ffd21f; --on-accent: #06231a; }
 body[data-scene="uno"] { --accent: #ffcf4a; --accent-2: #e11b1b; --on-accent: #1a0a00; }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -80,12 +81,19 @@ body[data-scene="case"]::before {   /* the investigation: a desk lamp, venetian 
         repeating-linear-gradient(-14deg, rgba(255,214,150,.055) 0 26px, transparent 26px 52px),
         radial-gradient(ellipse 70% 60% at 50% 110%, rgba(120,60,20,.35), transparent 70%),
         linear-gradient(180deg, #1a110a, #110b07 55%, #080503); }
+body[data-scene="sketch"]::before {  /* the art room after hours: a desk lamp, cork board, scattered crayon light */
+    background: radial-gradient(ellipse 50% 40% at 15% 0%, rgba(255,226,150,.20), transparent 70%),
+        radial-gradient(ellipse 35% 30% at 92% 90%, rgba(56,211,159,.16), transparent 70%),
+        radial-gradient(ellipse 30% 25% at 6% 85%, rgba(255,95,168,.12), transparent 70%),
+        radial-gradient(ellipse 30% 25% at 85% 12%, rgba(47,140,255,.12), transparent 70%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 34px),
+        linear-gradient(180deg, #13161c, #0d1015 60%, #07090c); }
 body[data-scene="uno"]::before {    /* arena floor tinted by the active colour */
     background: radial-gradient(ellipse 80% 60% at 50% 55%, color-mix(in srgb, var(--ac, #ffcf4a) 22%, transparent), transparent 70%),
         radial-gradient(circle at 50% 55%, transparent 0 29%, rgba(255,207,74,.10) 29.3% 29.8%, transparent 30%, transparent 44%, rgba(255,207,74,.07) 44.3% 44.8%, transparent 45%),
         linear-gradient(180deg, #160606, #0b0303 60%, #050101); }
 #ambient { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-.screen, #game, #hb, #im, #uno, #feud, #likely { position: relative; z-index: 1; }
+.screen, #game, #hb, #im, #uno, #feud, #likely, #sketch { position: relative; z-index: 1; }
 .screen { min-height: 100vh; min-height: 100dvh; padding: 22px clamp(14px, 3vw, 34px) calc(90px + var(--safe-b)); }
 
 /* ---------- splash: the logo comes in, a welcome from @e47 fades in and out, then the menu. Skippable; shorter for returning players.
@@ -382,7 +390,7 @@ body[data-scene="home"] .arc-floor, body[data-scene="lobby"] .arc-floor { displa
 .pc-stat:nth-child(2) b { color: var(--red-hi); } .pc-stat:nth-child(3) b { color: #fff; } .pc-stat:nth-child(4) b { color: var(--gold-bright); }
 
 /* the cabinets: marquee, a CRT in attract mode, joystick and buttons, the coin door */
-.cab-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: clamp(10px, 1.8vw, 26px); max-width: 1320px; width: 100%; margin: 6px auto 0; padding: 22px 6px 26px; perspective: 1100px; }
+.cab-row { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: clamp(10px, 1.8vw, 26px); max-width: 1320px; width: 100%; margin: 6px auto 0; padding: 22px 6px 26px; perspective: 1100px; }
 .cab { --mc: var(--accent); --rx: 0deg; --ry: 0deg; --lift: 0px; position: relative; display: flex; flex-direction: column; align-items: stretch; cursor: pointer; outline: none;
     transform: translateY(var(--lift)) rotateX(var(--rx)) rotateY(var(--ry)); transform-style: preserve-3d; transition: transform .3s var(--e-out);
     animation: cabIn .7s var(--e-out) both; animation-delay: calc(.5s + var(--i) * .1s);
@@ -391,7 +399,7 @@ body[data-scene="home"] .arc-floor, body[data-scene="lobby"] .arc-floor { displa
 .cab-mq { position: relative; z-index: 2; margin: 0 -6px; padding: 9px 10px 8px; border-radius: 8px 8px 2px 2px; text-align: center; overflow: hidden;
     background: linear-gradient(180deg, color-mix(in srgb, var(--mc) 92%, #fff), color-mix(in srgb, var(--mc) 70%, #000));
     box-shadow: 0 0 22px color-mix(in srgb, var(--mc) 55%, transparent), inset 0 0 0 2px rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.5); }
-.cab-mq b { display: block; font: 400 clamp(15px, 1.7vw, 22px)/1 var(--f-title); color: #fff; -webkit-text-stroke: 1.5px #120808; paint-order: stroke fill; text-shadow: 2px 2px 0 #120808; letter-spacing: .02em; white-space: nowrap; }
+.cab-mq b { display: block; font: 400 clamp(13px, 1.2vw, 16.5px)/1 var(--f-title); color: #fff; -webkit-text-stroke: 1.5px #120808; paint-order: stroke fill; text-shadow: 2px 2px 0 #120808; letter-spacing: 0; white-space: nowrap; }
 .cab-mq i { position: absolute; right: 6px; top: -4px; font: 400 34px/1 var(--f-title); font-style: normal; color: rgba(0,0,0,.22); }
 .cab-mq::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.55) 50%, transparent 60%); transform: translateX(-130%); animation: mqShine 5s ease-in-out infinite; animation-delay: calc(var(--i) * 1.1s + 2s); }
 @keyframes mqShine { 0%, 70% { transform: translateX(-130%); } 90%, 100% { transform: translateX(130%); } }
@@ -809,7 +817,7 @@ body.net-down .dock::before { content: "⚠ Connection lost. Reconnecting…"; p
     .pc-stats { margin-bottom: 12px; }
     .lobby-grid { grid-template-columns: 1fr; }
     .seats { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
-    .cab-row { grid-template-columns: repeat(7, minmax(190px, 1fr)); overflow-x: auto; scroll-snap-type: x mandatory; padding-left: 16px; padding-right: 16px; perspective: none; scrollbar-width: none; }
+    .cab-row { grid-template-columns: repeat(8, minmax(190px, 1fr)); overflow-x: auto; scroll-snap-type: x mandatory; padding-left: 16px; padding-right: 16px; perspective: none; scrollbar-width: none; }
     .cab-row::-webkit-scrollbar { display: none; }
     .cab { scroll-snap-align: center; -webkit-box-reflect: unset; }
     .lg-jp { display: none; }
@@ -817,7 +825,7 @@ body.net-down .dock::before { content: "⚠ Connection lost. Reconnecting…"; p
 }
 @media (max-width: 620px) {
     .screen { padding-left: 12px; padding-right: 12px; }
-    .cab-row { grid-template-columns: repeat(7, 62vw); margin: 0 -12px; width: auto; }
+    .cab-row { grid-template-columns: repeat(8, 62vw); margin: 0 -12px; width: auto; }
     .seats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .seat { min-height: 160px; padding-top: 28px; }
     .seat-id b { font-size: 18px; }

@@ -8,14 +8,15 @@
 <title>Anime Arcade Party</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Monoton&family=Press+Start+2P&family=Special+Elite&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/base.css?v=11">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Monoton&family=Press+Start+2P&family=Special+Elite&family=Permanent+Marker&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css?v=12">
 <link rel="stylesheet" href="css/modes.css?v=12">
 <link rel="stylesheet" href="css/uno.css?v=12">
 <link rel="stylesheet" href="css/draft.css?v=3">
 <link rel="stylesheet" href="css/feud.css?v=4">
 <link rel="stylesheet" href="css/case.css?v=1">
 <link rel="stylesheet" href="css/suspect.css?v=1">
+<link rel="stylesheet" href="css/sketch.css?v=1">
 </head>
 <body class="anime-theme" data-scene="home">
 
@@ -63,7 +64,7 @@
 <span class="lg-neon" aria-hidden="true"><span class="lg-arcade">ARC<em>A</em>DE</span><span class="lg-party">PAR<em>T</em>Y</span></span>
 <span class="lg-jp" aria-hidden="true">アニメ・アーケード</span>
 </h1>
-<p class="tagline">Seven anime party games. One room. <b>Insert coin.</b></p>
+<p class="tagline">Eight anime party games. One room. <b>Insert coin.</b></p>
 <div class="home-cta">
 <button class="btn xl coin-btn" onclick="insertCoin()"><span class="coin-slot" aria-hidden="true"><i></i></span><span class="cb-txt">Host a party<small>insert coin · create a room</small></span></button>
 <div id="joinArea" class="join-box">
@@ -180,6 +181,11 @@
 <div><label class="field-label">Vote time</label><div class="sizes" id="mlTimerBtns"></div></div></div>
 <div id="mlTeamsBox"><label class="field-label" style="margin-top:14px">Teams</label><div id="mlTeams" class="dr-teams fd-teams"></div></div>
 <p class="anime-hint" id="mlHint"></p></div>
+<div id="sketchBox" class="field hidden"><label class="field-label">Anime Sketch · everyone draws in turn</label>
+<div class="fd-scope" id="skScope"></div>
+<div class="fd-opts"><div><label class="field-label">Rounds</label><div class="sizes" id="skRoundsBtns"></div></div>
+<div><label class="field-label">Drawing time</label><div class="sizes" id="skTimerBtns"></div></div></div>
+<p class="anime-hint" id="skHint"></p></div>
 </div>
 </section>
 </div>
@@ -216,6 +222,14 @@
 <div id="likely" class="hidden fd-clash">
 <div class="game-header"><div class="game-header-inner"><div><div class="turn" id="mlTurnT"></div><div class="status" id="mlStatus"></div></div><button class="pop ghost menu-btn" onclick="openPause()" aria-label="Menu">☰</button></div></div>
 <div id="mlWrap" class="fd-wrap"></div>
+</div>
+
+<!-- =========================================
+     ANIME SKETCH (js/sketch/sketch.js renders into #skWrap)
+========================================= -->
+<div id="sketch" class="hidden">
+<div class="game-header"><div class="game-header-inner"><div><div class="turn" id="skTurnT"></div><div class="status" id="skStatus"></div></div><button class="pop ghost menu-btn" onclick="openPause()" aria-label="Menu">☰</button></div></div>
+<div id="skWrap" class="sk-wrap"></div>
 </div>
 
 <!-- =========================================
@@ -426,7 +440,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=29"></script>
+<script type="module" src="js/game.js?v=30"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){

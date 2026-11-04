@@ -2,7 +2,7 @@
 
 *(formerly Guess Who: Anime Edition)*
 
-A browser party game for a squad of up to 8 friends with seven anime modes in one room:
+A browser party game for a squad of up to 8 friends with eight anime modes in one room:
 
 | Mode | Players | Identity |
 |---|---|---|
@@ -13,6 +13,7 @@ A browser party game for a squad of up to 8 friends with seven anime modes in on
 | **Anime Draft** | 2–8 (Build 1v1–4v4, Auction free-for-all) | *Team Builder*: collectible cards in five rarities on a black and gold stage |
 | **Anime Feud** | 2–8 (Team vs Team) | *Game Show*: a classic blue TV studio, buzzer podiums, a marquee-bulb board; game-show sounds (answer ding, wrong-answer buzzer, applause, fanfare) and bouncy show music |
 | **Most Likely** | 2–8 (Team vs Team or Free For All) | *Hot Takes*: a dark, fiery argument (smoky glass, embers, two burning cards around a VS crest); fire crackle, clash hits, taiko and an aggressive drum-and-bass theme |
+| **Anime Sketch** | 2–8 (everyone draws in turn) | *Draw & Guess*: the art room after hours (a white sheet taped to a dark desk, sticky-note round counter, lined-paper word strip, marker lettering); pencil scribbles, a marimba "got it!", soft pops, a light lo-fi groove |
 
 ## How the modes scale
 
@@ -185,6 +186,42 @@ Every player keeps a history: `"<questionId>@<scope>": [last seen, times seen]`.
   - The question library ships with the page, like every other mode's data. Anyone who opens the developer tools can read the boards.
   - Keeping answers truly hidden needs a trusted server (a Cloud Function that holds the boards and checks guesses). This project has none, so the honest guarantee is: answers never travel through the room data, and a normal player never sees them.
   - Like the other modes, a modified client could also write moves out of turn; real enforcement needs validating rules or a Cloud Function.
+
+## Anime Sketch
+
+The eighth mode: one player draws an anime word, everyone else races to guess it. Code: `js/sketch/sketch.js` (lobby, screen, live canvas, chat, duties), `js/sketch/engine.js` (rules, word library builder, tested by `tools/sketch-test.mjs`), `js/sketch/words.js` (a few extra words and a blocklist), `css/sketch.css`.
+
+- **Setup (host):** 1–5 rounds (default 3), 60 / 90 / 120 s to draw (default 90), and the series: one series = its own words, two or more = an Anime Mix from those series only. A round means every active player draws once, so 3 rounds with 4 players = 12 turns.
+- **Words:** built from what the site already has, no separate database:
+  - characters from the Anime Draft roster (`js/draft/data.js`, top 22 per series, with AniList ids so the reveal shows their picture) and the fan nicknames (`js/feud/nicknames.js`);
+  - attacks, powers, places, items, groups, titans, devils and stands from the Anime Feud answer boards, with their accepted aliases;
+  - a short curated list per series in `js/sketch/words.js` for terms neither covers (Sharingan, Shenron, Wind chime…), plus a blocklist for board answers you can't draw.
+  - About 870 words; every series has at least 26.
+  - A character's single name counts when no other character of that series shares it ("Itachi" for Itachi Uchiha, but not "Uchiha").
+- **A turn:**
+  - The drawer privately gets 3 words (different categories, and different series in a mix; never one already drawn this match, preferably not one this browser saw lately) and has 15 s to pick, or one is picked for them.
+  - Tools: brush, eraser, 16 colours, 4 sizes, undo, clear (with a confirm). The drawing streams live to everyone, spectators included.
+  - Guessers type in the chat. Case, accents, punctuation and extra spaces are ignored, and the answer inside a sentence counts too ("is it luffy?"). A right guess is **never posted**: the player is told privately and everyone else sees "Ayla guessed the word!". Wrong guesses show as normal chat.
+  - The drawer can chat, but a message containing the word is blocked. Players who already have it can chat too; their messages are shown only to the drawer and the others who have it.
+  - The turn ends when every active guesser has it or time runs out. The answer and the points show for a few seconds, then the next drawer.
+  - After everyone has drawn, a round summary shows each word, who got it and the top 3, then the next round starts.
+- **Letter hints:** blanks show the word's shape (spaces and punctuation kept). After 20 s with no right guess a letter is revealed, then another every 15 s still without a new right guess; a right guess restarts that clock. Up to 5 letters: 1 hint; 6–10: 2; 11+: 3. Hints pick distinct letters when possible and never reveal the whole word.
+- **Scoring:** first right guess +100, second +75, third +50, everyone after +25. The drawer gets +25 per player who gets it. Nobody right = no points that turn. The final screen ranks everyone (ties share the win) and lists every word drawn.
+- **Spectators:** anyone who joins the room during a match watches the canvas, the blanks and the chat but can't guess, draw or score. "Join next round" queues them; they're dealt in when the next round starts (at the end of the drawing order), never in the middle of one.
+- **Leaving, disconnecting, the host:**
+  - A guesser who leaves no longer blocks "everyone has it".
+  - A drawer offline for 6 s loses the turn (points already won stay). Someone offline when their turn comes is skipped for that round.
+  - If the host is offline for 8 s, the first online player becomes the host (Rematch, Back to lobby), and the match carries on from where it was.
+  - The clock and the next turn never depend on one browser: the host acts first, and every other online player steps in, one after another, a few seconds later if nothing happened. Fewer than 2 players left = back to the lobby.
+- **Firebase (rooms/<code>):**
+  - `sketch`: the match (players, drawing order, round, turn number, phase, server-time deadline, scores, who guessed it and in what order, the blanks, revealed letters, the turn log). Every move (pick, guess, hint, timeout, next turn, join) is a transaction checked against the turn number and phase, so two right guesses at the same instant are ordered strictly, a repeated guess can't score twice, and a stale tab or a second browser can't advance the game twice.
+  - `sketchInk`: one child per stroke piece (colour, width, eraser, points on an 800×600 sheet, the turn it belongs to). Only the drawer writes it; long strokes go out in small pieces about 20 times a second.
+  - `sketchChat`: the chat (last 80 shown).
+  - All three are cleared when a match starts and when the room goes back to the lobby.
+- **How the word stays secret:** the word is not written anywhere in the room while it is being drawn. The drawer's browser publishes only the blanks, a random per-turn salt and salted fingerprints of the accepted spellings; each guesser's browser checks its own guess against those and only sends a match as a claim. The drawer's browser keeps the word (in localStorage, so a refresh mid-turn keeps it) and writes it to the room when the turn ends.
+- **Honest limits:**
+  - The word list ships with the page, so someone using the developer tools could test every word in the list against the fingerprints and find the answer, or send a fake "right guess". Like the other modes, real enforcement would need a trusted server (a Cloud Function), which this project doesn't have. A normal player never sees the word.
+  - Hints are written by the drawer's browser; if the drawer drops, the turn ends.
 
 ## Customising
 

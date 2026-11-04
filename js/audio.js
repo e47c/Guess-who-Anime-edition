@@ -195,6 +195,19 @@ const FX = {
     clashWin(o, t) { V.sweep(o, t, 150, 4000, .7, .8, 2); [67, 71, 74, 79].forEach((m, i) => V.pluck(o, t + .5 + i * .06, m, .5, .7, "sawtooth", 3000, .3)); V.kick(o, t + .5, 1.1); V.tom(o, t + .5, 90, 1); FX.crackle(o, t + .5); },
     clashMiss(o, t) { V.sweep(o, t, 2200, 200, .6, .7, 2); V.pluck(o, t + .1, 45, .6, .8, "sawtooth", 600, .2); V.pluck(o, t + .35, 40, .9, .8, "sawtooth", 500, .3); },
     taiko(o, t) { V.tom(o, t, 75, 1.4); V.kick(o, t, 1); V.tom(o, t + .18, 95, 1); V.tom(o, t + .3, 75, 1.2); V.snare(o, t + .3, .5, .2); },
+    // Anime Sketch: the art room. Pencil scribbles, paper, a marimba "got it!", a soft bubble when someone else gets it.
+    scribble(o, t) { [0, .09, .2, .3].forEach((d, i) => V.sweep(o, t + d, 2600 + i * 300, 4200 - i * 200, .08, .45, 7)); },
+    skTurn(o, t) { FX.scribble(o, t); V.bell(o, t + .3, 79, .7, 1.4); V.bell(o, t + .42, 84, .6, 1.4); },
+    skGo(o, t) { V.pluck(o, t, 72, .12, .6, "triangle", 5000, .2); V.pluck(o, t + .1, 79, .16, .6, "triangle", 5000, .2); },
+    skPick(o, t) { V.sweep(o, t, 1800, 600, .12, .8, 2); V.pluck(o, t + .06, 76, .14, .6, "triangle", 5000, .2); V.pluck(o, t + .14, 83, .2, .55, "triangle", 5000, .3); },
+    skCorrect(o, t) { [72, 76, 79, 84, 88].forEach((m, i) => V.pluck(o, t + i * .055, m, .35, .75, "triangle", 7000, .35)); V.bell(o, t + .28, 91, .8, 1.8); V.bell(o, t + .28, 96, .45, 1.8); },
+    skBonus(o, t) { V.pluck(o, t, 84, .1, .55, "square", 5000, .1); V.pluck(o, t + .07, 91, .18, .5, "square", 5000, .2); },
+    skPop(o, t) { V.sweep(o, t, 500, 1800, .07, .7, 8); V.pluck(o, t + .03, 81, .1, .45, "sine", 5000, .2); },
+    skHint(o, t) { V.hat(o, t, .6); V.pluck(o, t + .02, 88, .12, .5, "sine", 6000, .4); V.pluck(o, t + .12, 93, .16, .4, "sine", 6000, .4); },
+    skAll(o, t) { chord(o, t, [67, 72, 76, 79, 84], .05, .9); V.bell(o, t + .3, 88, .7, 2); FX.applause(o, t + .15, { n: 18 }); },
+    skTime(o, t) { [76, 72, 67].forEach((m, i) => V.pluck(o, t + i * .14, m, .22, .7, "square", 1800, .2)); V.pluck(o, t + .44, 60, .5, .7, "sawtooth", 900, .3); },
+    skRound(o, t) { [[0, [60, 64, 67]], [.16, [65, 69, 72]], [.32, [67, 71, 74]], [.52, [72, 76, 79, 84]]].forEach(([d, ch], i) => chord(o, t + d, ch, .02, i === 3 ? .9 : .6)); V.bell(o, t + .52, 91, .6, 2); },
+    skErase(o, t) { for (let i = 0; i < 5; i++) V.sweep(o, t + i * .05, 900, 1600, .06, .4, 3); },
     ohh(o, t) { V.pad(o, t, [55, 59, 62], .9, .9, 900, "triangle"); V.sweep(o, t, 500, 900, .9, .35, 6); }
 };
 // the old two-oscillator "tone" helper, now routed through the sfx bus so volume settings apply
@@ -241,6 +254,10 @@ const THEMES = {
     clash: { bpm: 132, swing: 0, root: 50, prog: [[0, 3, 7], [-2, 2, 5], [-4, 0, 3], [-5, -2, 2]], scale: [0, 3, 5, 7, 10, 12],
         kick: P("o..xo...o..xo.x."), snare: P("....o.......o..o"), hat: P("..x...x...x...x."), toms: true, bassPat: [0, null, 0, 0, null, 0, null, 0, 0, null, 0, 0, 3, null, 2, null],
         bassWave: "sawtooth", bassCut: 520, chords: "stab", chordHits: [0, 7], lead: "pluck", leadEvery: 2, leadWave: "sawtooth", leadVol: .45 },
+    // Anime Sketch: a light lo-fi art-room groove. Brushes, a walking marimba, soft keys.
+    sketch: { bpm: 96, swing: .16, root: 60, prog: [[0, 4, 7, 11], [-3, 0, 4, 7], [2, 5, 9, 12], [-5, -1, 2, 5]], scale: [0, 2, 4, 7, 9, 12, 14],
+        kick: P("o.......o..x...."), snare: null, brush: P("....o..x....o.x."), hat: P("x.x.x.x.x.x.x.x."), hatVol: .35, bassPat: [0, null, null, 7, null, null, 12, null, 0, null, null, 7, null, 9, null, null],
+        bassWave: "triangle", bassCut: 800, chords: "keys", chordHits: [0, 7], lead: "pluck", leadEvery: 2, leadWave: "triangle", leadVol: .5 },
     // Anime UNO: arena battle drums
     uno: { bpm: 140, swing: 0, root: 55, prog: [[0, 7, 12], [-4, 3, 8], [-2, 5, 10], [-7, 0, 5]], scale: [0, 3, 5, 7, 10, 12, 15],
         kick: P("o...x...o...x.x."), snare: P("....o.......o..."), hat: P("x.x.x.x.x.x.x.x."), toms: true, bassPat: [0, null, 0, 12, 0, null, 0, 10, 0, null, 0, 12, 0, 7, 10, 12],
