@@ -2,7 +2,7 @@
 
 *(formerly Guess Who: Anime Edition)*
 
-A browser party game for a squad of up to 8 friends with five anime modes in one room:
+A browser party game for a squad of up to 8 friends with six anime modes in one room:
 
 | Mode | Players | Identity |
 |---|---|---|
@@ -11,6 +11,7 @@ A browser party game for a squad of up to 8 friends with five anime modes in one
 | **Imposter** | 3–8 | *Shadow Trial*: interrogation spotlight, crimson |
 | **Anime UNO** | 2–8 | *Arena Clash*: card-battle arena tinted by the active colour |
 | **Anime Draft** | 2–8 (Build 1v1–4v4, Auction free-for-all) | *Team Builder*: collectible cards in five rarities on a black and gold stage |
+| **Anime Feud** | 2–8 (two teams) | *Game Show*: a hidden ranked board under a spinning spotlight, Team Crimson vs Team Gold |
 
 ## How the modes scale
 
@@ -65,6 +66,112 @@ Build the strongest six-character team. Everything lives in `js/draft/` (rules, 
 - The power tiers, rarity bands and bonuses are first balancing values.
 - Not server-authoritative in the strict sense: like the other modes, the game has no server of its own. The transactions keep honest clients in sync, but a modified client could still write a move out of turn or read the shuffled deck. Real enforcement needs Firebase security rules that validate the move, or a Cloud Function.
 
+## Anime Feud
+
+A team game show. Two teams uncover a hidden board of 5 to 8 ranked answers. Everything lives in `js/feud/` (engine, screen, question packs) and `css/feud.css`; `js/game.js` only routes to it.
+
+- **Two game types** (picked in the lobby):
+  - **Classic Feud:** type answers ("Name a villain from One Piece"). Answers can be characters, groups, places, techniques, items or general ideas. Typing is forgiving: case, accents, punctuation and "the" are ignored, one typo is allowed (two on long answers, never on numbers: "Gear 3" is not "Gear 5"), and part of a long answer counts ("shadow clone" for "Shadow Clone Jutsu"). For a character, the first name, last name or a nickname works ("Blackbeard", "Deku"). A word that fits two answers ("Uchiha") asks you to be more specific, with no strike.
+  - **Most Likely:** "Who would betray their friends?", "Who would make the worst roommate?". The answerer searches the characters of the ticked series (name or nickname, portraits from the Anime Draft roster) and locks one in. It is a hidden-board guessing game like Classic, not a vote.
+- **Single anime or Anime Mix.** The same series checkboxes as Anime Draft.
+  - **One series ticked:** questions written for that series, plus the crossover questions that have at least 5 answers in it ("Which One Piece character is the most loyal?").
+  - **Two or more ticked:** crossover questions answered **only from the ticked series**. A mixed board needs answers from at least two of them and spreads its 8 slots across the ticked series. General anime questions ("Name something an anime villain would never forgive") only appear in a mix.
+  - The lobby shows the scope and how many questions fit. It blocks the start if fewer boards fit than the rounds chosen.
+- **Teams.** 2–8 players are split as evenly as possible (1v1, 2v1, 2v2, 3v2, 3v3, 4v3, 4v4). The host can tap a player to move them, or shuffle.
+- **A round.**
+  - The team in play answers one at a time. The answerer rotates every guess, skipping anyone who is away. Teammates can talk it through, but only the answerer can submit.
+  - A right answer opens its row and adds its points to the pot. A wrong answer, or running out of the 20/30/45 s clock, is a strike. An answer already on the board costs nothing.
+  - After 3 strikes the other team gets **one** answer: right = they steal the whole pot (plus that answer), wrong = the defenders keep it. Clearing the board banks the pot with no steal.
+  - The full board is shown for a few seconds (the host can skip), then the next question. The starting team alternates.
+- **Match.** 3, 5 (default) or 7 rounds. A tie after the last round plays **one** sudden-death question; still tied = a draw. The final screen shows the winner, both scores, every round with its pot and who found which answer, and Rematch / Back to lobby for the host.
+
+### Question rotation (nothing is banned for good)
+
+Every player keeps a history: `"<questionId>@<scope>": [last seen, times seen]`. The scope is the series key, or `mix`, because "most loyal" for One Piece and "most loyal" for Naruto are different boards. A question is recorded **the moment it is shown**, so a refresh or a quit still counts. When the host needs a question, every eligible one is scored against the **whole room's** histories:
+
+| Signal | Default cooldown | Effect |
+|---|---|---|
+| Same question (same wording, same scope) | 24 h | strongly lowered, fading back over the cooldown |
+| Another wording of the same board | 36 h | strongly lowered |
+| Its opposite ("most loyal" after "most likely to betray") | 18 h | partly lowered |
+| Same family (Leadership, Survival, …) | 6 h | slightly lowered |
+
+- **Score:** 3 × the share of players who haven't met it (or a rewording) inside its cooldown, + 1.5 × the average freshness, + 0.6 × a restoration term that keeps rising for 7 days after the cooldown, + a little randomness.
+- **The pick:** a weighted random one among everything within reach of the best score. Old questions drift back in at random, and one player's history never blocks a question for everyone else.
+- **Inside one match:** never the same question twice. Its rewordings, its opposite and its family are avoided too, and those rules are relaxed in that order only if nothing else is left. If even that runs out, the match ends cleanly ("out of questions").
+- **Tuning:** the cooldowns, restore window, rounds, timer and board sizes are in `FEUD_RULES` (`js/feud/engine.js`).
+
+### How the library is organised
+
+- **Board** (one ranked answer list = a `variantGroupId`):
+  - **Family:** `familyId` (Leadership, Loyalty, Survival …).
+  - **Variant type:** `base`, `opposite`, `scenario` or `context`. Every extra wording of the same board is a `reword` and shares its answers.
+  - **Opposites** (`opp`, linked both ways) have **their own, separately ranked board**, never the original reversed (`feud-check` rejects a reversed copy).
+- **Question:** each wording gets its own id (`x-loyal_2`) and carries every field: questionId, familyId, variantGroupId, variantType, questionType, animeScope, animeIds, category, subcategory, difficulty, polarity, questionText, answers, answerPoints, characterIds, acceptedAliases, curationSource, reviewStatus.
+- **Answers** have stable IDs (`x-loyal~onepiece~roronoa-zoro`) and explicit points. Character answers point at Anime Draft roster IDs (AniList), so pictures and names are shared and nothing is downloaded twice.
+- **Labelling:** every board is labelled **Anime Arcade curated answers**. The rankings are our own picks, not survey results, and the game says so on the board and the final screen. `ranking: "curated"` and `votes: null` are reserved so real community votes can be added later without changing the format. No votes are invented.
+- **Initial library:** 188 questions on 91 boards (55 Classic, 36 Most Likely), 25 families, 10 opposite pairs.
+  - **Most Likely:** 23 to 31 boards for every series except Gachiakuta.
+  - **Classic:** 8 to 16 boards per series. Wind Breaker has 5, enough for 3 rounds.
+  - **Gachiakuta** can't be played on its own yet; it works inside a mix. Boards only list answers we are sure of, and there aren't enough of those for Gachiakuta yet.
+
+### Adding questions
+
+1. Open a pack in `js/feud/packs/` (or copy one into a new file and list it in `packs/index.js`). No gameplay code changes.
+2. Add a board:
+   ```js
+   { id: "x-best-cook", fam: "food", cat: "Everyday life", sub: "Cooking", pol: "+", diff: 1,
+     q: ["Who is the best cook?", "Whose cooking would you trust at a crossover feast?"],
+     a: { onepiece: "Sanji 44; Robin 10; ...", naruto: "..." } }
+   ```
+   - **Answer lines:** `Answer / alias / alias 30; ...` in Classic, `@Name` for a character in Classic, and plain names in Most Likely. A short unique name is enough ("Zoro").
+   - **Template words:** `{a}` becomes "One Piece " in single mode and disappears in a mix. `{s}` becomes the series name(s).
+   - **Mode-only wordings:** prefix with `S|` for single mode only, `M|` for mix only.
+   - **Series-only boards:** `only: true` makes a board play only for that one series.
+   - **Opposites:** `opp: "<board id>"` on both boards.
+   - Add new wordings at the **end** of `q` (a wording's id is its position).
+3. Run `node tools/feud-check.mjs`. It rejects:
+   - a duplicate or non-Firebase-safe id;
+   - an unknown or ambiguous character;
+   - a missing point value;
+   - a series line over 100 points;
+   - two answers that accept the same text;
+   - a single-series board with fewer than 5 answers;
+   - the same wording twice;
+   - an opposite that is just the original reversed;
+   - a mixed board showing a series that wasn't ticked;
+   - blocked words.
+
+   It warns about wordings that are near copies of another board, rewordings that are only a synonym swap, and opposites sharing most of their answers. It then prints what every series and a sample of mixes can play.
+4. Run `node tools/feud-test.mjs` (181 checks: matching, filtering, rotation and cooldowns, histories across players and rooms, teams for 2–8 players, strikes, steals, clears, ties, sudden death, away players, full simulated matches for every player count).
+
+### Multiplayer, history and what Firebase can and can't protect
+
+- **Room data:**
+  - `rooms/<code>/feud` holds the match: teams, scores, round, the question's ID, which slots are open, strikes, a turn key and the deadline.
+  - Every move (answer, timeout, next question) is a transaction that checks the turn key, phase and answerer. A double click, two teammates at once, or the host and a stale tab advancing together can never both apply.
+  - The host picks each question once and writes it. Every client then rebuilds the same board from the same library, so **unrevealed answers are never written to the room**.
+  - The countdown uses the server time offset, so every screen shows the same second. The host's client strikes a guess that runs out of time.
+  - **Leaving and reconnecting:**
+    - An away answerer is skipped.
+    - If the host leaves, the next player takes over the clock and the rounds.
+    - A whole team leaving sends everyone back to the lobby.
+    - A refresh lands back in the same round.
+    - Late joiners watch.
+- **History storage:**
+  - The history lives in this browser's localStorage, keyed by the Firebase anonymous uid, so it survives normal sessions. It is copied into `rooms/<code>/feudHist/p<N>` (uid-checked) so the host can weigh everyone's.
+  - There is **no cross-device history** (anonymous auth has no account linking). Clearing site data starts a fresh history.
+- **Rules limitation:**
+  - The current database rules only allow writes under `rooms/` (a write to `feudHistory/<uid>` is denied), so the history can't be stored per player in Firebase yet. The code already tries `feudHistory/<uid>` and silently falls back.
+  - To turn it on, add this to the database rules (it doesn't loosen anything else):
+    ```json
+    "feudHistory": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } }
+    ```
+- **Hidden answers are not secret from a determined player.**
+  - The question library ships with the page, like every other mode's data. Anyone who opens the developer tools can read the boards.
+  - Keeping answers truly hidden needs a trusted server (a Cloud Function that holds the boards and checks guesses). This project has none, so the honest guarantee is: answers never travel through the room data, and a normal player never sees them.
+  - Like the other modes, a modified client could also write moves out of turn; real enforcement needs validating rules or a Cloud Function.
+
 ## Customising
 
 - **Series art and names:** `ANIME_LIBRARY` and `CHARACTER_NAMES` at the top of `js/game.js`. Every character is named; a name left as `""` would show as *Secret character*. The Guess Who Attack on Titan pack uses `images/anime/aot/aot1.jpg` through `aot24.jpg`, in order: Eren Jaeger, Armin Arlert, Sasha Blouse, Annie Leonhart, Miche Zacharias, Zeke Jaeger, Pieck Finger, Dot Pixis, Jean Kirstein, Ymir (Freed), Onyankopon, Floch Forster, Historia Reiss, Falco Grice, Kenny Ackerman, Hange Zoë, Grisha Jaeger, Bertholdt Hoover, Levi Ackerman, Erwin Smith, Mikasa Ackerman, Reiner Braun, Connie Springer, Gabi Braun.
@@ -88,7 +195,7 @@ Build the strongest six-character team. Everything lives in `js/draft/` (rules, 
 - **Buttons** are one family across the site: red lacquer with a gold hairline (main), gold (alt), black and gold (ghost), dark red (danger). Hover lifts them with a glow and a shine sweep, pressing sinks them, disabled ones go flat charcoal.
 - **Logo.** A red coin with a gold rim and a gold star (the brand mark), *ANIME* in bold white with a red block shadow and a gold edge, *ARCADE* in polished gold and *PARTY* in white on a red band. The lobby header carries the same pieces as a one-line compact logo, and keeps it on phones.
 - **First-open splash.** The logo comes in, then a welcome fades in and out (*Welcome, player. Built with love by @e47. Have fun!*), then the menu. Returning players get a shorter one (*Welcome back*), and **Skip** (or a tap, Enter or Esc) goes straight to the menu. It doubles as the loading screen: it leaves only once the app is ready.
-- **Mode art** (the menu's cabinets and the lobby's mode cards) shows only each series' main protagonists and main villains, framed in gold: Guess Who has Naruto, Luffy and Ichigo; Headbanz has Goku, Yuji and Tanjiro; Imposter has Madara, Sukuna and Muzan; Anime UNO has Ace, Jotaro and Sasuke; Anime Draft has Luffy, Gojo and Eren.
+- **Mode art** (the menu's cabinets and the lobby's mode cards) shows only each series' main protagonists and main villains, framed in gold: Guess Who has Naruto, Luffy and Ichigo; Headbanz has Goku, Yuji and Tanjiro; Imposter has Madara, Sukuna and Muzan; Anime UNO has Ace, Jotaro and Sasuke; Anime Draft has Luffy, Gojo and Eren; Anime Feud has Nezuko, Mahito and Kid Buu.
 
 ## Menu and lobby
 

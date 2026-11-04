@@ -9,10 +9,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Monoton&family=Press+Start+2P&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/base.css?v=8">
+<link rel="stylesheet" href="css/base.css?v=9">
 <link rel="stylesheet" href="css/modes.css?v=12">
 <link rel="stylesheet" href="css/uno.css?v=12">
 <link rel="stylesheet" href="css/draft.css?v=3">
+<link rel="stylesheet" href="css/feud.css?v=1">
 </head>
 <body class="anime-theme" data-scene="home">
 
@@ -60,7 +61,7 @@
 <span class="lg-neon" aria-hidden="true"><span class="lg-arcade">ARC<em>A</em>DE</span><span class="lg-party">PAR<em>T</em>Y</span></span>
 <span class="lg-jp" aria-hidden="true">アニメ・アーケード</span>
 </h1>
-<p class="tagline">Five anime party games. One room. <b>Insert coin.</b></p>
+<p class="tagline">Six anime party games. One room. <b>Insert coin.</b></p>
 <div class="home-cta">
 <button class="btn xl coin-btn" onclick="insertCoin()"><span class="coin-slot" aria-hidden="true"><i></i></span><span class="cb-txt">Host a party<small>insert coin · create a room</small></span></button>
 <div id="joinArea" class="join-box">
@@ -164,6 +165,13 @@
 <div class="dr-roles"><span class="dr-rolename" id="drRolesName">One Piece roles</span><button type="button" class="dr-switch" id="drRolesTg" role="switch" aria-checked="false" onclick="setDraftOpt('roles')"><span class="dr-knob"></span><b>Classic roles</b></button></div>
 <div id="drRolePrev" class="dr-roleprev"></div>
 <p class="anime-hint" id="drHint"></p></div>
+<div id="feudBox" class="field hidden"><label class="field-label">Game type</label>
+<div class="fd-types"><button type="button" class="fd-type selected" data-k="classic" onclick="setFeudOpt('type','classic')"><span class="fd-ico" aria-hidden="true">答</span><b>Classic Feud</b><small>Type the top answers to anime survey-style questions.</small></button><button type="button" class="fd-type" data-k="likely" onclick="setFeudOpt('type','likely')"><span class="fd-ico" aria-hidden="true">誰</span><b>Most Likely</b><small>Pick the characters most likely to fit: who would betray, lead, survive…</small></button></div>
+<div class="fd-scope" id="fdScope"></div>
+<div class="fd-opts"><div><label class="field-label">Rounds</label><div class="sizes"><button class="modebtn fdrbtn" data-k="3" onclick="setFeudOpt('rounds',3)">3</button><button class="modebtn fdrbtn selected" data-k="5" onclick="setFeudOpt('rounds',5)">5</button><button class="modebtn fdrbtn" data-k="7" onclick="setFeudOpt('rounds',7)">7</button></div></div>
+<div><label class="field-label">Answer time</label><div class="sizes"><button class="modebtn fdtbtn" data-k="20" onclick="setFeudOpt('timer',20)">20 s</button><button class="modebtn fdtbtn selected" data-k="30" onclick="setFeudOpt('timer',30)">30 s</button><button class="modebtn fdtbtn" data-k="45" onclick="setFeudOpt('timer',45)">45 s</button></div></div></div>
+<label class="field-label" style="margin-top:14px">Teams</label><div id="fdTeams" class="dr-teams fd-teams"></div>
+<p class="anime-hint" id="fdHint"></p></div>
 </div>
 </section>
 </div>
@@ -183,6 +191,15 @@
 <div class="dr-bg" aria-hidden="true"><i></i><i></i></div>
 <div class="game-header"><div class="game-header-inner"><div><div class="turn" id="drTurn"></div><div class="status" id="drStatus"></div></div><button class="pop ghost menu-btn" onclick="openPause()" aria-label="Menu">☰</button></div></div>
 <div id="drWrap" class="dr-wrap"></div>
+</div>
+
+<!-- =========================================
+     ANIME FEUD (js/feud/feud.js renders into #fdWrap)
+========================================= -->
+<div id="feud" class="hidden">
+<div class="fd-bg" aria-hidden="true"><i></i><i></i></div>
+<div class="game-header"><div class="game-header-inner"><div><div class="turn" id="fdTurnT"></div><div class="status" id="fdStatus"></div></div><button class="pop ghost menu-btn" onclick="openPause()" aria-label="Menu">☰</button></div></div>
+<div id="fdWrap" class="fd-wrap"></div>
 </div>
 
 <!-- =========================================
@@ -391,7 +408,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=24"></script>
+<script type="module" src="js/game.js?v=25"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){

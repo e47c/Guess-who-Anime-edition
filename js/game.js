@@ -23,6 +23,7 @@ import { ambient, titleCard, shake, ring, burstText, countUp, flyClone, motionOK
 import { profile, avatarEl, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js";
 import { showResults, closeResults } from "./results.js";
 import * as DRAFT from "./draft/draft.js?v=5";
+import * as FEUD from "./feud/feud.js?v=1";
 import { initCine, cineHook, cineHas } from "./cine/engine.js?v=11";
 import { hand as cineHand } from "./cine/hands.js?v=11";
 import * as CK from "./cine/kit.js?v=11";
@@ -777,6 +778,7 @@ function musicWanted(d) {
     if (d.gameType === "headbanz") return "hb";
     if (d.gameType === "uno") return d.uno && d.uno.phase === "over" ? "lobby" : "uno";
     if (d.gameType === "draft") return d.draft && d.draft.phase === "over" ? "lobby" : "hb";
+    if (d.gameType === "feud") return d.feud && d.feud.phase === "over" ? "lobby" : "uno";
     return d.status === "finished" ? "lobby" : "gw";
 }
 function musicSync(d) { audio.music.play(musicWanted(d)); }
@@ -983,10 +985,10 @@ let rematchSize = 24;
    HELPERS
 ========================================= */
 
-const SCENE_OF = { home: "home", lobby: "lobby", secret: "gw", game: "gw", gwSpec: "gw", result: "gw", hb: "hb", im: "im", uno: "uno", draft: "hb" };
+const SCENE_OF = { home: "home", lobby: "lobby", secret: "gw", game: "gw", gwSpec: "gw", result: "gw", hb: "hb", im: "im", uno: "uno", draft: "hb", feud: "hb" };
 let currentScreen = "home";
 function showOnly(id) {
-    document.querySelectorAll("#home,#lobby,#secret,#game,#gwSpec,#hb,#im,#uno,#draft,#result").forEach(el => el.classList.add("hidden"));
+    document.querySelectorAll("#home,#lobby,#secret,#game,#gwSpec,#hb,#im,#uno,#draft,#feud,#result").forEach(el => el.classList.add("hidden"));
     const element = document.getElementById(id);
     element.classList.remove("hidden");
     if (currentScreen !== id) {
@@ -1189,7 +1191,7 @@ const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$searc
 function applyModeUI(t) {
     homeMode = t;
     const multi = t === "hb" || t === "im";
-    document.body.classList.toggle("hb-mode", multi || t === "uno" || t === "dr");
+    document.body.classList.toggle("hb-mode", multi || t === "uno" || t === "dr" || t === "fd");
     document.body.classList.toggle("uno-mode", t === "uno");
     $("sizeField").classList.toggle("hidden", t !== "gw");
     $("diffField").classList.toggle("hidden", !multi);
@@ -1197,6 +1199,7 @@ function applyModeUI(t) {
     $("imBox").classList.toggle("hidden", t !== "im");
     $("unoBox").classList.toggle("hidden", t !== "uno");
     $("draftBox").classList.toggle("hidden", t !== "dr");
+    $("feudBox").classList.toggle("hidden", t !== "fd");
     const picked = document.querySelectorAll("#animePoll input:checked").length, chaos = unoDeckType(currentRoomData) === "chaos";
     $("modeHint").textContent = {
         gw: "Classic board: characters are drawn from every series you tick.",
@@ -1204,7 +1207,8 @@ function applyModeUI(t) {
         im: "The secret character comes from one of the series you tick.",
         uno: chaos ? "Chaos deck: pick 4 to 8 series (" + picked + "/8). Each one becomes a colour: red, green, yellow, dark blue, then pink, orange, purple, light blue."
                    : "Classic deck: pick exactly 4 series (" + picked + "/4). They become red, green, yellow and dark blue.",
-        dr: currentRoomData ? DRAFT.draftHint(currentRoomData) : ""
+        dr: currentRoomData ? DRAFT.draftHint(currentRoomData) : "",
+        fd: currentRoomData ? FEUD.feudHint(currentRoomData) : ""
     }[t] || "";
 }
 window.setGameType = function (t) { pickMode(MODE_OF_KEY[t] || "classic"); };
@@ -3252,7 +3256,7 @@ function unoSightStrip(u, me, show) {
    ===================================================================== */
 const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8];          // the squad: up to 8 players per room
 const ROOM_MAX = SLOTS.length;
-const MODE_OF_KEY = { gw: "classic", hb: "headbanz", im: "imposter", uno: "uno", dr: "draft" };
+const MODE_OF_KEY = { gw: "classic", hb: "headbanz", im: "imposter", uno: "uno", dr: "draft", fd: "feud" };
 const MODES = {
     classic:  { key: "gw",  name: "Guess Who", tag: "CASE FILE", kanji: "探", min: 2, max: 8, seats: "1v1 · rest spectate", short: "1v1", color: "#f0c869", sub: "Hide. Ask. Accuse.", blurb: "1v1 deduction duel. Hide a character, ask yes/no questions, accuse first.",
         art: ["images/anime/naruto/na2.jpg", "images/special/onepiece_ultimate.jpg", "images/anime/bleach/bc6.jpg"] },
@@ -3263,7 +3267,9 @@ const MODES = {
     uno:      { key: "uno", name: "Anime UNO", tag: "ARENA CLASH", kanji: "札", min: 2, max: 8, color: "#d9a441", sub: "Every anime a colour. No mercy.", blurb: "Classic: 4 anime, 4 colours. Chaos: up to 8. Stack +2s, special moves.",
         art: ["images/character73.jpg", "images/special/jojo_ultimate.jpg", "images/anime/naruto/na9.jpg"] },
     draft:    { key: "dr",  name: "Anime Draft", tag: "TEAM BUILDER", kanji: "選", min: 2, max: 8, color: "#fbf6ee", sub: "Six roles. One dream team.", blurb: "Draft or bid for random characters, fill six roles, win on role scores + rarity.",
-        art: ["images/character36.jpg", "images/anime/jjk/jk19.jpg", "images/anime/aot/aot1.jpg"] }
+        art: ["images/character36.jpg", "images/anime/jjk/jk19.jpg", "images/anime/aot/aot1.jpg"] },
+    feud:     { key: "fd",  name: "Anime Feud", tag: "GAME SHOW", kanji: "闘", min: 2, max: 8, seats: "2 teams", short: "Teams", color: "#ff7a3d", sub: "Top answers. Three strikes. Steal it.", blurb: "Two teams uncover a hidden ranked board: Classic answers or Most Likely characters.",
+        art: ["images/anime/demonslayer/ds17.jpg", "images/anime/jjk/jk22.jpg", "images/anime/dragonball/db4.jpg"] }
 };
 /* the mode art shows only each series' main protagonists and main villains */
 const RULES = {
@@ -3271,7 +3277,8 @@ const RULES = {
     headbanz: ["Everyone gets a character card that all the others can see, except you.", "Take turns asking yes/no questions about your own card; the others answer.", "Guess your character whenever you like. Three wrong guesses and you sit out the round.", "2 to 8 players, everyone at once. Points per round follow the guessing order: with N players the 1st right guess scores N, the next N-1 and so on (8 players: 8, 7, 6 ... 1). Giving up or three strikes scores 0."],
     imposter: ["Everyone sees the same secret character, except one imposter.", "Two clue rounds: on your call, say one clue out loud. Never say the name.", "Then vote. Catch the imposter and the crew scores; if they slip away, they score big.", "A caught imposter can still steal points by naming the character."],
     uno: ["Classic deck: pick exactly 4 anime (red, green, yellow, dark blue). Chaos deck: pick 4 to 8 (adds pink, orange, purple, light blue). Match the colour, or the attribute or action of the top card.", "Skip, Reverse, Wild and Wild +4 work like classic UNO. Draw-2s stack: answer a +2 with a +2 to pass on +4, +6, +8... or take the whole stack.", "Specials: Freeze (next player loses 2 turns), Swap Hands, Ultimate (+5) and Future Sight (see the next player's hand, then play one more card). The host picks whether a played special is gone for good or goes back into the draw pile.", "No UNO call: down to one card, just keep playing. Empty your hand to take the next place; the round goes on until every place is decided."],
-    draft: ["Tick the series for the character pool. One series uses its own six roles (Haki, Domain Expansion, Nen...); two or more use the six Mixed roles. The Classic roles switch (Captain, Vice Captain, Tank, Duelist, Healer, Support) replaces either.", "Build: two sides, 1v1 up to 4v4, named after their players. Sides take turns drawing a random character and placing it in a free role. Each side has ONE blind reroll: decide right after the draw, before seeing the stats or the rarity.", "Auction: everyone starts with $25. A random character is revealed; in turn, bid at least $1 more than the last bid or pass. The last bidder standing wins it and puts it in a free role.", "Score = the six role scores + a rarity bonus per character (Common +0, Rare +2, Epic +4, Legendary +6, Mythical +8; rarity comes from AniList popularity). The results show every number."]
+    draft: ["Tick the series for the character pool. One series uses its own six roles (Haki, Domain Expansion, Nen...); two or more use the six Mixed roles. The Classic roles switch (Captain, Vice Captain, Tank, Duelist, Healer, Support) replaces either.", "Build: two sides, 1v1 up to 4v4, named after their players. Sides take turns drawing a random character and placing it in a free role. Each side has ONE blind reroll: decide right after the draw, before seeing the stats or the rarity.", "Auction: everyone starts with $25. A random character is revealed; in turn, bid at least $1 more than the last bid or pass. The last bidder standing wins it and puts it in a free role.", "Score = the six role scores + a rarity bonus per character (Common +0, Rare +2, Epic +4, Legendary +6, Mythical +8; rarity comes from AniList popularity). The results show every number."],
+    feud: ["Two teams (Team Crimson and Team Gold) face a hidden board of 5 to 8 ranked answers. Classic Feud: type answers. Most Likely: pick characters from a searchable list.", "One series ticked = questions about that series. Two or more = an Anime Mix: crossover questions answered only from the series you ticked.", "The team in play answers one at a time (the answerer rotates; teammates can talk it through). A right answer adds its points to the pot, a wrong one or running out of time is a strike.", "Three strikes and the other team gets ONE answer to steal the whole pot. Clear the board to bank it with no steal. Starting team alternates; a tie after the last round plays one sudden-death question. Boards are Anime Arcade curated answers, not real survey results."]
 };
 function showRules(t) {
     const M = MODES[t] || MODES.classic;
@@ -3308,6 +3315,7 @@ function matchSeats(d) {
         case "headbanz": return arr(d.hb && d.hb.players).map(Number);
         case "imposter": return arr(d.im && d.im.players).map(Number);
         case "draft": return DRAFT.draftSeats(d);
+        case "feud": return FEUD.feudSeats(d);
         default: return gwSeats(d);
     }
 }
@@ -3318,6 +3326,7 @@ function matchOver(d) {
     if (d.gameType === "headbanz") return !d.hb || d.hb.phase === "match";
     if (d.gameType === "imposter") return !d.im || d.im.phase === "match";
     if (d.gameType === "draft") return DRAFT.draftOver(d);
+    if (d.gameType === "feud") return FEUD.feudOver(d);
     return d.status === "finished";
 }
 let vxKey = "", introSeen = null;
@@ -3457,9 +3466,9 @@ const PREF_KEY = "gw_lobby_prefs";
 function lobbyPrefs() {
     let p = {}; try { p = JSON.parse(localStorage.getItem(PREF_KEY) || "{}") || {}; } catch (e) {}
     const gameType = MODES[p.gameType] ? p.gameType : "classic";
-    return { gameType, animes: fixSeries(gameType, arr(p.animes).length ? arr(p.animes) : ["onepiece"], p.unoDeck), boardSize: [24, 48, 96].includes(Number(p.boardSize)) ? Number(p.boardSize) : 24, difficulty: ["easy", "normal", "hard"].includes(p.difficulty) ? p.difficulty : "normal", rounds: [3, 5, 7, 10].includes(Number(p.rounds)) ? Number(p.rounds) : 5, laps: Number(p.laps) === 2 ? 2 : 1, unoDeck: p.unoDeck === "chaos" ? "chaos" : "classic", unoSp: p.unoSp === "reuse" ? "reuse" : "once", ...DRAFT.draftPrefs(p) };
+    return { gameType, animes: fixSeries(gameType, arr(p.animes).length ? arr(p.animes) : ["onepiece"], p.unoDeck), boardSize: [24, 48, 96].includes(Number(p.boardSize)) ? Number(p.boardSize) : 24, difficulty: ["easy", "normal", "hard"].includes(p.difficulty) ? p.difficulty : "normal", rounds: [3, 5, 7, 10].includes(Number(p.rounds)) ? Number(p.rounds) : 5, laps: Number(p.laps) === 2 ? 2 : 1, unoDeck: p.unoDeck === "chaos" ? "chaos" : "classic", unoSp: p.unoSp === "reuse" ? "reuse" : "once", ...DRAFT.draftPrefs(p), ...FEUD.feudPrefs(p) };
 }
-function saveLobbyPrefs(d) { try { localStorage.setItem(PREF_KEY, JSON.stringify({ gameType: d.gameType, animes: arr(d.animes), boardSize: d.boardSize, difficulty: d.difficulty, rounds: d.rounds, laps: d.laps, unoDeck: unoDeckType(d), unoSp: unoSpType(d), ...DRAFT.draftPrefsOf(d) })); } catch (e) {} }
+function saveLobbyPrefs(d) { try { localStorage.setItem(PREF_KEY, JSON.stringify({ gameType: d.gameType, animes: arr(d.animes), boardSize: d.boardSize, difficulty: d.difficulty, rounds: d.rounds, laps: d.laps, unoDeck: unoDeckType(d), unoSp: unoSpType(d), ...DRAFT.draftPrefsOf(d), ...FEUD.feudPrefsOf(d) })); } catch (e) {} }
 function busy(sel, on, label) {
     const b = document.querySelector(sel); if (!b) return;
     if (on) { b.dataset.label = b.dataset.label || b.innerHTML; b.disabled = true; b.textContent = label; b.setAttribute("aria-busy", "true"); }
@@ -3551,7 +3560,7 @@ window.toggleReady = function () {
 window.kickPlayer = async function (i) {
     const d = currentRoomData; if (!d || !amHost() || d.status !== "waiting" || i === Number(myPlayer)) return;
     if (!(await uiConfirm({ title: "Remove " + pName(d, i) + "?", text: "They go back to the main menu. They can rejoin with the room code.", ok: "Remove", danger: true }))) return;
-    update(ref(db, "rooms/" + room), { ["player" + i]: null, ["presence/p" + i]: null, ["packs/p" + i]: null, ["emote/p" + i]: null }).catch(() => toast("Couldn't remove that player."));
+    update(ref(db, "rooms/" + room), { ["player" + i]: null, ["presence/p" + i]: null, ["packs/p" + i]: null, ["emote/p" + i]: null, ["feudHist/p" + i]: null }).catch(() => toast("Couldn't remove that player."));
 };
 function modeReq(d) {
     const t = MODES[d.gameType] ? d.gameType : "classic", M = MODES[t], n = activeSlots(d).length, keys = arr(d.animes);
@@ -3559,6 +3568,7 @@ function modeReq(d) {
     if (n > M.max) return { ok: false, msg: M.name + " seats up to " + M.max + " players (" + n + " here). Pick another mode." };
     if (!keys.length) return { ok: false, msg: "Pick at least one series." };
     if (t === "draft") return DRAFT.draftReq(d);
+    if (t === "feud") return FEUD.feudReq(d);
     if (t === "classic") { const tot = keys.reduce((s, k) => s + (ANIME_LIBRARY[k] || []).length, 0), size = Number(d.boardSize) || 24; if (tot < size) return { ok: false, msg: "Those series only have " + tot + " pictures. Tick more series or pick a smaller board." }; }
     if (t === "classic" && n > 2 && gwDuelists(d).length !== 2) return { ok: false, msg: "Guess Who is a 1v1 duel: pick the 2 duelists (" + gwDuelists(d).length + "/2). Everyone else spectates." };
     if (t === "uno") {
@@ -3738,6 +3748,7 @@ function lobbyRender(d) {
     document.querySelectorAll(".unobtn").forEach(b => { b.classList.toggle("selected", b.dataset.k === unoDeckType(d)); b.disabled = lock; });
     document.querySelectorAll(".unospbtn").forEach(b => { b.classList.toggle("selected", b.dataset.k === unoSpType(d)); b.disabled = lock; });
     if (t === "draft") DRAFT.draftLobby(d, lock);
+    if (t === "feud") FEUD.feudLobby(d, lock);
     gwDuelRenderPick(d, lock || t !== "classic");
     applyModeUI(M.key);   // again, so the 4/4 counter reflects the boxes just ticked
     // background prep for the chosen mode
@@ -3776,6 +3787,7 @@ window.startGame = async function () {
         if (d.gameType === "imposter") return await imBegin("first");
         if (d.gameType === "uno") return await unoStart();
         if (d.gameType === "draft") return await DRAFT.draftStart();
+        if (d.gameType === "feud") return await FEUD.feudStart();
         return await gwStart();
     } finally { setTimeout(() => { if (sb) sb.disabled = false; }, 800); }
 };
@@ -3789,11 +3801,11 @@ async function gwStart() {
     try { await update(ref(db, "rooms/" + room), upd); } catch (e) { console.error(e); toast("Could not start: " + (e.message || e)); }
 }
 function lobbyResetPatch(d, exclude) {
-    const upd = { status: "waiting", board: null, gw: null, guess: null, revealed: null, private: null, winner: null, result: null, guessedCharacter: null, finishedAt: null, hb: null, im: null, draft: null, turn: 1, matchId: null };
+    const upd = { status: "waiting", board: null, gw: null, guess: null, revealed: null, private: null, winner: null, result: null, guessedCharacter: null, finishedAt: null, hb: null, im: null, draft: null, feud: null, turn: 1, matchId: null };
     if (d.uno) upd.uno = d.uno.cards ? { cards: d.uno.cards, anime: d.uno.anime || null, phase: "lobby", n: 0, key: d.uno.key || null, missing: d.uno.missing || null } : null;
     SLOTS.forEach(i => {
         const p = d["player" + i]; if (!p || i === exclude) return;
-        if (p.left) { upd["player" + i] = null; upd["presence/p" + i] = null; upd["packs/p" + i] = null; upd["emote/p" + i] = null; }
+        if (p.left) { upd["player" + i] = null; upd["presence/p" + i] = null; upd["packs/p" + i] = null; upd["emote/p" + i] = null; upd["feudHist/p" + i] = null; }
         else { upd["player" + i + "/ready"] = false; upd["player" + i + "/lr"] = false; }
     });
     return upd;
@@ -3831,7 +3843,7 @@ window.leaveRoom = async function () {
             let upd = {};
             if (mid && gw) upd = lobbyResetPatch(d, me);            // a duel can't go on with one player: everyone back to the lobby
             if (mid && !gw) { upd["player" + me + "/left"] = true; upd["presence/p" + me] = false; }   // the round treats me as gone
-            else { upd["player" + me] = null; upd["presence/p" + me] = null; upd["packs/p" + me] = null; upd["emote/p" + me] = null; }
+            else { upd["player" + me] = null; upd["presence/p" + me] = null; upd["packs/p" + me] = null; upd["emote/p" + me] = null; upd["feudHist/p" + me] = null; }
             if (host) upd.host = others[0];
             if (d.private && d.private[user.uid] && !(mid && gw)) upd["private/" + user.uid] = null;
             await update(ref(db, "rooms/" + room), upd);
@@ -3936,6 +3948,7 @@ function hostDuties(d) {
         }
     }
     if (t === "draft") DRAFT.draftDuties(d);
+    if (t === "feud") FEUD.feudDuties(d);
     if (t === "classic" && d.status === "selecting" && gwSeats(d).every(s => pNode(d, s) && pNode(d, s).ready === true)) setTimeout(beginPlaying, 0);
 }
 let unoDutyKey = "";
@@ -3946,7 +3959,7 @@ function resetMatchState() {
     hbRoundKey = ""; hbSig = ""; imSig = ""; specSig = ""; hbSeen = { wrong: 0, order: 0, done: false, phase: "" }; imSeen = { phase: "", round: 0 };
     ["hbPicker", "imPicker", "unoColor", "unoTarget", "unoOver"].forEach(id => $(id).classList.add("hidden"));
     ["unoFx", "unoSight"].forEach(id => { const e = $(id); if (e) e.remove(); });
-    DRAFT.draftReset();
+    DRAFT.draftReset(); FEUD.feudReset();
     $("rematchPanel").classList.add("hidden"); $("oppBanner").classList.add("hidden");
     closeResults(); vxKey = "";
 }
@@ -3961,7 +3974,7 @@ function matchIntro(d) {
 }
 let lastStatus = "";
 function route(d) {
-    const st = d.status || "waiting", spec = gwSpectating(d), drLive = d.gameType === "draft" && st !== "waiting" && !!d.draft;   // a draft is watched live by everyone in the room
+    const st = d.status || "waiting", spec = gwSpectating(d), drLive = (d.gameType === "draft" && st !== "waiting" && !!d.draft) || (d.gameType === "feud" && st !== "waiting" && !!d.feud);   // a draft or a feud is watched live by everyone in the room
     if (st === "waiting" || (!inMatch(d) && !spec && !drLive)) {
         if ($("lobby").classList.contains("hidden")) { resetMatchState(); showOnly("lobby"); seatSig = ""; }
         lastStatus = st; lobbyRender(d); return;
@@ -3971,6 +3984,7 @@ function route(d) {
     if (spec) { showGwSpec(d); return; }
     matchIntro(d);
     if (d.gameType === "draft") { DRAFT.showDraft(d); return; }
+    if (d.gameType === "feud") { FEUD.showFeud(d); return; }
     if (d.gameType === "uno") { showUNO(d); return; }
     if (d.gameType === "headbanz") { showHB(d); return; }
     if (d.gameType === "imposter") { showIM(d); return; }
@@ -4485,6 +4499,8 @@ function secretPower(text) {
 async function initApp() {
     DRAFT.initDraft({ db, ref, update, runTransaction, room: () => room, me: () => Number(myPlayer), data: () => currentRoomData, amHost, hostSlot, activeSlots, pName, pPub, avatarEl,
         sfx, toast, showOnly, uiConfirm, lobbySet, lobbyRefresh, backToLobby: skip => window.backToLobby(skip), loadPacks: hbLoadPacks, HB_SERIES, ring, burstText, shake, countUp, flyClone });
+    FEUD.initFeud({ db, ref, update, get, onValue, runTransaction, room: () => room, me: () => Number(myPlayer), uid: () => (user && user.uid) || "", data: () => currentRoomData, amHost, hostSlot, activeSlots, pName, pPub, avatarEl,
+        sfx, toast, showOnly, uiConfirm, lobbySet, backToLobby: skip => window.backToLobby(skip), draftDb: () => DRAFT.draftLoad(), HB_SERIES, burstText, shake, countUp, motionOK });
     $("homeTitle").addEventListener("click", () => { const lg = $("homeTitle"); lg.classList.remove("zap"); void lg.offsetWidth; lg.classList.add("zap"); clearTimeout(logoTimer); logoTimer = setTimeout(() => { logoTaps = 0; }, 900); if (++logoTaps >= 5) { logoTaps = 0; secretPower(["PLUS ULTRA!", "DATTEBAYO!", "BANKAI!", "KAMEHAMEHA!", "DOMAIN EXPANSION!"][(Math.random() * 5) | 0]); } else sfx("tick"); });
     initGallery(ANIME_LIBRARY, Object.fromEntries(Object.keys(HB_SERIES).map(k => [k, HB_SERIES[k].label])));
     setProfileHooks({ sfx: sfx, toast: toast, onAchievement: achToast });
