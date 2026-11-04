@@ -3752,8 +3752,24 @@ function newChallenger(p, col) {
 }
 function lobbyRefresh() { if (currentRoomData && !$("lobby").classList.contains("hidden")) lobbyRender(currentRoomData); }
 let lobbyCountSeen = 0;
+/* the lobby wears the picked mode (css/lobby.css): its backdrop crossfades, the panels, seats and buttons restyle,
+   and the ambient particles switch to that mode's own. Purely visual. */
+const LOBBY_FX = { classic: "gw", headbanz: "case", imposter: "im", uno: "uno", draft: "gw", feud: "gw", likely: "uno", sketch: "sketch" };
+let lobbyThemeCur = "";
+function lobbyTheme(t) {
+    const lb = $("lobby"), bg = $("lobbyBg"); if (!lb || !bg) return;
+    if (currentScreen === "lobby") ambient.set(LOBBY_FX[t] || "lobby", null);
+    if (lobbyThemeCur === t && bg.childElementCount) return;
+    const first = !lobbyThemeCur; lobbyThemeCur = t; lb.dataset.mode = t;
+    const layer = document.createElement("i"); layer.dataset.mode = t; bg.appendChild(layer);
+    if (first || !motionOK()) { [...bg.children].forEach(c => { if (c !== layer) c.remove(); }); layer.classList.add("on"); return; }
+    requestAnimationFrame(() => requestAnimationFrame(() => { layer.classList.add("on"); [...bg.children].forEach(c => { if (c !== layer) c.classList.remove("on"); }); }));
+    setTimeout(() => [...bg.children].forEach(c => { if (c !== layer && !c.classList.contains("on")) c.remove(); }), 900);
+    lb.classList.remove("theme-swap"); void lb.offsetWidth; lb.classList.add("theme-swap");
+}
 function lobbyRender(d) {
     const me = Number(myPlayer), host = amHost(), t = MODES[d.gameType] ? d.gameType : "classic", M = MODES[t], act = activeSlots(d), pres = d.presence || {}, packs = d.packs || {};
+    lobbyTheme(t);
     const spectating = !!d.status && d.status !== "waiting";
     document.body.classList.toggle("is-host", host);
     setRoomCode(room);

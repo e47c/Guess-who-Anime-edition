@@ -12,6 +12,7 @@
 <link rel="icon" type="image/svg+xml" href="images/aa-mark.svg">
 <link rel="stylesheet" href="css/base.css?v=13">
 <link rel="stylesheet" href="css/menu.css?v=1">
+<link rel="stylesheet" href="css/lobby.css?v=1">
 <link rel="stylesheet" href="css/modes.css?v=12">
 <link rel="stylesheet" href="css/uno.css?v=12">
 <link rel="stylesheet" href="css/draft.css?v=3">
@@ -130,6 +131,7 @@
      LOBBY (players gather here, pick a mode together, come back between matches)
 ========================================= -->
 <div id="lobby" class="screen hidden">
+<div class="lobby-bg" id="lobbyBg" aria-hidden="true"></div>
 <div class="challenger hidden" id="challenger" aria-live="polite"></div>
 <header class="lobby-top">
 <div class="room-tag"><small>ROOM</small><b id="roomCode" class="code-show">------</b>
@@ -474,7 +476,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=32"></script>
+<script type="module" src="js/game.js?v=33"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){

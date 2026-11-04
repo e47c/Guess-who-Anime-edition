@@ -1,0 +1,173 @@
+/* =========================================================
+   THE LOBBY WEARS THE PICKED MODE
+   ---------------------------------------------------------
+   #lobby[data-mode] is set by game.js (lobbyTheme) from the room's mode. Each mode reuses the skin it has on the main
+   menu (css/menu.css: its card and its How to Play panel): the same colours, motifs and lettering, applied to the whole
+   lobby: the backdrop, player seats, stage cards, ruleset panel, buttons, room tag, footer and status board.
+   The backdrop crossfades (two layers in #lobbyBg); everything else eases its colours. Visual only: no lobby logic here.
+   Shared hooks, set per mode:
+     --accent / --accent-2 / --on-accent   the mode's two colours and the text that sits on the first
+     --lt-panel / --lt-edge                panel fill and hairline
+     --lt-name                             the mode's lettering (same as its menu title)
+     --s1 / --s2 / --st                    a selected option button (gradient + text)
+     --lb1 / --lb2 / --ltt / --lbd / --lgl the main buttons (START, Join...), mapped onto the buttons' own --b1/--b2/--t/--bd/--gl
+========================================================= */
+#lobby { --lt-panel: rgba(10,6,6,.78); --lt-edge: var(--line); --lt-name: var(--f-head); --s1: #e5262b; --s2: #9e0d12; --st: #fff; }
+body[data-scene="lobby"] .arc-floor { display: none; }          /* the mode's own backdrop replaces the neon floor */
+
+/* ---------- the backdrop: one fixed layer per theme, crossfading ---------- */
+.lobby-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+.lobby-bg i { position: absolute; inset: 0; opacity: 0; transition: opacity .7s ease; }
+.lobby-bg i.on { opacity: 1; }
+.lobby-bg i::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, transparent 50%, rgba(0,0,0,.55) 100%); }
+
+/* ---------- shared pieces that follow the mode ---------- */
+#lobby .seat, #lobby .lobby-settings, #lobby .room-tag, #lobby .lobby-status, #lobby .lobby-foot, #lobby .mode-card { transition: background-color .5s ease, color .5s ease, box-shadow .5s ease, border-color .5s ease, transform .25s var(--e-out); }
+#lobby.theme-swap .lobby-grid, #lobby.theme-swap .lobby-top { animation: ltIn .55s var(--e-out) both; }
+@keyframes ltIn { from { opacity: .35; transform: translateY(8px); } }
+#lobby .sec-title { font-family: var(--lt-name); }
+#lobby .sec-title span { color: var(--on-accent); }
+#lobby .lobby-settings { background: var(--lt-panel); box-shadow: inset 0 0 0 1px var(--lt-edge), inset 0 3px 0 var(--accent-2); }
+#lobby .size.selected, #lobby .modebtn.selected { background: linear-gradient(180deg, var(--s1), var(--s2)); color: var(--st); }
+#lobby .btn:not(.ghost):not(.alt):not(.danger):not(:disabled):not(.on) { --b1: var(--lb1, #e5262b); --b2: var(--lb2, #9e0d12); --t: var(--ltt, #fff); --bd: var(--lbd, rgba(240,200,105,.72)); --gl: var(--lgl, rgba(225,27,27,.42)); }
+#lobby .chip-btn:hover:not(:disabled) { background: linear-gradient(180deg, var(--lb1, #e5262b), var(--lb2, #9e0d12)); color: var(--ltt, #fff); }
+#lobby .room-tag { box-shadow: inset 0 0 0 1px var(--lt-edge), inset 3px 0 0 var(--accent); }
+#lobby .code-show span { color: var(--accent-2); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-2) 45%, transparent); }
+#lobby .lobby-status { color: var(--accent-2); text-shadow: 0 0 6px color-mix(in srgb, var(--accent-2) 70%, transparent); }
+#lobby .lobby-status.ok { color: #6dffa8; text-shadow: 0 0 6px rgba(61,220,132,.8); }
+#lobby .lobby-foot { box-shadow: 0 -1px 0 color-mix(in srgb, var(--accent) 55%, transparent), 0 -20px 40px rgba(0,0,0,.35); }
+#lobby .seat .seat-no { background: var(--pc); }
+/* the stage cards wear their own mode's lettering, always (like the menu cards) */
+.mode-card[data-mode] .mc-name { font-family: var(--mfont, var(--f-head)); }
+.mode-card[data-mode="classic"] { --mfont: var(--f-title); } .mode-card[data-mode="headbanz"] { --mfont: 'Special Elite', var(--f-ui); }
+.mode-card[data-mode="imposter"] .mc-name { letter-spacing: .14em; text-shadow: 0 0 12px rgba(255,42,68,.6); }
+.mode-card[data-mode="uno"] .mc-name { font-style: italic; text-shadow: 2px 2px 0 #b3121a; }
+.mode-card[data-mode="draft"] .mc-name { background: linear-gradient(180deg, #fff6d8, #e2b45a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.mode-card[data-mode="feud"] { box-shadow: inset 0 0 0 1px rgba(255,226,122,.35); } .mode-card[data-mode="feud"]::before { background: linear-gradient(180deg, rgba(6,26,82,.1), rgba(6,26,82,.75) 58%, #030c30); }
+.mode-card[data-mode="likely"] .mc-name { background: linear-gradient(180deg, #fff1b8, #ffb43a 50%, #ff5a1f); -webkit-background-clip: text; background-clip: text; color: transparent; padding-bottom: .08em; }
+.mode-card[data-mode="sketch"] { --mfont: 'Permanent Marker', var(--f-head); }
+.mode-card[data-mode="sketch"] .mc-name { text-transform: none; font-size: 24px; }
+
+/* =========================================================
+   GUESS WHO · Case File: a noir dossier under a desk lamp, yellow evidence markers
+========================================================= */
+#lobby[data-mode="classic"] { --accent: #f0c869; --accent-2: #ffd23a; --on-accent: #1a1205; --lt-panel: rgba(28,19,10,.82); --lt-edge: rgba(240,200,105,.2); --lt-name: var(--f-title);
+    --s1: #ffd23a; --s2: #c9952a; --st: #1a1205; --lb1: #f2c45a; --lb2: #a8741a; --ltt: #1a1205; --lbd: rgba(255,244,214,.85); --lgl: rgba(240,200,105,.5); }
+.lobby-bg i[data-mode="classic"] { background: radial-gradient(ellipse 50% 45% at 12% 0%, rgba(242,179,61,.26), transparent 70%), radial-gradient(ellipse at 85% 100%, rgba(225,27,27,.12), transparent 55%),
+    linear-gradient(rgba(242,179,61,.04) 1px, transparent 1px) 0 0 / 46px 46px, linear-gradient(90deg, rgba(242,179,61,.04) 1px, transparent 1px) 0 0 / 46px 46px, linear-gradient(180deg, #16100a, #0c0805 60%, #060403); }
+#lobby[data-mode="classic"] .seat { clip-path: none; border-radius: 4px 12px 12px 12px; background: radial-gradient(ellipse 90% 60% at 50% 38%, color-mix(in srgb, var(--pc) 30%, transparent), transparent 75%), linear-gradient(180deg, #2a1d0f, #140d07); box-shadow: inset 0 0 0 1px rgba(240,200,105,.35), 0 10px 24px rgba(0,0,0,.45); }
+#lobby[data-mode="classic"] .seat .seat-no { background: #ffd23a; color: #1a1205; clip-path: polygon(16% 0, 84% 0, 100% 100%, 0 100%); padding: 4px 9px; }
+#lobby[data-mode="classic"] .lobby-settings { background: radial-gradient(ellipse 50% 60% at 0% 0%, rgba(242,179,61,.14), transparent 70%), linear-gradient(rgba(242,179,61,.04) 1px, transparent 1px) 0 0 / 34px 34px, linear-gradient(90deg, rgba(242,179,61,.04) 1px, transparent 1px) 0 0 / 34px 34px, rgba(22,15,9,.88); }
+
+/* =========================================================
+   HEADBANZ · Investigation: a cork case board, pinned polaroids, typewriter type, red pins
+========================================================= */
+#lobby[data-mode="headbanz"] { --accent: #e0a64a; --accent-2: #f2dfb4; --on-accent: #24170a; --lt-panel: rgba(62,39,21,.9); --lt-edge: rgba(255,220,170,.16); --lt-name: 'Special Elite', var(--f-ui);
+    --s1: #c41a14; --s2: #7a0c08; --st: #fff; --lb1: #c9302a; --lb2: #7a0c08; --ltt: #fff3dc; --lbd: rgba(242,223,180,.8); --lgl: rgba(224,166,74,.45); }
+.lobby-bg i[data-mode="headbanz"] { background: radial-gradient(circle at 20% 25%, rgba(255,214,150,.1), transparent 45%), radial-gradient(rgba(0,0,0,.28) 1px, transparent 1.5px) 0 0 / 7px 7px, linear-gradient(160deg, #4a301a, #33200f 60%, #22150a); }
+#lobby[data-mode="headbanz"] .seat { clip-path: none; border-radius: 3px; padding-bottom: 16px; color: #24170a; background: #efe6d2; box-shadow: 0 10px 22px rgba(0,0,0,.45), inset 0 0 0 1px rgba(0,0,0,.08); }
+#lobby[data-mode="headbanz"] .seat:nth-child(odd):not(.empty) { transform: rotate(-1.2deg); } #lobby[data-mode="headbanz"] .seat:nth-child(even):not(.empty) { transform: rotate(1deg); }
+#lobby[data-mode="headbanz"] .seat::before { inset: auto; left: 50%; top: 5px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; z-index: 3; background: radial-gradient(circle at 35% 30%, #ff8a7a, #c41a14 55%, #6a0806); box-shadow: 0 3px 4px rgba(0,0,0,.45); }
+#lobby[data-mode="headbanz"] .seat-id b { color: #24170a; font-family: 'Special Elite', var(--f-ui); font-weight: 400; text-shadow: none; }
+#lobby[data-mode="headbanz"] .seat-id small { color: rgba(36,23,10,.65); }
+#lobby[data-mode="headbanz"] .seat .seat-no { color: #fff; background: #c41a14; }
+#lobby[data-mode="headbanz"] .seat.empty { background: rgba(239,230,210,.12); color: #f2dfb4; transform: none; }
+#lobby[data-mode="headbanz"] .seat.empty::before { display: none; }
+#lobby[data-mode="headbanz"] .lobby-settings { background: radial-gradient(rgba(0,0,0,.25) 1px, transparent 1.5px) 0 0 / 7px 7px, linear-gradient(160deg, rgba(90,59,34,.95), rgba(62,39,21,.95)); }
+#lobby[data-mode="headbanz"] .ls-head b { padding: 5px 10px; color: #24170a; background: #efe6d2; font-family: 'Special Elite', var(--f-ui); font-size: 14px; text-shadow: none; transform: rotate(-1.5deg); box-shadow: 0 4px 8px rgba(0,0,0,.35); }
+
+/* =========================================================
+   IMPOSTER · Suspicion: red eyes in the dark, scanlines, cold fog, a glitch
+========================================================= */
+#lobby[data-mode="imposter"] { --accent: #ff2a44; --accent-2: #ff8a99; --on-accent: #fff; --lt-panel: rgba(9,7,14,.86); --lt-edge: rgba(255,42,68,.18); --lt-name: var(--f-ui);
+    --s1: #ff2a44; --s2: #8a0a1c; --st: #fff; --lb1: #e3203a; --lb2: #6e0614; --ltt: #fff; --lbd: rgba(255,138,153,.7); --lgl: rgba(255,42,68,.55); }
+.lobby-bg i[data-mode="imposter"] { background: radial-gradient(ellipse 50% 40% at 50% -5%, rgba(200,200,230,.09), transparent 70%), radial-gradient(ellipse 40% 30% at 10% 90%, rgba(255,42,68,.16), transparent 70%), radial-gradient(ellipse 40% 30% at 90% 80%, rgba(120,90,200,.14), transparent 70%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px), linear-gradient(180deg, #08070d, #040308); }
+#lobby[data-mode="imposter"] .sec-title { letter-spacing: .16em; font-weight: 700; text-shadow: 0 0 16px rgba(255,42,68,.45); }
+#lobby[data-mode="imposter"] .seat { background: repeating-linear-gradient(0deg, rgba(0,0,0,.35) 0 1px, transparent 1px 3px), radial-gradient(ellipse 80% 50% at 50% 35%, color-mix(in srgb, var(--pc) 22%, transparent), transparent 75%), linear-gradient(180deg, #120a12, #06040a); box-shadow: inset 0 0 0 1px rgba(255,42,68,.4), 0 10px 24px rgba(0,0,0,.5); }
+#lobby[data-mode="imposter"] .seat::before { background: radial-gradient(ellipse 7% 5% at 40% 14%, #ff2a44 0 45%, transparent 70%), radial-gradient(ellipse 7% 5% at 60% 14%, #ff2a44 0 45%, transparent 70%); opacity: .55; animation: imBlink 6s ease-in-out infinite; }
+#lobby[data-mode="imposter"] .seat-id b { letter-spacing: .14em; text-shadow: 0 0 10px rgba(255,42,68,.5); }
+#lobby[data-mode="imposter"] .seat .seat-no { background: none; color: #ff4d63; font-family: var(--f-mono); clip-path: none; }
+#lobby[data-mode="imposter"] .lobby-settings { background: radial-gradient(ellipse 50% 50% at 100% 0%, rgba(255,42,68,.12), transparent 70%), repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px), rgba(9,7,14,.9); }
+
+/* =========================================================
+   ANIME UNO · Arena Clash: playing cards in the arena, the four deck colours
+========================================================= */
+#lobby[data-mode="uno"] { --accent: #ffcf4a; --accent-2: #ffcf4a; --on-accent: #1a0d02; --lt-panel: rgba(16,9,9,.84); --lt-edge: rgba(255,207,74,.18); --lt-name: var(--f-title);
+    --s1: #e11b1b; --s2: #8f0c10; --st: #fff; --lb1: #ffd84a; --lb2: #e0a20f; --ltt: #1a0d02; --lbd: rgba(255,255,255,.85); --lgl: rgba(255,207,74,.55); }
+.lobby-bg i[data-mode="uno"] { background: radial-gradient(ellipse 35% 40% at 0% 0%, rgba(225,27,27,.24), transparent 70%), radial-gradient(ellipse 35% 40% at 100% 0%, rgba(47,178,74,.18), transparent 70%), radial-gradient(ellipse 35% 40% at 0% 100%, rgba(255,207,74,.16), transparent 70%), radial-gradient(ellipse 35% 40% at 100% 100%, rgba(31,91,214,.24), transparent 70%),
+    radial-gradient(circle at 50% 55%, transparent 0 29%, rgba(255,207,74,.07) 29.3% 29.8%, transparent 30%), linear-gradient(180deg, #120707, #080303); }
+#lobby[data-mode="uno"] .sec-title { font-style: italic; }
+#lobby[data-mode="uno"] .seat { clip-path: none; border-radius: 16px; background: radial-gradient(ellipse 60% 40% at 50% 40%, color-mix(in srgb, var(--pc) 35%, transparent), transparent 75%), linear-gradient(180deg, #1c0e0e, #0a0606); box-shadow: inset 0 0 0 5px #f7f1e4, inset 0 0 0 7px rgba(0,0,0,.5), 0 10px 24px rgba(0,0,0,.5); }
+#lobby[data-mode="uno"] .seat::before { inset: 14px; border-radius: 50%; transform: rotate(-24deg); background: conic-gradient(#e11b1b 0 25%, #2fb24a 0 50%, #ffcf4a 0 75%, #1f5bd6 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); opacity: .55; }
+#lobby[data-mode="uno"] .seat.empty::before { display: none; }
+#lobby[data-mode="uno"] .seat .seat-no { left: 12px; top: 12px; }
+#lobby[data-mode="uno"] .lobby-settings { box-shadow: inset 0 0 0 1px var(--lt-edge), inset 0 3px 0 #e11b1b, inset 0 6px 0 #2fb24a, inset 0 9px 0 #ffcf4a, inset 0 12px 0 #1f5bd6; }
+
+/* =========================================================
+   ANIME DRAFT · Team Builder: foil trading cards on a black-and-gold stage, rarity gems
+========================================================= */
+#lobby[data-mode="draft"] { --accent: #e2b45a; --accent-2: #fff1c0; --on-accent: #1a0d02; --lt-panel: rgba(11,9,7,.88); --lt-edge: rgba(240,200,105,.2); --lt-name: var(--f-head);
+    --s1: #fff1c0; --s2: #c98f2a; --st: #1a0d02; --lb1: #f8e2a0; --lb2: #b8862a; --ltt: #1a0d02; --lbd: rgba(255,250,230,.9); --lgl: rgba(240,200,105,.55); }
+.lobby-bg i[data-mode="draft"] { background: radial-gradient(ellipse 50% 50% at 50% -10%, rgba(240,200,105,.16), transparent 70%),
+    linear-gradient(30deg, rgba(240,200,105,.035) 12%, transparent 12.5%, transparent 87%, rgba(240,200,105,.035) 87.5%) 0 0 / 52px 90px, linear-gradient(150deg, rgba(240,200,105,.035) 12%, transparent 12.5%, transparent 87%, rgba(240,200,105,.035) 87.5%) 0 0 / 52px 90px, linear-gradient(180deg, #0c0a07, #050403); }
+#lobby[data-mode="draft"] .sec-title { font-weight: 600; letter-spacing: .08em; }
+#lobby[data-mode="draft"] .seat { clip-path: none; border-radius: 10px; background: radial-gradient(ellipse 80% 55% at 50% 38%, color-mix(in srgb, var(--pc) 30%, transparent), transparent 75%), linear-gradient(180deg, #17120a, #070604); box-shadow: inset 0 0 0 2px #d9a441, inset 0 0 0 5px #0c0808, inset 0 0 0 6px rgba(217,164,65,.5), 0 10px 24px rgba(0,0,0,.5); }
+#lobby[data-mode="draft"] .seat::before { background: linear-gradient(115deg, transparent 35%, rgba(255,120,200,.12) 45%, rgba(120,220,255,.16) 50%, rgba(255,240,140,.12) 55%, transparent 65%) 100% 0 / 260% 100%; mix-blend-mode: screen; transition: background-position 1s var(--e-out); }
+#lobby[data-mode="draft"] .seat:hover::before { background-position: 0 0; }
+#lobby[data-mode="draft"] .seat .seat-no { color: #fff; background: linear-gradient(135deg, #d29bff, #7b2fd6); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); padding: 6px 7px; }
+#lobby[data-mode="draft"] .seat-id b { background: linear-gradient(180deg, #fff6d8, #e2b45a); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; }
+
+/* =========================================================
+   ANIME FEUD · Game Show: a royal-blue studio, panels ringed with marquee bulbs
+========================================================= */
+#lobby[data-mode="feud"] { --accent: #4aa8ff; --accent-2: #ffd75a; --on-accent: #04113d; --lt-panel: rgba(5,20,70,.82); --lt-edge: rgba(255,215,90,.22); --lt-name: var(--f-title);
+    --s1: #2a68e0; --s2: #0d2f86; --st: #fff; --lb1: #ffe27a; --lb2: #e2a92a; --ltt: #04113d; --lbd: rgba(255,255,255,.85); --lgl: rgba(255,215,90,.55); }
+.lobby-bg i[data-mode="feud"] { background: radial-gradient(ellipse 60% 45% at 50% -10%, rgba(120,190,255,.26), transparent 70%), repeating-conic-gradient(from 0deg at 50% 120%, rgba(90,170,255,.05) 0 5deg, transparent 5deg 12deg), linear-gradient(180deg, #0a2470, #051446 60%, #020a28); }
+#lobby[data-mode="feud"] .sec-title { text-shadow: 0 3px 0 #04113d, 0 0 18px rgba(90,170,255,.55); }
+#lobby[data-mode="feud"] .seat { clip-path: none; border-radius: 12px; outline: 2px dotted rgba(255,226,122,.85); outline-offset: -7px; background: radial-gradient(ellipse 80% 55% at 50% 38%, color-mix(in srgb, var(--pc) 28%, transparent), transparent 75%), linear-gradient(180deg, #0d2f86, #061a52); box-shadow: inset 0 0 0 2px #ffd75a, 0 10px 24px rgba(0,0,0,.5); }
+#lobby[data-mode="feud"] .seat.empty { outline-color: rgba(255,226,122,.3); }
+#lobby[data-mode="feud"] .seat:hover { outline-style: solid; }
+#lobby[data-mode="feud"] .seat .seat-no { color: #04113d; background: #ffe27a; }
+#lobby[data-mode="feud"] .lobby-settings { background: radial-gradient(ellipse 60% 50% at 50% -10%, rgba(120,190,255,.2), transparent 70%), linear-gradient(180deg, rgba(11,42,122,.92), rgba(5,20,70,.94)); }
+#lobby[data-mode="feud"] .anime-hint, #lobby[data-mode="feud"] .sec-title em { color: rgba(220,232,255,.75); }
+
+/* =========================================================
+   MOST LIKELY · Hot Takes: smoke, embers, a burning seam between two sides
+========================================================= */
+#lobby[data-mode="likely"] { --accent: #ff6a2a; --accent-2: #ffc24a; --on-accent: #1a0602; --lt-panel: rgba(26,9,7,.84); --lt-edge: rgba(255,140,60,.2); --lt-name: var(--f-title);
+    --s1: #ffb43a; --s2: #e0401a; --st: #1a0602; --lb1: #ffb43a; --lb2: #d8321a; --ltt: #1a0602; --lbd: rgba(255,241,184,.85); --lgl: rgba(255,106,42,.6); }
+.lobby-bg i[data-mode="likely"] { background: radial-gradient(ellipse 70% 45% at 50% 112%, rgba(255,90,30,.32), transparent 70%), radial-gradient(ellipse 40% 40% at 0% 0%, rgba(216,26,26,.2), transparent 70%), linear-gradient(105deg, transparent 49.7%, rgba(255,140,50,.18) 49.9% 50.1%, transparent 50.3%), linear-gradient(180deg, #170806, #0b0403); }
+#lobby[data-mode="likely"] .sec-title { background: linear-gradient(180deg, #fff1b8, #ffb43a 50%, #ff5a1f); -webkit-background-clip: text; background-clip: text; color: transparent; }
+#lobby[data-mode="likely"] .sec-title span { -webkit-text-fill-color: var(--on-accent); background: linear-gradient(180deg, #ffd76e, #ff6a2a); }
+#lobby[data-mode="likely"] .sec-title em, #lobby[data-mode="likely"] .sec-title .chip-btn { -webkit-text-fill-color: initial; }
+#lobby[data-mode="likely"] .seat { background: linear-gradient(105deg, transparent 49%, rgba(255,140,50,.55) 49.6% 50.4%, transparent 51%), radial-gradient(ellipse 80% 40% at 50% 105%, rgba(255,90,30,.35), transparent 70%), radial-gradient(ellipse 80% 55% at 50% 38%, color-mix(in srgb, var(--pc) 25%, transparent), transparent 75%), linear-gradient(180deg, #1f0b07, #0b0403); box-shadow: inset 0 0 0 1px rgba(255,140,60,.45), 0 10px 24px rgba(0,0,0,.5); }
+#lobby[data-mode="likely"] .seat .seat-no { color: #1a0602; background: radial-gradient(circle at 50% 70%, #fff1b8, #ffc24a 45%, #ff6a2a); }
+#lobby[data-mode="likely"] .lobby-settings { background: radial-gradient(ellipse 60% 50% at 50% 115%, rgba(255,90,30,.22), transparent 70%), rgba(26,9,7,.88); }
+
+/* =========================================================
+   ANIME SKETCH · Draw & Guess: the art room, taped sheets of paper, marker lettering
+========================================================= */
+#lobby[data-mode="sketch"] { --accent: #38d39f; --accent-2: #38d39f; --on-accent: #06231a; --lt-panel: #fbfaf5; --lt-edge: rgba(47,140,255,.16); --lt-name: 'Permanent Marker', var(--f-head);
+    --s1: #38d39f; --s2: #0d8a63; --st: #06231a; --lb1: #4fe0ad; --lb2: #0d8a63; --ltt: #06231a; --lbd: rgba(255,255,255,.85); --lgl: rgba(56,211,159,.5); }
+.lobby-bg i[data-mode="sketch"] { background: radial-gradient(ellipse 50% 40% at 15% 0%, rgba(255,226,150,.2), transparent 70%), radial-gradient(ellipse 35% 30% at 92% 90%, rgba(56,211,159,.16), transparent 70%), radial-gradient(ellipse 30% 25% at 6% 85%, rgba(255,95,168,.12), transparent 70%), radial-gradient(ellipse 30% 25% at 85% 12%, rgba(47,140,255,.12), transparent 70%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 34px), linear-gradient(180deg, #13161c, #0d1015 60%, #07090c); }
+#lobby[data-mode="sketch"] .sec-title { text-transform: none; letter-spacing: .01em; }
+#lobby[data-mode="sketch"] .seat { clip-path: none; border-radius: 3px; color: #16161d; background: #fbfaf5 repeating-linear-gradient(0deg, transparent 0 21px, rgba(47,140,255,.13) 21px 22px); box-shadow: 0 10px 22px rgba(0,0,0,.45); }
+#lobby[data-mode="sketch"] .seat:nth-child(odd):not(.empty) { transform: rotate(1deg); } #lobby[data-mode="sketch"] .seat:nth-child(even):not(.empty) { transform: rotate(-1deg); }
+#lobby[data-mode="sketch"] .seat::before { inset: auto; left: -10px; top: 6px; width: 54px; height: 15px; z-index: 3; background: rgba(255,236,170,.8); transform: rotate(-30deg); box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+#lobby[data-mode="sketch"] .seat-id b { color: #16161d; font-family: 'Permanent Marker', var(--f-head); font-weight: 400; text-transform: none; text-shadow: none; }
+#lobby[data-mode="sketch"] .seat-id small { color: #5b5f6b; }
+#lobby[data-mode="sketch"] .seat .seat-no { left: auto; right: 8px; color: #06231a; background: #38d39f; }
+#lobby[data-mode="sketch"] .seat.empty { background: rgba(251,250,245,.08); color: rgba(251,250,245,.6); transform: none; }
+#lobby[data-mode="sketch"] .seat.empty::before { display: none; }
+#lobby[data-mode="sketch"] .lobby-settings { color: #16161d; background: linear-gradient(90deg, transparent 40px, rgba(255,95,95,.3) 40px 42px, transparent 42px), repeating-linear-gradient(0deg, transparent 0 27px, rgba(47,140,255,.14) 27px 28px), #fbfaf5; box-shadow: 0 16px 34px rgba(0,0,0,.45); }
+#lobby[data-mode="sketch"] .lobby-settings :is(.field-label, .fd-scope, .ls-head b) { color: #0d6e50; text-shadow: none; }
+#lobby[data-mode="sketch"] .lobby-settings :is(.anime-hint, .fd-scope em) { color: #4b4f5c; }
+#lobby[data-mode="sketch"] .lobby-settings .ls-head b { font-family: 'Permanent Marker', var(--f-head); font-size: 16px; letter-spacing: .04em; }
+#lobby[data-mode="sketch"] .lobby-settings .ls-head i { background: #e8e4d8; }
+#lobby[data-mode="sketch"] .lobby-settings :is(.size, .modebtn):not(.selected) { color: #16161d; background: #fff; box-shadow: inset 0 0 0 2px #16161d, 0 4px 0 rgba(0,0,0,.18); }
+
+/* ---------- reduced effects ---------- */
+body.fx-lite #lobby .seat::before { animation: none !important; }
+body.fx-lite .lobby-bg i { transition: none; }

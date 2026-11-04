@@ -257,6 +257,16 @@ The eighth mode: one player draws an anime word, everyone else races to guess it
   - **Each mode has its own skin**, shared by its card and its panel: Guess Who a noir case file with a magnifying glass and yellow evidence markers; Headbanz a polaroid pinned to a cork case board with typewriter type; Imposter red eyes in the dark, scanlines and a glitch; Anime UNO a playing card ringed in the four deck colours; Anime Draft a foil trading card with rarity gems; Anime Feud a blue studio panel ringed with marquee bulbs; Most Likely two sides split by a burning seam with a VS badge; Anime Sketch a taped sheet with a pencil-sketch picture and marker lettering. Adding a mode = an entry in `MODES`, `RULES` and `GUIDE` (game.js) and one `[data-mode]` block in `menu.css`.
   - **Discord: @47** sits small in the bottom-left corner.
 - **Lobby.** A fighting-game *PLAYER SELECT*. Seats are 1P–8P fighter tiles, a **READY!** band stamps across a tile when that player readies up, and anyone joining mid-lobby gets a *HERE COMES A NEW CHALLENGER!* banner. The modes are a stage select: corner brackets mark the host's pick and every voter's 1P–8P cursor hovers over the mode they voted for. Ready and Start are the big buttons of the same family (Ready turns gold once you are ready), and the status line is an LED board.
+- **The lobby wears the picked mode** (`css/lobby.css`, switched by `lobbyTheme` in `js/game.js`). It reuses each mode's skin from the menu's How to Play panel across the whole lobby:
+  - **Guess Who:** a noir dossier under a desk lamp, yellow evidence-marker seat numbers, gold buttons.
+  - **Headbanz:** a cork case board with pinned cream polaroid seats and typewriter names.
+  - **Imposter:** fog, scanlines, red eyes in every seat, crimson buttons.
+  - **Anime UNO:** seats as playing cards ringed in the four deck colours.
+  - **Anime Draft:** foil trading-card seats, rarity-gem numbers, gold foil.
+  - **Anime Feud:** a royal-blue studio with marquee-bulb seat frames.
+  - **Most Likely:** smoke, embers and a burning seam.
+  - **Anime Sketch:** taped paper seats, marker lettering, a lined-paper ruleset.
+  - What changes with the mode: the backdrop (it crossfades), the seats, the ruleset panel, option and main buttons, the room tag, the status board, the section titles and the ambient particles. The stage-select cards always wear their own mode's lettering. It is visual only: the same lobby logic runs underneath.
 - Reduced effects (or the OS reduced-motion setting) turns off the lobby's moving floor, the menu's ember glow, tilt, foil and the cards' small loops.
 
 ## DIO's Freeze: ZA WARUDO
