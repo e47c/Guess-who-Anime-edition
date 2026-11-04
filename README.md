@@ -2,7 +2,7 @@
 
 *(formerly Guess Who: Anime Edition)*
 
-A browser party game for a squad of up to 8 friends with six anime modes in one room:
+A browser party game for a squad of up to 8 friends with seven anime modes in one room:
 
 | Mode | Players | Identity |
 |---|---|---|
@@ -11,7 +11,8 @@ A browser party game for a squad of up to 8 friends with six anime modes in one 
 | **Imposter** | 3–8 | *Suspicion*: a dark room in drifting fog, a bulb that won't stop flickering, red eyes opening in the corners; the secret character is a security-camera still (REC, timestamp, scanlines), the imposter sees a hooded silhouette; the vote is a line-up against a height chart; a heartbeat-and-drone theme with whispers, floor creaks and a horror stinger |
 | **Anime UNO** | 2–8 | *Arena Clash*: card-battle arena tinted by the active colour |
 | **Anime Draft** | 2–8 (Build 1v1–4v4, Auction free-for-all) | *Team Builder*: collectible cards in five rarities on a black and gold stage |
-| **Anime Feud** | 2–8 (two teams) | *Game Show*: Classic Feud in a blue studio with buzzers; Most Likely as a fiery red-and-gold clash |
+| **Anime Feud** | 2–8 (Team vs Team) | *Game Show*: a classic blue TV studio, buzzer podiums, a marquee-bulb board; game-show sounds (answer ding, wrong-answer buzzer, applause, fanfare) and bouncy show music |
+| **Most Likely** | 2–8 (Team vs Team or Free For All) | *Hot Takes*: a dark, fiery argument (smoky glass, embers, two burning cards around a VS crest); fire crackle, clash hits, taiko and an aggressive drum-and-bass theme |
 
 ## How the modes scale
 
@@ -68,27 +69,35 @@ Build the strongest six-character team. Everything lives in `js/draft/` (rules, 
 
 ## Anime Feud
 
-A team game show with two game types and two looks. Everything lives in `js/feud/` (engine, screen, question packs) and `css/feud.css`; `js/game.js` only routes to it.
+The team survey game show. Team vs Team only (2–8 players, split as evenly as possible; the host can move players or shuffle). Code: `js/feud/feud.js` (screen, lobby, moves), `js/feud/engine.js` (rules, tested), `js/feud/common.js` (the question library, history and helpers it shares with Most Likely), `css/feud.css`. Its match lives in `rooms/<code>/feud`.
 
-- **Classic Feud** (a classic blue TV studio: royal-blue answer tiles with gold trim, sweeping spotlights, a board ringed by chasing marquee bulbs, buzzer podiums). The rules follow the classic survey-show format:
+- **A round:**
   - **Face-off.** Every round opens with one player per team at the buzzers (they rotate, so everyone gets a turn). The first to buzz (button or space bar) answers. If nobody buzzes in 15 s, the round's starting team answers first.
   - **Control.** The top answer wins control at once. Otherwise the other face-off player answers: a higher answer (or any answer after a miss) takes control, a lower one or a miss leaves it with the first team. If both miss, the next pair of players goes to the buzzers. Face-off answers count toward the pot; face-off misses are not strikes.
   - **Play or pass.** The team in control chooses PLAY (answer the rest of the board) or PASS (the other team has to play it). No choice in 15 s = play.
   - **The board.** The playing team answers one at a time (the answerer rotates, teammates can talk it through). A right answer opens its row; a wrong answer or running out of the 20/30/45 s clock is a strike. After 3 strikes the other team gets **one** answer: right = they steal the whole pot, wrong = the playing team keeps it. Clearing the board banks the pot with no steal.
   - Typing is forgiving: case, accents, punctuation and "the" are ignored, one typo is allowed (two on long answers, never on numbers: "Gear 3" is not "Gear 5"), part of a long answer counts ("shadow clone"), and a character's first name, last name or nickname works ("Blackbeard", "Deku"). A word that fits two answers ("Uchiha") asks you to be more specific, with no strike.
-- **Most Likely** (a dark, fiery argument: smoky glass panels, rising embers, a red-burning and a gold-burning card face off around a crackling VS crest; the winner blazes gold, the other card goes to smoke):
-  - Each duel shows **two characters who are close** on the question ("Who is the smartest?": Nami or Doflamingo).
-  - The pairs come from the curated Most Likely rankings: neighbours in a series' ranking a few points apart, and in an Anime Mix also two characters of two ticked series with nearly the same score. Ties are never used. The higher-ranked one is the "most likely" answer.
-  - **Both teams vote at the same time.** Tap a card; you can change your vote until everyone has voted or the 10/15/20 s clock runs out. Before the reveal you only see your own team's votes.
-  - A team's pick is its majority; a split team goes with whoever voted first. **Every** team that picks the more likely character scores: 30 points for a photo finish, 20 for a close call, 10 otherwise.
-  - 5, 10 (default) or 15 duels. A tie plays up to three sudden-death duels; still tied = a draw.
+- **Match.** 3, 5 (default) or 7 rounds; a tie plays one sudden-death question. The final screen shows both scores and every round with who found which answer; Rematch / Back to lobby for the host.
+- **Look and sound.** A classic blue TV studio of our own design (royal-blue tiles with gold trim, chasing marquee bulbs, buzzer podiums). Its own sound kit: a two-tone answer ding, a bell run plus applause for the top answer, the wrong-answer buzzer, a buzz-in beep, a drum roll before a steal, a brass fanfare for PLAY and each new round, applause at the end; bouncy game-show music (`show` in `js/audio.js`).
 - **Single anime or Anime Mix.** The same series checkboxes as Anime Draft.
   - **One series ticked:** questions written for that series, plus the crossover questions that work for it ("Which One Piece character is the most loyal?").
   - **Two or more ticked:** crossover questions answered **only from the ticked series**. A mixed Classic board needs answers from at least two of them and spreads its 8 slots across them. General anime questions ("Name something an anime villain would never forgive") only appear in a mix.
   - The lobby shows the scope and how many questions fit, and blocks the start if fewer fit than the rounds chosen.
-- **Teams.** 2–8 players are split as evenly as possible (1v1, 2v1, 2v2, 3v2, 3v3, 4v3, 4v4). The host can tap a player to move them, or shuffle.
-- **Match.** Classic: 3, 5 (default) or 7 rounds, one sudden-death question on a tie. The final screen shows the winner, both scores and every round (Classic: who found which answer; Most Likely: both characters, the right one and each team's pick), with Rematch / Back to lobby for the host.
-- **Look.** Classic Feud's blue studio is our own board design in classic game-show colours, not a copy of any TV show's set.
+
+## Most Likely
+
+Its own mode (seventh): two close characters, one question, and an argument about who is MORE likely. Code: `js/feud/likely.js` (screen, lobby, votes), the same rules engine and shared question library as Anime Feud. Its match lives in `rooms/<code>/likely`.
+
+- **Two ways to play** (picked in the lobby):
+  - **Team vs Team:** Team Crimson and Team Gold vote at the same moment. A team's pick is its majority; a split team goes with whoever voted first. Before the reveal you only see your own team's votes.
+  - **Free For All:** every player votes alone and keeps their own score. Nobody sees anyone else's vote until the reveal. The highest score wins; a tie at the top plays up to three sudden-death duels, then the win is shared.
+- **The duel:**
+  - Each duel shows **two characters who are close** on the question ("Who is the smartest?": Nami or Doflamingo).
+  - The pairs come from the curated Most Likely rankings: neighbours in a series' ranking a few points apart, and in an Anime Mix also two characters of two ticked series with nearly the same score. Ties are never used. The higher-ranked one is the "most likely" answer.
+  - Tap a card to vote; you can change it until everyone has voted or the 10/15/20 s clock runs out. Everyone who picks the more likely character scores: 30 for a photo finish, 20 for a close call, 10 otherwise.
+  - 5, 10 (default) or 15 duels.
+- **Look and sound.** A dark, fiery argument: smoky glass panels, rising embers, a red-burning and a gold-burning card around a crackling VS crest; the winner blazes gold with a MOST LIKELY! stamp, the other card goes to smoke. Its own sound kit: taiko for each new duel, a whoosh and fire crackle when you vote (crackles as the others vote), a clash hit on the reveal then a rising win or a falling miss, the crowd's "ohh"; an aggressive taiko-and-bass theme (`clash` in `js/audio.js`).
+- **Series:** the same Single anime / Anime Mix rules and question rotation as Anime Feud (below).
 
 ### Question rotation (nothing is banned for good)
 
@@ -148,7 +157,7 @@ Every player keeps a history: `"<questionId>@<scope>": [last seen, times seen]`.
    - blocked words.
 
    It warns about wordings that are near copies of another board, rewordings that are only a synonym swap, and opposites sharing most of their answers. It then prints what every series and a sample of mixes can play.
-4. Run `node tools/feud-test.mjs` (213 checks: matching, filtering, rotation and cooldowns, histories across players and rooms, teams for 2–8 players, every face-off outcome, play or pass, strikes, steals, clears, duel pairs, voting and majorities, ties, sudden death, away players, full simulated matches of both types for every player count).
+4. Run `node tools/feud-test.mjs` (256 checks: matching, filtering, rotation and cooldowns, histories across players and rooms, teams for 2–8 players, every face-off outcome, play or pass, strikes, steals, clears, duel pairs, voting and majorities, Free For All scoring, ties, sudden death, away players, full simulated matches of Anime Feud and of Most Likely in both ways to play for every player count).
 
 ### Multiplayer, history and what Firebase can and can't protect
 
@@ -200,7 +209,7 @@ Every player keeps a history: `"<questionId>@<scope>": [last seen, times seen]`.
 - **Buttons** are one family across the site: red lacquer with a gold hairline (main), gold (alt), black and gold (ghost), dark red (danger). Hover lifts them with a glow and a shine sweep, pressing sinks them, disabled ones go flat charcoal.
 - **Logo.** A red coin with a gold rim and a gold star (the brand mark), *ANIME* in bold white with a red block shadow and a gold edge, *ARCADE* in polished gold and *PARTY* in white on a red band. The lobby header carries the same pieces as a one-line compact logo, and keeps it on phones.
 - **First-open splash.** The logo comes in, then a welcome fades in and out (*Welcome, player. Built with love by @e47. Have fun!*), then the menu. Returning players get a shorter one (*Welcome back*), and **Skip** (or a tap, Enter or Esc) goes straight to the menu. It doubles as the loading screen: it leaves only once the app is ready.
-- **Mode art** (the menu's cabinets and the lobby's mode cards) shows only each series' main protagonists and main villains, framed in gold: Guess Who has Naruto, Luffy and Ichigo; Headbanz has Goku, Yuji and Tanjiro; Imposter has Madara, Sukuna and Muzan; Anime UNO has Ace, Jotaro and Sasuke; Anime Draft has Luffy, Gojo and Eren; Anime Feud has Nezuko, Mahito and Kid Buu.
+- **Mode art** (the menu's cabinets and the lobby's mode cards) shows only each series' main protagonists and main villains, framed in gold: Guess Who has Naruto, Luffy and Ichigo; Headbanz has Goku, Yuji and Tanjiro; Imposter has Madara, Sukuna and Muzan; Anime UNO has Ace, Jotaro and Sasuke; Anime Draft has Luffy, Gojo and Eren; Anime Feud has Nezuko, Mahito and Kid Buu; Most Likely has Goku Black, Zeke and Broly.
 
 ## Menu and lobby
 

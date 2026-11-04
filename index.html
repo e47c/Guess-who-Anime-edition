@@ -9,11 +9,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Monoton&family=Press+Start+2P&family=Special+Elite&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/base.css?v=10">
+<link rel="stylesheet" href="css/base.css?v=11">
 <link rel="stylesheet" href="css/modes.css?v=12">
 <link rel="stylesheet" href="css/uno.css?v=12">
 <link rel="stylesheet" href="css/draft.css?v=3">
-<link rel="stylesheet" href="css/feud.css?v=3">
+<link rel="stylesheet" href="css/feud.css?v=4">
 <link rel="stylesheet" href="css/case.css?v=1">
 <link rel="stylesheet" href="css/suspect.css?v=1">
 </head>
@@ -63,7 +63,7 @@
 <span class="lg-neon" aria-hidden="true"><span class="lg-arcade">ARC<em>A</em>DE</span><span class="lg-party">PAR<em>T</em>Y</span></span>
 <span class="lg-jp" aria-hidden="true">アニメ・アーケード</span>
 </h1>
-<p class="tagline">Six anime party games. One room. <b>Insert coin.</b></p>
+<p class="tagline">Seven anime party games. One room. <b>Insert coin.</b></p>
 <div class="home-cta">
 <button class="btn xl coin-btn" onclick="insertCoin()"><span class="coin-slot" aria-hidden="true"><i></i></span><span class="cb-txt">Host a party<small>insert coin · create a room</small></span></button>
 <div id="joinArea" class="join-box">
@@ -167,13 +167,19 @@
 <div class="dr-roles"><span class="dr-rolename" id="drRolesName">One Piece roles</span><button type="button" class="dr-switch" id="drRolesTg" role="switch" aria-checked="false" onclick="setDraftOpt('roles')"><span class="dr-knob"></span><b>Classic roles</b></button></div>
 <div id="drRolePrev" class="dr-roleprev"></div>
 <p class="anime-hint" id="drHint"></p></div>
-<div id="feudBox" class="field hidden"><label class="field-label">Game type</label>
-<div class="fd-types"><button type="button" class="fd-type selected" data-k="classic" onclick="setFeudOpt('type','classic')"><span class="fd-ico" aria-hidden="true">答</span><b>Classic Feud</b><small>Buzzer face-off, play or pass, three strikes and the steal. Type the top answers.</small></button><button type="button" class="fd-type" data-k="likely" onclick="setFeudOpt('type','likely')"><span class="fd-ico" aria-hidden="true">誰</span><b>Most Likely</b><small>Two close characters per question. Both teams vote at once; pick the more likely one.</small></button></div>
+<div id="feudBox" class="field hidden"><label class="field-label">Anime Feud · Team vs Team</label>
 <div class="fd-scope" id="fdScope"></div>
 <div class="fd-opts"><div><label class="field-label" id="fdRoundsLbl">Rounds</label><div class="sizes" id="fdRoundsBtns"></div></div>
 <div><label class="field-label" id="fdTimerLbl">Answer time</label><div class="sizes" id="fdTimerBtns"></div></div></div>
 <label class="field-label" style="margin-top:14px">Teams</label><div id="fdTeams" class="dr-teams fd-teams"></div>
 <p class="anime-hint" id="fdHint"></p></div>
+<div id="likelyBox" class="field hidden"><label class="field-label">How to play</label>
+<div class="fd-types"><button type="button" class="fd-type ml-play selected" data-k="teams" onclick="setLikelyOpt('play','teams')"><span class="fd-ico" aria-hidden="true">団</span><b>Team vs Team</b><small>Two teams vote at the same moment. A team's pick is its majority.</small></button><button type="button" class="fd-type ml-play" data-k="ffa" onclick="setLikelyOpt('play','ffa')"><span class="fd-ico" aria-hidden="true">個</span><b>Free For All</b><small>Every player votes alone and keeps their own score. Top score wins.</small></button></div>
+<div class="fd-scope" id="mlScope"></div>
+<div class="fd-opts"><div><label class="field-label">Duels</label><div class="sizes" id="mlRoundsBtns"></div></div>
+<div><label class="field-label">Vote time</label><div class="sizes" id="mlTimerBtns"></div></div></div>
+<div id="mlTeamsBox"><label class="field-label" style="margin-top:14px">Teams</label><div id="mlTeams" class="dr-teams fd-teams"></div></div>
+<p class="anime-hint" id="mlHint"></p></div>
 </div>
 </section>
 </div>
@@ -198,10 +204,18 @@
 <!-- =========================================
      ANIME FEUD (js/feud/feud.js renders into #fdWrap)
 ========================================= -->
-<div id="feud" class="hidden">
+<div id="feud" class="hidden fd-studio">
 <div class="fd-bg" aria-hidden="true"><i></i><i></i></div>
 <div class="game-header"><div class="game-header-inner"><div><div class="turn" id="fdTurnT"></div><div class="status" id="fdStatus"></div></div><button class="pop ghost menu-btn" onclick="openPause()" aria-label="Menu">☰</button></div></div>
 <div id="fdWrap" class="fd-wrap"></div>
+</div>
+
+<!-- =========================================
+     MOST LIKELY (js/feud/likely.js renders into #mlWrap)
+========================================= -->
+<div id="likely" class="hidden fd-clash">
+<div class="game-header"><div class="game-header-inner"><div><div class="turn" id="mlTurnT"></div><div class="status" id="mlStatus"></div></div><button class="pop ghost menu-btn" onclick="openPause()" aria-label="Menu">☰</button></div></div>
+<div id="mlWrap" class="fd-wrap"></div>
 </div>
 
 <!-- =========================================
@@ -412,7 +426,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=28"></script>
+<script type="module" src="js/game.js?v=29"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){

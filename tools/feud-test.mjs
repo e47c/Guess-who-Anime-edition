@@ -1,6 +1,6 @@
 // Anime Feud rules + rotation tests: node tools/feud-test.mjs
 import { buildLibrary, eligible, boardFor, qText, matchText, matchChar, pickQuestion, remember, trimHist, digest, scoreCandidate, balanceTeams,
-    newMatch, act, actorOf, advance, needsQuestion, stateBoard, startTeam, poolInfo, faceOffOf, teamPick, pairsFor, pickPair, duelPoints, guessTeam, FEUD_RULES as R } from "../js/feud/engine.js";
+    newMatch, act, actorOf, advance, needsQuestion, stateBoard, startTeam, poolInfo, faceOffOf, teamPick, pairsFor, pickPair, duelPoints, guessTeam, leaders, seatsOf, FEUD_RULES as R } from "../js/feud/engine.js";
 import { PACKS } from "../js/feud/packs/index.js";
 
 let ok = 0, bad = 0;
@@ -265,12 +265,38 @@ t(sdN === 3, "up to three sudden-death duels (" + sdN + ")");
 advance(s, s.round, null, NOW);
 t(s.phase === "over" && s.winner === "", "still tied after three: a draw");
 
+sect("most likely: free for all");
+const FQ = (g, sc = scOP) => LQ(g, sc);
+s = newMatch({ mid: 30, type: "likely", ffa: true, players: [1, 2, 3, 4], series: scOP, q: FQ("x-smartest"), now: NOW, rounds: 2 });
+t(s.ffa === 1 && s.score.p1 === 0 && s.score.p4 === 0 && !s.score.A, "free for all: a score per player, no teams");
+const fw = s.duel.w, fl = fw === "a" ? "b" : "a";
+act(s, { k: "vote", by: 1, pick: fw }, lc()); act(s, { k: "vote", by: 2, pick: fl }, lc()); act(s, { k: "vote", by: 3, pick: fw }, lc());
+t(act(s, { k: "vote", by: 7, pick: "a" }, lc()) !== "" && s.phase === "vote", "outsiders can't vote, the duel waits for player 4");
+act(s, { k: "vote", by: 4, pick: fl }, lc());
+t(s.phase === "reveal" && s.score.p1 === s.duel.pts && s.score.p3 === s.duel.pts && s.score.p2 === 0 && s.score.p4 === 0, "everyone who picked right scores for themselves");
+advance(s, 1, FQ("x-loyal"), NOW);
+act(s, { k: "vote", by: 2, pick: s.duel.w }, lc({ present: p => p === 2 }));
+t(s.phase === "reveal" && s.log[1].gain.p2 === s.duel.pts && s.log[1].gain.p1 === 0, "away players don't hold the vote up; a missing vote scores 0");
+s.score = { p1: 40, p2: 40, p3: 10, p4: 0 };
+t(needsQuestion(s), "two players tied on top after the last duel: sudden death");
+advance(s, 2, FQ("x-party"), NOW);
+act(s, { k: "vote", by: 1, pick: s.duel.w }, lc()); ["2", "3", "4"].forEach(p => act(s, { k: "vote", by: Number(p), pick: s.duel.w === "a" ? "b" : "a" }, lc()));
+t(!needsQuestion(s), "the tie is broken");
+advance(s, 3, null, NOW);
+t(s.phase === "over" && s.winner === "p1" && s.winners.join() === "1", "the single leader wins");
+s = newMatch({ mid: 31, type: "likely", ffa: true, players: [1, 2], series: scOP, q: FQ("x-smartest"), now: NOW, rounds: 1 });
+act(s, { k: "vote", by: 1, pick: s.duel.w }, lc()); act(s, { k: "vote", by: 2, pick: s.duel.w }, lc());
+let fsd = 0; while (needsQuestion(s)) { advance(s, s.round, FQ(["x-loyal", "x-kindest", "x-lazy", "x-party"][fsd]), NOW); fsd++; act(s, { k: "vote", by: 1, pick: s.duel.w }, lc()); act(s, { k: "vote", by: 2, pick: s.duel.w }, lc()); }
+advance(s, s.round, null, NOW);
+t(fsd === 3 && s.phase === "over" && s.winner === "" && s.winners.length === 2, "still tied after three sudden-death duels: a shared win");
+
 sect("full matches, 2 to 8 players");
-for (let n = 2; n <= 8; n++) for (const type of ["classic", "likely"]) {
+for (let n = 2; n <= 8; n++) for (let type of ["classic", "likely", "ffa"]) {
+    const ffa = type === "ffa"; if (ffa) type = "likely";
     const series = n % 2 ? ["onepiece", "naruto"] : ["jjk"], pool = eligible(lib, type, series);
     const pick = used => { const c = pickQuestion(pool, { used, now: NOW, rnd, lib }); return c && type === "likely" ? Object.assign({}, c, { pair: pickPair(lib, c, series, rnd) }) : c; };
     const T = balanceTeams(Array.from({ length: n }, (_, i) => i + 1));
-    let st = newMatch({ mid: 100 + n, type, series, teams: T, q: pick([]), now: NOW }), guard = 0, acted = new Set(), err = "";
+    let st = newMatch({ mid: 100 + n, type, series, teams: T, ffa, players: [...T.A, ...T.B], q: pick([]), now: NOW }), guard = 0, acted = new Set(), err = "";
     while (st.phase !== "over" && guard++ < 800) {
         if (st.phase === "reveal") { advance(st, st.round, needsQuestion(st) ? pick(st.used) : null, NOW); continue; }
         let r = "";
@@ -284,12 +310,12 @@ for (let n = 2; n <= 8; n++) for (const type of ["classic", "likely"]) {
         }
         if (r) { err = r + " @" + st.phase; break; }
     }
-    const banked = st.log.reduce((x, l) => x + (type === "likely" ? l.gain.A + l.gain.B : l.pts), 0);
+    const banked = st.log.reduce((x, l) => x + (type === "likely" ? Object.values(l.gain).reduce((u, v) => u + v, 0) : l.pts), 0), total = Object.values(st.score).reduce((u, v) => u + v, 0);
     t(!err && st.phase === "over", `${n}p ${type}: match finishes (${err})`);
-    t(st.score.A + st.score.B === banked, `${n}p ${type}: scores = points awarded`);
+    t(total === banked, `${n}p ${type}${ffa ? " ffa" : ""}: scores = points awarded`);
     t(st.round >= st.rounds && new Set(st.used.map(u => u.key)).size === st.used.length, `${n}p ${type}: ${st.round} rounds, no repeats`);
     t(acted.size === n, `${n}p ${type}: everyone took part (${acted.size}/${n})`);
-    t(st.winner === (st.score.A > st.score.B ? "A" : st.score.B > st.score.A ? "B" : ""), `${n}p ${type}: winner matches the score`);
+    t(ffa ? (st.winners.length && st.winners.every(p => st.score["p" + p] === Math.max(...Object.values(st.score)))) : st.winner === (st.score.A > st.score.B ? "A" : st.score.B > st.score.A ? "B" : ""), `${n}p ${type}${ffa ? " ffa" : ""}: winner matches the score`);
 }
 
 console.log(`\n${ok} passed, ${bad} failed`);

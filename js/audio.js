@@ -178,7 +178,24 @@ const FX = {
     floorCreak(o, t) { V.sweep(o, t, 170, 260, .55, .6, 26); V.sweep(o, t + .3, 250, 160, .5, .5, 26); },
     sting(o, t) { V.stab(o, t, [49, 50, 55, 61], 1, 1); V.sweep(o, t, 4000, 180, .9, .7, 2); V.kick(o, t, 1.2); V.pad(o, t, [25, 26], 1.4, .9, 240, "sawtooth"); },
     unmask(o, t) { V.pad(o, t, [37, 44], 1.3, .8, 320); V.sweep(o, t, 90, 3200, 1.1, .6, 3); V.kick(o, t + 1.05, 1.4); V.stab(o, t + 1.05, [49, 56, 61, 64], 1, .8); V.snare(o, t + 1.05, .8, .3); },
-    tickTense(o, t) { V.pluck(o, t, 86, .03, .5, "square", 4000, 0); V.kick(o, t, .25); }
+    tickTense(o, t) { V.pluck(o, t, 86, .03, .5, "square", 4000, 0); V.kick(o, t, .25); },
+    // Anime Feud: the TV game show. Answer ding, the wrong-answer buzzer, the face-off buzz-in, applause, fanfare.
+    showDing(o, t) { [[84, 0], [91, .11]].forEach(([m, d]) => { V.bell(o, t + d, m, 1, 1.4); V.pluck(o, t + d, m, .25, .6, "triangle", 6000, .3); }); },
+    showTop(o, t) { [84, 88, 91, 96].forEach((m, i) => V.bell(o, t + i * .08, m, .9, 1.6)); V.stab(o, t + .32, [60, 64, 67, 72], .9, .5); FX.applause(o, t + .2, { n: 26 }); },
+    showBuzz(o, t) { [0, .05].forEach(d => { V.pluck(o, t + d, 38, .75, .9, "square", 900, 0); V.pluck(o, t + d, 39, .75, .7, "sawtooth", 700, 0); }); V.snare(o, t, .4, .1); },
+    showBuzzIn(o, t) { V.pluck(o, t, 79, .22, 1, "square", 5000, 0); V.pluck(o, t + .01, 86, .22, .6, "square", 5000, 0); V.kick(o, t, .5); },
+    applause(o, t, opt) { const n = (opt && opt.n) || 46; for (let i = 0; i < n; i++) { const d = Math.random() * 1.6; V.snare(o, t + d, .18 + Math.random() * .25, .03); if (i % 3 === 0) V.hat(o, t + d, .35); } },
+    fanfare(o, t) { [[0, [60, 64, 67]], [.18, [62, 65, 69]], [.36, [64, 67, 72]], [.62, [67, 72, 76, 79]]].forEach(([d, ch], i) => V.stab(o, t + d, ch, i === 3 ? 1 : .8, i === 3 ? .7 : .16)); V.kick(o, t + .62, .9); V.snare(o, t + .62, .6, .3); },
+    drumroll(o, t) { for (let i = 0; i < 18; i++) V.snare(o, t + i * .05, .25 + i * .025, .05); V.kick(o, t + .9, 1.1); V.stab(o, t + .9, [55, 62, 67], .8, .4); },
+    showPass(o, t) { V.sweep(o, t, 600, 2400, .25, .6, 3); V.pluck(o, t + .2, 72, .2, .6, "triangle", 4000, .2); V.pluck(o, t + .32, 67, .3, .6, "triangle", 4000, .2); },
+    // Most Likely: the argument. Fire crackle, a clash impact, taiko, the crowd going "ohh".
+    crackle(o, t) { for (let i = 0; i < 14; i++) V.hat(o, t + Math.random() * .5, .25 + Math.random() * .5); V.sweep(o, t, 300, 1200, .5, .25, 2); },
+    clashVote(o, t) { V.sweep(o, t, 400, 3600, .18, .7, 3); V.tom(o, t + .05, 110, .7); FX.crackle(o, t + .05); },
+    clashHit(o, t) { V.kick(o, t, 1.4); V.tom(o, t, 70, 1.2); V.snare(o, t, .9, .35); V.sweep(o, t, 3500, 150, .7, .8, 1.5); V.pad(o, t, [33, 40], .9, 1.6, 400, "sawtooth"); FX.crackle(o, t + .1); },
+    clashWin(o, t) { V.sweep(o, t, 150, 4000, .7, .8, 2); [67, 71, 74, 79].forEach((m, i) => V.pluck(o, t + .5 + i * .06, m, .5, .7, "sawtooth", 3000, .3)); V.kick(o, t + .5, 1.1); V.tom(o, t + .5, 90, 1); FX.crackle(o, t + .5); },
+    clashMiss(o, t) { V.sweep(o, t, 2200, 200, .6, .7, 2); V.pluck(o, t + .1, 45, .6, .8, "sawtooth", 600, .2); V.pluck(o, t + .35, 40, .9, .8, "sawtooth", 500, .3); },
+    taiko(o, t) { V.tom(o, t, 75, 1.4); V.kick(o, t, 1); V.tom(o, t + .18, 95, 1); V.tom(o, t + .3, 75, 1.2); V.snare(o, t + .3, .5, .2); },
+    ohh(o, t) { V.pad(o, t, [55, 59, 62], .9, .9, 900, "triangle"); V.sweep(o, t, 500, 900, .9, .35, 6); }
 };
 // the old two-oscillator "tone" helper, now routed through the sfx bus so volume settings apply
 function tone(f1, f2, dur, type = "square", vol = .06, delay = 0) {
@@ -216,6 +233,14 @@ const THEMES = {
     im: { bpm: 56, swing: 0, root: 49, prog: [[0, 7], [1, 8], [0, 7], [-1, 6]], scale: [0, 1, 5, 6, 8],
         kick: P("o..x............"), snare: null, hat: P("......x.......x."), hatVol: .2, bassPat: [0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
         bassWave: "sine", bassCut: 260, chords: "pad", padCut: 420, padWave: "triangle", lead: "bell", leadEvery: 2, leadVol: .4, bellTension: true, drone: true, whisper: true },
+    // Anime Feud: a bright TV game show. Boom-chick bass, brass stabs, a bouncy lead.
+    show: { bpm: 124, swing: .08, root: 60, prog: [[0, 4, 7], [5, 9, 12], [7, 11, 14], [0, 4, 7]], scale: [0, 2, 4, 7, 9, 12],
+        kick: P("o...x...o...x..."), snare: P("....o.......o..."), hat: P("x.x.x.x.x.x.x.xx"), bassPat: [0, null, 7, null, 0, null, 7, null, 0, null, 7, null, 5, null, 7, null],
+        bassWave: "triangle", bassCut: 900, chords: "stab", chordHits: [2, 6, 10, 14], lead: "pluck", leadEvery: 2, leadWave: "square", leadVol: .5 },
+    // Most Likely: a heated argument. Taiko drums, a gritty bass, fire.
+    clash: { bpm: 132, swing: 0, root: 50, prog: [[0, 3, 7], [-2, 2, 5], [-4, 0, 3], [-5, -2, 2]], scale: [0, 3, 5, 7, 10, 12],
+        kick: P("o..xo...o..xo.x."), snare: P("....o.......o..o"), hat: P("..x...x...x...x."), toms: true, bassPat: [0, null, 0, 0, null, 0, null, 0, 0, null, 0, 0, 3, null, 2, null],
+        bassWave: "sawtooth", bassCut: 520, chords: "stab", chordHits: [0, 7], lead: "pluck", leadEvery: 2, leadWave: "sawtooth", leadVol: .45 },
     // Anime UNO: arena battle drums
     uno: { bpm: 140, swing: 0, root: 55, prog: [[0, 7, 12], [-4, 3, 8], [-2, 5, 10], [-7, 0, 5]], scale: [0, 3, 5, 7, 10, 12, 15],
         kick: P("o...x...o...x.x."), snare: P("....o.......o..."), hat: P("x.x.x.x.x.x.x.x."), toms: true, bassPat: [0, null, 0, 12, 0, null, 0, 10, 0, null, 0, 12, 0, 7, 10, 12],

@@ -352,12 +352,14 @@ export function balanceTeams(players, saved = {}) {
 function evt(s, o) { s.evn = (Number(s.evn) || 0) + 1; s.ev = Object.assign({ n: s.evn }, o); }
 const teamOf = (s, p) => TEAMS.find(k => arr(s.teams[k]).map(Number).includes(Number(p))) || "";
 export const startTeam = (s, round) => (round % 2 === 1) === (s.first !== "B") ? "A" : "B";     // round 1 = s.first, then alternate
+/* Most Likely can be played Team vs Team (o.teams) or Free For All (o.ffa + o.players: every player scores for themselves). */
 export function newMatch(o) {
-    const likely = o.type === "likely";
+    const likely = o.type === "likely", ffa = likely && !!o.ffa, teams = o.teams || { A: [], B: [] };
     const s = { v: 2, lv: o.lv || "", mid: o.mid, type: o.type, series: arr(o.series).slice(),
         rounds: o.rounds || (likely ? R.likelyRounds : R.rounds), timer: o.timer || (likely ? R.likelyTimer : R.timer),
-        teams: { A: arr(o.teams.A).map(Number), B: arr(o.teams.B).map(Number) }, ptr: { A: 0, B: 0 }, fptr: { A: 0, B: 0 }, score: { A: 0, B: 0 },
+        teams: { A: arr(teams.A).map(Number), B: arr(teams.B).map(Number) }, ptr: { A: 0, B: 0 }, fptr: { A: 0, B: 0 }, score: { A: 0, B: 0 },
         first: o.first === "B" ? "B" : "A", round: 0, sd: 0, used: [], log: [], phase: "pick", evn: 0, tk: 0 };
+    if (ffa) { s.ffa = 1; s.players = arr(o.players).map(Number); s.teams = { A: [], B: [] }; s.score = Object.fromEntries(s.players.map(p => ["p" + p, 0])); }
     if (o.q) startRound(s, o.q, o.now || Date.now());
     return s;
 }
@@ -493,12 +495,16 @@ export function teamPick(s, team) {
     if (na !== nb) return na > nb ? "a" : "b";
     return v.slice().sort((x, y) => Number(x[1]) - Number(y[1]))[0][0];
 }
-const allVoted = (s, present) => TEAMS.every(t => arr(s.teams[t]).map(Number).filter(present).every(p => (s.votes || {})["p" + p]));
+// everyone who plays: the two teams, or every Free For All player
+export const seatsOf = s => s.ffa ? arr(s.players).map(Number) : arr(s.teams.A).concat(arr(s.teams.B)).map(Number);
+const allVoted = (s, present) => seatsOf(s).filter(present).every(p => (s.votes || {})["p" + p]);
+// the top of a Free For All table (several players when tied)
+export const leaders = s => { const e = Object.entries(s.score || {}); if (!e.length) return []; const top = Math.max(...e.map(x => Number(x[1]) || 0)); return e.filter(x => (Number(x[1]) || 0) === top).map(x => Number(x[0].slice(1))); };
 function actLikely(s, a, ctx) {
     const now = ctx.now || Date.now(), present = ctx.present || (() => true);
     if (s.phase !== "vote") return "stale";
     if (a.k === "vote") {
-        if (!teamOf(s, a.by)) return "Only players on a team can vote.";
+        if (s.ffa ? !arr(s.players).map(Number).includes(Number(a.by)) : !teamOf(s, a.by)) return "Only players in the match can vote.";
         if (a.pick !== "a" && a.pick !== "b") return "Pick one of the two.";
         const prev = arr((s.votes || {})["p" + a.by]);
         if (prev[0] === a.pick) return "stale";
@@ -515,6 +521,14 @@ function actLikely(s, a, ctx) {
     return "Unknown move.";
 }
 function resolveDuel(s, now) {
+    if (s.ffa) {       // every player scores for their own pick
+        const d = s.duel, gain = {}, picks = {};
+        arr(s.players).map(Number).forEach(p => { const v = arr((s.votes || {})["p" + p])[0] || ""; picks["p" + p] = v; gain["p" + p] = v === d.w ? d.pts : 0; s.score["p" + p] = (Number(s.score["p" + p]) || 0) + gain["p" + p]; });
+        s.log = arr(s.log).concat([{ r: s.round, sd: s.sd || 0, key: s.q.key, id: s.q.id, a: d.a, b: d.b, w: d.w, pts: d.pts, picks, gain, votes: Object.assign({}, s.votes) }]);
+        s.phase = "reveal"; s.nx = now + R.duelRevealMs; s.tk = (Number(s.tk) || 0) + 1; s.dl = 0;
+        evt(s, { k: "result", picks, gain, w: d.w });
+        return;
+    }
     const d = s.duel, picks = { A: teamPick(s, "A"), B: teamPick(s, "B") }, gain = { A: 0, B: 0 };
     s.score = Object.assign({ A: 0, B: 0 }, s.score);
     TEAMS.forEach(t => { if (picks[t] && picks[t] === d.w) { gain[t] = d.pts; s.score[t] = (Number(s.score[t]) || 0) + d.pts; } });
@@ -527,7 +541,8 @@ function resolveDuel(s, now) {
 export function needsQuestion(s) {
     if (!s || s.phase !== "reveal") return false;
     if (s.round < s.rounds) return true;
-    return s.score.A === s.score.B && (Number(s.sd) || 0) < (R.maxSd[s.type] || 1);
+    const tied = s.ffa ? leaders(s).length > 1 : s.score.A === s.score.B;
+    return tied && (Number(s.sd) || 0) < (R.maxSd[s.type] || 1);
 }
 export function advance(s, round, c, now = Date.now()) {
     if (!s || s.phase !== "reveal" || Number(s.round) !== Number(round)) return "stale";
@@ -540,7 +555,8 @@ export function advance(s, round, c, now = Date.now()) {
 }
 function finish(s, why) {
     s.phase = "over"; s.dl = 0; s.nx = 0; s.tk = (Number(s.tk) || 0) + 1;
-    s.winner = s.score.A > s.score.B ? "A" : s.score.B > s.score.A ? "B" : "";
+    if (s.ffa) { s.winners = leaders(s); s.winner = s.winners.length === 1 ? "p" + s.winners[0] : ""; }
+    else s.winner = s.score.A > s.score.B ? "A" : s.score.B > s.score.A ? "B" : "";
     if (why) s.why = why;
     evt(s, { k: "over", win: s.winner });
 }
