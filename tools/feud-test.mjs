@@ -1,6 +1,6 @@
 // Anime Feud rules + rotation tests: node tools/feud-test.mjs
 import { buildLibrary, eligible, boardFor, qText, matchText, matchChar, pickQuestion, remember, trimHist, digest, scoreCandidate, balanceTeams,
-    newMatch, act, actorOf, advance, needsQuestion, stateBoard, startTeam, poolInfo, faceOffOf, teamPick, pairsFor, pickPair, duelPoints, guessTeam, leaders, seatsOf, FEUD_RULES as R } from "../js/feud/engine.js";
+    newMatch, act, actorOf, advance, needsQuestion, stateBoard, startTeam, poolInfo, faceOffOf, teamPick, pairsFor, pickPair, duelPoints, guessTeam, leaders, seatsOf, kindLabel, FEUD_RULES as R } from "../js/feud/engine.js";
 import { PACKS } from "../js/feud/packs/index.js";
 
 let ok = 0, bad = 0;
@@ -47,7 +47,7 @@ const big = boardFor(lib.boards["x-loyal"], Object.keys(lib.idx));
 t(big.length === 8 && new Set(big.map(a => a.s)).size >= 4, "18-series mix spreads answers across series");
 t(boardFor(lib.boards["g-food"], ["onepiece"]) === null && boardFor(lib.boards["g-food"], ["onepiece", "naruto"]).length >= 5, "general anime boards only in a mix");
 t(boardFor(lib.boards["op-straw-hats"], ["onepiece"]) && boardFor(lib.boards["op-straw-hats"], ["onepiece", "naruto"]) === null && boardFor(lib.boards["op-straw-hats"], ["naruto"]) === null, "single-series boards only for that series");
-t(boardFor(lib.boards["x-betray"], ["windbreaker"]) === null, "a series with no line gets no board");
+t(boardFor(lib.boards["x-owe-money"], ["windbreaker"]) === null, "a series with no line gets no board");
 t(boardFor(lib.boards["x-zombie-survive"], ["gachiakuta", "deathnote"]) !== null && boardFor(lib.boards["x-teacher"], ["gachiakuta", "deathnote"]) === null, "mixes need two represented series");
 t(qText("Which {a}character is the most loyal?", ["onepiece"], k => ({ onepiece: "One Piece" })[k]) === "Which One Piece character is the most loyal?", "{a} single");
 t(qText("Which {a}character is the most loyal?", ["onepiece", "naruto"]) === "Which character is the most loyal?", "{a} mix");
@@ -233,7 +233,23 @@ t(ratedMix.length && ratedMix.every(p => !p.cross), "rating boards never duel tw
 t(duelPoints(1) === 30 && duelPoints(4) === 20 && duelPoints(6) === 10, "closer calls are worth more");
 const pp = pickPair(lib, eL.find(c => c.g === "x-smartest"), scOP, rnd);
 t(pp && pp.a !== pp.b && (pp.w === "a" ? byId[pp.a].p > byId[pp.b].p : byId[pp.b].p > byId[pp.a].p), "pickPair: two characters, the right winner, random sides");
-t(eligible(lib, "likely", ["no-such-series"]).length === 0 && eligible(lib, "likely", ["gachiakuta"]).length >= 3, "a series with no boards has no duels (Gachiakuta now has rating duels)");
+t(eligible(lib, "likely", ["no-such-series"]).length === 0 && eligible(lib, "likely", ["gachiakuta"]).length >= 20, "a series with no boards has no duels; Gachiakuta has rating and personality duels");
+{   // personality duels from the trait scores (js/feud/packs/traits.js)
+    const K = lib.boards["x-kindest"], byK = new Map(K.ans.map(a => [a.c, a]));
+    t(K.kind === "traits" && K.trait.key === "K" && kindLabel(K).includes("trait"), "personality boards are trait boards, labelled as editors' trait scores");
+    const kp = pairsFor(K, ["demonslayer"]);
+    t(kp.length > 10 && kp.every(p => p.gap >= 2 && p.gap <= 5 && byK.get(p.w).p >= 5 && byK.get(p.w).p - byK.get(p.l).p === p.gap), "trait duels: 2 to 5 points apart, and the answer clearly shows the trait (5+)");
+    const km = pairsFor(K, ["onepiece", "naruto"]).filter(p => p.cross);
+    t(km.length && km.every(p => p.gap <= 4 && byK.get(p.l).p >= 3), "trait duels across series (kindness means the same everywhere): close calls between two characters who both show it");
+    const ch = lib.boards["x-childish"], ma = lib.boards["x-mature"], luffy = 40;
+    t(ch.ans.find(a => a.c === luffy).p === 9 - ma.ans.find(a => a.c === luffy).p, "an opposite read the other way round: childish = 9 - maturity");
+    const zoro = lib.boards["x-lazy"].ans.find(a => a.t === "Roronoa Zoro").c, has = (B, a, b) => pairsFor(B, ["onepiece"]).some(p => (p.w === a && p.l === b) || (p.w === b && p.l === a));
+    t(!has(lib.boards["x-hardworking"], zoro, luffy) && !has(lib.boards["x-lazy"], zoro, luffy), "a pair that would win both opposite questions (Zoro trains hardest AND naps most) is never asked");
+    const fg = lib.boards["x-forgive"];
+    t(!fg.ans.some(a => a.t === "Kenjaku" || a.t === "Pariston Hill") && fg.ans.some(a => a.t === "Naruto Uzumaki"), "forgiving = a kind character letting go, never a villain who just doesn't care");
+    const teach = lib.boards["x-betray"].ans.find(a => a.t === "Marshall D. Teach").c, tp = pairsFor(lib.boards["x-betray"], ["onepiece"]).filter(p => p.w === teach || p.l === teach);
+    t(tp.length && tp.every(p => p.w === teach), "canon anchors hold in play: Teach is always the one who'd betray");
+}
 const LQ = (g, sc = scOP) => { const c = eligible(lib, "likely", sc).find(x => x.g === g); return Object.assign({}, c, { pair: pickPair(lib, c, sc, rnd) }); };
 const T6 = { A: [1, 3, 5], B: [2, 4, 6] };
 s = newMatch({ mid: 20, type: "likely", series: scOP, teams: T6, q: LQ("x-smartest"), now: NOW, rounds: 2 });

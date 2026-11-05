@@ -3,6 +3,7 @@
 import { buildLibrary, eligible, poolInfo, norm, stem, boardFor, pairsFor, FEUD_RULES } from "../js/feud/engine.js";
 import { PACKS } from "../js/feud/packs/index.js";
 import { CHARS } from "../js/draft/data.js";
+import { TRAITS, TRAIT_INFO, ANCHORS, parseTraits } from "../js/feud/packs/traits.js";
 
 const lib = buildLibrary(PACKS);
 const errors = lib.issues.filter(i => i.level === "error").map(i => `${i.pack}/${i.board || "-"}: ${i.msg}`);
@@ -31,7 +32,8 @@ B.forEach(b => {
     if (!b.only && !b.generic && Object.keys(bySeries).length < 2) warns.push(`${id}: crossover board covers only ${Object.keys(bySeries).join()}`);
     b.ans.forEach(a => { if (BAD_WORDS.test(a.t + " " + a.al.join(" "))) errors.push(`${id}: inappropriate answer "${a.t}"`); });
     // opposites: their own board, never the original reversed
-    if (b.opp && lib.boards[b.opp] && b.id < b.opp) {
+    // (trait boards are computed from one score per character; their opposites are checked duel by duel further down)
+    if (b.opp && lib.boards[b.opp] && b.id < b.opp && !(b.trait && lib.boards[b.opp].trait)) {
         const o = lib.boards[b.opp];
         if (o.fam !== b.fam) warns.push(`${id}: opposite ${o.id} is in another family (${o.fam})`);
         Object.keys(bySeries).forEach(s => {
@@ -52,10 +54,18 @@ import fs from "fs";
 const pop = JSON.parse(fs.readFileSync(new URL("../data/draft-pop.json", import.meta.url), "utf8")).chars;
 const COL = { STR: 2, SPD: 3, IQ: 4, DUR: 5, CMB: 6 }, row = {};
 Object.values(CHARS).forEach(rows => rows.forEach(r => { row[r[0]] = r; }));
-const KINDS = { canon: 1, feats: 1, power: 1, poll: 1 };
+const KINDS = { canon: 1, feats: 1, power: 1, poll: 1, traits: 1 };
 B.forEach(b => {
     const id = b.pack + "/" + b.id;
-    if (!KINDS[b.kind]) errors.push(`${id}: kind must be canon, feats, power or poll (got ${b.kind})`);
+    if (!KINDS[b.kind]) errors.push(`${id}: kind must be canon, feats, power, poll or traits (got ${b.kind})`);
+    if ((b.kind === "traits") !== !!b.trait) errors.push(`${id}: a traits board is generated from the trait scores (trait: { key }) and only those`);
+    if (b.trait && !TRAIT_INFO[b.trait.key]) errors.push(`${id}: unknown trait ${b.trait.key}`);
+    if (b.kind === "traits" && !b.why) errors.push(`${id}: say what the ranking is based on (why)`);
+    // opinion boards and their opposites: nobody can be both the best and the worst leader, roommate, survivor...
+    if (b.type === "likely" && b.kind === "poll" && b.opp && lib.boards[b.opp] && lib.boards[b.opp].kind === "poll" && b.id < b.opp) {
+        const o = lib.boards[b.opp];
+        b.ans.filter(a => a.c && o.ans.some(x => x.c === a.c)).forEach(a => errors.push(`${id}: ${a.s} ${a.t} is on this board and on its opposite ${o.id}`));
+    }
     if (b.kind === "canon" && !["fans", "known"].includes(b.rank)) errors.push(`${id}: a canon board needs rank "fans" or "known"`);
     if (b.kind === "feats" && !b.gen) errors.push(`${id}: a feats board is generated from the ratings (gen: { stat })`);
     if ((b.kind === "power" || b.kind === "feats") && !b.why) errors.push(`${id}: say what the ranking is based on (why)`);
@@ -81,6 +91,50 @@ B.forEach(b => {
             if (x.p > y.p && dir * (row[y.c][col] - row[x.c][col]) > tol) errors.push(`${id}: ${s} ranks ${x.t} above ${y.t}, but their ${b.agree.stat} ratings say the opposite (${row[x.c][col]} vs ${row[y.c][col]})`);
         })));
     }
+});
+/* ---------- the character traits (Most Likely personality duels) ----------
+   - every row is a real Anime Draft character, scores are 0-9 on known traits, every row has a note
+   - ANCHORS: facts of the story the scores must agree with (Teach betrayed Whitebeard, so his betrayal score is high)
+   - contradictions: very kind AND very cruel, very honest AND a skilled liar, hard-working AND lazy; loyal AND a
+     betrayer only when the note explains it (Itachi: loyal to the Leaf, traitor to his clan)
+   - opposite boards never give the same two characters the same winner (kinder AND crueler) */
+const tIdx = {};
+Object.entries(TRAITS).forEach(([s, rows]) => {
+    if (!CHARS[s]) { errors.push(`traits: unknown series ${s}`); return; }
+    const seen = new Set();
+    rows.forEach(([name, str, note]) => {
+        const hits = CHARS[s].filter(r => r[1] === name);
+        if (hits.length !== 1) errors.push(`traits: ${s} "${name}" is not exactly one Anime Draft character`);
+        if (seen.has(name)) errors.push(`traits: ${s} ${name} listed twice`); seen.add(name);
+        if (!note || note.length < 15) errors.push(`traits: ${s} ${name} needs a note on the canon behaviour`);
+        const t = parseTraits(str);
+        Object.keys(t).forEach(k => { if (!TRAIT_INFO[k] || !(t[k] >= 0 && t[k] <= 9)) errors.push(`traits: ${s} ${name} has a bad score "${k}"`); });
+        if (Object.keys(t).length < 5) warns.push(`traits: ${s} ${name} has only ${Object.keys(t).length} traits scored`);
+        const both = (a, b, lim) => t[a] >= lim && t[b] >= lim;
+        if (both("K", "C", 7)) errors.push(`traits: ${s} ${name} is scored both very kind and very cruel`);
+        if (both("H", "M", 7)) errors.push(`traits: ${s} ${name} is scored both very honest and a skilled liar`);
+        if (both("D", "Z", 7)) errors.push(`traits: ${s} ${name} is scored both very hard-working and very lazy`);
+        if (both("L", "T", 7) && !/betray|traitor|turned on/i.test(note)) errors.push(`traits: ${s} ${name} is scored both very loyal and a betrayer, and the note doesn't explain it`);
+        if (hits.length === 1) tIdx[s + "|" + name] = t;
+    });
+});
+ANCHORS.forEach(([s, name, k, op, v, why]) => {
+    const t = tIdx[s + "|" + name];
+    if (!t) return errors.push(`traits anchor: ${s} ${name} has no trait row`);
+    if (t[k] == null) return errors.push(`traits anchor: ${s} ${name} has no ${k} score (${why})`);
+    if (op === ">=" ? t[k] < v : t[k] > v) errors.push(`traits anchor: ${s} ${name} ${k}${t[k]} contradicts the story (${why}: needs ${op} ${v})`);
+});
+let traitPairs = 0;
+B.filter(b => b.trait && b.opp && lib.boards[b.opp] && lib.boards[b.opp].trait && b.id < b.opp).forEach(b => {
+    const o = lib.boards[b.opp], name = c => (b.ans.find(a => a.c === c) || o.ans.find(a => a.c === c) || {}).t;
+    Object.keys(TRAITS).forEach(s => {
+        const mine = new Map(pairsFor(b, [s]).map(p => [p.w + ">" + p.l, p]));
+        pairsFor(o, [s]).forEach(p => { traitPairs++; if (mine.has(p.w + ">" + p.l)) errors.push(`${b.id} / ${o.id}: ${s} ${name(p.w)} beats ${name(p.l)} on both opposite questions`); });
+    });
+});
+B.filter(b => b.trait).forEach(b => {
+    const thin = Object.keys(TRAITS).filter(s => pairsFor(b, [s]).length < 3);
+    if (thin.length > 3) warns.push(`${b.id}: fewer than 3 duels in ${thin.join(", ")}`);
 });
 const Q = lib.questions;
 const seenText = new Map();
@@ -117,6 +171,7 @@ for (const type of ["classic", "likely"]) for (const ps of [["onepiece", "naruto
 const nb = B.length, nq = Q.length;
 console.log(`Anime Feud library ${lib.version}: ${nq} questions on ${nb} boards (${B.filter(b => b.type === "classic").length} Classic, ${B.filter(b => b.type === "likely").length} Most Likely), ${new Set(B.map(b => b.fam)).size} families, ${B.filter(b => b.opp).length / 2} opposite pairs.`);
 console.log(report.join("\n"));
+console.log(`Character traits: ${Object.values(TRAITS).flat().length} characters in ${Object.keys(TRAITS).length} series, ${Object.values(tIdx).reduce((n, t) => n + Object.keys(t).length, 0)} scores, ${ANCHORS.length} story anchors, ${traitPairs} opposite-board duels cross-checked.`);
 if (warns.length) console.log("\nWarnings (" + warns.length + "):\n  " + warns.join("\n  "));
 if (errors.length) { console.log("\nERRORS (" + errors.length + "):\n  " + errors.join("\n  ")); process.exit(1); }
 console.log("\n0 errors.");

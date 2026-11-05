@@ -23,9 +23,9 @@ import { ambient, titleCard, shake, ring, burstText, countUp, flyClone, motionOK
 import { profile, avatarEl, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js";
 import { showResults, closeResults } from "./results.js";
 import * as DRAFT from "./draft/draft.js?v=6";
-import * as FEUD from "./feud/feud.js?v=5";
-import * as LIKELY from "./feud/likely.js?v=2";
-import * as SKETCH from "./sketch/sketch.js?v=5";
+import * as FEUD from "./feud/feud.js?v=6";
+import * as LIKELY from "./feud/likely.js?v=3";
+import * as SKETCH from "./sketch/sketch.js?v=6";
 import { initCine, cineHook, cineHas } from "./cine/engine.js?v=12";
 import { hand as cineHand } from "./cine/hands.js?v=11";
 import * as CK from "./cine/kit.js?v=11";

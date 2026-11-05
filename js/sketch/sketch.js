@@ -16,7 +16,7 @@ import { SK, arr, maskOf, hintMax, pickHint, hintAt, buildWords, poolFor, pickOp
     hintDue, standings, wordPrints, claim, near, CATS, CAT_NAME } from "./engine.js?v=3";
 import { LIBRARY } from "./words.js?v=3";
 import { CHARS } from "../draft/data.js?v=3";
-import { el, srvNow, label, presentIn, pickOpt, seriesOf, initCommon, charOf, img, optButtons, confetti } from "../feud/common.js?v=2";
+import { el, srvNow, label, presentIn, pickOpt, seriesOf, initCommon, charOf, img, optButtons, confetti } from "../feud/common.js?v=3";
 import { push, set, remove, query, limitToLast, onChildAdded, onChildChanged, onChildRemoved } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
 const GT = "sketch", NODE = "sketch";

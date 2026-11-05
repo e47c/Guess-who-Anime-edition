@@ -12,9 +12,9 @@
                      the right one), votes, turn key, deadline. Every vote and timeout runs in a transaction.
      feudHist/p<N>   the shared question history (same as Anime Feud: it never serves the same question twice in a row).
    ===================================================================== */
-import { FEUD_RULES as R, poolInfo, newMatch, act, advance, needsQuestion, balanceTeams, seatsOf, qText, kindLabel } from "./engine.js?v=4";
+import { FEUD_RULES as R, poolInfo, newMatch, act, advance, needsQuestion, balanceTeams, seatsOf, qText, kindLabel } from "./engine.js?v=5";
 import { LIB, K, arr, el, srvNow, label, presentIn, pickOpt, seriesOf, TEAM, initCommon, recordSeen, publishHist, syncRemoteHist, roomHists, nextQuestion,
-    charName, charSeries, img, teamsFrom, optButtons, scopeLine, teamColumns, tapTeam, shuffleTeams, kit, makeTimer, confetti, hintFor } from "./common.js?v=2";
+    charName, charSeries, img, teamsFrom, optButtons, scopeLine, teamColumns, tapTeam, shuffleTeams, kit, makeTimer, confetti, hintFor } from "./common.js?v=3";
 
 const TYPE = "likely", NODE = "likely", GT = "likely";
 const KT = kit("ml"), $ = KT.$, banner = KT.banner, feedback = KT.feedback;

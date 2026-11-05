@@ -13,6 +13,7 @@
 import { CHARS } from "../draft/data.js?v=3";
 import { NICKNAMES } from "./nicknames.js?v=1";
 import { ALIASES, NAME_ALIASES } from "./aliases.js?v=1";
+import { TRAITS, parseTraits } from "./packs/traits.js?v=1";
 
 export const FEUD_RULES = {
     rounds: 5,                 // default match length (setup offers ROUND_CHOICES)
@@ -166,12 +167,31 @@ function genAnswers(b, type, chars, idx) {
     });
     return out;
 }
+/* Most Likely boards built from the character traits (trait: { key, inv, win, need, skip }): every character scored on that trait,
+   points = the score (inv: 9 - score, for the opposite question: "childish" from maturity; need: { K: 5 } = only characters
+   with at least that score in another trait, so "forgives" means a kind character letting go, not a villain who doesn't care). See js/feud/packs/traits.js. */
+function traitAnswers(b, idx) {
+    const t = b.trait, out = [];
+    Object.entries(TRAITS).forEach(([s, rows]) => {
+        if (arr(t.skip).includes(s) || !idx[s]) return;
+        const mine = [];
+        rows.forEach(([name, str]) => {
+            const v = parseTraits(str)[t.key], c = idx[s].full.get(norm(name));
+            if (v == null || v < 0 || !c) return;
+            if (t.need) { const all = parseTraits(str); if (Object.entries(t.need).some(([k, min]) => !(all[k] >= min))) return; }
+            mine.push(mkAnswer(b.id, s, c.n, c, t.inv ? 9 - v : v));
+        });
+        out.push(...mine.sort((x, y) => y.p - x.p || x.c - y.c));
+    });
+    return out;
+}
 // the board's ranking basis in a few words (shown above the question)
 export function kindLabel(B) {
     if (!B) return "";
     if (B.kind === "canon") return B.rank === "fans" ? "Canon answers · ranked by AniList fans" : "Canon answers · ranked by how well-known";
     if (B.kind === "feats") return "Ranked by feats · Anime Draft ratings";
     if (B.kind === "power") return "Ranked by canon feats";
+    if (B.kind === "traits") return "Canon behaviour · editors' trait scores";
     return "Opinion · editors' poll, not canon";
 }
 // a typed answer that is right for the question but not among the answers shown (for a fairer "not on the board" message)
@@ -212,9 +232,10 @@ export function buildLibrary(packs, chars = CHARS) {
                 });
             });
             if (b.gen) genAnswers(b, pack.type, chars, idx).forEach(a => ans.push(a));
+            if (b.trait) traitAnswers(b, idx).forEach(a => ans.push(a));
             const series = [...new Set(ans.map(a => a.s))];
             const B = { id: b.id, pack: pack.id, type: pack.type, fam: b.fam || b.id, cat: b.cat || "General", sub: b.sub || "", pol: b.pol || "0", diff: Number(b.diff) || 2, vt: b.vt || "base",
-                opp: b.opp || "", only: b.only ? (series[0] || "") : "", kind: b.kind || "poll", rank: b.rank || "", why: b.why || "", noCross: !!(b.gen || b.noCross), gen: b.gen || null, agree: b.agree || null, beats: b.beats || null, generic: series.length === 1 && series[0] === "any", series, ans,
+                opp: b.opp || "", only: b.only ? (series[0] || "") : "", kind: b.kind || "poll", rank: b.rank || "", why: b.why || "", noCross: !!(b.gen || b.noCross), gen: b.gen || null, trait: b.trait || null, agree: b.agree || null, beats: b.beats || null, generic: series.length === 1 && series[0] === "any", series, ans,
                 source: pack.source || "Anime Arcade curated answers", review: b.review || pack.review || "curated", ranking: "curated", votes: null };
             boards[b.id] = B;
             arr(b.q).forEach((w, i) => {
@@ -239,9 +260,21 @@ export function buildLibrary(packs, chars = CHARS) {
         else if (O.opp !== B.id) issues.push({ level: "error", pack: B.pack, board: B.id, msg: "opposite " + B.opp + " does not point back" });
         else if (O.type !== B.type) issues.push({ level: "error", pack: B.pack, board: B.id, msg: "opposite " + B.opp + " is a different game type" });
     });
+    /* two trait questions that are opposites but scored separately (kind / cruel, loyal / betrays, honest / liar...):
+       a pair of characters where the same one comes out on top on BOTH (Zoro trains hardest AND naps most) is not a clear
+       call, so that duel is dropped from both boards. */
+    Object.values(boards).forEach(B => {
+        const O = B.trait && B.opp && boards[B.opp];
+        if (!O || !O.trait) return;
+        const om = new Map(O.ans.map(a => [a.c, a.p])), list = B.ans.filter(a => om.has(a.c));
+        B.clash = new Set();
+        for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++)
+            if ((list[i].p - list[j].p) * (om.get(list[i].c) - om.get(list[j].c)) > 0) B.clash.add(pairKey(list[i].c, list[j].c));
+    });
     const version = hashStr(JSON.stringify(Object.values(boards).map(B => [B.id, B.ans.map(a => [a.id, a.p])])) + questions.map(q => q.questionId).join());
     return { boards, questions, issues, version, idx };
 }
+const pairKey = (a, b) => a < b ? a + ":" + b : b + ":" + a;
 export function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
 
 /* ---------------- boards for the ticked series ---------------- */
@@ -281,6 +314,18 @@ export function pairsFor(B, series) {
     if (B.generic) return [];
     const by = {}; B.ans.filter(a => a.c && series.includes(a.s)).forEach(a => (by[a.s] = by[a.s] || []).push(a));
     const out = [], add = (x, y, cross) => { const [w, l] = x.p > y.p ? [x, y] : [y, x]; out.push({ w: w.c, l: l.c, gap: w.p - l.p, cross: !!cross, ws: w.s, ls: l.s }); };
+    if (B.trait) {
+        /* trait boards (0-9 scores): any two characters 2 to 5 points apart, and the answer must clearly show the trait
+           (score >= win, 5 by default). Across series (a mix): 2 to 4 apart, both showing at least some of it (>= 3). */
+        const win = B.trait.win == null ? 5 : B.trait.win, lists = Object.values(by), clash = (x, y) => !!(B.clash && B.clash.has(pairKey(x.c, y.c)));
+        lists.forEach(list => { for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+            const d = Math.abs(list[i].p - list[j].p);
+            if (d >= 2 && d <= 5 && Math.max(list[i].p, list[j].p) >= win && !clash(list[i], list[j])) add(list[i], list[j]);
+        } });
+        if (series.length > 1) for (let i = 0; i < lists.length; i++) for (let j = i + 1; j < lists.length; j++)
+            lists[i].forEach(x => lists[j].forEach(y => { const d = Math.abs(x.p - y.p); if (d >= 2 && d <= 4 && Math.min(x.p, y.p) >= 3 && Math.max(x.p, y.p) >= win && !clash(x, y)) add(x, y, true); }));
+        return out;
+    }
     Object.values(by).forEach(list => {
         list = list.slice().sort((x, y) => y.p - x.p);
         for (let i = 0; i < list.length; i++) {

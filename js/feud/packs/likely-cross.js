@@ -1,6 +1,7 @@
 /* ANIME FEUD pack: MOST LIKELY, crossover boards. A duel shows two characters of a board who are close in its ranking;
    the higher one is the answer. kind "poll" = an opinion question (our editors' poll; the game labels it as such).
-   kind "feats" = computed from the Anime Draft ratings (gen: { stat }); those duels never mix two series, since the ratings
+   kind "traits" = computed from the character trait scores (js/feud/packs/traits.js, trait: { key, inv }): personality
+   duels that judge a character the same way on every board. kind "feats" = computed from the Anime Draft ratings (gen: { stat }); those duels never mix two series, since the ratings
    are measured inside each series. Poll lines: "Name 30" (a short unique roster name is enough: "Luffy").
    "{a}" = "One Piece " with one series ticked, nothing in a mix. "S|" = single only, "M|" = mix only.
    Append new wordings at the END of a board's q list: a wording's id is its position. */
@@ -13,20 +14,20 @@ export default {
             a: {
                 onepiece: "Luffy 30; Shanks 22; Newgate 16; Roger 12; Law 8; Jinbe 6",
                 naruto: "Naruto 26; Minato 18; Hashirama 16; Tsunade 12; Shikamaru 10; Hiruzen 8",
-                dragonball: "Vegeta 26; Frieza 18; Piccolo 16; Beerus 12; Whis 8; Goku 6",
+                dragonball: "Piccolo 22; Frieza 18; Vegeta 16; Gohan 12; Whis 10",
                 jjk: "Gojo 28; Nanami 20; Geto 16; Yuki 12; Kenjaku 10; Maki 6",
                 demonslayer: "Rengoku 26; Tanjiro 18; Gyomei 18; Tengen 12; Giyu 8; Urokodaki 6",
                 bleach: "Yamamoto 24; Aizen 20; Byakuya 14; Ichigo 14; Shunsui 12; Ukitake 8",
                 aot: "Erwin 34; Levi 18; Hange 16; Armin 12; Pixis 8; Historia 6",
                 mha: "All Might 30; Izuku 18; Iida 14; Aizawa 12; Endeavor 10; Hawks 6",
-                hxh: "Netero 26; Chrollo 24; Gon 12; Kurapika 12; Ging 10; Meruem 8",
+                hxh: "Netero 26; Chrollo 24; Kurapika 14; Meruem 10",
                 deathnote: "L 30; Light 28; Near 14; Soichiro 12; Watari 6; Aizawa 6",
-                chainsaw: "Makima 30; Kishibe 22; Aki 16; Himeno 12; Denji 6",
+                chainsaw: "Makima 30; Kishibe 22; Aki 16; Himeno 12",
                 blackclover: "Julius 28; Yami 26; Asta 12; Fuegoleon 12; William 8; Mereoleona 8",
-                jojo: "Giorno 28; Jotaro 20; Bucciarati 20; Dio 12; Diavolo 6; Jonathan 6",
+                jojo: "Giorno 28; Jotaro 20; Bucciarati 20; Dio 12; Jonathan 8",
                 rezero: "Crusch 22; Subaru 18; Anastasia 14; Emilia 12; Priscilla 10; Reinhard 10",
                 fireforce: "Obi 30; Benimaru 22; Burns 14; Shinra 14; Hinawa 8",
-                frieren: "Himmel 36; Serie 18; Frieren 12; Eisen 10; Denken 10; Flamme 8",
+                frieren: "Himmel 36; Serie 18; Eisen 12; Denken 10; Flamme 8",
                 windbreaker: "Umemiya 36; Togame 16; Kaji 14; Hiragi 12; Suo 10; Sakura 8"
             }
         },
@@ -34,23 +35,23 @@ export default {
             why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
             q: ["Which {a}character would make the worst leader?","Who would run their team straight into the ground?"],
             a: {
-                onepiece: "Buggy 30; Luffy 18; Usopp 14; Enel 12; Teach 8; Brook 6",
-                naruto: "Obito 20; Jiraiya 16; Tsunade 14; Lee 12; Madara 10; Sasuke 10",
-                dragonball: "Goku 30; Yamcha 16; Frieza 12; Krillin 10; Roshi 10; Beerus 8",
-                jjk: "Naoya 22; Mahito 18; Todo 16; Gojo 12; Jogo 10; Panda 8",
+                onepiece: "Buggy 30; Enel 16; Usopp 14; Brook 10",
+                naruto: "Obito 22; Jiraiya 18; Sasuke 14; Lee 12; Madara 8",
+                dragonball: "Goku 30; Yamcha 16; Krillin 12; Roshi 10; Beerus 8",
+                jjk: "Naoya 22; Mahito 18; Todo 16; Jogo 12; Hakari 8",
                 demonslayer: "Zenitsu 26; Inosuke 24; Muzan 18; Doma 10; Nezuko 8",
-                bleach: "Kenpachi 26; Mayuri 18; Ichigo 12; Grimmjow 12; Renji 8; Gin 8",
+                bleach: "Kenpachi 26; Mayuri 18; Grimmjow 12; Renji 8; Gin 6",
                 aot: "Floch 26; Eren 20; Connie 12; Sasha 12; Zeke 10; Kenny 8",
-                mha: "Bakugo 18; Shigaraki 18; Kaminari 16; Endeavor 14; Twice 10; Toga 10",
+                mha: "Kaminari 22; Bakugo 18; Toga 14; Twice 10",
                 hxh: "Hisoka 24; Pariston 18; Gon 16; Ging 14; Leorio 10",
                 deathnote: "Matsuda 36; Misa 22; Ryuk 14; Mikami 10; Mello 8",
-                chainsaw: "Denji 30; Power 28; Kobeni 12; Makima 10; Beam 8",
-                blackclover: "Charmy 20; Luck 18; Magna 14; Asta 12; Nozel 10; Vanica 10",
+                chainsaw: "Denji 30; Power 28; Kobeni 12; Beam 8",
+                blackclover: "Charmy 20; Luck 18; Magna 14; Vanica 10",
                 jojo: "Diavolo 22; Polnareff 18; Okuyasu 16; Narancia 14; Joseph 10; Hol Horse 10",
-                rezero: "Regulus 22; Petelgeuse 20; Roswaal 16; Subaru 12; Felt 10; Beatrice 8",
-                fireforce: "Arthur 30; Tamaki 18; Joker 14; Shinra 10; Vulcan 8",
+                rezero: "Regulus 22; Petelgeuse 20; Roswaal 16; Felt 10; Beatrice 8",
+                fireforce: "Arthur 30; Tamaki 18; Joker 14; Vulcan 8",
                 frieren: "Frieren 26; Ubel 18; Stark 16; Heiter 14; Sein 8",
-                windbreaker: "Sakura 26; Takiishi 20; Nirei 16; Sugishita 12; Endo 10"
+                windbreaker: "Takiishi 26; Choji 18; Nirei 12; Sugishita 10; Endo 8"
             }
         },
         { id: "x-strategist", fam: "leadership", cat: "Leadership", sub: "Strategy", pol: "+", diff: 2, vt: "context", kind: "poll", agree: {"stat":"IQ","dir":1,"tol":12},
@@ -89,7 +90,7 @@ export default {
                 aot: "Levi 24; Hange 18; Erwin 12; Pixis 10; Kenny 10",
                 mha: "Aizawa 28; All Might 26; Gran Torino 16; Mirio 8; Endeavor 8",
                 hxh: "Biscuit 32; Netero 18; Kite 12; Morel 8; Zeno 8",
-                chainsaw: "Kishibe 34; Himeno 18; Makima 16; Aki 12",
+                chainsaw: "Kishibe 34; Himeno 18; Aki 12",
                 blackclover: "Yami 30; Mereoleona 18; Julius 14; Fuegoleon 12; Nacht 10; Charlotte 6",
                 jojo: "Lisa Lisa 26; Gyro 18; Bucciarati 14; Joseph 12; Jotaro 10; Avdol 8",
                 rezero: "Wilhelm 22; Roswaal 18; Beatrice 14; Echidna 12; Ram 10; Reinhard 8",
@@ -98,50 +99,13 @@ export default {
                 windbreaker: "Umemiya 30; Hiragi 18; Kaji 12; Suo 8; Togame 8"
             }
         },
-        { id: "x-loyal", fam: "loyalty", cat: "Personality", sub: "Loyalty", pol: "+", diff: 1, opp: "x-betray", kind: "poll",
-            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
-            q: ["Which {a}character is the most loyal?","Who would never turn their back on their friends?","Who would follow their captain anywhere?"],
-            a: {
-                onepiece: "Zoro 30; Sanji 14; Marco 12; Jinbe 12; Ace 10; Chopper 8; Brook 6",
-                naruto: "Naruto 22; Itachi 20; Kakashi 12; Sakura 12; Hinata 12; Gaara 8",
-                dragonball: "Krillin 26; Piccolo 18; Gohan 16; Vegeta 10; Bulma 8",
-                jjk: "Yuji 22; Uraume 18; Choso 14; Megumi 12; Nanami 12; Todo 10",
-                demonslayer: "Tanjiro 24; Nezuko 18; Zenitsu 12; Gyutaro 12; Inosuke 10; Kanao 6",
-                bleach: "Komamura 20; Soi Fon 18; Sado 16; Haschwalth 12; Ulquiorra 10",
-                aot: "Mikasa 32; Armin 14; Levi 14; Yelena 10; Jean 8; Connie 8",
-                mha: "Kirishima 24; Twice 18; Izuku 14; Kurogiri 12; Uraraka 8; Bakugo 8",
-                hxh: "Killua 28; Shaiapouf 16; Neferpitou 14; Gon 12; Leorio 10",
-                deathnote: "Watari 24; Misa 22; Mikami 18; Rem 16; Matsuda 10",
-                chainsaw: "Pochita 30; Aki 18; Power 14; Denji 10; Himeno 10",
-                blackclover: "Asta 22; Yuno 14; Magna 14; Vanessa 12; Finral 10; Gauche 8",
-                jojo: "Kakyoin 18; Okuyasu 16; Narancia 14; Mista 12; Polnareff 12; Wamuu 10",
-                rezero: "Rem 34; Wilhelm 16; Beatrice 14; Ferris 12; Otto 10; Ram 8",
-                fireforce: "Maki 18; Arthur 16; Shinra 14; Iris 12; Hinawa 10",
-                frieren: "Fern 22; Himmel 18; Stark 16; Eisen 12; Heiter 10; Frieren 8",
-                windbreaker: "Sugishita 32; Nirei 18; Kotoha 14; Sakura 12; Suo 10"
-            }
+        { id: "x-loyal", fam: "loyalty", cat: "Personality", sub: "Loyalty", pol: "+", diff: 1, opp: "x-betray", kind: "traits", trait: {"key":"L"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for loyalty, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Which {a}character is the most loyal?","Who would never turn their back on their friends?","Who would follow their captain anywhere?"]
         },
-        { id: "x-betray", fam: "loyalty", cat: "Personality", sub: "Loyalty", pol: "-", diff: 1, vt: "opposite", opp: "x-loyal", kind: "poll",
-            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
-            q: ["Which {a}character is most likely to betray their friends?","Who would stab you in the back first?","Who would switch sides the moment it paid off?"],
-            a: {
-                onepiece: "Teach 32; Buggy 14; Lucci 14; Crocodile 12; Doflamingo 10; Kuzan 8",
-                naruto: "Orochimaru 26; Sasuke 18; Obito 16; Kabuto 14; Itachi 10; Madara 6",
-                dragonball: "Frieza 28; Zamasu 18; Vegeta 16; Raditz 10; Cell 8",
-                jjk: "Kenjaku 24; Geto 20; Mei Mei 16; Naoya 12; Mahito 10",
-                demonslayer: "Kokushibo 26; Doma 18; Muzan 16; Enmu 12; Daki 8",
-                bleach: "Aizen 30; Gin 26; Uryu 12; Mayuri 10; Grimmjow 8",
-                aot: "Reiner 26; Zeke 18; Annie 16; Bertholdt 14; Eren 10; Floch 8",
-                mha: "Hawks 24; Dabi 16; Toga 12; Chisaki 12; Shigaraki 8",
-                hxh: "Hisoka 34; Pariston 18; Illumi 16; Chrollo 10; Meleoron 6",
-                deathnote: "Light 30; Ryuk 20; Mello 14; Mikami 10; Takada 8",
-                chainsaw: "Makima 28; Reze 22; Power 16; Denji 10; Angel 8",
-                blackclover: "William 20; Nacht 16; Dante 12; Zenon 10; Zora 8",
-                jojo: "Dio 26; Diavolo 18; Valentine 14; Hol Horse 14; Diego 12; Pucci 8",
-                rezero: "Roswaal 24; Echidna 20; Aldebaran 14; Priscilla 10; Elsa 10",
-                fireforce: "Giovanni 24; Rekka 22; Joker 16; Haumea 10; Charon 8",
-                frieren: "Aura 22; Lugner 18; Ubel 14; Linie 10; Draht 10"
-            }
+        { id: "x-betray", fam: "loyalty", cat: "Personality", sub: "Loyalty", pol: "-", diff: 1, vt: "opposite", opp: "x-loyal", kind: "traits", trait: {"key":"T"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for betraying their own side, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Which {a}character is most likely to betray their friends?","Who would stab you in the back first?","Who would switch sides the moment it paid off?"]
         },
         { id: "x-smartest", fam: "intelligence", cat: "Intelligence", sub: "Smartest", pol: "+", diff: 1, opp: "x-dumbest", kind: "feats", gen: {"stat":"IQ","top":8},
             why: "Duels compare the two characters' IQ in the Anime Draft ratings (same series only: ratings are measured inside each series).",
@@ -196,8 +160,8 @@ export default {
             why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
             q: ["Who would survive a zombie apocalypse?","Who would still be standing on day 100 of a zombie outbreak?"],
             a: {
-                onepiece: "Zoro 22; Luffy 18; Law 14; Brook 12; Robin 10; Chopper 8",
-                naruto: "Kakashi 20; Naruto 16; Sasuke 16; Orochimaru 12; Shikamaru 10",
+                onepiece: "Zoro 22; Luffy 18; Law 14; Jinbe 12; Robin 10",
+                naruto: "Kakashi 20; Naruto 16; Sasuke 16; Orochimaru 12; Gaara 10",
                 dragonball: "Goku 22; Piccolo 18; Vegeta 14; Android 17 14; Cell 10",
                 jjk: "Gojo 24; Maki 18; Toji 16; Yuji 12; Sukuna 12",
                 demonslayer: "Inosuke 20; Tanjiro 16; Muzan 14; Gyomei 14; Giyu 12; Nezuko 10",
@@ -206,11 +170,11 @@ export default {
                 mha: "Aizawa 18; Todoroki 18; Bakugo 16; Mirko 14; Izuku 12",
                 hxh: "Killua 24; Gon 18; Hisoka 16; Biscuit 12; Kurapika 10",
                 deathnote: "Ryuk 30; Rem 18; Light 14; L 12; Mello 10",
-                chainsaw: "Denji 26; Kishibe 18; Makima 16; Power 14; Aki 8",
+                chainsaw: "Denji 26; Kishibe 18; Makima 16; Kobeni 14; Power 12",
                 blackclover: "Asta 22; Yami 18; Mereoleona 18; Yuno 10; Luck 8",
                 jojo: "Jotaro 24; Joseph 18; Giorno 14; Kars 14; Dio 10",
                 rezero: "Subaru 30; Reinhard 22; Garfiel 14; Rem 12; Wilhelm 10",
-                fireforce: "Benimaru 22; Shinra 20; Joker 14; Arthur 10; Ogun 8",
+                fireforce: "Benimaru 22; Shinra 20; Joker 14; Ogun 8",
                 frieren: "Frieren 30; Eisen 22; Stark 14; Fern 12; Serie 10",
                 gachiakuta: "Rudo 26; Enjin 22; Zanka 14; Riyo 12; Jabber 12",
                 windbreaker: "Umemiya 22; Sakura 20; Togame 14; Takiishi 14; Suo 12"
@@ -230,12 +194,12 @@ export default {
                 mha: "Kaminari 24; Iida 14; Eri 14; Uraraka 10; Jiro 8",
                 hxh: "Leorio 24; Kite 14; Knuckle 12; Shizuku 10",
                 deathnote: "Matsuda 30; Misa 22; Raye 14; Sayu 10; Ide 8",
-                chainsaw: "Himeno 18; Aki 16; Kobeni 14; Power 14; Beam 10",
+                chainsaw: "Himeno 18; Aki 16; Beam 10",
                 blackclover: "Finral 24; Mimosa 14; Noelle 12; Magna 12; Gauche 10",
                 jojo: "Avdol 20; Okuyasu 16; Koichi 14; Narancia 12; Polnareff 10; Kakyoin 8",
-                rezero: "Subaru 30; Otto 16; Emilia 12; Felt 10; Ferris 8",
+                rezero: "Otto 16; Emilia 12; Felt 10; Ferris 8",
                 fireforce: "Tamaki 22; Arthur 18; Iris 16; Vulcan 12; Konro 8",
-                frieren: "Heiter 22; Sein 14; Lawine 12; Kanne 12; Stark 10",
+                frieren: "Heiter 22; Sein 14; Lawine 12; Kanne 10",
                 windbreaker: "Nirei 30; Choji 16; Kotoha 12; Kiryu 10; Sako 8"
             }
         },
@@ -310,13 +274,13 @@ export default {
             why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
             q: ["Who would make the worst roommate?","Who would you never share an apartment with?","Who would eat all your food and never pay rent?"],
             a: {
-                onepiece: "Luffy 30; Zoro 14; Brook 12; Sanji 10; Usopp 8; Buggy 6",
+                onepiece: "Luffy 30; Zoro 14; Brook 12; Usopp 8; Buggy 6",
                 naruto: "Naruto 22; Jiraiya 20; Orochimaru 14; Kakashi 12; Deidara 10",
                 dragonball: "Goku 28; Vegeta 18; Roshi 16; Buu 12; Beerus 10",
                 jjk: "Gojo 22; Todo 18; Sukuna 14; Mahito 12; Hakari 10",
                 demonslayer: "Inosuke 30; Zenitsu 22; Sanemi 12; Daki 10; Gyutaro 8",
                 bleach: "Kenpachi 22; Mayuri 22; Grimmjow 14; Gin 10; Urahara 8",
-                aot: "Hange 22; Sasha 18; Levi 16; Connie 10; Eren 10",
+                aot: "Hange 22; Sasha 18; Connie 12; Eren 10",
                 mha: "Bakugo 30; Toga 18; Kaminari 12; Endeavor 10; Dabi 10",
                 hxh: "Hisoka 30; Illumi 16; Feitan 12; Leorio 12; Uvogin 10",
                 deathnote: "Ryuk 24; L 22; Misa 14; Light 12; Mello 10",
@@ -325,8 +289,8 @@ export default {
                 jojo: "Polnareff 18; Dio 18; Joseph 14; Narancia 12; Kira 12; Rohan 10",
                 rezero: "Petelgeuse 22; Regulus 18; Roswaal 16; Beatrice 14; Priscilla 10",
                 fireforce: "Arthur 24; Tamaki 18; Benimaru 14; Vulcan 12; Joker 10",
-                frieren: "Frieren 32; Ubel 14; Stark 12; Heiter 12; Lawine 8",
-                windbreaker: "Sakura 26; Takiishi 18; Sugishita 16; Nirei 10; Togame 8"
+                frieren: "Frieren 32; Ubel 14; Heiter 12; Lawine 8",
+                windbreaker: "Sakura 26; Takiishi 18; Sugishita 16; Togame 8"
             }
         },
         { id: "x-roommate-best", fam: "living", cat: "Everyday life", sub: "Roommate", pol: "+", diff: 1, vt: "opposite", opp: "x-roommate-worst", kind: "poll",
@@ -352,72 +316,17 @@ export default {
                 windbreaker: "Umemiya 22; Kotoha 22; Nirei 14; Suo 12; Hiragi 10"
             }
         },
-        { id: "x-kindest", fam: "kindness", cat: "Personality", sub: "Kindness", pol: "+", diff: 1, opp: "x-cruelest", kind: "poll",
-            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
-            q: ["Who is the kindest {a}character?","Who would give the shirt off their back to a stranger?"],
-            a: {
-                onepiece: "Chopper 22; Luffy 16; Jinbe 14; Sanji 12; Brook 10; Kuma 10",
-                naruto: "Hinata 26; Naruto 22; Gaara 10; Lee 10; Minato 10",
-                dragonball: "Gohan 22; Goku 18; Krillin 16; Dende 14; Buu 8",
-                jjk: "Yuji 30; Nanami 16; Yuta 14; Panda 10; Miwa 8",
-                demonslayer: "Tanjiro 36; Nezuko 18; Gyomei 14; Mitsuri 12; Tamayo 8",
-                bleach: "Orihime 30; Ukitake 18; Sado 14; Ichigo 14; Komamura 8",
-                aot: "Historia 22; Armin 20; Falco 14; Sasha 12; Hange 10",
-                mha: "Izuku 30; All Might 20; Uraraka 14; Eri 10; Kirishima 10",
-                hxh: "Leorio 22; Gon 18; Alluka 16; Kite 12; Biscuit 8",
-                deathnote: "Matsuda 24; Soichiro 20; Rem 18; Watari 14; Sayu 10",
-                chainsaw: "Pochita 30; Himeno 16; Aki 16; Denji 14; Angel 8",
-                blackclover: "Asta 26; Mimosa 20; Finral 12; Licht 10; Noelle 10",
-                jojo: "Jonathan 30; Josuke 16; Koichi 14; Bucciarati 14; Polnareff 8",
-                rezero: "Emilia 30; Rem 18; Subaru 14; Otto 12; Reinhard 10",
-                fireforce: "Iris 26; Shinra 20; Obi 18; Maki 12; Tamaki 8",
-                frieren: "Himmel 34; Heiter 16; Fern 14; Eisen 12; Frieren 10",
-                windbreaker: "Umemiya 30; Nirei 16; Kotoha 14; Suo 12; Sakura 10"
-            }
+        { id: "x-kindest", fam: "kindness", cat: "Personality", sub: "Kindness", pol: "+", diff: 1, opp: "x-cruelest", kind: "traits", trait: {"key":"K"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for kindness, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who is the kindest {a}character?","Who would give the shirt off their back to a stranger?"]
         },
-        { id: "x-cruelest", fam: "kindness", cat: "Personality", sub: "Cruelty", pol: "-", diff: 1, vt: "opposite", opp: "x-kindest", kind: "poll",
-            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
-            q: ["Who is the cruelest {a}character?","Who would show absolutely no mercy?"],
-            a: {
-                onepiece: "Doflamingo 26; Teach 16; Kaido 16; Lucci 14; Enel 10; Crocodile 8",
-                naruto: "Orochimaru 22; Madara 18; Obito 14; Pain 14; Kisame 10; Kabuto 8",
-                dragonball: "Frieza 40; Cell 16; Goku Black 14; Zamasu 12; Buu 8",
-                jjk: "Sukuna 32; Mahito 26; Kenjaku 14; Naoya 10; Toji 8",
-                demonslayer: "Muzan 34; Doma 24; Daki 12; Akaza 10; Enmu 10",
-                bleach: "Mayuri 26; Aizen 24; Yhwach 18; Gin 12; Unohana 6",
-                aot: "Zeke 20; Eren 18; Kenny 16; Floch 14; Gabi 8",
-                mha: "All For One 28; Chisaki 22; Dabi 16; Shigaraki 14; Stain 8",
-                hxh: "Feitan 22; Meruem 16; Hisoka 16; Neferpitou 16; Illumi 14",
-                deathnote: "Light 34; Mikami 20; Ryuk 14; Mello 10; Takada 8",
-                chainsaw: "Makima 40; Samurai Sword 16; Reze 12; Power 10",
-                blackclover: "Dante 26; Vanica 22; Zenon 14",
-                jojo: "Dio 34; Diavolo 20; Kira 16; Pucci 14; Valentine 10",
-                rezero: "Petelgeuse 26; Regulus 22; Elsa 16; Capella 16; Roswaal 8",
-                fireforce: "Haumea 24; Rekka 20; Giovanni 18; Charon 8; Joker 6",
-                frieren: "Aura 24; Macht 16; Lugner 16; Ubel 12; Linie 8",
-                windbreaker: "Takiishi 30; Endo 22; Togame 10"
-            }
+        { id: "x-cruelest", fam: "kindness", cat: "Personality", sub: "Cruelty", pol: "-", diff: 1, vt: "opposite", opp: "x-kindest", kind: "traits", trait: {"key":"C"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for cruelty, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who is the cruelest {a}character?","Who would show absolutely no mercy?"]
         },
-        { id: "x-secret-worst", fam: "trust", cat: "Personality", sub: "Secrets", pol: "-", diff: 1, kind: "poll",
-            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
-            q: ["Who would be the worst at keeping a secret?","Who would blurt out the surprise party plan?"],
-            a: {
-                onepiece: "Luffy 30; Usopp 20; Chopper 14; Buggy 10; Franky 8; Brook 6",
-                naruto: "Naruto 30; Lee 14; Guy 14; Jiraiya 12; Bee 10",
-                dragonball: "Goku 26; Krillin 16; Bulma 16; Roshi 10; Goten 10",
-                jjk: "Yuji 22; Todo 22; Gojo 18; Panda 10; Nobara 10",
-                demonslayer: "Zenitsu 26; Tanjiro 22; Inosuke 18; Mitsuri 12; Tengen 6",
-                bleach: "Orihime 20; Isshin 18; Renji 14; Ichigo 12; Urahara 8",
-                aot: "Reiner 26; Sasha 16; Connie 16; Hange 14; Jean 8",
-                mha: "Kaminari 26; Mirio 14; Kirishima 12; Iida 12; Izuku 10",
-                hxh: "Gon 26; Leorio 22; Knuckle 12; Ging 10; Uvogin 10",
-                deathnote: "Misa 34; Matsuda 26; Ryuk 14; Sayu 10; Takada 8",
-                chainsaw: "Power 28; Denji 26; Kobeni 14; Himeno 10; Beam 8",
-                blackclover: "Asta 30; Magna 14; Luck 12; Charmy 12; Noelle 8",
-                jojo: "Okuyasu 22; Polnareff 20; Narancia 14; Joseph 12; Mista 10",
-                rezero: "Garfiel 22; Felt 16; Emilia 16; Puck 12; Ram 8",
-                fireforce: "Arthur 26; Tamaki 20; Shinra 14; Vulcan 10; Iris 8"
-            }
+        { id: "x-secret-worst", fam: "trust", cat: "Personality", sub: "Secrets", pol: "-", diff: 1, opp: "x-secret-keep", kind: "traits", trait: {"key":"S","inv":true},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for keeping secrets (this question reads it the other way round), with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who would be the worst at keeping a secret?","Who would blurt out the surprise party plan?"]
         },
         { id: "x-owe-money", fam: "trust", cat: "Scenario", sub: "Money", pol: "-", diff: 2, vt: "context", kind: "poll",
             why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
@@ -438,70 +347,17 @@ export default {
                 rezero: "Anastasia 30; Priscilla 18; Roswaal 14; Elsa 12; Ram 10"
             }
         },
-        { id: "x-love-fast", fam: "romance", cat: "Romance", sub: "Falling in love", pol: "0", diff: 1, kind: "poll",
-            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
-            q: ["Who would fall in love the fastest?","Who falls head over heels the moment they meet someone?"],
-            a: {
-                onepiece: "Sanji 46; Hancock 18; Brook 12; Usopp 6; Franky 6",
-                naruto: "Jiraiya 24; Lee 18; Naruto 14; Hinata 14; Sakura 12",
-                dragonball: "Roshi 26; Krillin 18; Bulma 16; Yamcha 14; Goten 6",
-                jjk: "Todo 30; Yuta 16; Miwa 12; Yuji 10; Choso 8",
-                demonslayer: "Mitsuri 34; Zenitsu 32; Obanai 12; Tengen 8; Kanao 6",
-                bleach: "Orihime 26; Renji 14; Soi Fon 14; Uryu 10; Rukia 8",
-                aot: "Jean 28; Falco 16; Ymir 14; Reiner 12; Mikasa 10",
-                mha: "Toga 24; Kaminari 18; Uraraka 16; Izuku 10; Jiro 8",
-                deathnote: "Misa 40; Matsuda 18; Takada 14; Rem 10; Sayu 6",
-                chainsaw: "Denji 44; Himeno 18; Aki 10; Reze 10; Power 8",
-                blackclover: "Noelle 22; Mimosa 18; Asta 18; Charmy 12; Vanessa 8",
-                jojo: "Polnareff 22; Joseph 18; Okuyasu 14; Mista 10; Josuke 8",
-                rezero: "Subaru 34; Rem 22; Garfiel 12; Wilhelm 10; Ferris 8",
-                fireforce: "Hibana 24; Tamaki 20; Shinra 12; Maki 10; Arthur 8",
-                frieren: "Himmel 30; Stark 18; Fern 14; Ubel 10; Sein 8"
-            }
+        { id: "x-love-fast", fam: "romance", cat: "Romance", sub: "Falling in love", pol: "0", diff: 1, kind: "traits", trait: {"key":"O"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for falling in love fast, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who would fall in love the fastest?","Who falls head over heels the moment they meet someone?"]
         },
-        { id: "x-hardworking", fam: "work", cat: "Personality", sub: "Work ethic", pol: "+", diff: 1, opp: "x-lazy", kind: "poll",
-            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
-            q: ["Who is the hardest-working {a}character?","Who would still be training at 3 a.m.?"],
-            a: {
-                onepiece: "Zoro 30; Usopp 14; Sanji 12; Chopper 10; Nami 8",
-                naruto: "Lee 36; Naruto 20; Guy 16; Neji 8; Sasuke 8",
-                dragonball: "Vegeta 30; Goku 26; Piccolo 10; Krillin 8; Tien 8",
-                jjk: "Maki 22; Yuji 18; Nanami 16; Yuta 12; Todo 8",
-                demonslayer: "Tanjiro 30; Gyomei 14; Genya 12; Shinobu 10; Rengoku 10",
-                bleach: "Renji 20; Hitsugaya 14; Uryu 14; Ichigo 14; Byakuya 10",
-                aot: "Eren 20; Levi 18; Mikasa 14; Erwin 14; Hange 12",
-                mha: "Izuku 34; Iida 16; Bakugo 14; Mirio 12; Shinso 10",
-                hxh: "Gon 20; Kurapika 18; Netero 18; Killua 14; Leorio 8",
-                deathnote: "Light 22; Soichiro 20; L 14; Aizawa 12; Mogi 10",
-                chainsaw: "Aki 30; Kobeni 14; Makima 14; Kishibe 10; Himeno 8",
-                blackclover: "Asta 38; Yuno 18; Noelle 12; Fuegoleon 10; Magna 8",
-                jojo: "Jonathan 22; Rohan 18; Johnny 16; Giorno 14; Koichi 10",
-                rezero: "Rem 26; Wilhelm 18; Subaru 14; Otto 12; Crusch 10",
-                fireforce: "Shinra 22; Maki 18; Obi 18; Vulcan 12; Arthur 8",
-                frieren: "Fern 30; Stark 18; Himmel 12; Denken 12; Land 8",
-                windbreaker: "Nirei 24; Sakura 20; Umemiya 14; Sugishita 12; Kotoha 10"
-            }
+        { id: "x-hardworking", fam: "work", cat: "Personality", sub: "Work ethic", pol: "+", diff: 1, opp: "x-lazy", kind: "traits", trait: {"key":"D"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for work ethic, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who is the hardest-working {a}character?","Who would still be training at 3 a.m.?"]
         },
-        { id: "x-lazy", fam: "work", cat: "Personality", sub: "Work ethic", pol: "-", diff: 1, vt: "opposite", opp: "x-hardworking", kind: "poll",
-            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
-            q: ["Who is the laziest {a}character?","Who would sleep through the final battle?"],
-            a: {
-                onepiece: "Kuzan 28; Zoro 20; Usopp 14; Luffy 10; Borsalino 8",
-                naruto: "Shikamaru 44; Kakashi 20; Tsunade 10; Jiraiya 8; Kurama 6",
-                dragonball: "Beerus 26; Roshi 22; Buu 12; Goku 10; Yamcha 8",
-                jjk: "Gojo 22; Toji 14; Hakari 14; Panda 12; Nanami 10",
-                demonslayer: "Zenitsu 30; Muichiro 14; Inosuke 12; Nezuko 12; Giyu 8",
-                bleach: "Starrk 28; Shunsui 26; Yoruichi 12; Urahara 10; Shinji 8",
-                aot: "Pieck 22; Sasha 18; Connie 16; Jean 10; Zeke 8",
-                mha: "Aizawa 30; Shigaraki 16; Kaminari 14; Dabi 10; Tamaki 8",
-                hxh: "Ging 24; Shizuku 16; Hisoka 14; Killua 12",
-                deathnote: "Ryuk 26; L 20; Matsuda 18; Near 14; Matt 12",
-                chainsaw: "Power 26; Denji 22; Angel 14; Kishibe 14; Beam 10",
-                blackclover: "Yami 22; Charmy 18; Vanessa 16; Finral 10; Luck 8",
-                jojo: "Iggy 18; Okuyasu 16; Mista 12; Hol Horse 12; Narancia 10",
-                rezero: "Ram 24; Beatrice 20; Subaru 16; Puck 12; Felt 8",
-                frieren: "Frieren 44; Stark 14; Heiter 12; Sein 10; Ubel 8"
-            }
+        { id: "x-lazy", fam: "work", cat: "Personality", sub: "Work ethic", pol: "-", diff: 1, vt: "opposite", opp: "x-hardworking", kind: "traits", trait: {"key":"Z"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for laziness, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who is the laziest {a}character?","Who would sleep through the final battle?"]
         },
         { id: "x-coworker-worst", fam: "work", cat: "Everyday life", sub: "Teamwork", pol: "-", diff: 1, vt: "context", kind: "poll",
             why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
@@ -526,51 +382,13 @@ export default {
                 windbreaker: "Sakura 26; Takiishi 20; Sugishita 18; Choji 10; Endo 10"
             }
         },
-        { id: "x-mature", fam: "maturity", cat: "Personality", sub: "Maturity", pol: "+", diff: 2, opp: "x-childish", kind: "poll",
-            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
-            q: ["Who is the most mature {a}character?","Who would be the only adult in the room?"],
-            a: {
-                onepiece: "Robin 24; Jinbe 22; Rayleigh 14; Marco 12; Law 10",
-                naruto: "Itachi 28; Kakashi 18; Shikamaru 14; Gaara 12; Minato 10",
-                dragonball: "Piccolo 30; Gohan 18; Whis 14; Trunks 12; Android 18 10",
-                jjk: "Nanami 38; Megumi 14; Shoko 12; Maki 10; Choso 10",
-                demonslayer: "Gyomei 22; Tanjiro 20; Tamayo 14; Urokodaki 12; Giyu 8",
-                bleach: "Ukitake 22; Byakuya 20; Unohana 16; Hitsugaya 14; Sado 8",
-                aot: "Erwin 26; Levi 18; Armin 14; Pixis 10; Historia 10",
-                mha: "Aizawa 22; All Might 20; Momo 14; Iida 14; Tsuyu 12",
-                hxh: "Kurapika 26; Killua 16; Biscuit 12; Netero 12; Kite 12",
-                deathnote: "Soichiro 30; Watari 22; Aizawa 12; Light 10; Mogi 8",
-                chainsaw: "Aki 34; Kishibe 18; Makima 14; Himeno 12",
-                blackclover: "Fuegoleon 22; Julius 18; Yuno 16; William 12; Nozel 10",
-                jojo: "Bucciarati 26; Jonathan 18; Giorno 18; Jotaro 14; Avdol 10",
-                rezero: "Wilhelm 24; Otto 16; Julius 16; Crusch 14; Reinhard 12",
-                fireforce: "Obi 28; Hinawa 20; Benimaru 14; Konro 12; Maki 10",
-                frieren: "Fern 30; Eisen 18; Denken 14; Himmel 12; Heiter 8",
-                windbreaker: "Hiragi 22; Suo 16; Kaji 14; Kotoha 14; Togame 12"
-            }
+        { id: "x-mature", fam: "maturity", cat: "Personality", sub: "Maturity", pol: "+", diff: 2, opp: "x-childish", kind: "traits", trait: {"key":"A"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for maturity, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who is the most mature {a}character?","Who would be the only adult in the room?"]
         },
-        { id: "x-childish", fam: "maturity", cat: "Personality", sub: "Maturity", pol: "-", diff: 1, vt: "opposite", opp: "x-mature", kind: "poll",
-            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
-            q: ["Who is the most childish {a}character?","Who would throw a tantrum over the last slice of cake?"],
-            a: {
-                onepiece: "Luffy 30; Buggy 16; Garp 14; Usopp 12; Chopper 8",
-                naruto: "Naruto 30; Tsunade 12; Lee 12; Guy 12; Deidara 10",
-                dragonball: "Goku 30; Beerus 18; Buu 18; Vegeta 12; Goten 8",
-                jjk: "Gojo 34; Todo 18; Yuji 12; Panda 10; Jogo 10",
-                demonslayer: "Inosuke 28; Zenitsu 26; Daki 16; Rui 10; Nezuko 8",
-                bleach: "Isshin 20; Grimmjow 18; Kenpachi 14; Renji 12",
-                aot: "Eren 20; Gabi 20; Connie 14; Sasha 14; Hange 10",
-                mha: "Bakugo 30; Kaminari 14; Shigaraki 14; Endeavor 12",
-                hxh: "Gon 22; Killua 16; Ging 14; Neferpitou 12",
-                deathnote: "L 24; Near 22; Mello 16; Misa 14; Light 10",
-                chainsaw: "Power 38; Denji 26; Beam 12; Angel 8; Kobeni 6",
-                blackclover: "Asta 22; Luck 18; Charmy 16; Noelle 14; Magna 10",
-                jojo: "Okuyasu 20; Narancia 18; Joseph 14; Polnareff 14; Mista 10",
-                rezero: "Beatrice 20; Felt 18; Garfiel 16; Subaru 14; Priscilla 10",
-                fireforce: "Arthur 28; Tamaki 18; Shinra 12; Benimaru 10; Vulcan 8",
-                frieren: "Frieren 28; Stark 20; Ubel 14; Lawine 12; Kanne 12",
-                windbreaker: "Sakura 28; Choji 22; Umemiya 12; Tsugeura 12; Nirei 8"
-            }
+        { id: "x-childish", fam: "maturity", cat: "Personality", sub: "Maturity", pol: "-", diff: 1, vt: "opposite", opp: "x-mature", kind: "traits", trait: {"key":"A","inv":true},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for maturity (this question reads it the other way round), with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who is the most childish {a}character?","Who would throw a tantrum over the last slice of cake?"]
         },
         { id: "x-heist", fam: "schemes", cat: "Scenario", sub: "Heist", pol: "0", diff: 2, vt: "scenario", kind: "poll",
             why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
@@ -592,48 +410,73 @@ export default {
                 rezero: "Felt 22; Anastasia 20; Otto 16; Subaru 14; Roswaal 10"
             }
         },
-        { id: "x-eater", fam: "food", cat: "Everyday life", sub: "Food", pol: "0", diff: 1, vt: "scenario", kind: "poll",
-            why: "Opinion built on canon appetites (Luffy, Goku, Sasha, Mitsuri and Charmy eat absurd amounts on screen); the order is our editors' poll.",
-            q: ["Who would win an eating contest?","Who would clear an all-you-can-eat buffet alone?"],
-            a: {
-                onepiece: "Luffy 60; Zoro 8; Chopper 8; Usopp 6; Franky 6",
-                naruto: "Naruto 34; Lee 14; Kurama 12; Tsunade 10; Jiraiya 8",
-                dragonball: "Goku 40; Gohan 16; Buu 16; Vegeta 10; Goten 8",
-                jjk: "Todo 22; Yuji 22; Sukuna 16; Panda 14; Choso 8",
-                demonslayer: "Mitsuri 50; Inosuke 18; Rengoku 12; Tanjiro 8; Gyomei 6",
-                bleach: "Orihime 18; Sado 16; Komamura 14; Renji 10; Yoruichi 10",
-                aot: "Sasha 54; Connie 12; Jean 8; Bertholdt 6; Hange 6",
-                mha: "Uraraka 18; Kirishima 16; Todoroki 12; Izuku 12; Bakugo 10",
-                hxh: "Uvogin 22; Menthuthuyoupi 16; Gon 14; Killua 14; Leorio 8",
-                deathnote: "L 40; Ryuk 26; Mello 18; Matsuda 6; Misa 4",
-                chainsaw: "Power 30; Denji 28; Pochita 12; Beam 10",
-                blackclover: "Charmy 50; Asta 14; Noelle 8; Luck 8; Magna 8",
-                jojo: "Okuyasu 18; Iggy 14; Josuke 14; Narancia 12; Jotaro 10",
-                rezero: "Garfiel 24; Subaru 16; Felt 14; Rem 12; Otto 8"
-            }
+        { id: "x-eater", fam: "food", cat: "Everyday life", sub: "Food", pol: "0", diff: 1, vt: "scenario", kind: "traits", trait: {"key":"F"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for appetite, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who would win an eating contest?","Who would clear an all-you-can-eat buffet alone?"]
         },
-        { id: "x-party", fam: "fun", cat: "Everyday life", sub: "Party", pol: "+", diff: 1, kind: "poll",
-            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
-            q: ["Who would be the life of the party?","Who would you invite to make any party legendary?"],
-            a: {
-                onepiece: "Luffy 22; Brook 22; Franky 14; Usopp 12; Shanks 12; Buggy 8",
-                naruto: "Naruto 22; Bee 22; Guy 16; Lee 12; Jiraiya 12",
-                dragonball: "Roshi 20; Goku 18; Bulma 18; Krillin 14; Beerus 10",
-                jjk: "Todo 24; Gojo 22; Yuji 18; Hakari 14; Nobara 10",
-                demonslayer: "Tengen 30; Zenitsu 14; Inosuke 14; Mitsuri 14; Rengoku 12",
-                bleach: "Shunsui 22; Isshin 18; Yoruichi 14; Renji 12; Urahara 10",
-                aot: "Sasha 22; Connie 20; Hange 18; Jean 12; Pieck 8",
-                mha: "Kaminari 22; Kirishima 18; Mirio 16; Hawks 12; Twice 12",
-                hxh: "Leorio 20; Gon 16; Netero 14; Ging 12; Knuckle 10",
-                deathnote: "Matsuda 32; Misa 26; Ryuk 14; Sayu 10; L 6",
-                chainsaw: "Power 30; Denji 24; Himeno 14; Kishibe 10; Beam 10",
-                blackclover: "Vanessa 22; Asta 18; Magna 14; Charmy 14; Yami 12",
-                jojo: "Joseph 28; Polnareff 18; Okuyasu 14; Narancia 12; Mista 10",
-                rezero: "Subaru 24; Ferris 16; Roswaal 14; Garfiel 12; Felt 10",
-                fireforce: "Benimaru 22; Hibana 16; Arthur 14; Shinra 12; Vulcan 10",
-                frieren: "Himmel 28; Heiter 22; Eisen 12; Stark 10; Ubel 8",
-                windbreaker: "Umemiya 24; Choji 18; Kiryu 14; Togame 12; Tsugeura 10"
-            }
+        { id: "x-party", fam: "fun", cat: "Everyday life", sub: "Party", pol: "+", diff: 1, kind: "traits", trait: {"key":"J"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for being the life of the party, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who would be the life of the party?","Who would you invite to make any party legendary?"]
+        },
+        { id: "x-honest", fam: "honesty", cat: "Personality", sub: "Honesty", pol: "+", diff: 1, opp: "x-liar", kind: "traits", trait: {"key":"H"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for honesty, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who is the most honest {a}character?","Who couldn't tell a lie even to save their life?"]
+        },
+        { id: "x-liar", fam: "honesty", cat: "Personality", sub: "Deception", pol: "-", diff: 1, vt: "opposite", opp: "x-honest", kind: "traits", trait: {"key":"M"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for lying and manipulating, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who is the best liar?","Who could fool everyone around them for years?"]
+        },
+        { id: "x-brave", fam: "bravery", cat: "Personality", sub: "Courage", pol: "+", diff: 1, opp: "x-coward", kind: "traits", trait: {"key":"B"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for bravery, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who is the bravest {a}character?","Who would walk into certain danger without flinching?"]
+        },
+        { id: "x-coward", fam: "bravery", cat: "Personality", sub: "Courage", pol: "-", diff: 1, vt: "opposite", opp: "x-brave", kind: "traits", trait: {"key":"B","inv":true},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for bravery (this question reads it the other way round), with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who would run away first when things get scary?","Who would hide under the table at the first sign of danger?"]
+        },
+        { id: "x-calm", fam: "composure", cat: "Personality", sub: "Under pressure", pol: "+", diff: 2, opp: "x-crack", kind: "traits", trait: {"key":"Q"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for staying calm under pressure, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who stays the calmest under pressure?","Who would keep a cool head when everything goes wrong?"]
+        },
+        { id: "x-crack", fam: "composure", cat: "Personality", sub: "Under pressure", pol: "-", diff: 1, vt: "opposite", opp: "x-calm", kind: "traits", trait: {"key":"Q","inv":true},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for staying calm under pressure (this question reads it the other way round), with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who would crack under pressure first?","Who would lose their cool first in a crisis?"]
+        },
+        { id: "x-grudge", fam: "grudges", cat: "Relationships", sub: "Grudges", pol: "-", diff: 1, opp: "x-forgive", kind: "traits", trait: {"key":"V"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for holding grudges, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who would hold a grudge the longest?","Who would spend years plotting revenge?"]
+        },
+        { id: "x-forgive", fam: "grudges", cat: "Relationships", sub: "Forgiveness", pol: "+", diff: 2, vt: "opposite", opp: "x-grudge", kind: "traits", trait: {"key":"V","inv":true,"need":{"K":5}},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for holding grudges, read the other way round, among characters who are kind (a villain who simply doesn't care isn't forgiving), with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who would forgive their worst enemy?","Who would give a second chance to someone who hurt them?"]
+        },
+        { id: "x-secret-keep", fam: "trust", cat: "Personality", sub: "Secrets", pol: "+", diff: 2, vt: "opposite", opp: "x-secret-worst", kind: "traits", trait: {"key":"S"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for keeping secrets, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who would you trust with your biggest secret?","Who would take a secret to the grave?"]
+        },
+        { id: "x-ego", fam: "ego", cat: "Personality", sub: "Ego", pol: "-", diff: 1, kind: "traits", trait: {"key":"P"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for ego and pride, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who has the biggest ego?","Who would never admit they were wrong?"]
+        },
+        { id: "x-dream", fam: "ambition", cat: "Development", sub: "Dreams", pol: "+", diff: 1, kind: "traits", trait: {"key":"N"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for being driven by a dream, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who would never give up on their dream?","Who is the most driven by their ambition?"]
+        },
+        { id: "x-teamplayer", fam: "work", cat: "Relationships", sub: "Teamwork", pol: "+", diff: 1, kind: "traits", trait: {"key":"W"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for teamwork, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who is the best team player?","Who makes any team better just by being on it?"]
+        },
+        { id: "x-babysit", fam: "family", cat: "Relationships", sub: "Children", pol: "+", diff: 1, kind: "traits", trait: {"key":"U"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for how protective and good they are with children, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who would you trust to babysit your kids?","Who would make the best parent?"]
+        },
+        { id: "x-growth", fam: "growth", cat: "Development", sub: "Character growth", pol: "0", diff: 2, kind: "traits", trait: {"key":"X"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for how much they change over the story (growth or a turn), with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who changed the most over their story?","Who is barely recognisable from the start of their story?"]
+        },
+        { id: "x-reckless", fam: "reckless", cat: "Personality", sub: "Recklessness", pol: "-", diff: 1, kind: "traits", trait: {"key":"R"},
+            why: "Editors' scores of canon behaviour, not official data: every character has a 0-9 score for recklessness, with a note on what they do in the story (js/feud/packs/traits.js). A duel only pairs two characters at least two points apart, and the answer always clearly shows the trait.",
+            q: ["Who would charge in without a plan?","Who is the most reckless {a}character?"]
         },
         { id: "x-faster", fam: "feats-spd", cat: "Characters", sub: "Speed", pol: "+", diff: 2, kind: "feats", gen: {"stat":"SPD","top":8,"skip":["deathnote"]},
             why: "Duels compare the two characters' Speed in the Anime Draft ratings (same series only).",

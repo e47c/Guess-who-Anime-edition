@@ -12,9 +12,9 @@
    Every move runs in a transaction on rooms/<code>/feud and is checked there (turn key, phase, player).
    ===================================================================== */
 import { FEUD_RULES as R, eligible, poolInfo, stateBoard, qText, newMatch, act, actorOf, advance, needsQuestion,
-    balanceTeams, guessTeam, other, faceOffOf, kindLabel, fairAnswer } from "./engine.js?v=4";
+    balanceTeams, guessTeam, other, faceOffOf, kindLabel, fairAnswer } from "./engine.js?v=5";
 import { LIB, K, arr, el, srvNow, label, presentIn, pickOpt, seriesOf, TEAM, initCommon, recordSeen, publishHist, syncRemoteHist, roomHists, nextQuestion,
-    img, teamsFrom, optButtons, scopeLine, teamColumns, tapTeam, shuffleTeams, kit, makeTimer, confetti, hintFor } from "./common.js?v=2";
+    img, teamsFrom, optButtons, scopeLine, teamColumns, tapTeam, shuffleTeams, kit, makeTimer, confetti, hintFor } from "./common.js?v=3";
 
 export const FEUD_LIB = LIB;
 const TYPE = "classic", NODE = "feud", GT = "feud";

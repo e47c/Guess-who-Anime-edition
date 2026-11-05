@@ -35,7 +35,7 @@ export default {
             why: "Opinion, not canon: our editors' poll from the characters' canon personalities and feats.",
             q: ["Which Demon Slayer would you send alone against an Upper Moon?","Who would beat an Upper Moon one-on-one?"],
             a: {
-                demonslayer: "Yoriichi 30; Gyomei 20; Tanjiro 14; Rengoku 12; Giyu 10; Sanemi 8"
+                demonslayer: "Yoriichi 30; Gyomei 20; Muichiro 16; Giyu 12; Tanjiro 10; Rengoku 8"
             }
         },
         { id: "aot-survey-corps", only: true, fam: "survival", cat: "Scenario", sub: "Expedition", pol: "+", diff: 2, vt: "scenario", kind: "poll",

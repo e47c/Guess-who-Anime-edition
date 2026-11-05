@@ -102,7 +102,8 @@ Its own mode (seventh): two close characters, one question, and an argument abou
 - **The duel:**
   - Each duel shows **two characters who are close** on the question ("Who is the smartest?": Nami or Doflamingo).
   - The pairs come from the Most Likely rankings: neighbours in a series' ranking a few points apart, and in an Anime Mix also two characters of two ticked series with nearly the same score. Ties are never used. The higher-ranked one is the "most likely" answer.
-  - **Opinion duels** (who'd survive a zombie outbreak, the worst roommate …) are our editors' poll and say so above the question. **Rating duels** (who is faster, physically stronger, harder to hurt, the better fighter, smarter) compare the two characters' Anime Draft ratings, and never pair two series, since those ratings are measured inside each series.
+  - **Personality duels** (kinder, crueler, more loyal, would betray first, more honest, the better liar, braver, calmer under pressure, holds a grudge, forgives, biggest ego, lazier, more mature, falls in love faster, better with kids, changed the most …) come from **character trait scores** (`js/feud/packs/traits.js`): 271 characters from all 18 series, each scored 0–9 only on the traits their story clearly shows, with a note on what they do in canon. A character is judged the same way on every question. A duel pairs two characters 2–5 points apart (2–4 across series), and the right answer always clearly shows the trait (5+). A pair that would win two opposite questions (Zoro trains hardest *and* naps most) is never asked. Labelled "Canon behaviour · editors' trait scores". The audit is `docs/most-likely-audit.md`.
+  - **Opinion duels** (who'd survive a zombie outbreak, the worst roommate …) are our editors' poll and say so above the question. Nobody is on a question and on its opposite. **Rating duels** (who is faster, physically stronger, harder to hurt, the better fighter, smarter) compare the two characters' Anime Draft ratings, and never pair two series, since those ratings are measured inside each series.
   - Tap a card to vote; you can change it until everyone has voted or the 10/15/20 s clock runs out. Everyone who picks the more likely character scores: 30 for a photo finish, 20 for a close call, 10 otherwise.
   - 5, 10 (default) or 15 duels.
 - **Look and sound.** A dark, fiery argument: smoky glass panels, rising embers, a red-burning and a gold-burning card around a crackling VS crest; the winner blazes gold with a MOST LIKELY! stamp, the other card goes to smoke. Its own sound kit: taiko for each new duel, a whoosh and fire crackle when you vote (crackles as the others vote), a clash hit on the reveal then a rising win or a falling miss, the crowd's "ohh"; an aggressive taiko-and-bass theme (`clash` in `js/audio.js`).
@@ -138,7 +139,7 @@ Every player keeps a history: `"<questionId>@<scope>": [last seen, times seen]`.
   - **Power** (`kind: "power"`): overall strength ("one of the strongest"), ranked by canon outcomes; the decisive ones are written on the board (`beats`) and checked.
   - **Opinion** (`kind: "poll"`): personality and scenario questions and anime tropes. The ranking is our editors' poll and the game labels it as such; it is never presented as canon. Opinion boards about a rated quality (`agree`, e.g. "least book-smart", "best strategist") may not contradict the ratings.
   - `ranking` and `votes: null` stay reserved for real community votes later. No votes are invented.
-- **Library (audited Nov 2026):** 254 questions on 124 boards (84 Classic, 40 Most Likely). 60 canon, 10 feats, 1 power, 53 opinion boards. Every series, Gachiakuta included, now has a Classic pool and rating duels. The audit report is `docs/feud-audit.md`.
+- **Library (audited Nov 2026):** 284 questions on 139 boards (84 Classic, 55 Most Likely). 60 canon, 10 feats, 1 power, 27 trait, 41 opinion boards. Every series, Gachiakuta included, now has a Classic pool and rating duels. The audit report is `docs/feud-audit.md`.
 
 ### Adding questions
 
@@ -154,7 +155,8 @@ Every player keeps a history: `"<questionId>@<scope>": [last seen, times seen]`.
    - **Mode-only wordings:** prefix with `S|` for single mode only, `M|` for mix only.
    - **Series-only boards:** `only: true` makes a board play only for that one series.
    - **Opposites:** `opp: "<board id>"` on both boards.
-   - **Kind:** `kind: "canon"` (+ `rank: "fans"` or `"known"`), `"feats"` (+ `gen: { stat: "SPD", top: 8, skip: [...] }`, no answers needed), `"power"` (+ `beats: { series: [[winner, loser]] }`) or `"poll"`; `why` says what the ranking rests on.
+   - **Kind:** `kind: "canon"` (+ `rank: "fans"` or `"known"`), `"feats"` (+ `gen: { stat: "SPD", top: 8, skip: [...] }`, no answers needed), `"power"` (+ `beats: { series: [[winner, loser]] }`), `"traits"` (Most Likely only, + `trait: { key: "K" }`, `inv: true` for the opposite reading, `need: { K: 5 }` to require another trait; no answers needed) or `"poll"`; `why` says what the ranking rests on.
+   - **Character traits** (`js/feud/packs/traits.js`): add or change a character's scores there (`"L9 K7 H9 ..."`, only traits the story clearly shows, plus a note). `ANCHORS` lists canon facts the scores must agree with.
    - Add new wordings at the **end** of `q` (a wording's id is its position).
 3. Run `node tools/feud-check.mjs`. It rejects:
    - a duplicate or non-Firebase-safe id;
@@ -169,13 +171,15 @@ Every player keeps a history: `"<questionId>@<scope>": [last seen, times seen]`.
    - blocked words;
    - a board without a kind / ranking basis;
    - a "power" board that ranks a character above someone who beat them in canon;
-   - an opinion board that contradicts the Anime Draft ratings it's checked against (`agree`).
+   - an opinion board that contradicts the Anime Draft ratings it's checked against (`agree`);
+   - a Most Likely opinion board that shares a character with its opposite;
+   - a trait row that isn't exactly one Anime Draft character, has a bad score or no note; a score that breaks a story anchor; a character scored very kind and very cruel (or honest and a liar, hard-working and lazy; loyal and a betrayer unless the note explains it); two opposite trait questions giving the same pair the same winner.
 
    It also warns when AniList popularity has drifted away from a "fans" board's order.
 
    It warns about wordings that are near copies of another board, rewordings that are only a synonym swap, and opposites sharing most of their answers. It then prints what every series and a sample of mixes can play.
 4. Run `node tools/feud-validate.mjs` (186 answer checks: full names, first and last names, nicknames, titles, Japanese and other romanisations, spacing, slightly longer answers; and wrong, vague or numbered answers that must NOT be accepted).
-5. Run `node tools/feud-test.mjs` (257 checks: matching, filtering, rotation and cooldowns, histories across players and rooms, teams for 2–8 players, every face-off outcome, play or pass, strikes, steals, clears, duel pairs, voting and majorities, Free For All scoring, ties, sudden death, away players, full simulated matches of Anime Feud and of Most Likely in both ways to play for every player count).
+5. Run `node tools/feud-test.mjs` (264 checks: trait duels, matching, filtering, rotation and cooldowns, histories across players and rooms, teams for 2–8 players, every face-off outcome, play or pass, strikes, steals, clears, duel pairs, voting and majorities, Free For All scoring, ties, sudden death, away players, full simulated matches of Anime Feud and of Most Likely in both ways to play for every player count).
 
 ### Multiplayer, history and what Firebase can and can't protect
 
