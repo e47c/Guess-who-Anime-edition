@@ -28,11 +28,12 @@ t(all.every(c => fresh[c.id].r === c.r), "rarity does not depend on the populari
 /* ---- role scores ---- */
 const luffy = db[40], light = db[80], tanjiro = db[126071], goku = db[246];
 t(roleSetFor(["onepiece"], false) === "onepiece" && roleSetFor(["onepiece", "jjk"], false) === "mixed" && roleSetFor(["jjk"], true) === "classic", "role set: one series / mixed / classic");
-t(charRoles(luffy, "onepiece", false).map(x => x.score).join() === "95,92,50,96,95,99", "One Piece roles read STR SPD IQ DUR Haki DF");
+const lr = CHARS.onepiece.find(r => r[0] === 40);
+t(charRoles(luffy, "onepiece", false).map(x => x.score).join() === [lr[2], lr[3], lr[4], lr[5], lr[8], lr[9]].join(), "One Piece roles read STR SPD IQ DUR Haki DF");
 t(charRoles(light, "deathnote", false).map(x => x.score).join() === "99,95,98,99,99,98", "Death Note uses its own six roles");
 t(ROLESETS.deathnote[5] === "Psychological Warfare" && ROLESETS.jojo[5].includes("Hamon"), "role names");
 const tm = charRoles(tanjiro, "mixed", true), gm = charRoles(goku, "mixed", true);
-t(tm[0].mult === .62 && tm[0].score === Math.round(78 * .62) && gm[0].score === 98, "Mixed: Strength scaled by series tier (Tanjiro " + tm[0].score + ", Goku " + gm[0].score + ")");
+t(tm[0].mult === .62 && tm[0].score === Math.round(tanjiro.v[0] * .62) && gm[0].mult === 1 && gm[0].score === goku.v[0], "Mixed: Strength scaled by series tier (Tanjiro " + tm[0].score + ", Goku " + gm[0].score + ")");
 t(tm[2].mult === 1 && tm[4].mult === 1, "Mixed: IQ and Combat Skill are not scaled");
 t(charRoles(luffy, "classic", false).every(x => x.mult === 1) && charRoles(luffy, "classic", true)[2].mult === .9, "Classic: Tank / Duelist only scaled in a mixed match");
 t(Object.values(CHARS).every(rows => rows.every(r => charRoles(db[r[0]], "mixed", true).every(x => x.score >= 1 && x.score <= 100))), "every Mixed score is 1..100");

@@ -5,14 +5,14 @@
               in one of their six roles. Each side has ONE blind reroll, decided before the stats show.
    - Auction: everyone for themselves with $25. A random character is revealed, players bid in turn
               (+$1 at least) or pass; the winner places it in an empty role.
-   Final score = the six role scores + the six rarity bonuses (rarity = global AniList popularity rank).
+   Final score = the six role scores + the six rarity bonuses (rarity = RANKS in data.js: power and story role per series).
 
    Everything that changes the match runs in a Firebase transaction on rooms/<code>/draft and is checked
    there (turn, phase, money, free role), so two clicks or two players can never both apply.
    The rules engine (act / actorOf / newMatch / scoring) is pure and has no DOM, so it is unit-tested
    in Node (tools/draft-test.mjs). Rendering and the lobby panel follow below it.
    ===================================================================== */
-import { CHARS, ROLESETS, ROLE_ICONS, RARITIES, RANKS, TIERS, DRAFT_VERSION } from "./data.js?v=2";
+import { CHARS, ROLESETS, ROLE_ICONS, RARITIES, RANKS, TIERS, DRAFT_VERSION } from "./data.js?v=3";
 
 /* tunable rules: see README "Anime Draft" for which ones are still open for balancing */
 export const DRAFT_RULES = {

@@ -2,7 +2,7 @@
 import { SK, norm, maskOf, letters, hintMax, pickHint, hintAt, spans, buildWords, poolFor, pickOptions, newMatch, act, eligible, allGot, hasGot, gotList,
     hintDue, standings, ptsFor, fp, prints, claim, near, wordPrints, del1, CATS, TYPO_MIN } from "../js/sketch/engine.js";
 import { EXTRAS, BLOCK } from "../js/sketch/words.js";
-import { CHARS } from "../js/draft/data.js";
+import { SKETCH_CHARS as CHARS } from "../js/sketch/roster.js";
 import { NICKNAMES } from "../js/feud/nicknames.js";
 import { buildLibrary } from "../js/feud/engine.js";
 import { PACKS } from "../js/feud/packs/index.js";

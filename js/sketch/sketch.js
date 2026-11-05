@@ -14,7 +14,7 @@
 import { SK, arr, maskOf, hintMax, pickHint, hintAt, buildWords, poolFor, pickOptions, newMatch, act, hasGot, gotList, allGot,
     hintDue, standings, wordPrints, claim, near } from "./engine.js?v=2";
 import { EXTRAS, BLOCK } from "./words.js?v=2";
-import { CHARS } from "../draft/data.js?v=2";
+import { SKETCH_CHARS } from "./roster.js?v=1";
 import { NICKNAMES } from "../feud/nicknames.js?v=1";
 import { LIB, el, srvNow, label, presentIn, pickOpt, seriesOf, initCommon, charOf, img, optButtons, confetti } from "../feud/common.js?v=1";
 import { push, set, remove, query, limitToLast, onChildAdded, onChildChanged, onChildRemoved } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
@@ -22,7 +22,7 @@ import { push, set, remove, query, limitToLast, onChildAdded, onChildChanged, on
 const GT = "sketch", NODE = "sketch";
 const $ = id => document.getElementById("sk" + id);
 let X = null, WORDS = null;
-const words = () => WORDS || (WORDS = buildWords({ chars: CHARS, nick: NICKNAMES, lib: LIB, extras: EXTRAS, block: BLOCK }));
+const words = () => WORDS || (WORDS = buildWords({ chars: SKETCH_CHARS, nick: NICKNAMES, lib: LIB, extras: EXTRAS, block: BLOCK }));
 const sRounds = d => pickOpt(d && d.sketchRounds, SK.roundChoices, SK.rounds);
 const sTimer = d => pickOpt(d && d.sketchTimer, SK.timerChoices, SK.timer);
 export const sketchPrefs = p => ({ sketchRounds: pickOpt(p.sketchRounds, SK.roundChoices, SK.rounds), sketchTimer: pickOpt(p.sketchTimer, SK.timerChoices, SK.timer) });
