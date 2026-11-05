@@ -322,22 +322,23 @@ export function near(msg, salt, wt) {
 
 /* =====================================================================
    CONTEST: a second way to play Anime Sketch. Every round, everyone gets the SAME word and draws it at the same time,
-   each on their own sheet. When time runs out (or everyone pressed Done) the drawings are shown side by side without
-   names, and every player rates every other drawing 1 to 5 stars (never their own). Stars received are the points;
-   the highest total after the last round wins.
-   Phases:   draw (everyone draws, the word is public) -> rate (anonymous gallery) -> results (names, stars, points)
-             -> next round ... -> over.
+   each on their own sheet. When time runs out (or everyone pressed Done) the drawings are shown big, ONE AT A TIME and
+   without names (up to 15 s each, moving on as soon as everyone who can rate it has), and every player rates every
+   other drawing 1 to 5 stars (never their own; a rating can be changed until rating ends). Stars received are the
+   points; the highest total after the last round wins.
+   Phases:   draw (everyone draws, the word is public) -> rate (one anonymous drawing at a time: s.gal order, s.gi = the
+             one on screen) -> results (names, stars, points) -> next round ... -> over.
    A contest match is marked type: "contest"; act() hands it to actContest(), so Classic matches never reach this code.
    s.n counts rounds (the transaction guard, and the turn the strokes belong to); moves that end a phase also name the
    phase (a.ph), so a late duplicate can never skip one.
    ===================================================================== */
 export const CT = {
-    rateBase: 15000, ratePer: 6000, rateMin: 25000, rateMax: 60000,   // rating time: 15 s + 6 s per drawing, 25-60 s
-    resultsMs: 10000,                                                  // the round results stay up this long
+    ratePer: 15000,         // each drawing is on screen for rating up to 15 s
+    resultsMs: 10000,       // the round results stay up this long
     stars: 5
 };
 export const isContest = s => !!s && s.type === "contest";
-export const rateMsFor = n => Math.max(CT.rateMin, Math.min(CT.rateMax, CT.rateBase + CT.ratePer * Number(n || 0)));
+export const rateMsFor = n => CT.ratePer * Number(n || 0);          // the longest the whole rating can take
 /* the round's word: categories take turns (character, weapon, object & item, from a different start every match),
    never a word already drawn this match; diff and recent work as in Classic */
 export function contestWord(words, series, { used = [], recent = [], round = 1, mid = 0, diff = 0, rnd = Math.random } = {}) {
@@ -360,6 +361,11 @@ export const toRate = (s, p) => ents(s).filter(q => q !== Number(p));
 export const ratedAll = (s, p) => { const r = ratedBy(s, p); return toRate(s, p).every(q => Number(r[pk(q)]) >= 1); };
 export const allDone = (s, present = () => true) => { const e = ents(s).filter(p => present(p)); return e.length > 0 && e.every(p => isDone(s, p)); };
 export const allRated = (s, present = () => true) => { const e = ents(s).filter(p => present(p)); return e.length > 0 && e.every(p => ratedAll(s, p)); };
+// the drawing on screen while rating, the drawings shown so far, and who still has to rate the current one
+export const curOf = s => { const g = arr(s && s.gal).map(Number), i = Number(s && s.gi) || 0; return g[i] != null ? g[i] : null; };
+export const shownSoFar = s => arr(s && s.gal).map(Number).slice(0, (Number(s && s.gi) || 0) + 1);
+export const ratersOf = (s, p, present = () => true) => ents(s).filter(q => q !== Number(p) && present(q));
+export const curRated = (s, present = () => true) => { const p = curOf(s); return p != null && ratersOf(s, p, present).every(q => Number(ratedBy(s, q)[pk(p)]) >= 1); };
 // stars each drawing received this round (only entrants' ratings, only 1-5), best first
 export function tally(s) {
     const E = ents(s);
@@ -378,15 +384,22 @@ export function newContest({ mid, lv = 0, series, rounds = SK.rounds, timer = SK
 }
 function startDraw(s, ent, word, now) {
     s.n = (Number(s.n) || 0) + 1; s.ent = arr(ent).map(Number); s.word = wordOf(word);
-    s.done = null; s.rt = null; s.gal = null; s.gain = null; s.why = null; s.nx = null;
+    s.done = null; s.rt = null; s.gal = null; s.gi = null; s.gain = null; s.why = null; s.nx = null;
     s.phase = "draw"; s.t0 = now; s.dl = now + Number(s.timer) * 1000;
     ev(s, "draw", { r: s.round });
 }
 function endDraw(s, now) {
     if (ents(s).length < 2) { endRate(s, "solo", now); return; }        // nobody to rate with: straight to the results
     s.phase = "rate"; s.gal = seeded(ents(s), Number(s.mid) * 31 + Number(s.n) * 7919);
-    s.t0 = now; s.dl = now + rateMsFor(ents(s).length);
+    s.gi = 0; s.t0 = now; s.dl = now + CT.ratePer;
     ev(s, "rate");
+}
+// the next drawing, or the results after the last one
+function nextShown(s, why, now) {
+    const i = (Number(s.gi) || 0) + 1;
+    if (i >= arr(s.gal).length) { endRate(s, why, now); return; }
+    s.gi = i; s.t0 = now; s.dl = now + CT.ratePer;
+    ev(s, "show", { gi: i });
 }
 function endRate(s, why, now) {
     const res = tally(s), gain = {};
@@ -440,8 +453,10 @@ export function actContest(s, a, ctx) {
             const to = Number(a.to), v = Number(a.v);
             if (to === by) return "You can't rate your own drawing.";
             if (!ents(s).includes(to)) return "stale";
+            if (!shownSoFar(s).includes(to)) return "That drawing hasn't been shown yet.";
             if (!Number.isInteger(v) || v < 1 || v > CT.stars) return "Pick 1 to 5 stars.";
-            if (now > Number(s.dl) + 1500) return "stale";
+            // the drawing on screen: until its time is up (a little grace); earlier ones: any time until rating ends
+            if (to === curOf(s) && now > Number(s.dl) + 1500) return "stale";
             const rt = Object.assign({}, s.rt), mine = Object.assign({}, rt[pk(by)]);
             mine[pk(to)] = v; rt[pk(by)] = mine; s.rt = rt;
             return null;
@@ -449,13 +464,13 @@ export function actContest(s, a, ctx) {
         case "timeout": {
             if (!inTurn || !phaseOk || !Number(s.dl) || now < Number(s.dl)) return "stale";
             if (s.phase === "draw") { endDraw(s, now); return null; }
-            if (s.phase === "rate") { endRate(s, "time", now); return null; }
+            if (s.phase === "rate") { if (a.gi != null && Number(a.gi) !== Number(s.gi)) return "stale"; nextShown(s, "time", now); return null; }
             return "stale";
         }
-        case "check": {         // everyone still here is done / has rated everything (also after someone left)
+        case "check": {         // everyone still here is done / has rated the drawing on screen (also after someone left)
             if (!inTurn || !phaseOk) return "stale";
             if (s.phase === "draw" && allDone(s, present)) { endDraw(s, now); return null; }
-            if (s.phase === "rate" && allRated(s, present)) { endRate(s, "all", now); return null; }
+            if (s.phase === "rate" && (a.gi == null || Number(a.gi) === Number(s.gi)) && curRated(s, present)) { nextShown(s, "all", now); return null; }
             return "stale";
         }
         case "next": {

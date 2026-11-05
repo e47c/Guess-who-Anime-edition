@@ -1,7 +1,7 @@
 // Anime Sketch rules + word library tests: node tools/sketch-test.mjs
 import { SK, norm, maskOf, letters, hintMax, pickHint, hintAt, spans, buildWords, poolFor, pickOptions, newMatch, act, eligible, allGot, hasGot, gotList,
     hintDue, standings, ptsFor, fp, prints, claim, near, wordPrints, del1, CATS, TYPO_MIN, parseEntry,
-    CT, isContest, rateMsFor, contestWord, seeded, ents, isDone, ratedBy, toRate, ratedAll, allDone, allRated, tally, newContest } from "../js/sketch/engine.js";
+    CT, isContest, rateMsFor, contestWord, seeded, ents, isDone, ratedBy, toRate, ratedAll, allDone, allRated, tally, newContest, curOf, shownSoFar, curRated } from "../js/sketch/engine.js";
 import { LIBRARY } from "../js/sketch/words.js";
 import { CHARS } from "../js/draft/data.js";
 
@@ -273,6 +273,16 @@ for (const n of [2, 8]) {
 }
 
 /* ---------------- Contest: same word for everyone, then 1-5 star ratings ---------------- */
+// every artist rates the drawing on screen (v(rater, artist); skip(rater) = doesn't rate), then it moves on (or times out)
+function rateRound(m, v, skip = () => false, present) {
+    for (let g = 0; g < 20 && m.phase === "rate"; g++) {
+        const p = curOf(m);
+        for (const q of ents(m)) if (q !== p && !skip(q)) m = run(m, { k: "rate", by: q, tk: m.n, to: p, v: v(q, p) }, m.t0 + 1000, present).s;
+        const c = run(m, { k: "check", tk: m.n, ph: "rate", gi: m.gi }, m.t0 + 2500, present);
+        m = c.err ? run(m, { k: "timeout", tk: m.n, ph: "rate", gi: m.gi }, m.dl, present).s : c.s;
+    }
+    return m;
+}
 sect("contest: a round");
 {
     const w1 = contestWord(W, ["onepiece"], { round: 1, mid: 0, rnd });
@@ -298,28 +308,48 @@ sect("contest: a round");
     const c = run(m, { k: "check", tk: 1, ph: "draw" }, NOW + 9000, offline4);
     t(!c.err && c.s.phase === "rate", "everyone still here is done (4 went offline): drawing ends early");
     m = run(m, { k: "done", by: 4, tk: 1 }, NOW + 9000).s;
-    t(m.phase === "rate" && m.dl === NOW + 9000 + rateMsFor(4) && rateMsFor(4) === 39000, "the last 'done' ends the drawing; rating time 15 s + 6 s × 4 = 39 s");
-    t(m.gal.slice().sort().join() === "1,2,3,4" && JSON.stringify(m.gal) === JSON.stringify(seeded([1, 2, 3, 4], 50 * 31 + 1 * 7919)), "the anonymous gallery order is shuffled, and the same in every browser");
-    t(rateMsFor(1) === CT.rateMin && rateMsFor(2) === 27000 && rateMsFor(8) === 60000 && rateMsFor(20) === CT.rateMax, "rating time: 2 drawings 27 s, 8 drawings 60 s (25 s min, 60 s max)");
+    t(m.phase === "rate" && m.gi === 0 && m.dl === NOW + 9000 + CT.ratePer && rateMsFor(4) === 60000, "the last 'done' ends the drawing; drawings are shown one at a time, 15 s each (4 drawings: 60 s at most)");
+    t(m.gal.slice().sort().join() === "1,2,3,4" && JSON.stringify(m.gal) === JSON.stringify(seeded([1, 2, 3, 4], 50 * 31 + 1 * 7919)), "the anonymous order is shuffled, and the same in every browser");
+    const G = m.gal.slice();
+    t(curOf(m) === G[0] && shownSoFar(m).join() === String(G[0]), "the first drawing is on screen, the others not yet");
 
-    sect("contest: rating");
-    t(run(m, { k: "rate", by: 1, tk: 1, to: 1, v: 5 }, NOW + 10000).err === "You can't rate your own drawing.", "nobody rates their own drawing");
-    t(run(m, { k: "rate", by: 9, tk: 1, to: 1, v: 5 }, NOW + 10000).err, "spectators can't rate");
-    t(run(m, { k: "rate", by: 1, tk: 1, to: 9, v: 5 }, NOW + 10000).err === "stale", "only this round's drawings can be rated");
-    t([0, 6, 2.5, -1, "x", null].every(v => run(m, { k: "rate", by: 1, tk: 1, to: 2, v }, NOW + 10000).err === "Pick 1 to 5 stars."), "only whole stars from 1 to 5");
-    t(run(m, { k: "rate", by: 1, tk: 0, to: 2, v: 3 }, NOW + 10000).err === "stale", "a rating from an old round is refused");
-    const R = { 1: { 2: 5, 3: 3, 4: 1 }, 2: { 1: 4, 3: 3, 4: 2 }, 3: { 1: 2, 2: 5, 4: 2 } };
-    for (const [by, row] of Object.entries(R)) for (const [to, v] of Object.entries(row)) m = run(m, { k: "rate", by: Number(by), tk: 1, to: Number(to), v }, NOW + 12000).s;
-    t(ratedAll(m, 1) && ratedAll(m, 2) && ratedAll(m, 3) && !ratedAll(m, 4) && !allRated(m), "player 4 hasn't rated yet");
-    m = run(m, { k: "rate", by: 1, tk: 1, to: 4, v: 2 }, NOW + 13000).s;
-    t(ratedBy(m, 1).p4 === 2 && m.phase === "rate", "a rating can be changed until rating ends");
-    t(run(m, { k: "check", tk: 1, ph: "rate" }, NOW + 14000).err === "stale", "no early end while someone still has drawings to rate");
-    const early = run(m, { k: "check", tk: 1, ph: "rate" }, NOW + 14000, offline4);
-    t(!early.err && early.s.phase === "results" && early.s.why === "all", "everyone still here has rated everything: rating ends");
-    m = run(m, { k: "rate", by: 4, tk: 1, to: 1, v: 5 }, NOW + 15000).s;      // 4 rates only one drawing
-    t(run(m, { k: "rate", by: 4, tk: 1, to: 2, v: 5 }, m.dl + 2000).err === "stale", "a rating after the time is up is refused");
-    m = run(m, { k: "timeout", tk: 1, ph: "rate" }, m.dl).s;
-    t(m.phase === "results" && m.why === "time" && m.nx === m.t0 + CT.resultsMs, "time's up: results");
+    sect("contest: rating, one drawing at a time");
+    const rater0 = G.find(p => p !== G[0]);
+    t(run(m, { k: "rate", by: G[0], tk: 1, to: G[0], v: 5 }, NOW + 10000).err === "You can't rate your own drawing.", "nobody rates their own drawing");
+    t(run(m, { k: "rate", by: G[0], tk: 1, to: G[1], v: 5 }, NOW + 10000).err === "That drawing hasn't been shown yet.", "a drawing can't be rated before it's on screen");
+    t(run(m, { k: "rate", by: 9, tk: 1, to: G[0], v: 5 }, NOW + 10000).err, "spectators can't rate");
+    t(run(m, { k: "rate", by: rater0, tk: 1, to: 9, v: 5 }, NOW + 10000).err === "stale", "only this round's drawings can be rated");
+    t([0, 6, 2.5, -1, "x", null].every(v => run(m, { k: "rate", by: rater0, tk: 1, to: G[0], v }, NOW + 10000).err === "Pick 1 to 5 stars."), "only whole stars from 1 to 5");
+    t(run(m, { k: "rate", by: rater0, tk: 0, to: G[0], v: 3 }, NOW + 10000).err === "stale", "a rating from an old round is refused");
+    t(run(m, { k: "timeout", tk: 1, ph: "rate", gi: 0 }, m.dl - 1).err === "stale", "no early timeout for the drawing on screen");
+    // 1, 2 and 3 rate everything; 4 rates only player 1's drawing (1 → 4 starts at 1 star, changed to 2 later)
+    const R = { 1: { 2: 5, 3: 3, 4: 1 }, 2: { 1: 4, 3: 3, 4: 2 }, 3: { 1: 2, 2: 5, 4: 2 }, 4: { 1: 5 } };
+    const ends = [];
+    let order = true, waits = true, lateNo = true, offEarly = true, dupNo = true, changed = false, stays = true;
+    for (let i = 0; i < 4; i++) {
+        const p = G[i];
+        order = order && m.gi === i && curOf(m) === p && shownSoFar(m).length === i + 1;
+        for (const q of [1, 2, 3, 4]) if (R[q][p]) m = run(m, { k: "rate", by: q, tk: 1, to: p, v: R[q][p] }, m.t0 + 2000).s;
+        stays = stays && m.phase === "rate" && m.gi === i;          // a rating alone never moves on
+        if (i === 3) { const r1 = run(m, { k: "rate", by: 1, tk: 1, to: 4, v: 2 }, m.t0 + 3000); changed = !r1.err && ratedBy(r1.s, 1).p4 === 2; m = r1.s; }
+        if (i === 1) dupNo = run(m, { k: "timeout", tk: 1, ph: "rate", gi: 0 }, m.dl + 10).err === "stale";
+        const c = run(m, { k: "check", tk: 1, ph: "rate", gi: i }, m.t0 + 4000);
+        if (!c.err) { ends.push("all"); m = c.s; continue; }
+        waits = waits && R[4][p] == null && p !== 4;                 // only waiting because 4 hasn't rated it
+        lateNo = lateNo && run(m, { k: "rate", by: 4, tk: 1, to: p, v: 5 }, m.dl + 2000).err === "stale";
+        const off = run(m, { k: "check", tk: 1, ph: "rate", gi: i }, m.t0 + 4000, offline4);
+        offEarly = offEarly && !off.err && (off.s.gi === i + 1 || off.s.phase === "results");
+        m = run(m, { k: "timeout", tk: 1, ph: "rate", gi: i }, m.dl).s; ends.push("time");
+    }
+    t(order, "the drawings come one by one, in the shuffled order");
+    t(stays, "rating the drawing on screen doesn't skip it by itself (the grace to change a star)");
+    t(ends.filter((e, i) => e === "all").length === 2 && G.every((p, i) => (p === 1 || p === 4) === (ends[i] === "all")), "everyone who can rate it has: the next drawing comes at once (" + ends.join(", ") + ")");
+    t(waits, "a drawing someone still has to rate stays up until its 15 s are over");
+    t(offEarly, "...or until everyone still here has rated it (4 went offline)");
+    t(lateNo, "a rating after the drawing's time is up is refused");
+    t(dupNo, "a late timeout for an earlier drawing can't skip the current one");
+    t(changed, "an earlier drawing's rating can still be changed until rating ends");
+    t(m.phase === "results" && m.why === ends[3] && m.nx === m.t0 + CT.resultsMs, "after the last drawing: results");
     // stars received: 1 ← 4 + 2 + 5 = 11 · 2 ← 5 + 5 = 10 · 3 ← 3 + 3 = 6 · 4 ← 2 + 2 + 2 = 6
     t(m.score.p1 === 11 && m.score.p2 === 10 && m.score.p3 === 6 && m.score.p4 === 6, "points = the stars each drawing received (11, 10, 6, 6)");
     t(m.gain.p1 === 11 && m.log[0].res[0].p === 1 && m.log[0].res[0].n === 3 && m.log[0].res.find(x => x.p === 2).n === 2, "the results list each drawing's stars and how many ratings it got");
@@ -345,9 +375,7 @@ sect("contest: a round");
     t(run(late, { k: "enter", by: 7, tk: 1 }, NOW + 1000).err === "stale" && run(l2.s, { k: "enter", by: 3, tk: 1 }, NOW + 1000).err === "stale", "only match players, and only once");
     // last round → over
     for (const p of ents(m2)) m2 = run(m2, { k: "done", by: p, tk: 2 }, NOW + 200000).s;
-    for (const by of ents(m2)) for (const to of toRate(m2, by)) m2 = run(m2, { k: "rate", by, tk: 2, to, v: to === 5 ? 5 : 1 }, NOW + 201000).s;
-    t(m2.phase === "rate", "the last rating doesn't end rating at once (a moment to change it)");
-    m2 = run(m2, { k: "check", tk: 2, ph: "rate" }, NOW + 202000).s;
+    m2 = rateRound(m2, (q, p) => p === 5 ? 5 : 1);
     t(m2.gain.p5 === 20 && m2.gain.p1 === 4, "round 2: player 5 gets 5 stars from all 4 others (20)");
     const fin = run(m2, { k: "next", tk: 2, ph: "results" }, m2.nx);
     t(!fin.err && fin.s.phase === "over" && fin.s.end === "done" && fin.s.winners.join() === "5", "after the last round: over, the highest total wins (5: 20)");
@@ -355,12 +383,12 @@ sect("contest: a round");
     // a tie at the top is a shared win
     let tie = newContest({ mid: 52, series: ["bleach"], players: [1, 2], rounds: 1, timer: 60, now: NOW, word: W.bleach[0] });
     tie = run(tie, { k: "done", by: 1, tk: 1 }, NOW).s; tie = run(tie, { k: "done", by: 2, tk: 1 }, NOW).s;
-    tie = run(tie, { k: "rate", by: 1, tk: 1, to: 2, v: 4 }, NOW + 100).s; tie = run(tie, { k: "rate", by: 2, tk: 1, to: 1, v: 4 }, NOW + 100).s;
-    tie = run(tie, { k: "check", tk: 1, ph: "rate" }, NOW + 200).s; tie = run(tie, { k: "next", tk: 1, ph: "results" }, tie.nx).s;
+    tie = rateRound(tie, () => 4); tie = run(tie, { k: "next", tk: 1, ph: "results" }, tie.nx).s;
     t(tie.phase === "over" && tie.winners.join() === "1,2", "2 players, same stars: a shared win");
     // everyone else left before the next round
     let few = newContest({ mid: 53, series: ["bleach"], players: [1, 2, 3], rounds: 3, timer: 60, now: NOW, word: W.bleach[0] });
-    few = run(few, { k: "timeout", tk: 1, ph: "draw" }, few.dl).s; few = run(few, { k: "timeout", tk: 1, ph: "rate" }, few.dl).s;
+    few = run(few, { k: "timeout", tk: 1, ph: "draw" }, few.dl).s; few = rateRound(few, () => 1, () => true);
+    t(few.why === "time", "nobody rates: each drawing just waits out its 15 s");
     t(few.log[0].res.every(x => x.pts === 0 && x.n === 0), "nobody rated: 0 points each");
     const f2 = run(few, { k: "next", tk: 1, ph: "results", word: W.bleach[1] }, few.nx, p => p === 1);
     t(f2.s.phase === "over" && f2.s.end === "few", "fewer than 2 players left: the match ends");
@@ -384,9 +412,8 @@ for (const n of [2, 8]) {
         }
         if (m.phase === "rate") {
             // round 3: one player skips rating; otherwise everyone rates everything
-            for (const by of ents(m)) { if (rounds === 3 && by === 1) continue; for (const to of toRate(m, by)) m = run(m, { k: "rate", by, tk: m.n, to, v: 1 + ((by * 3 + to * 5 + rounds) % 5) }, now += 200).s; }
-            const ch = run(m, { k: "check", tk: m.n, ph: "rate" }, now += 1500);
-            m = ch.err ? run(m, { k: "timeout", tk: m.n, ph: "rate" }, now = m.dl).s : ch.s;
+            const r0 = rounds;
+            m = rateRound(m, (by, to) => 1 + ((by * 3 + to * 5 + r0) % 5), by => r0 === 3 && by === 1); now = m.t0;
             continue;
         }
         const w = contestWord(W, m.series, { used: m.log.map(L => L.w), round: m.round + 1, mid: m.mid, rnd });

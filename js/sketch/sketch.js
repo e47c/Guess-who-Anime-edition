@@ -14,7 +14,7 @@
    ===================================================================== */
 import { SK, arr, maskOf, hintMax, pickHint, hintAt, buildWords, poolFor, pickOptions, newMatch, act, hasGot, gotList, allGot,
     hintDue, standings, wordPrints, claim, near, CATS, CAT_NAME,
-    CT, isContest, newContest, contestWord, ents, isDone, ratedBy, ratedAll, toRate, allDone, allRated, tally } from "./engine.js?v=4";
+    CT, isContest, newContest, contestWord, ents, isDone, ratedBy, ratedAll, toRate, allDone, allRated, tally, curOf, curRated, shownSoFar, ratersOf } from "./engine.js?v=5";
 import { LIBRARY } from "./words.js?v=3";
 import { CHARS } from "../draft/data.js?v=3";
 import { el, srvNow, label, presentIn, pickOpt, seriesOf, initCommon, charOf, img, optButtons, confetti } from "../feud/common.js?v=3";
@@ -71,7 +71,7 @@ export function initSketch(ctx) {
             return;
         }
         if (mod || e.altKey || typing()) return;
-        if (k === "escape" && closeLightbox()) return;
+        if (/^[1-5]$/.test(k) && rateKey(Number(k))) { e.preventDefault(); return; }       // Contest: 1-5 rates the drawing on screen
         if (e.code === "Space" && !e.repeat && view.z > 1) { spaceDown = true; paperClass("grab", true); e.preventDefault(); return; }
         if (!canDraw()) return;
         if (k === "b") { tool.e = false; syncTools(); }
@@ -110,7 +110,7 @@ export function sketchLobby(d, lock) {
     box.append(el("b", "fd-scope-tag " + (series.length > 1 ? "mix" : "single"), series.length > 1 ? "ANIME MIX" : "SINGLE ANIME"),
         el("span", null, series.length === 1 ? label(series[0]) : series.length + " series"),
         el("em", null, pool.length + " words · " + CATS.filter(c => cats[c]).map(c => cats[c] + " " + (c === "Object" ? "objects & items" : c.toLowerCase() + (cats[c] === 1 ? "" : "s"))).join(", ")));
-    if (contest) { $("Hint").textContent = "Contest: every round, everyone gets the same word (a character, a weapon or an object & item) and draws it at the same time on their own sheet. Then the drawings are shown without names and you rate every other drawing 1 to 5 stars. Stars received are your points; the highest total after the last round wins. Best with 3 or more players. Word difficulty: " + DIFF_NAME[sDiff(d)] + "."; return; }
+    if (contest) { $("Hint").textContent = "Contest: every round, everyone gets the same word (a character, a weapon or an object & item) and draws it at the same time on their own sheet. Then the drawings are shown big, one at a time and without names (15 s each), and you rate every other drawing 1 to 5 stars. Stars received are your points; the highest total after the last round wins. Best with 3 or more players. Word difficulty: " + DIFF_NAME[sDiff(d)] + "."; return; }
     $("Hint").textContent = "Every round, each player draws once: pick a character, a weapon or an object & item, then draw it while everyone else types guesses. First right guess +100, then 75, 50, 25; the drawer gets +25 for each player who gets it. Word difficulty: " + DIFF_NAME[sDiff(d)] + (sDiff(d) ? " (every drawer gets words of that level)" : " (easy, medium and hard words)") + ".";
 }
 
@@ -248,18 +248,19 @@ function watchHost(d, s, now) {
     }, 10000);
 }
 /* Contest duties. Everyone: step into a round you missed the start of (while it's still being drawn).
-   The host (or the backups, later): end the drawing / rating time, end it early once everyone still here is done /
-   has rated everything (rating gets a moment's grace to change a star), then the next round with its word. */
+   The host (or the backups, later): end the drawing time, or the drawing on screen's 15 s, early once everyone still
+   here is done / has rated it (rating gets a moment's grace to change a star), then the next round with its word. */
 function contestLoop(d, s) {
-    const now = srvNow(), me = X.me(), pres = presentIn(d), key = s.mid + ":" + s.n + ":" + s.phase;
+    const now = srvNow(), me = X.me(), pres = presentIn(d), key = s.mid + ":" + s.n + ":" + s.phase + (s.phase === "rate" ? ":" + (Number(s.gi) || 0) : "");
     if (s.phase === "draw" && arr(s.players).map(Number).includes(me) && !ents(s).includes(me) && pres(me) && now < Number(s.dl) - 5000) once("enter:" + key, () => tx({ k: "enter", tk: s.n }), 4000);
     watchHost(d, s, now);
     const rank = dutyRank(d); if (rank < 0) return;
     const lag = rank === 0 ? 0 : 2500 + rank * 900;
     if (s.phase === "draw" || s.phase === "rate") {
-        if (now >= Number(s.dl) + 400 + lag) once("to:" + key, () => tx({ k: "timeout", tk: s.n, ph: s.phase }));
-        const ready = s.phase === "draw" ? allDone(s, pres) : allRated(s, pres);
-        if (ready) once("chk:" + key, () => setTimeout(() => tx({ k: "check", tk: s.n, ph: s.phase }), (s.phase === "rate" ? 1500 : 300) + lag), 3500 + lag);
+        const gi = s.phase === "rate" ? Number(s.gi) || 0 : null;
+        if (now >= Number(s.dl) + 400 + lag) once("to:" + key, () => tx({ k: "timeout", tk: s.n, ph: s.phase, gi }));
+        const ready = s.phase === "draw" ? allDone(s, pres) : curRated(s, pres);
+        if (ready) once("chk:" + key, () => setTimeout(() => tx({ k: "check", tk: s.n, ph: s.phase, gi }), (s.phase === "rate" ? 1200 : 300) + lag), 3500 + lag);
     }
     if (s.phase === "results" && now >= Number(s.nx) + lag) once("nx:" + key, () => contestNext(s));
 }
@@ -602,7 +603,7 @@ export function sketchReset() {
     unlistenInk(); unlistenChat();
     if (roRef) { roRef.disconnect(); roRef = null; }
     const o = $("Over"); if (o) o.remove();
-    closeLightbox(); keeps.clear(); doneBusy = false;
+    keeps.clear(); doneBusy = false;
 }
 const feedback = (msg, kind) => { const f = $("Feedback"); if (!f) return; f.textContent = msg; f.className = "sk-feedback show " + (kind || ""); clearTimeout(f._t); f._t = setTimeout(() => f.classList.remove("show"), 3000); };
 export function showSketch(d) {
@@ -750,7 +751,7 @@ function paintTimer(d, s) {
         tm.querySelector("b").textContent = String(sec);
         tm.querySelector(".sk-tarc").style.strokeDashoffset = String(119.4 * (1 - Math.min(1, left / total)));
         tm.classList.toggle("low", sec <= 10);
-        const mine = s.phase === "draw" ? ents(s).includes(X.me()) && !isDone(s, X.me()) : ents(s).includes(X.me()) && !ratedAll(s, X.me());
+        const mine = s.phase === "draw" ? ents(s).includes(X.me()) && !isDone(s, X.me()) : ents(s).includes(X.me()) && curOf(s) !== X.me() && !(Number(ratedBy(s, X.me())["p" + curOf(s)]) >= 1);
         if (sec <= 5 && sec > 0 && tm._last !== sec && mine) { tm._last = sec; X.sfx("tick"); }
         return;
     }
@@ -949,14 +950,14 @@ function showOver(d, s) {
    anonymous gallery (same shuffled order and letters in every browser); the results show names and stars.
    ===================================================================== */
 const LETTERS = "ABCDEFGH";
-let doneBusy = false, galRaf = 0, lb = null;
+let doneBusy = false, galRaf = 0;
 const keeps = new Map();         // "mid:round" -> the round's best drawing as a picture, for the final screen (this browser only)
 const inRoundOf = (s, p) => ents(s).includes(Number(p));
 function renderContest(d, s) {
     const me = X.me(), playing = arr(s.players).map(Number).includes(me), inRound = inRoundOf(s, me), drawing = inRound && s.phase === "draw" && !isDone(s, me);
     $("TurnT").textContent = s.phase === "over" ? "FINAL SCORES" : "CONTEST · ROUND " + s.round + " / " + s.rounds;
     $("Status").textContent = s.phase === "draw" ? (drawing ? "Draw it! No letters or words." : inRound ? "Done! Waiting for the others" : "Everyone is drawing")
-        : s.phase === "rate" ? (inRound ? (ratedAll(s, me) ? "All rated! You can still change a star" : "Rate every drawing 1 to 5 stars") : "The artists are rating")
+        : s.phase === "rate" ? (!inRound ? "The artists are rating" : curOf(s) === me ? "Your drawing is up: the others are rating it" : Number(ratedBy(s, me)["p" + curOf(s)]) >= 1 ? "Rated! You can still change it" : "Rate this drawing 1 to 5 stars")
         : s.phase === "results" ? "Round " + s.round + " results" : "";
     const rc = $("Round"); if (rc.dataset.k !== s.round + "/" + s.rounds) { rc.dataset.k = s.round + "/" + s.rounds; rc.innerHTML = ""; rc.append(el("small", null, "ROUND"), el("b", null, s.round + "/" + s.rounds)); }
     const ch = document.querySelector("#skWrap .sk-chat-h"); if (ch) ch.textContent = "CHAT";
@@ -966,7 +967,6 @@ function renderContest(d, s) {
     $("Paper").classList.toggle("drawable", drawing);
     if (ink.turn !== s.mid + ":" + s.n) { ink.turn = s.mid + ":" + s.n; if (!(cur && cur.turn === ink.turn)) { cur = null; undo = []; redo = []; } zoomResetNow(); syncTools(); redraw(); }
     if (!drawing && cur) endStroke();
-    if (lb && (lb.n !== s.n || lb.ph !== s.phase)) closeLightbox();
     contestOverlay(d, s);
     doneBarView(d, s);
     galleryView(d, s);
@@ -999,7 +999,7 @@ function contestWordView(d, s) {
     } else if (s.phase === "rate") {
         kick.textContent = "RATE THE DRAWINGS · " + cat;
         line.appendChild(el("span", "sk-secret", w.t || "…"));
-        sub.textContent = inRound ? "1 to 5 stars for every drawing except yours. Names stay hidden until the results." : "The artists are rating. Names stay hidden until the results.";
+        sub.textContent = inRound ? "One drawing at a time, 15 s each: 1 to 5 stars for every drawing except yours. Names stay hidden until the results." : "The artists are rating. Names stay hidden until the results.";
     } else if (s.phase === "results") {
         kick.textContent = "ROUND " + s.round + " OF " + s.rounds + " · RESULTS";
         if (w.c && charOf(w.c)) line.appendChild(img(w.c, "sk-wimg"));
@@ -1021,20 +1021,20 @@ function contestPlayers(d, s) {
     }
     offSeen = { mid: s.mid, set: off };
     const spect = X.activeSlots(d).filter(p => !arr(s.players).map(Number).includes(p));
-    const prog = arr(s.players).map(Number).map(p => [p, isDone(s, p) ? 1 : 0, Object.keys(ratedBy(s, p)).length]);
+    const prog = arr(s.players).map(Number).map(p => [p, isDone(s, p) ? 1 : 0]);
     const sig = JSON.stringify([st, s.n, s.phase, s.ent, prog, s.phase === "results" ? s.gain : null, spect, s.pend, X.activeSlots(d).map(p => pres(p)), X.hostSlot(d)]);
     if (box.dataset.k === sig) return; box.dataset.k = sig;
     box.innerHTML = "";
     const ol = el("ol", "sk-plist");
     st.forEach(x => {
         const p = x.p, place = st.findIndex(y => y.score === x.score) + 1, inR = inRoundOf(s, p);
-        const busy = inR && (s.phase === "draw" ? !isDone(s, p) : s.phase === "rate" ? !ratedAll(s, p) : false);
-        const fin = inR && (s.phase === "draw" ? isDone(s, p) : s.phase === "rate" ? ratedAll(s, p) : false);
+        // while rating, nobody's progress is shown: it would give away whose drawing is on screen (the artist never rates it)
+        const busy = inR && (s.phase === "draw" ? !isDone(s, p) : s.phase === "rate");
+        const fin = inR && s.phase === "draw" && isDone(s, p);
         const li = el("li", "sk-p" + (p === me ? " me" : "") + (busy ? " drawing" : "") + (fin ? " got" : "") + (pres(p) ? "" : " off"));
         li.dataset.emote = "p" + p; li.style.setProperty("--pc", pCol(d, p));
-        const n = toRate(s, p).filter(q => Number(ratedBy(s, p)["p" + q]) >= 1).length;
         const what = !pres(p) ? "offline" : s.phase === "over" ? "" : !inR ? "next round"
-            : s.phase === "draw" ? (isDone(s, p) ? "✔ done" : "✏️ drawing") : s.phase === "rate" ? (ratedAll(s, p) ? "✔ rated all" : "⭐ rating " + n + "/" + toRate(s, p).length) : "";
+            : s.phase === "draw" ? (isDone(s, p) ? "✔ done" : "✏️ drawing") : s.phase === "rate" ? "⭐ rating" : "";
         const nm = el("span", "sk-pn"); nm.append(el("b", null, X.pName(d, p) + (p === me ? " (you)" : "")), el("small", null, what || (p === X.hostSlot(d) ? "host" : "")));
         const sc = el("strong", "sk-ps", String(x.score)); sc.id = "skScore" + p;
         li.append(el("span", "sk-prank", "#" + place), X.avatarEl(X.pPub(d, p), { size: 30 }), nm, sc);
@@ -1092,49 +1092,73 @@ async function rateIt(p, v) {
     else if (err) feedback(err === "net" ? "Couldn't send that. Check your connection." : err, "warn");
 }
 
-/* ---------------- the gallery ---------------- */
+/* ---------------- the gallery ----------------
+   rate:    one drawing at a time, big (the sheet's place), anonymous: "Drawing B · 2 of 4", 1-5 stars under it, 15 s
+            each. The drawings already shown sit in a strip below, where their stars can still be changed.
+   results: every drawing in a grid with its artist, stars, average and points (also kept behind the final screen). */
 function galleryView(d, s) {
     const box = $("Gallery"), paper = $("Paper"); if (!box) return;
     const on = s.phase === "rate" || s.phase === "results" || s.phase === "over";      // over: the last results stay behind the final screen
     box.classList.toggle("hidden", !on); paper.classList.toggle("hidden", on);
     if (!on) { box.dataset.k = ""; return; }
-    const me = X.me(), results = s.phase !== "rate", L = arr(s.log)[arr(s.log).length - 1] || {}, gal = arr(s.gal).map(Number);
-    const order = results ? arr(L.res).map(x => Number(x.p)) : gal;
-    const sig = [s.mid, s.n, results ? "res" : "rate", order.join()].join("|");      // results -> over keeps the same cards
+    if (s.phase === "rate") { rateStage(d, s); return; }
+    const me = X.me(), L = arr(s.log)[arr(s.log).length - 1] || {}, gal = arr(s.gal).map(Number);
+    const order = arr(L.res).map(x => Number(x.p));
+    const sig = [s.mid, s.n, "res", order.join()].join("|");      // results -> over keeps the same cards
+    if (box.dataset.k === sig) return;
+    box.dataset.k = sig; box.innerHTML = ""; box.className = "sk-gallery results";
+    const head = el("div", "sk-ghead");
+    head.append(el("b", null, "Round " + s.round + " results"), el("span", null, "Names revealed · points = stars received"));
+    const grid = el("div", "sk-ggrid");
+    const res = arr(L.res), top = res.length ? Number(res[0].pts) : 0;
+    order.forEach((p, i) => {
+        const letter = LETTERS[gal.indexOf(p)] || "?";
+        const card = el("figure", "sk-gcard" + (p === me ? " mine" : "")); card.dataset.p = p; card.style.setProperty("--i", i);
+        const sheet = el("div", "sk-gsheet"); sheet.setAttribute("role", "img"); sheet.setAttribute("aria-label", X.pName(d, p) + "'s drawing"); sheet.appendChild(el("canvas"));
+        const r = res.find(x => Number(x.p) === p) || { pts: 0, n: 0 }, place = res.findIndex(x => Number(x.pts) === Number(r.pts)) + 1, win = Number(r.pts) === top && top > 0;
+        if (win) card.classList.add("win");
+        const who = el("span", "sk-gwho"); who.append(el("i", "sk-gplace", win ? "👑" : "#" + place), X.avatarEl(X.pPub(d, p), { size: 24 }), el("b", null, X.pName(d, p) + (p === me ? " (you)" : "")));
+        const avg = r.n ? (r.pts / r.n).toFixed(1) : "–";
+        const cap = el("figcaption"); cap.append(who, el("small", null, "Drawing " + letter + " · ★ " + avg + " avg · " + r.n + " rating" + (r.n === 1 ? "" : "s")), el("strong", "sk-gpts", "+" + r.pts));
+        card.append(sheet, cap); grid.appendChild(card);
+    });
+    box.append(head, grid);
+    paintGallery();
+}
+function rateStage(d, s) {
+    const box = $("Gallery"), me = X.me(), gal = arr(s.gal).map(Number), gi = Number(s.gi) || 0, p = curOf(s), letter = LETTERS[gi] || "?";
+    const sig = [s.mid, s.n, "rate", gi, gal.join()].join("|");
     if (box.dataset.k !== sig) {
-        box.dataset.k = sig; box.innerHTML = "";
-        box.classList.toggle("results", results);
+        box.dataset.k = sig; box.innerHTML = ""; box.className = "sk-gallery rating";
         const head = el("div", "sk-ghead");
-        head.append(el("b", null, results ? "Round " + s.round + " results" : "Rate the drawings"), el("span", null, results ? "Names revealed · points = stars received" : "Anonymous · tap a drawing to see it bigger"));
+        head.append(el("b", null, (p === me ? "Your drawing" : "Drawing " + letter)), el("span", null, (gi + 1) + " of " + gal.length + " · anonymous · names after the last one"));
         const prog = el("em", "sk-gprog"); prog.id = "skRateProg"; head.appendChild(prog);
-        const grid = el("div", "sk-ggrid");
-        const res = arr(L.res), top = res.length ? Number(res[0].pts) : 0;
-        order.forEach((p, i) => {
-            const letter = LETTERS[gal.indexOf(p)] || "?";
-            const card = el("figure", "sk-gcard" + (p === me ? " mine" : "")); card.dataset.p = p; card.style.setProperty("--i", i);
-            const sheet = el("button", "sk-gsheet"); sheet.type = "button";
-            const title = results ? X.pName(d, p) + "'s drawing" : p === me ? "Your drawing" : "Drawing " + letter;
-            sheet.setAttribute("aria-label", "Enlarge: " + title); sheet.appendChild(el("canvas")); sheet.onclick = () => openLightbox(p, title);
-            const cap = el("figcaption");
-            if (!results) {
-                cap.appendChild(el("b", "sk-gtag", p === me ? "YOURS" : "DRAWING " + letter));
-                if (p === me) cap.appendChild(el("small", null, "You can't rate your own"));
-                else if (inRoundOf(s, me)) cap.appendChild(starsEl(p, letter));
-                else cap.appendChild(el("small", null, "Waiting for the artists' stars"));
-            } else {
-                const r = res.find(x => Number(x.p) === p) || { pts: 0, n: 0 }, place = res.findIndex(x => Number(x.pts) === Number(r.pts)) + 1, win = Number(r.pts) === top && top > 0;
-                if (win) card.classList.add("win");
-                const who = el("span", "sk-gwho"); who.append(el("i", "sk-gplace", win ? "👑" : "#" + place), X.avatarEl(X.pPub(d, p), { size: 24 }), el("b", null, X.pName(d, p) + (p === me ? " (you)" : "")));
-                const avg = r.n ? (r.pts / r.n).toFixed(1) : "–";
-                cap.append(who, el("small", null, "Drawing " + letter + " · ★ " + avg + " avg · " + r.n + " rating" + (r.n === 1 ? "" : "s")), el("strong", "sk-gpts", "+" + r.pts));
-            }
-            card.append(sheet, cap); grid.appendChild(card);
-        });
-        box.append(head, grid);
+        // the drawing on screen, big
+        const big = el("figure", "sk-gcard sk-gbig" + (p === me ? " mine" : "")); big.dataset.p = p;
+        const sheet = el("div", "sk-gsheet"); sheet.setAttribute("role", "img"); sheet.setAttribute("aria-label", p === me ? "Your drawing" : "Drawing " + letter); sheet.appendChild(el("canvas"));
+        const cap = el("figcaption");
+        if (p === me) cap.append(el("b", "sk-gtag", "YOURS"), el("small", null, "You can't rate your own drawing. The others are rating it now."));
+        else if (inRoundOf(s, me)) cap.append(el("b", "sk-gtag", "DRAWING " + letter), starsEl(p, letter), el("small", "sk-gkeys", "Tap the stars, or press 1 to 5"));
+        else cap.append(el("b", "sk-gtag", "DRAWING " + letter), el("small", null, "The artists are rating this drawing"));
+        big.append(sheet, cap);
+        box.append(head, big);
+        // the ones already shown: small, stars still changeable
+        const before = gal.slice(0, gi);
+        if (before.length) {
+            const strip = el("div", "sk-gstrip"); strip.appendChild(el("small", "sk-gstrip-h", inRoundOf(s, me) ? "ALREADY SHOWN · YOU CAN STILL CHANGE YOUR STARS" : "ALREADY SHOWN"));
+            const row = el("div", "sk-gstrip-row");
+            before.forEach((q, i) => {
+                const c = el("figure", "sk-gcard sk-gmini" + (q === me ? " mine" : "")); c.dataset.p = q;
+                const sh = el("div", "sk-gsheet"); sh.setAttribute("role", "img"); sh.setAttribute("aria-label", q === me ? "Your drawing" : "Drawing " + LETTERS[i]); sh.appendChild(el("canvas"));
+                const cp = el("figcaption"); cp.appendChild(el("b", "sk-gtag", q === me ? "YOURS" : LETTERS[i]));
+                if (q !== me && inRoundOf(s, me)) cp.appendChild(starsEl(q, LETTERS[i]));
+                c.append(sh, cp); row.appendChild(c);
+            });
+            strip.appendChild(row); box.appendChild(strip);
+        }
         paintGallery();
     }
-    if (!results) syncStars(s);
-    else { const pr = $("RateProg"); if (pr) pr.textContent = ""; }
+    syncStars(s);
 }
 function starsEl(p, letter) {
     const row = el("div", "sk-stars"); row.setAttribute("role", "group"); row.setAttribute("aria-label", "Your stars for drawing " + letter);
@@ -1143,13 +1167,23 @@ function starsEl(p, letter) {
 }
 function syncStars(s) {
     const me = X.me(), mine = ratedBy(s, me);
-    document.querySelectorAll("#skGallery .sk-gcard, .sk-lightbox .sk-gcard").forEach(card => {
+    document.querySelectorAll("#skGallery .sk-gcard").forEach(card => {
         const v = Number(mine["p" + card.dataset.p]) || 0;
         card.querySelectorAll(".sk-star").forEach(b => { const n = Number(b.dataset.v); b.classList.toggle("on", n <= v); b.setAttribute("aria-pressed", String(n === v)); });
-        card.classList.toggle("rated", v > 0);
+        card.classList.toggle("rated", v > 0 && Number(card.dataset.p) !== me);
     });
-    const pr = $("RateProg");
-    if (pr) { const all = toRate(s, me), n = all.filter(q => Number(mine["p" + q]) >= 1).length; pr.textContent = inRoundOf(s, me) ? n + " / " + all.length + " rated" : ""; pr.classList.toggle("ok", inRoundOf(s, me) && n === all.length); }
+    // how many stars are in for the drawing on screen (never who is missing: that would point at the artist)
+    const pr = $("RateProg"), p = curOf(s);
+    if (pr && p != null) {
+        const pres = presentIn(X.data()), rs = ratersOf(s, p, pres), n = rs.filter(q => Number(ratedBy(s, q)["p" + p]) >= 1).length;
+        pr.textContent = n + " / " + rs.length + " rated"; pr.classList.toggle("ok", rs.length > 0 && n === rs.length);
+    }
+}
+// keys 1-5 rate the drawing on screen
+function rateKey(v) {
+    const s = (X.data() || {}).sketch;
+    if (!isContest(s) || s.phase !== "rate" || !inRoundOf(s, X.me()) || curOf(s) === X.me()) return false;
+    rateIt(curOf(s), v); return true;
 }
 const sheetStrokes = (s, p) => [...ink.strokes.entries()].filter(([, st]) => st.m === Number(s.mid) && st.n === Number(s.n) && st.o === Number(p)).sort((a, b) => a[0] < b[0] ? -1 : 1).map(x => x[1]);
 function strokeOn(g, st, k) {
@@ -1183,7 +1217,6 @@ function gallerySoon(st) {
 function paintGallery() {
     const s = (X.data() || {}).sketch; if (!isContest(s)) return;
     document.querySelectorAll("#skGallery .sk-gcard").forEach(card => { const cv = card.querySelector("canvas"); if (cv) card.classList.toggle("blank", !paintSheet(cv, sheetStrokes(s, card.dataset.p))); });
-    if (lb && lb.n === s.n) paintSheet(lb.cv, sheetStrokes(s, lb.p));
     if (s.phase === "results") keepBest(s);
 }
 // the round's best drawing, kept as a picture for the final screen
@@ -1194,24 +1227,6 @@ function keepBest(s) {
     if (!cv || card.classList.contains("blank")) return;
     try { keeps.set(s.mid + ":" + s.round, { p: Number(top.p), w: L.w, pts: Number(top.pts), url: cv.toDataURL("image/png") }); } catch (e) {}
 }
-function openLightbox(p, title) {
-    closeLightbox();
-    const s = (X.data() || {}).sketch; if (!isContest(s)) return;
-    const me = X.me(), o = el("div", "sk-lightbox"); o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true"); o.setAttribute("aria-label", title);
-    const fig = el("figure", "sk-gcard sk-lbcard"); fig.dataset.p = p;
-    const cv = el("canvas"), cap = el("figcaption"); cap.appendChild(el("b", null, title));
-    if (s.phase === "rate" && p !== me && inRoundOf(s, me)) cap.appendChild(starsEl(p, LETTERS[arr(s.gal).map(Number).indexOf(p)] || "?"));
-    fig.append(cv, cap);
-    const x = el("button", "sk-lbx", "✕"); x.type = "button"; x.setAttribute("aria-label", "Close"); x.onclick = closeLightbox;
-    o.onclick = e => { if (e.target === o) closeLightbox(); };
-    o.append(fig, x); document.body.appendChild(o);
-    lb = { o, cv, p: Number(p), n: s.n, ph: s.phase };
-    paintSheet(cv, sheetStrokes(s, p));
-    if (s.phase === "rate") syncStars(s);
-    try { x.focus({ preventScroll: true }); } catch (e) {}
-}
-function closeLightbox() { if (!lb) return false; lb.o.remove(); lb = null; return true; }
-
 /* ---------------- events + the end ---------------- */
 function onContestEvent(d, s, e) {
     const me = X.me(), w = (s.word || {}).t || "";
@@ -1222,7 +1237,9 @@ function onContestEvent(d, s, e) {
         if (arr(e.joined).length) localLine(arr(e.joined).map(p => X.pName(d, p)).join(", ") + " joined the contest.", "join");
     } else if (e.k === "rate") {
         X.sfx("skTime");
-        banner("PENCILS DOWN!", inRoundOf(s, me) ? "Rate the drawings" : "The artists are rating");
+        banner("PENCILS DOWN!", inRoundOf(s, me) ? "Rate the drawings, one at a time" : "The artists are rating");
+    } else if (e.k === "show") {
+        X.sfx("skPop");
     } else if (e.k === "results") {
         X.sfx("skAll");
         Object.entries(s.gain || {}).forEach(([k, g]) => {
@@ -1236,7 +1253,6 @@ function onContestEvent(d, s, e) {
 }
 function showContestOver(d, s) {
     const old = $("Over"); if (old) old.remove();
-    closeLightbox();
     const o = el("div", "sk-over"); o.id = "skOver"; o.setAttribute("role", "dialog"); o.setAttribute("aria-label", "Final scores");
     const card = el("div", "sk-ocard");
     const w = arr(s.winners).map(Number), me = X.me(), iWon = w.includes(me);

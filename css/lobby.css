@@ -171,3 +171,5 @@ body[data-scene="lobby"] .arc-floor { display: none; }          /* the mode's ow
 /* ---------- reduced effects ---------- */
 body.fx-lite #lobby .seat::before { animation: none !important; }
 body.fx-lite .lobby-bg i { transition: none; }
+/* Anime Sketch settings: a button is never narrower than its word ("MEDIUM" used to spill past its edges) */
+#sketchBox .sizes .modebtn, #sketchBox .sizes .size { flex: 1 0 auto; }
