@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Monoton&family=Press+Start+2P&family=Special+Elite&family=Permanent+Marker&display=swap" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="images/aa-mark.svg">
 <link rel="stylesheet" href="css/base.css?v=13">
-<link rel="stylesheet" href="css/menu.css?v=2">
+<link rel="stylesheet" href="css/menu.css?v=3">
 <link rel="stylesheet" href="css/lobby.css?v=3">
 <link rel="stylesheet" href="css/modes.css?v=12">
 <link rel="stylesheet" href="css/uno.css?v=12">
@@ -36,38 +36,93 @@
 </symbol>
 </defs>
 </svg>
-<div id="boot" class="boot" role="dialog" aria-label="Welcome">
-<div class="in-text">
-<p class="in-hi" id="spHi">Welcome, Player!</p>
-<p class="in-by">Anime Arcade Party — built with love by&nbsp;@e47. Have fun!</p>
+<div id="boot" class="boot" role="dialog" aria-modal="true" aria-label="Welcome to Anime Arcade Party">
+<div class="boot-smoke" aria-hidden="true"><i></i><i></i><i></i></div>
+<p class="in-hi" id="spHi" aria-label="WELCOME, Player!"></p>
+<div class="in-intro" id="spIntro">
+<div class="in-copy" id="spCopy">
+<p class="in-lead"><b class="in-brand">Anime Arcade Party</b>, made for anime fans to come together, have fun, and enjoy some friendly competition.</p>
+<p>Bring your fellow weebs, challenge your friends, put your anime knowledge to the test, and make some unforgettable memories along the way. Whether you're here to guess characters, compete in mini-games, or just mess around with your friends, there's always something to enjoy.</p>
+<div class="in-warn">
+<p class="in-warn-h"><strong>Beware of spoilers!</strong></p>
+<p>Some games may contain spoilers from different anime series. If you haven't finished a particular anime, make sure to select only the series you've watched. We wouldn't want to ruin a big moment for you!</p>
 </div>
-<div class="aa-logo in-logo" role="img" aria-label="Anime Arcade Party">
-<svg class="aa-mark" viewBox="0 0 120 120" aria-hidden="true"><use href="#aa-mark"/></svg>
-<span class="aa-word" aria-hidden="true"><b class="aa-anime">ANIME</b><span class="aa-row"><b class="aa-arcade">ARCADE</b><i class="aa-party">PARTY</i></span></span>
+<p class="in-soft">This project was made purely out of love for anime and gaming. No big company, no business behind it, and no intention of turning it into a profit. Just an anime fan putting his ideas together to create something fun for the community.</p>
+<p class="in-motto"><strong>Made by an anime fan, for anime fans.</strong></p>
+<p class="in-bye">Have fun, enjoy your stay, and may the best weeb win!</p>
+<p class="in-sign"><em>Built with love by <span>@e47</span>.</em></p>
 </div>
-<small class="sp-load">warming up the cabinets…</small>
-<button class="sp-skip" id="spSkip" type="button">Skip ›</button>
+</div>
+<div class="in-load" id="spLoad" aria-live="polite"><span class="in-load-t" id="spLoadT">Loading<i>.</i><i>.</i><i>.</i></span><span class="in-bar" aria-hidden="true"><i></i></span><small class="in-skip" id="spSkipHint">Click anywhere to skip</small></div>
 </div>
 <script>
-/* the intro: "Welcome, Player!" (or "Welcome back, <name>!" once a display name is set on the Arcade Pass), the creator credit,
-   the logo, then the menu. The boot screen leaves when this is done AND the app is ready. Shorter for returning players; click,
-   Enter, Space, Esc or Skip jumps to the end. The name is read fresh from the saved profile every time the page opens. */
+/* the intro, on black with drifting smoke:
+   1. "WELCOME, <name>!" alone (first visit) or "WELCOME BACK, <name>!" (any visit after), letter by letter;
+   2. the introduction, with "Loading..." bottom-right, for 10 s; a click (or Enter / Space) anywhere skips to the menu;
+   3. the menu. The boot screen leaves when this is done AND the app is ready (game.js), and says so if the server is slow.
+   A click during the welcome jumps to the introduction; Esc skips everything. The name is read fresh from the saved profile. */
 (function () {
-    var b = document.getElementById("boot"), seen = false, name = "";
+    var b = document.getElementById("boot"), seen = false, name = "", INTRO_MS = 10000;
     try { seen = localStorage.getItem("aap_splash") === "1"; localStorage.setItem("aap_splash", "1"); } catch (e) {}
     try { var pr = JSON.parse(localStorage.getItem("gw_profile_v1") || "null"); name = (pr && typeof pr.name === "string" && pr.name) || localStorage.getItem("gw_name") || ""; } catch (e) {}
-    name = String(name).replace(/\s+/g, " ").trim().slice(0, 20);
-    document.getElementById("spHi").textContent = name ? "Welcome back, " + name + "!" : "Welcome, Player!";
-    var T = seen ? [120, 1150, 2350, 3350] : [300, 1800, 3500, 4800], done = false, timers = [];
-    function stage(k) { b.classList.add(k); }
-    function finish() {
-        if (done) return; done = true; timers.forEach(clearTimeout); b.classList.add("s1", "s2", "s3", "done"); window.__splashDone = true; document.dispatchEvent(new Event("splashdone"));
-        setTimeout(function () { if (!b.classList.contains("ready")) b.querySelector(".sp-load").textContent = "still connecting to the game server… check your connection"; }, 10000);
+    name = String(name).replace(/\s+/g, " ").trim().slice(0, 20) || "Player";
+    var l1 = seen ? "WELCOME BACK," : "WELCOME,", l2 = name + "!", hi = document.getElementById("spHi"), k = 0;
+    hi.setAttribute("aria-label", l1 + " " + l2);
+    function line(cls, text) {
+        var el = document.createElement("span"); el.className = cls; el.setAttribute("aria-hidden", "true");
+        text.split(" ").forEach(function (w, wi) {
+            if (wi) el.appendChild(document.createTextNode(" "));
+            var ws = document.createElement("span"); ws.className = "in-w";
+            Array.from(w).forEach(function (ch) { var c = document.createElement("span"); c.className = "in-c"; c.textContent = ch; c.style.setProperty("--i", k++); ws.appendChild(c); });
+            el.appendChild(ws);
+        });
+        // each line is sized to fit on its own: by its length, or (portrait) by its longest word, letting it wrap
+        el.style.setProperty("--n", Array.from(text).length);
+        el.style.setProperty("--nw", Math.max.apply(null, text.split(" ").map(function (w) { return Array.from(w).length; })));
+        return el;
     }
-    timers.push(setTimeout(function () { stage("s1"); }, T[0]), setTimeout(function () { stage("s2"); }, T[1]), setTimeout(function () { stage("s3"); }, T[2]), setTimeout(finish, T[3]));
-    document.getElementById("spSkip").addEventListener("click", function (e) { e.stopPropagation(); finish(); });
-    b.addEventListener("click", finish);
-    document.addEventListener("keydown", function k(e) { if (e.key === "Escape" || e.key === "Enter" || e.key === " ") { finish(); document.removeEventListener("keydown", k); } });
+    hi.append(line("in-l1", l1), line("in-l2", l2));
+    if (window.matchMedia && matchMedia("(hover: none)").matches) document.getElementById("spSkipHint").textContent = "Tap anywhere to skip";
+    b.style.setProperty("--intro", INTRO_MS + "ms");
+
+    // the introduction always fits: shrink its type until it does (it scrolls only below 11 px)
+    var intro = document.getElementById("spIntro"), copy = document.getElementById("spCopy");
+    // (on a short, wide screen such as a phone on its side it goes to two columns rather than tiny type)
+    function shrink(min) {
+        copy.style.fontSize = "";
+        var fs = parseFloat(getComputedStyle(copy).fontSize), cs = getComputedStyle(intro), n = 0,
+            avail = intro.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+        while (copy.offsetHeight > avail && fs > min && n++ < 60) { fs -= .5; copy.style.fontSize = fs + "px"; }
+        return copy.offsetHeight <= avail;
+    }
+    function fit() {
+        copy.classList.remove("two");
+        if (shrink(13) || innerWidth < innerHeight * 1.2) { shrink(11); return; }
+        copy.classList.add("two");
+        if (!shrink(11)) { copy.classList.remove("two"); shrink(11); }
+    }
+    fit(); addEventListener("resize", fit);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+
+    var phase = 0, shownAt = 0, timers = [], reveal = 250 + k * 45 + 900, OUT = Math.max(2900, reveal + 1200);
+    function clear() { timers.forEach(clearTimeout); timers = []; }
+    function showIntro() {
+        if (phase > 0) return; phase = 1; clear(); fit();
+        b.classList.add("s1", "s2");
+        timers.push(setTimeout(function () { b.classList.add("s3"); shownAt = Date.now(); timers.push(setTimeout(finish, INTRO_MS)); }, 650));
+    }
+    function finish() {
+        if (phase > 1) return; phase = 2; clear(); b.classList.add("s1", "s2", "s3", "done"); window.__splashDone = true; document.dispatchEvent(new Event("splashdone"));
+        setTimeout(function () { if (!b.classList.contains("ready")) { b.classList.add("slow"); document.getElementById("spLoadT").textContent = "Still connecting… check your connection"; } }, 10000);
+    }
+    timers.push(setTimeout(function () { b.classList.add("s1"); }, 250), setTimeout(showIntro, OUT));
+    // a click skips the introduction only once it is on screen (not one that lands during the hand-over from the welcome)
+    function next() { if (phase === 0) showIntro(); else if (shownAt && Date.now() - shownAt > 350) finish(); }
+    b.addEventListener("click", next);
+    document.addEventListener("keydown", function key(e) {
+        if (phase > 1) { document.removeEventListener("keydown", key); return; }
+        if (e.key === "Escape") finish(); else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); next(); }
+    });
 })();
 </script>
 
@@ -478,7 +533,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=41"></script>
+<script type="module" src="js/game.js?v=42"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){

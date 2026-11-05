@@ -4614,7 +4614,8 @@ async function initApp() {
     let codeLen = 0;
     $("joinCode").addEventListener("input", () => { $("joinCode").value = $("joinCode").value.toUpperCase().replace(/[^A-Z0-9]/g, ""); const n = $("joinCode").value.length, grew = n > codeLen; codeLen = n; renderJoinCells(grew); sfx(grew ? "xp" : "tick"); });
     renderJoinCells(); bindTilt();
-    document.body.dataset.scene = "home"; ambient.set("home"); audio.music.play("lobby");
+    document.body.dataset.scene = "home"; ambient.set("home");
+    if (window.__splashDone || !$("boot")) audio.music.play("lobby"); else document.addEventListener("splashdone", () => { if (!room) audio.music.play("lobby"); }, { once: true });
     const boot = $("boot");       // the splash (index.html) leaves once it has played or been skipped, and the app is ready
     if (boot) { boot.classList.add("ready"); const go = () => { boot.classList.add("out"); setTimeout(() => boot.remove(), 650); }; if (window.__splashDone) go(); else document.addEventListener("splashdone", go, { once: true }); }
     try { const n = sessionStorage.getItem("gw_notice"); if (n) { sessionStorage.removeItem("gw_notice"); setTimeout(() => toast(n), 400); } } catch (e) {}
