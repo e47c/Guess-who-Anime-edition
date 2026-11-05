@@ -1,12 +1,8 @@
 // Anime Sketch rules + word library tests: node tools/sketch-test.mjs
 import { SK, norm, maskOf, letters, hintMax, pickHint, hintAt, spans, buildWords, poolFor, pickOptions, newMatch, act, eligible, allGot, hasGot, gotList,
-    hintDue, standings, ptsFor, fp, prints, claim, near, wordPrints, del1, CATS, TYPO_MIN } from "../js/sketch/engine.js";
-import { EXTRAS, BLOCK } from "../js/sketch/words.js";
-import { SKETCH_CHARS as CHARS } from "../js/sketch/roster.js";
-import { SKETCH_FEUD } from "../js/sketch/feudwords.js";
-import { NICKNAMES } from "../js/feud/nicknames.js";
-import { buildLibrary } from "../js/feud/engine.js";
-import { PACKS } from "../js/feud/packs/index.js";
+    hintDue, standings, ptsFor, fp, prints, claim, near, wordPrints, del1, CATS, TYPO_MIN, parseEntry } from "../js/sketch/engine.js";
+import { LIBRARY } from "../js/sketch/words.js";
+import { CHARS } from "../js/draft/data.js";
 
 let ok = 0, bad = 0;
 const t = (c, m) => { if (c) ok++; else { bad++; console.log("  ✘", m); } };
@@ -14,30 +10,40 @@ const sect = s => console.log("• " + s);
 let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 
 sect("word library");
-const W = buildWords({ chars: CHARS, nick: NICKNAMES, lib: SKETCH_FEUD, extras: EXTRAS, block: BLOCK });
-const SERIES = Object.keys(CHARS);
-t(SERIES.every(s => (W[s] || []).length >= 24), "every series has at least 24 words: " + SERIES.map(s => s + " " + (W[s] || []).length).join(", "));
+const W = buildWords({ library: LIBRARY, chars: CHARS });
+const SERIES = Object.keys(LIBRARY);
+const cnt = (s, c) => W[s].filter(w => w.cat === c).length;
+t(SERIES.length === 18 && SERIES.every(s => CHARS[s]), "all 18 series have a word list");
+t(SERIES.every(s => W[s].length >= 30), "every series has at least 30 words: " + SERIES.map(s => s + " " + W[s].length).join(", "));
 const all = Object.values(W).flat();
-t(all.length > 700, "a big library (" + all.length + " words)");
-t(all.every(w => w.t && w.k && w.f.length && w.f.includes(w.k) && w.cat && w.s), "every word has text, category, series and accepted spellings");
+t(all.length >= 1000, "a big library (" + all.length + " words)");
+t(all.every(w => w.t && w.k && w.f.length && w.f.includes(w.k) && w.cat && w.s && [1, 2, 3].includes(w.d)), "every word has text, category, series, difficulty and accepted spellings");
 t(all.every(w => w.t.length <= SK.maxWord && letters(w.t) >= 3), "no word too long or too short");
 t(SERIES.every(s => new Set(W[s].map(w => w.k)).size === W[s].length), "no duplicates inside a series");
 t(SERIES.every(s => W[s].every(w => !W[s].some(x => x !== w && x.f.includes(w.k)))), "no word is just another word's alternate spelling");
-t(all.every(w => CATS.includes(w.cat)) && CATS.join() === "Character,Object,Weapon", "only characters, objects and weapons");
-t(!["Grand Line", "Marineford", "Hidden Leaf Village", "Kamehameha", "Rasengan", "Domain Expansion", "Straw Hat Pirates", "Super Saiyan", "Water Breathing", "Shibuya"].some(x => all.some(w => w.k === norm(x))), "no places, attacks, powers or groups");
-t(SERIES.every(s => W[s].filter(w => w.cat !== "Character").length >= 7), "every series has its objects and weapons: " + SERIES.map(s => s + " " + W[s].filter(w => w.cat !== "Character").length).join(", "));
-t(SERIES.every(s => W[s].filter(w => w.cat === "Character").length >= 17), "every series has plenty of characters");
-t(!all.some(w => BLOCK.map(norm).includes(w.k)), "blocked answers stay out");
-t(SERIES.every(s => W[s].some(w => w.cat === "Character") && W[s].some(w => w.cat !== "Character")), "every series mixes characters with other categories");
+t(SERIES.every(s => { const seen = new Map(); return W[s].every(w => w.f.every(f => { const o = seen.get(f); seen.set(f, w.k); return !o || o === w.k; })); }), "an accepted spelling means one word only, per series");
+t(all.every(w => CATS.includes(w.cat)) && CATS.join() === "Character,Weapon,Object", "only Characters, Weapons and Objects & Items");
+t(!["Grand Line", "Marineford", "Hidden Leaf Village", "Kamehameha", "Rasengan", "Domain Expansion", "Straw Hat Pirates", "Super Saiyan", "Water Breathing", "Shibuya", "Soul Society", "Konoha"].some(x => all.some(w => w.k === norm(x))), "no places, attacks, powers or groups");
+t(SERIES.every(s => cnt(s, "Character") >= 18), "every series has plenty of characters: " + SERIES.map(s => s + " " + cnt(s, "Character")).join(", "));
+t(SERIES.every(s => cnt(s, "Object") >= 10), "every series has 10+ objects & items: " + SERIES.map(s => s + " " + cnt(s, "Object")).join(", "));
+t(SERIES.filter(s => cnt(s, "Weapon") >= 5).length >= 16, "16 of 18 series have 5+ weapons (Death Note and Wind Breaker barely use weapons): " + SERIES.map(s => s + " " + cnt(s, "Weapon")).join(", "));
+t(SERIES.every(s => [1, 2, 3].every(d => W[s].some(w => w.d === d))), "every series has easy, medium and hard words");
+t(["Character", "Weapon", "Object"].every(c => [1, 2, 3].every(d => all.some(w => w.cat === c && w.d === d))), "every category has easy, medium and hard words");
+// every roster link points at a real Anime Draft character (that's the picture at the reveal)
+const links = SERIES.flatMap(s => Object.values(LIBRARY[s]).flatMap(v => String(v).split(";").map(x => x.trim()).filter(Boolean).map(parseEntry).filter(e => e.link).map(e => [s, e.link])));
+t(links.length > 400 && links.every(([s, n]) => CHARS[s].some(r => r[1] === n)), "every roster link is an Anime Draft character (" + links.length + " links)");
+t(all.filter(w => w.cat !== "Character").every(w => !w.c), "only characters carry a picture");
 const luffy = W.onepiece.find(w => w.c === 40);
 t(luffy && luffy.f.includes("luffy") && !luffy.f.includes("monkey"), "Monkey D. Luffy: 'luffy' counts, the shared 'monkey' doesn't");
 t(!luffy.f.includes("straw hat") && W.onepiece.some(w => w.k === "straw hat" && w.cat === "Object"), "a spelling means one word only: 'straw hat' is the hat, not Luffy's nickname");
 const ita = W.naruto.find(w => w.t === "Itachi Uchiha");
 t(ita && ita.f.includes("itachi") && !ita.f.includes("uchiha"), "Itachi: 'itachi' alone counts, 'uchiha' alone doesn't");
-t(W.dragonball.some(w => w.t === "Senzu Bean" && w.cat === "Object") && W.onepiece.some(w => w.t === "Yoru" && w.cat === "Weapon") && W.onepiece.some(w => w.t === "Big Mom" && w.f.includes("charlotte linlin")), "objects, weapons and extra characters with their spellings (Senzu Bean, Yoru, Big Mom)");
-t(W.jojo.some(w => w.t === "Star Platinum" && w.cat === "Character") && W.onepiece.some(w => w.t === "Gum-Gum Fruit" && w.cat === "Object"), "Feud boards: Stands as characters, devil fruits as objects");
+const bm = W.onepiece.find(w => w.t === "Big Mom");
+t(bm && bm.c === 54495 && bm.f.includes("charlotte linlin"), "a display name with its roster link: Big Mom = Charlotte Linlin (picture and spelling)");
+t(W.dragonball.some(w => w.t === "Senzu Bean" && w.cat === "Object") && W.onepiece.some(w => w.t === "Yoru" && w.cat === "Weapon") && W.jojo.some(w => w.t === "Star Platinum" && w.cat === "Character"), "objects, weapons and Stands as characters");
 const wc = W.windbreaker.find(w => w.t === "Wind chime");
-t(!!wc && wc.f.includes("furin"), "curated extras with aliases (Wind chime / furin)");
+t(!!wc && wc.f.includes("furin") && wc.d === 1, "aliases and difficulty (Wind chime / furin, easy)");
+t(JSON.stringify(parseEntry("Whitebeard / Edward Newgate @Edward Newgate ^1")) === JSON.stringify({ t: "Whitebeard", al: ["Edward Newgate"], d: 1, link: "Edward Newgate" }) && parseEntry("Kunai").d === 2, "entry format: word / aliases @roster ^difficulty (medium by default)");
 
 sect("normalising + blanks + hints");
 t(norm("  Monkey   D.  LUFFY!! ") === "monkey d luffy", "case, punctuation and repeated spaces ignored");
@@ -90,14 +96,29 @@ t(o1.every(w => w.s === "onepiece"), "single anime: words from that series only"
 const o2 = pickOptions(W, ["onepiece", "naruto", "jjk"], { rnd });
 t(o2.every(w => ["onepiece", "naruto", "jjk"].includes(w.s)), "Anime Mix: only the ticked series");
 {
-    let same = 0, mixed = 0, allCat = new Set(), mixSeries = new Set();
+    let balanced = 0, allCat = new Set(), mixSeries = new Set(), catCount = { Character: 0, Weapon: 0, Object: 0 };
     for (let i = 0; i < 400; i++) {
         const o = pickOptions(W, ["onepiece", "naruto", "jjk"], { rnd });
-        const cats = new Set(o.map(w => w.cat)); cats.forEach(c => allCat.add(c)); o.forEach(w => mixSeries.add(w.s));
-        if (cats.size === 1) same++; else mixed++;
+        const cats = o.map(w => w.cat); cats.forEach(c => { allCat.add(c); catCount[c]++; }); o.forEach(w => mixSeries.add(w.s));
+        if (cats.join() === "Character,Weapon,Object") balanced++;
     }
-    t(same > 0 && mixed > 0, "three random words: sometimes all one category (" + same + "/400), sometimes mixed (" + mixed + "/400)");
+    t(balanced === 400, "every pick offers one character, one weapon and one object & item, in that order (" + balanced + "/400)");
     t(allCat.size === 3 && mixSeries.size === 3, "every category and every ticked series shows up");
+    t(catCount.Character === catCount.Weapon && catCount.Weapon === catCount.Object, "no category dominates: " + JSON.stringify(catCount));
+    // a series without weapons still gets three words (the weapon slot is filled from the others)
+    const wb = pickOptions(W, ["windbreaker"], { rnd });
+    t(wb.length === 3 && new Set(wb.map(w => w.k)).size === 3 && wb[0].cat === "Character", "Wind Breaker (no weapons): still three different words");
+    // difficulty: the setting decides which words are offered, for every drawer alike
+    for (const d of [1, 2, 3]) {
+        let match = 0, n = 0;
+        for (let i = 0; i < 200; i++) pickOptions(W, ["onepiece"], { rnd, diff: d }).forEach(w => { n++; if (w.d === d) match++; });
+        t(match / n > .9, "difficulty " + d + ": " + Math.round(100 * match / n) + "% of the words offered are that level");
+    }
+    const hard = pickOptions(W, ["deathnote"], { rnd, diff: 3 });
+    t(hard.length === 3, "a level that runs short falls back to the nearest level, never fewer than three words");
+    // recently offered words wait their turn
+    const first = pickOptions(W, ["onepiece"], { rnd }), next = pickOptions(W, ["onepiece"], { rnd, recent: first.map(w => w.id) });
+    t(next.every(w => !first.some(x => x.id === w.id)), "words this browser was just offered aren't offered again straight away");
 }
 const used = W.gachiakuta.slice(0, W.gachiakuta.length - 3).map(w => w.t);
 const o3 = pickOptions(W, ["gachiakuta"], { used, rnd });
@@ -152,7 +173,7 @@ for (const sec of SK.timerChoices) {
     let m = newMatch({ mid: 3, series: ["naruto"], players: [1, 2, 3], rounds: 1, timer: 120, now: NOW, rnd });
     m = pickWord(m, ita, NOW);              // "Itachi Uchiha": 12 letters → 3 hints
     t(m.hm === 3 && hintDue(m) === NOW + 20000, "first hint due 20 s in");
-    const H = (mm, at) => { const i = pickHint(ita.t, hintAt(mm.hint), rnd); return run(mm, { k: "hint", by: mm.drawer, tk: mm.n, i, c: ita.t[i] }, at); };
+    const H = (mm, at) => { const i = pickHint(ita.t, mm.hint, rnd); return run(mm, { k: "hint", by: mm.drawer, tk: mm.n, i, c: ita.t[i] }, at); };
     t(H(m, NOW + 15000).err === "stale", "no hint before it's due");
     t(run(m, { k: "hint", by: m.order[1], tk: m.n, i: 0, c: "I" }, NOW + 21000).err, "only the drawer's browser reveals letters");
     m = H(m, NOW + 20000).s;

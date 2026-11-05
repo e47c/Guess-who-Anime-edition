@@ -22,6 +22,7 @@ export const SK = {
     firstHintMs: 20000,     // first letter hint after 20 s without a correct guess
     nextHintMs: 15000,      // then one every 15 s, still without a new correct guess
     pts: [100, 75, 50], laterPts: 25, drawerBonus: 25,
+    diffChoices: [0, 1, 2, 3],   // word difficulty for the whole match: 0 = mixed, 1 easy, 2 medium, 3 hard
     goneMs: 6000,           // a drawer offline this long loses the turn
     maxWord: 26
 };
@@ -58,62 +59,70 @@ export function spans(msg, max = 16) {
     return [...out];
 }
 
-/* the word library: CHARACTERS and OBJECTS / WEAPONS only (no places, attacks, powers, groups or terms)
-   - js/sketch/words.js first: each series' recognisable objects and weapons and the important characters the roster lacks
-     (it goes first, so its category, Object or Weapon, wins over the boards' plain "Object")
-   - characters: the Anime Draft roster (AniList ids, so the reveal can show the picture) plus the fan nicknames
-   - the Anime Feud item boards, and its titans, devils and Stands as characters */
-export const CATS = ["Character", "Object", "Weapon"];
-const FEUD_CATS = { "c-item": "Object", "op-devil-fruit": "Object", "aot-titans": "Character", "csm-devils": "Character", "jojo-stands": "Character" };
-export function buildWords({ chars = {}, nick = {}, lib = null, extras = {}, block = [], perSeries = 30 } = {}) {
-    const out = {}, blocked = new Set(block.map(norm));
-    const tokCount = {};       // a single name ("Itachi") is accepted when no other character of that series shares it ("Uchiha")
-    Object.entries(chars).forEach(([s, rows]) => rows.forEach(r => new Set(norm(r[1]).split(" ")).forEach(t => { tokCount[s + ":" + t] = (tokCount[s + ":" + t] || 0) + 1; })));
-    // src: 0 = words.js, 1 = the roster, 2 = the Feud boards. A spelling can only ever mean ONE word of a series:
-    // a board answer that is just another spelling of a curated word is skipped; otherwise the older word gives that spelling up.
-    const add = (s, w, src) => {
-        const t = String(w.t || "").trim(), k = norm(t);
-        if (!t || !k || t.length > SK.maxWord || blocked.has(k) || letters(t) < 3 || !CATS.includes(w.cat)) return;
-        const list = out[s] || (out[s] = []);
-        if (list.some(x => x.k === k)) return;
-        const owner = list.find(x => x.f.includes(k));
-        if (owner && src === 2 && owner.src === 0) return;
-        if (owner) owner.f = owner.f.filter(f => f !== k);
-        const forms = [...new Set([k, ...arr(w.al).map(norm)].filter(f => f && f.length >= 2 && (f === k || !list.some(x => x.k === f))))];
-        list.push({ id: s + ":" + k.replace(/ /g, "-"), t, k, s, cat: w.cat, c: w.c || 0, f: forms, src });
-    };
-    Object.entries(extras).forEach(([s, rows]) => arr(rows).forEach(r => add(s, Array.isArray(r) ? { t: r[0], cat: r[1], al: r[2] || [] } : r, 0)));
-    Object.entries(chars).forEach(([s, rows]) => rows.slice(0, perSeries).forEach(r => {
-        const name = String(r[1]), toks = norm(name).split(" ");
-        const solo = toks.filter(t => t.length >= 3 && tokCount[s + ":" + t] === 1 && !/^(the|van|von|king|devil|lord|man|god)$/.test(t));
-        add(s, { t: name, cat: "Character", c: Number(r[0]), al: solo.concat(arr(nick[r[0]])) }, 1);
-    }));
-    if (lib) Object.entries(FEUD_CATS).forEach(([bid, cat]) => {
-        const b = lib.boards[bid]; if (!b) return;
-        arr(b.ans).forEach(a => { if (a && a.t && !a.c && a.s && a.s !== "any") add(a.s, { t: a.t, cat, al: arr(a.al) }, 2); });
+/* the word library (js/sketch/words.js): per series, Characters, Weapons and Objects & Items, each with a difficulty
+   (1 easy, 2 medium, 3 hard). Characters linked to the Anime Draft roster carry its AniList id, so the reveal shows the picture.
+   A spelling only ever means ONE word of a series (the first word to claim it keeps it). */
+export const CATS = ["Character", "Weapon", "Object"];
+export const CAT_NAME = { Character: "Character", Weapon: "Weapon", Object: "Object & Item" };
+const CAT_OF = { c: "Character", w: "Weapon", o: "Object" };
+const SOLO_STOP = /^(the|van|von|king|devil|lord|man|god|of|and|captain|mr|old)$/;
+// "Word / alias / alias @Roster Name ^2" or "@Roster Name / alias ^1"
+export function parseEntry(e) {
+    let x = String(e).trim(), d = 2, link = "";
+    const dm = /\s\^([123])\s*$/.exec(x); if (dm) { d = Number(dm[1]); x = x.slice(0, dm.index).trim(); }
+    if (x.startsWith("@")) { x = x.slice(1).trim(); link = x.split(" / ")[0].trim(); }
+    else { const lm = /\s@([^@/]+)$/.exec(x); if (lm) { link = lm[1].trim(); x = x.slice(0, lm.index).trim(); } }
+    const parts = x.split(" / ").map(y => y.trim()).filter(Boolean);
+    return { t: parts[0] || "", al: parts.slice(1), d, link };
+}
+export function buildWords({ library = {}, chars = {} } = {}) {
+    const out = {};
+    Object.entries(library).forEach(([s, cats]) => {
+        const ids = new Map(arr(chars[s]).map(r => [r[1], Number(r[0])]));
+        const entries = [];
+        Object.entries(CAT_OF).forEach(([key, cat]) => String((cats || {})[key] || "").split(";").map(x => x.trim()).filter(Boolean).forEach(e => entries.push(Object.assign(parseEntry(e), { cat }))));
+        // a first or last name alone counts when no other character of the series shares it ("Itachi", not "Uchiha")
+        const tok = {};
+        entries.filter(e => e.cat === "Character").forEach(e => new Set([e.t, e.link].filter(Boolean).flatMap(n => norm(n).split(" "))).forEach(t => { tok[t] = (tok[t] || 0) + 1; }));
+        const list = out[s] = [];
+        entries.forEach(e => {
+            const t = e.t, k = norm(t);
+            if (!t || !k || t.length > SK.maxWord || letters(t) < 3 || list.some(x => x.k === k || x.f.includes(k))) return;
+            const solo = e.cat === "Character" ? [e.t, e.link].filter(Boolean).flatMap(n => norm(n).split(" ")).filter(w => w.length >= 3 && tok[w] === 1 && !SOLO_STOP.test(w)) : [];
+            const forms = [...new Set([k, ...e.al.map(norm), ...(e.link ? [norm(e.link)] : []), ...solo].filter(f => f && f.length >= 2 && (f === k || !list.some(x => x.f.includes(f)))))];
+            list.push({ id: s + ":" + k.replace(/ /g, "-"), t, k, s, cat: e.cat, d: e.d, c: e.link ? ids.get(e.link) || 0 : 0, f: forms });
+        });
     });
     return out;
 }
 export const poolFor = (words, series) => arr(series).flatMap(s => words[s] || []);
-// three different words for the drawer, picked at random from the whole pool (any mix of characters, objects and weapons):
-// never one already drawn this match, and preferably not one this browser saw recently
-export function pickOptions(words, series, { used = [], recent = [], rnd = Math.random, n = 3 } = {}) {
-    const usedK = new Set(arr(used).map(norm)), rec = new Set(arr(recent));
-    let pool = poolFor(words, series).filter(w => !usedK.has(w.k));
-    if (pool.filter(w => !rec.has(w.id)).length >= n) pool = pool.filter(w => !rec.has(w.id));
-    const out = [], left = pool.slice();
-    while (out.length < n && left.length) out.push(left.splice((rnd() * left.length) | 0, 1)[0]);
+/* three words for the drawer: one Character, one Weapon and one Object & Item (a series short on one category fills the
+   slot from the others), never one already drawn this match, preferably not one this browser offered recently.
+   diff (0 = mixed, 1-3) prefers words of that difficulty, then the next difficulty, then any. */
+export function pickOptions(words, series, { used = [], recent = [], rnd = Math.random, n = 3, diff = 0 } = {}) {
+    const usedK = new Set(arr(used).map(norm)), rec = new Set(arr(recent)), out = [];
+    const pool = poolFor(words, series).filter(w => !usedK.has(w.k));
+    const pick = cands => {
+        if (!cands.length) return null;
+        const fresh = cands.filter(w => !rec.has(w.id)), base = fresh.length ? fresh : cands;
+        const tiers = Number(diff) ? [base.filter(w => w.d === Number(diff)), base.filter(w => Math.abs(w.d - Number(diff)) === 1), base] : [base];
+        const tier = tiers.find(x => x.length);
+        return tier[(rnd() * tier.length) | 0];
+    };
+    const taken = w => out.some(x => x.k === w.k);
+    for (const cat of CATS) { if (out.length >= n) break; const w = pick(pool.filter(x => x.cat === cat && !taken(x))); if (w) out.push(w); }
+    while (out.length < n) { const w = pick(pool.filter(x => !taken(x))); if (!w) break; out.push(w); }
     return out;
 }
 
 /* ---------------- a match ---------------- */
 const pk = p => "p" + p;
 export const ptsFor = order => SK.pts[order] != null ? SK.pts[order] : SK.laterPts;
-export function newMatch({ mid, lv = 0, series, rounds = SK.rounds, timer = SK.timer, players, now, rnd = Math.random }) {
+export function newMatch({ mid, lv = 0, series, rounds = SK.rounds, timer = SK.timer, diff = 0, players, now, rnd = Math.random }) {
     const ps = arr(players).map(Number), order = ps.slice().sort(() => rnd() - .5), score = {};
     ps.forEach(p => { score[pk(p)] = 0; });
     const s = { mid, lv, series: arr(series), rounds: SK.roundChoices.includes(Number(rounds)) ? Number(rounds) : SK.rounds, timer: SK.timerChoices.includes(Number(timer)) ? Number(timer) : SK.timer,
-        players: ps, order, ti: 0, round: 1, n: 0, score, log: [], ev: { n: 0 } };
+        players: ps, order, ti: 0, round: 1, n: 0, score, log: [], ev: { n: 0 }, diff: SK.diffChoices.includes(Number(diff)) ? Number(diff) : 0 };
     startTurn(s, 0, now);
     return s;
 }

@@ -155,7 +155,7 @@ Every board now declares its kind, and the game shows it above the question.
 
 - **Gameplay is unchanged:** face-offs, play or pass, strikes, steals, scoring, duels and voting.
 - **Rotation is unchanged:** cooldowns, per-room shared history and question ids. Existing histories still apply, because every existing question kept its id.
-- **Anime Sketch is unchanged:** it now reads a frozen copy of the five Feud boards it borrows objects from (`js/sketch/feudwords.js`), so Feud's changes don't change Sketch's words.
+- **Anime Sketch is unaffected:** it has its own word library (`js/sketch/words.js`) and doesn't read Feud boards, so Feud's changes don't change Sketch's words.
 
 ## Limits (what this audit does not claim)
 

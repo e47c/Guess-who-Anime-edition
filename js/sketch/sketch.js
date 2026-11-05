@@ -1,7 +1,8 @@
 /* =====================================================================
    ANIME SKETCH (eighth mode): one player draws an anime word, everyone else races to guess it.
-   Rules: engine.js (pure, tested). Words: engine.buildWords over the Anime Draft roster, the Anime Feud boards
-   and words.js. Shared helpers (server clock, character pictures, lobby buttons): ../feud/common.js.
+   Rules: engine.js (pure, tested). Words: words.js (Characters, Weapons, Objects & Items per series, with a difficulty),
+   characters linked to the Anime Draft roster for their picture. Shared helpers (server clock, character pictures,
+   lobby buttons): ../feud/common.js.
 
    Firebase (rooms/<code>):
      sketch        the match: players, drawing order, round, turn, phase, deadline, scores, who guessed it (in order),
@@ -12,26 +13,26 @@
    The word is never written to any of these while it is being drawn (see engine.js).
    ===================================================================== */
 import { SK, arr, maskOf, hintMax, pickHint, hintAt, buildWords, poolFor, pickOptions, newMatch, act, hasGot, gotList, allGot,
-    hintDue, standings, wordPrints, claim, near } from "./engine.js?v=2";
-import { EXTRAS, BLOCK } from "./words.js?v=2";
-import { SKETCH_CHARS } from "./roster.js?v=1";
-import { SKETCH_FEUD } from "./feudwords.js?v=1";
-import { NICKNAMES } from "../feud/nicknames.js?v=1";
-import { LIB, el, srvNow, label, presentIn, pickOpt, seriesOf, initCommon, charOf, img, optButtons, confetti } from "../feud/common.js?v=2";
+    hintDue, standings, wordPrints, claim, near, CATS, CAT_NAME } from "./engine.js?v=3";
+import { LIBRARY } from "./words.js?v=3";
+import { CHARS } from "../draft/data.js?v=3";
+import { el, srvNow, label, presentIn, pickOpt, seriesOf, initCommon, charOf, img, optButtons, confetti } from "../feud/common.js?v=2";
 import { push, set, remove, query, limitToLast, onChildAdded, onChildChanged, onChildRemoved } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
 const GT = "sketch", NODE = "sketch";
 const $ = id => document.getElementById("sk" + id);
 let X = null, WORDS = null;
-const words = () => WORDS || (WORDS = buildWords({ chars: SKETCH_CHARS, nick: NICKNAMES, lib: SKETCH_FEUD, extras: EXTRAS, block: BLOCK }));
+const words = () => WORDS || (WORDS = buildWords({ library: LIBRARY, chars: CHARS }));
 const sRounds = d => pickOpt(d && d.sketchRounds, SK.roundChoices, SK.rounds);
 const sTimer = d => pickOpt(d && d.sketchTimer, SK.timerChoices, SK.timer);
-export const sketchPrefs = p => ({ sketchRounds: pickOpt(p.sketchRounds, SK.roundChoices, SK.rounds), sketchTimer: pickOpt(p.sketchTimer, SK.timerChoices, SK.timer) });
-export const sketchPrefsOf = d => ({ sketchRounds: sRounds(d), sketchTimer: sTimer(d) });
+const sDiff = d => pickOpt(d && d.sketchDiff, SK.diffChoices, 0);
+const DIFF_NAME = ["Mixed", "Easy", "Medium", "Hard"];
+export const sketchPrefs = p => ({ sketchRounds: pickOpt(p.sketchRounds, SK.roundChoices, SK.rounds), sketchTimer: pickOpt(p.sketchTimer, SK.timerChoices, SK.timer), sketchDiff: pickOpt(p.sketchDiff, SK.diffChoices, 0) });
+export const sketchPrefsOf = d => ({ sketchRounds: sRounds(d), sketchTimer: sTimer(d), sketchDiff: sDiff(d) });
 const PCOL = ["#ff5a5a", "#ffb02e", "#3fc46b", "#3aa0ff", "#b06bff", "#ff6fb1", "#22c7c7", "#e8d14a"];
 const pCol = (d, p) => (X.pPub(d, p) || {}).col || PCOL[(Number(p) - 1) % PCOL.length];
 const COLORS = ["#16161d", "#ffffff", "#8a8a96", "#d81e2c", "#ff7a1a", "#ffd21f", "#38b94a", "#13704a", "#2f8cff", "#1d3bb3", "#8a3ffc", "#ff5fa8", "#8b5a2b", "#f3c9a1", "#19c1c4", "#c7c7cf"];
-const SIZES = [3, 7, 14, 26], PAPER = "#ffffff", LW = 800, LH = 600;
+const PAPER = "#ffffff", LW = 800, LH = 600, WMIN = 2, WMAX = 48;
 const MAX_CHAT = 80;
 
 /* ---------------- init ---------------- */
@@ -44,19 +45,36 @@ export function initSketch(ctx) {
             X.sfx("pick");
             if (k === "rounds") X.lobbySet({ sketchRounds: Number(v) });
             if (k === "timer") X.lobbySet({ sketchTimer: Number(v) });
+            if (k === "diff") X.lobbySet({ sketchDiff: Number(v) });
         },
         skChoose: i => choose(i),
         skJoin: () => joinNext(),
         skAgain: () => sketchStart(true),
         skLobby: () => X.backToLobby(true)
     });
+    /* keyboard: Ctrl+Z undo, Ctrl+Y / Ctrl+Shift+Z redo, B brush, E eraser, [ ] brush size, hold Space to pan.
+       Never while typing: in the chat box, Ctrl+Z / Ctrl+Y stay the browser's, and single keys are just letters. */
+    const typing = () => { const a = document.activeElement; return !!a && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable); };
+    const onSketch = () => { const v = document.getElementById("sketch"); return v && !v.classList.contains("hidden"); };
     document.addEventListener("keydown", e => {
-        if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || (e.key || "").toLowerCase() !== "z") return;
-        if (document.getElementById("sketch").classList.contains("hidden") || !canDraw()) return;
-        const a = document.activeElement;
-        if (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) return;      // undoing typing in the chat box stays the browser's
-        e.preventDefault(); undoLast();
+        if (!onSketch()) return;
+        const k = (e.key || "").toLowerCase(), mod = e.ctrlKey || e.metaKey;
+        if (mod && !e.altKey && (k === "z" || k === "y")) {
+            if (!canDraw()) return;
+            const a = document.activeElement;
+            if (a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value) return;      // undoing typing in the chat box stays the browser's
+            e.preventDefault();
+            if (k === "y" || (k === "z" && e.shiftKey)) redoLast(); else undoLast();
+            return;
+        }
+        if (mod || e.altKey || typing()) return;
+        if (e.code === "Space" && !e.repeat && view.z > 1) { spaceDown = true; paperClass("grab", true); e.preventDefault(); return; }
+        if (!canDraw()) return;
+        if (k === "b") { tool.e = false; syncTools(); }
+        else if (k === "e") { tool.e = true; syncTools(); }
+        else if (k === "[" || k === "]") { const d = k === "]" ? 1 : -1, key = tool.e ? "ew" : "w"; tool[key] = Math.max(WMIN, Math.min(WMAX, tool[key] + d * Math.max(1, Math.round(tool[key] * .15)))); syncTools(); }
     });
+    document.addEventListener("keyup", e => { if (e.code === "Space" && spaceDown) { spaceDown = false; paperClass("grab", false); } });
 }
 
 /* ---------------- lobby ---------------- */
@@ -75,13 +93,14 @@ export function sketchLobby(d, lock) {
     const series = seriesOf(d);
     optButtons($("RoundsBtns"), SK.roundChoices, sRounds(d), lock, String, v => window.setSketchOpt("rounds", v));
     optButtons($("TimerBtns"), SK.timerChoices, sTimer(d), lock, v => v + " s", v => window.setSketchOpt("timer", v));
+    if ($("DiffBtns")) optButtons($("DiffBtns"), SK.diffChoices, sDiff(d), lock, v => DIFF_NAME[v], v => window.setSketchOpt("diff", v));
     const box = $("Scope"), pool = poolFor(words(), series), cats = {};
     pool.forEach(w => { cats[w.cat] = (cats[w.cat] || 0) + 1; });
     box.innerHTML = "";
     box.append(el("b", "fd-scope-tag " + (series.length > 1 ? "mix" : "single"), series.length > 1 ? "ANIME MIX" : "SINGLE ANIME"),
         el("span", null, series.length === 1 ? label(series[0]) : series.length + " series"),
-        el("em", null, pool.length + " words · " + Object.entries(cats).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => v + " " + k.toLowerCase() + (v === 1 ? "" : "s")).join(", ")));
-    $("Hint").textContent = "Every round, each player draws once. Draw the word you pick; everyone else types guesses. First right guess +100, then 75, 50, 25. The drawer gets +25 for each player who gets it.";
+        el("em", null, pool.length + " words · " + CATS.filter(c => cats[c]).map(c => cats[c] + " " + (c === "Object" ? "objects & items" : c.toLowerCase() + (cats[c] === 1 ? "" : "s"))).join(", ")));
+    $("Hint").textContent = "Every round, each player draws once: pick a character, a weapon or an object & item, then draw it while everyone else types guesses. First right guess +100, then 75, 50, 25; the drawer gets +25 for each player who gets it. Word difficulty: " + DIFF_NAME[sDiff(d)] + (sDiff(d) ? " (every drawer gets words of that level)" : " (easy, medium and hard words)") + ".";
 }
 
 /* ---------------- start (host) ---------------- */
@@ -93,7 +112,7 @@ export async function sketchStart(again) {
         const players = X.activeSlots(d), series = again && prev ? arr(prev.series) : seriesOf(d);
         if (players.length < 2) { X.toast("Anime Sketch needs at least 2 players."); return; }
         const mid = Date.now();
-        const s = newMatch({ mid, lv: 1, series, players, rounds: again && prev ? prev.rounds : sRounds(d), timer: again && prev ? prev.timer : sTimer(d), now: srvNow() });
+        const s = newMatch({ mid, lv: 1, series, players, rounds: again && prev ? prev.rounds : sRounds(d), timer: again && prev ? prev.timer : sTimer(d), diff: again && prev ? Number(prev.diff) || 0 : sDiff(d), now: srvNow() });
         await X.update(X.ref(X.db, "rooms/" + X.room()), { status: "playing", matchId: mid, sketch: s, sketchInk: null, sketchChat: null });
     } catch (e) { console.error(e); X.toast("Could not start Anime Sketch: " + (e.message || e)); }
 }
@@ -126,7 +145,7 @@ function myOptions(s) {
     const all = words(), byId = id => poolFor(all, s.series).find(w => w.id === id);
     if (o && o.length) { const ws = o.map(byId).filter(Boolean); if (ws.length) return ws; }
     const used = arr(s.log).map(L => L.w).filter(Boolean), recent = load(RKEY) || [];
-    const ws = pickOptions(all, s.series, { used, recent });
+    const ws = pickOptions(all, s.series, { used, recent, diff: Number(s.diff) || 0 });
     save(SKEY(s, "o"), ws.map(w => w.id));
     save(RKEY, recent.concat(ws.map(w => w.id)).slice(-90));
     return ws;
@@ -170,7 +189,7 @@ function loop() {
         if (s.phase === "pick" && now >= Number(s.dl) - 700) once("auto:" + key, () => { const o = myOptions(s); choose((Math.random() * o.length) | 0); }, 4000);
         if (s.phase === "draw") {
             if (sec && sec.n === s.n && now >= hintDue(s)) once("hint:" + key + ":" + (s.hn || 0), () => {
-                const i = pickHint(sec.t, hintAt(s.hint)); if (i >= 0) tx({ k: "hint", tk: s.n, i, c: [...sec.t][i] });
+                const i = pickHint(sec.t, s.hint); if (i >= 0) tx({ k: "hint", tk: s.n, i, c: [...sec.t][i] });
             }, 2500);
             if (now >= Number(s.dl)) once("dto:" + key, () => tx({ k: "timeout", tk: s.n, word: sec && sec.n === s.n ? sec.t : null, c: sec ? sec.c : 0 }));
         }
@@ -210,9 +229,13 @@ function watchHost(d, s, now) {
 function startLoop() { if (!loopT) loopT = setInterval(loop, 250); }
 function stopLoop() { clearInterval(loopT); loopT = 0; }
 
-/* ---------------- the drawing sheet (live: strokes stream in as they're drawn) ---------------- */
+/* ---------------- the drawing sheet (live: strokes stream in as they're drawn) ----------------
+   Strokes live on a fixed 800x600 logical sheet, so every screen shows the same drawing. Each viewer has their own
+   viewport (view: zoom z and the logical top-left x, y): zooming and panning only change how the sheet is shown,
+   never the strokes, their coordinates or what is sent to the others. */
 const ink = { strokes: new Map(), mine: new Set(), turn: "", unsub: [], room: "", cv: null, g: null, scale: 1, raf: 0 };
-let tool = { c: COLORS[0], w: SIZES[1], e: false }, undo = [], cur = null, flushT = 0;
+const ZMIN = 1, ZMAX = 4, view = { z: 1, x: 0, y: 0 };
+let tool = { c: COLORS[0], w: 7, ew: 24, e: false }, undo = [], redo = [], cur = null, flushT = 0, spaceDown = false;
 function inkRef(k) { return X.ref(X.db, "rooms/" + X.room() + "/sketchInk" + (k ? "/" + k : "")); }
 function listenInk() {
     if (ink.room === X.room() && ink.unsub.length) return;
@@ -226,20 +249,25 @@ function listenInk() {
 function unlistenInk() { ink.unsub.forEach(f => { try { f(); } catch (e) {} }); ink.unsub = []; ink.room = ""; ink.strokes.clear(); ink.mine.clear(); }
 const curTurn = () => { const s = (X.data() || {}).sketch; return s ? s.mid + ":" + s.n : ""; };
 const liveTurn = st => st.m + ":" + st.n === curTurn();
+const xform = g => { const k = ink.scale * view.z; g.setTransform(k, 0, 0, k, -view.x * k, -view.y * k); };
+// a smooth stroke: quadratic curves through the midpoints. "from" = points already painted: continue from there.
 function paint(st, from) {
     const g = ink.g; if (!g) return;
-    const P = st.pts; if (P.length < 2) return;
-    g.save(); g.setTransform(ink.scale, 0, 0, ink.scale, 0, 0);
+    const P = st.pts, n = P.length / 2; if (n < 1) return;
+    g.save(); xform(g);
     g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = g.fillStyle = st.e ? PAPER : st.c; g.lineWidth = st.w;
-    if (P.length === 2) { g.beginPath(); g.arc(P[0], P[1], st.w / 2, 0, Math.PI * 2); g.fill(); }
-    else if (P.length / 2 > from) {        // from = points already on the sheet: continue from the last one
-        let i = Math.max(0, from - 1) * 2;
-        g.beginPath(); g.moveTo(P[i], P[i + 1]);
-        for (i += 2; i < P.length; i += 2) g.lineTo(P[i], P[i + 1]);
+    if (n === 1) { g.beginPath(); g.arc(P[0], P[1], st.w / 2, 0, Math.PI * 2); g.fill(); }
+    else if (n > from) {
+        const mid = k => [(P[2 * k] + P[2 * k + 2]) / 2, (P[2 * k + 1] + P[2 * k + 3]) / 2];
+        let k = Math.max(1, from - 1);
+        g.beginPath();
+        if (k === 1) g.moveTo(P[0], P[1]); else { const m = mid(k - 1); g.moveTo(m[0], m[1]); }
+        for (; k <= n - 2; k++) { const m = mid(k); g.quadraticCurveTo(P[2 * k], P[2 * k + 1], m[0], m[1]); }
+        g.lineTo(P[2 * n - 2], P[2 * n - 1]);
         g.stroke();
     }
     g.restore();
-    st.drawn = P.length / 2;
+    st.drawn = n;
 }
 function redraw() {
     const g = ink.g, cv = ink.cv; if (!g || !cv) return;
@@ -255,23 +283,92 @@ function fitCanvas() {
     if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; ink.scale = W / LW; redraw(); }
 }
 const canDraw = () => { const s = (X.data() || {}).sketch; return !!s && s.phase === "draw" && Number(s.drawer) === X.me() && arr(s.players).map(Number).includes(X.me()) && srvNow() < Number(s.dl); };
+// screen point -> sheet point (through this viewer's viewport), clamped to the sheet
 function toLogical(e) {
-    const r = ink.cv.getBoundingClientRect();
-    return [Math.round(Math.max(0, Math.min(LW, (e.clientX - r.left) / r.width * LW))), Math.round(Math.max(0, Math.min(LH, (e.clientY - r.top) / r.height * LH)))];
+    const r = ink.cv.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+    return [Math.round(Math.max(0, Math.min(LW, view.x + fx * LW / view.z))), Math.round(Math.max(0, Math.min(LH, view.y + fy * LH / view.z)))];
 }
+
+/* ---------------- zoom and pan (this viewer only) ---------------- */
+function clampView() {
+    view.z = Math.max(ZMIN, Math.min(ZMAX, view.z));
+    view.x = Math.max(0, Math.min(LW - LW / view.z, view.x)); view.y = Math.max(0, Math.min(LH - LH / view.z, view.y));
+}
+// zoom to z, keeping the sheet point under (fx, fy) (fractions of the canvas box) where it is
+function zoomTo(z, fx = .5, fy = .5) {
+    const lx = view.x + fx * LW / view.z, ly = view.y + fy * LH / view.z;
+    view.z = Math.max(ZMIN, Math.min(ZMAX, z));
+    view.x = lx - fx * LW / view.z; view.y = ly - fy * LH / view.z;
+    clampView(); redrawSoon(); syncZoom();
+}
+let zoomAnim = 0;
+function zoomSmooth(z, fx = .5, fy = .5) {           // the buttons: a short eased glide
+    cancelAnimationFrame(zoomAnim);
+    const z0 = view.z, z1 = Math.max(ZMIN, Math.min(ZMAX, z)), t0 = performance.now(), D = X.motionOK() ? 160 : 0;
+    const step = t => { const k = D ? Math.min(1, (t - t0) / D) : 1, e = 1 - Math.pow(1 - k, 3); zoomTo(z0 + (z1 - z0) * e, fx, fy); if (k < 1) zoomAnim = requestAnimationFrame(step); };
+    zoomAnim = requestAnimationFrame(step);
+}
+function zoomResetNow() { cancelAnimationFrame(zoomAnim); view.z = 1; view.x = 0; view.y = 0; redrawSoon(); syncZoom(); }
+function panBy(dxPx, dyPx) {                          // screen pixels -> sheet units at the current zoom
+    const r = ink.cv.getBoundingClientRect();
+    view.x -= dxPx * LW / (r.width * view.z); view.y -= dyPx * LH / (r.height * view.z);
+    clampView(); redrawSoon(); syncZoom();
+}
+function syncZoom() {
+    const z = $("ZoomPct"); if (z) z.textContent = Math.round(view.z * 100) + "%";
+    const o = $("ZoomOut"), i = $("ZoomIn"), r = $("ZoomReset");
+    if (o) o.disabled = view.z <= ZMIN + 1e-3;
+    if (i) i.disabled = view.z >= ZMAX - 1e-3;
+    if (r) r.disabled = view.z <= ZMIN + 1e-3;
+    paperClass("zoomed", view.z > ZMIN + 1e-3);
+}
+function bindZoom(paper, cv) {
+    // Ctrl / Cmd + wheel (and trackpad pinch, which browsers send as Ctrl + wheel) zooms around the cursor, never the page.
+    // A plain wheel pans while zoomed in (Shift + wheel: sideways); at 100% it scrolls the page as usual.
+    paper.addEventListener("wheel", e => {
+        const r = cv.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+        const unit = e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? r.height : 1;
+        if (e.ctrlKey || e.metaKey) { e.preventDefault(); zoomTo(view.z * Math.exp(-e.deltaY * unit * .0018), Math.max(0, Math.min(1, fx)), Math.max(0, Math.min(1, fy))); return; }
+        if (view.z > ZMIN + 1e-3) { e.preventDefault(); const dx = e.shiftKey ? e.deltaY : e.deltaX, dy = e.shiftKey ? 0 : e.deltaY; panBy(-dx * unit, -dy * unit); }
+    }, { passive: false });
+    cv.addEventListener("contextmenu", e => { if (view.z > ZMIN + 1e-3 || canDraw()) e.preventDefault(); });
+}
+
+/* ---------------- pointers: draw, pan, pinch ---------------- */
+const touches = new Map();
+let pan = null, pinch = null;
 function bindCanvas(cv) {
     cv.addEventListener("pointerdown", e => {
+        touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (touches.size === 2) {                       // a second finger: pinch and pan with two fingers (any player)
+            if (cur) endStroke();
+            pan = null; const [a, b] = [...touches.values()];
+            pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, z: view.z, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
+            return;
+        }
+        const wantPan = view.z > ZMIN + 1e-3 && (e.button === 1 || e.button === 2 || spaceDown || !canDraw());
+        if (wantPan) { e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (er) {} pan = { x: e.clientX, y: e.clientY }; paperClass("panning", true); return; }
         if (!canDraw() || (e.button != null && e.button > 0)) return;
         e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (er) {}
-        const s = X.data().sketch, [x, y] = toLogical(e), key = push(inkRef()).key;
-        cur = { key, g: key, turn: s.mid + ":" + s.n, m: s.mid, n: s.n, keys: [key], st: { m: Number(s.mid), n: Number(s.n), c: tool.c, w: tool.w, e: tool.e, pts: [x, y], drawn: 0 }, dirty: true };
-        ink.mine.add(key); ink.strokes.set(key, cur.st); paint(cur.st, 0); flushSoon();
+        const s = X.data().sketch, [x, y] = toLogical(e), key = push(inkRef()).key, w = tool.e ? tool.ew : tool.w;
+        cur = { key, g: key, turn: s.mid + ":" + s.n, m: s.mid, n: s.n, keys: [key], data: {}, st: { m: Number(s.mid), n: Number(s.n), c: tool.c, w, e: tool.e, pts: [x, y], drawn: 0 }, dirty: true };
+        redo = [];                                      // a new stroke ends the redo trail
+        ink.mine.add(key); ink.strokes.set(key, cur.st); paint(cur.st, 0); flushSoon(); syncTools();
     });
     cv.addEventListener("pointermove", e => {
+        if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        ring(e);
+        if (pinch && touches.size >= 2) {
+            const [a, b] = [...touches.values()], d = Math.hypot(a.x - b.x, a.y - b.y) || 1, cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2, r = cv.getBoundingClientRect();
+            zoomTo(pinch.z * d / pinch.d, (cx - r.left) / r.width, (cy - r.top) / r.height);
+            panBy(cx - pinch.cx, cy - pinch.cy); pinch.cx = cx; pinch.cy = cy; return;
+        }
+        if (pan) { panBy(e.clientX - pan.x, e.clientY - pan.y); pan = { x: e.clientX, y: e.clientY }; return; }
         if (!cur) return;
         if (!canDraw()) { endStroke(); return; }
         const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e], st = cur.st, from = st.pts.length / 2;
-        (evs.length ? evs : [e]).forEach(ev => { const [x, y] = toLogical(ev), P = st.pts; if (Math.hypot(x - P[P.length - 2], y - P[P.length - 1]) >= 1.5) P.push(x, y); });
+        const minStep = 1.2 / view.z;                   // finer points when zoomed in, for detail work
+        (evs.length ? evs : [e]).forEach(ev => { const [x, y] = toLogical(ev), P = st.pts; if (Math.hypot(x - P[P.length - 2], y - P[P.length - 1]) >= minStep) P.push(x, y); });
         if (st.pts.length / 2 > from) { paint(st, from); cur.dirty = true; flushSoon(); }
         if (st.pts.length >= 160) {      // long strokes go out in pieces so each write stays small
             flush();
@@ -279,28 +376,57 @@ function bindCanvas(cv) {
             cur.key = key; cur.st = nst; cur.keys.push(key); ink.mine.add(key); ink.strokes.set(key, nst); cur.dirty = true;
         }
     });
-    const up = () => endStroke();
+    const up = e => {
+        touches.delete(e.pointerId);
+        if (touches.size < 2) pinch = null;
+        if (pan && !touches.size) { pan = null; paperClass("panning", false); }
+        endStroke();
+    };
     cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up); cv.addEventListener("lostpointercapture", up);
+    cv.addEventListener("pointerleave", () => { const r = $("Ring"); if (r) r.classList.add("hidden"); });
+}
+function paperClass(c, on) { const p = $("Paper"); if (p) p.classList.toggle(c, on); }
+// the brush / eraser size under the cursor, at the current zoom
+function ring(e) {
+    const r = $("Ring"); if (!r) return;
+    if (!canDraw() || e.pointerType === "touch" || pan) { r.classList.add("hidden"); return; }
+    const box = ink.cv.getBoundingClientRect(), pr = $("Paper").getBoundingClientRect(), d = (tool.e ? tool.ew : tool.w) * box.width / LW * view.z;
+    r.style.width = r.style.height = Math.max(4, d) + "px";
+    r.style.left = (e.clientX - pr.left) + "px"; r.style.top = (e.clientY - pr.top) + "px";
+    r.classList.toggle("erase", tool.e); r.classList.remove("hidden");
 }
 function flushSoon() { if (!flushT) flushT = setTimeout(flush, 45); }
 function flush() {
     clearTimeout(flushT); flushT = 0;
     if (!cur || !cur.dirty) return;
     cur.dirty = false;
-    set(inkRef(cur.key), { m: cur.m, n: cur.n, g: cur.g, c: cur.st.c, w: cur.st.w, e: cur.st.e ? 1 : 0, p: cur.st.pts.join(",") }).catch(() => {});
+    const v = { m: cur.m, n: cur.n, g: cur.g, c: cur.st.c, w: cur.st.w, e: cur.st.e ? 1 : 0, p: cur.st.pts.join(",") };
+    cur.data[cur.key] = v;
+    set(inkRef(cur.key), v).catch(() => {});
 }
-function endStroke() { if (!cur) return; flush(); undo.push(cur.keys); if (undo.length > 60) undo.shift(); cur = null; }
+function endStroke() { if (!cur) return; flush(); undo.push({ keys: cur.keys, data: cur.data }); if (undo.length > 80) undo.shift(); cur = null; syncTools(); }
+const stOf = v => ({ m: Number(v.m), n: Number(v.n), g: v.g, c: v.c, w: Number(v.w) || 7, e: !!v.e, pts: String(v.p || "").split(",").map(Number), drawn: 0 });
 function undoLast() {
-    const keys = undo.pop(); if (!keys || !canDraw()) return;
+    if (!canDraw()) return;
+    const it = undo.pop(); if (!it) return;
     X.sfx("skErase");
-    const upd = {}; keys.forEach(k => { upd[k] = null; ink.strokes.delete(k); }); redraw();
+    const upd = {}; it.keys.forEach(k => { upd[k] = null; ink.strokes.delete(k); }); redraw();
+    redo.push(it); syncTools();
+    X.update(inkRef(), upd).catch(() => {});
+}
+function redoLast() {
+    if (!canDraw()) return;
+    const it = redo.pop(); if (!it) return;
+    X.sfx("toggle");
+    const upd = {}; it.keys.forEach(k => { const v = it.data[k]; if (!v) return; upd[k] = v; ink.mine.add(k); ink.strokes.set(k, stOf(v)); }); redraw();
+    undo.push(it); syncTools();
     X.update(inkRef(), upd).catch(() => {});
 }
 async function clearSheet() {
     if (!canDraw()) return;
-    if (ink.strokes.size && !(await X.uiConfirm({ title: "Clear the drawing?", text: "Everything on the sheet is erased for everyone.", ok: "Clear", danger: true }))) return;
+    if (ink.strokes.size && !(await X.uiConfirm({ title: "Clear the drawing?", text: "Everything on the sheet is erased for everyone. This can't be undone.", ok: "Clear", danger: true }))) return;
     if (!canDraw()) return;
-    X.sfx("skErase"); undo = []; ink.strokes.clear(); redraw();
+    X.sfx("skErase"); undo = []; redo = []; ink.strokes.clear(); redraw(); syncTools();
     remove(inkRef()).catch(() => {});
 }
 
@@ -403,7 +529,7 @@ async function send(e) {
 /* ---------------- screen ---------------- */
 let built = "", seen = { mid: 0, evn: -1 }, overShown = 0, roRef = null;
 export function sketchReset() {
-    stopLoop(); built = ""; offSeen = null; seen = { mid: 0, evn: -1 }; overShown = 0; chat.sig = ""; cur = null; undo = []; goneSince = {}; hostGoneAt = 0; choosing = false;
+    stopLoop(); built = ""; offSeen = null; seen = { mid: 0, evn: -1 }; overShown = 0; chat.sig = ""; cur = null; undo = []; redo = []; view.z = 1; view.x = 0; view.y = 0; goneSince = {}; hostGoneAt = 0; choosing = false;
     unlistenInk(); unlistenChat();
     if (roRef) { roRef.disconnect(); roRef = null; }
     const o = $("Over"); if (o) o.remove();
@@ -433,7 +559,13 @@ function build() {
     const paper = el("div", "sk-paper"); paper.id = "skPaper";
     const cv = el("canvas", "sk-canvas"); cv.id = "skCanvas"; cv.setAttribute("aria-label", "Drawing"); cv.setAttribute("role", "img");
     const ov = el("div", "sk-overlay"); ov.id = "skOverlay";
-    paper.append(el("i", "sk-tape a"), el("i", "sk-tape b"), cv, ov);
+    // this viewer's zoom (Ctrl + wheel, the buttons, two-finger pinch): only the view changes, never the drawing
+    const zm = el("div", "sk-zoom"); zm.setAttribute("role", "group"); zm.setAttribute("aria-label", "Zoom");
+    const zb = (id, txt, lab, fn) => { const b = el("button", "sk-zbtn", txt); b.type = "button"; b.id = "sk" + id; b.setAttribute("aria-label", lab); b.title = lab; b.onclick = fn; return b; };
+    const pct = el("output", "sk-zpct", "100%"); pct.id = "skZoomPct"; pct.setAttribute("aria-live", "polite");
+    zm.append(zb("ZoomOut", "−", "Zoom out (Ctrl + wheel down)", () => zoomSmooth(view.z / 1.25)), pct, zb("ZoomIn", "+", "Zoom in (Ctrl + wheel up)", () => zoomSmooth(view.z * 1.25)), zb("ZoomReset", "⤢", "Reset zoom to 100%", () => zoomSmooth(1)));
+    const rg = el("i", "sk-ring hidden"); rg.id = "skRing"; rg.setAttribute("aria-hidden", "true");
+    paper.append(el("i", "sk-tape a"), el("i", "sk-tape b"), cv, rg, zm, ov);
     const tools = el("div", "sk-tools"); tools.id = "skTools";
     board.append(paper, tools);
     const side = el("aside", "sk-chat");
@@ -449,8 +581,8 @@ function build() {
     const fx = el("div", "sk-fx"); fx.id = "skFx"; fx.setAttribute("aria-hidden", "true");
     w.append(top, main, fb, fx);
     ink.cv = cv; ink.g = cv.getContext("2d");
-    bindCanvas(cv);
-    buildTools(tools);
+    bindCanvas(cv); bindZoom(paper, cv);
+    buildTools(tools); syncZoom();
     if (roRef) roRef.disconnect();
     roRef = new ResizeObserver(() => fitCanvas()); roRef.observe(paper);
     fitCanvas();
@@ -459,21 +591,37 @@ function buildTools(box) {
     box.innerHTML = "";
     const cols = el("div", "sk-colors"); cols.setAttribute("role", "radiogroup"); cols.setAttribute("aria-label", "Colour");
     COLORS.forEach(c => { const b = el("button", "sk-col"); b.type = "button"; b.style.setProperty("--c", c); b.dataset.c = c; b.setAttribute("aria-label", "Colour " + c); b.onclick = () => { tool.c = c; tool.e = false; X.sfx("toggle"); syncTools(); }; cols.appendChild(b); });
-    const sizes = el("div", "sk-sizes"); sizes.setAttribute("aria-label", "Brush size");
-    SIZES.forEach(w => { const b = el("button", "sk-size"); b.type = "button"; b.dataset.w = w; b.style.setProperty("--w", Math.min(22, w) + "px"); b.setAttribute("aria-label", "Brush size " + w); b.appendChild(el("i")); b.onclick = () => { tool.w = w; X.sfx("toggle"); syncTools(); }; sizes.appendChild(b); });
+    // any other colour: the system picker (the swatch shows the last custom colour)
+    const cw = el("label", "sk-col sk-custom"); cw.title = "Custom colour";
+    const ci = el("input"); ci.type = "color"; ci.value = "#ff8800"; ci.setAttribute("aria-label", "Custom colour");
+    ci.oninput = () => { tool.c = ci.value; tool.e = false; cw.style.setProperty("--c", ci.value); cw.dataset.c = ci.value; syncTools(); };
+    cw.style.setProperty("--c", ci.value); cw.dataset.c = ci.value; cw.appendChild(ci); cols.appendChild(cw);
+    // the size of the current tool (the brush and the eraser each keep their own)
+    const sz = el("label", "sk-sizer"); sz.title = "Size ( [ and ] )";
+    const dot = el("i", "sk-sdot"); dot.id = "skSizeDot";
+    const rng = el("input"); rng.type = "range"; rng.min = String(WMIN); rng.max = String(WMAX); rng.step = "1"; rng.id = "skSize"; rng.setAttribute("aria-label", "Brush size");
+    rng.oninput = () => { tool[tool.e ? "ew" : "w"] = Number(rng.value); syncTools(); };
+    const val = el("b", "sk-sval"); val.id = "skSizeVal";
+    sz.append(dot, rng, val);
     const acts = el("div", "sk-acts");
-    const pen = el("button", "sk-tool", "✏️ Brush"); pen.type = "button"; pen.dataset.t = "pen"; pen.onclick = () => { tool.e = false; X.sfx("toggle"); syncTools(); };
-    const er = el("button", "sk-tool", "🧽 Eraser"); er.type = "button"; er.dataset.t = "eraser"; er.onclick = () => { tool.e = true; X.sfx("toggle"); syncTools(); };
-    const un = el("button", "sk-tool", "↶ Undo"); un.type = "button"; un.onclick = undoLast; un.title = "Undo (Ctrl+Z)"; un.setAttribute("aria-keyshortcuts", "Control+Z Meta+Z");
-    const cl = el("button", "sk-tool danger", "🗑 Clear"); cl.type = "button"; cl.onclick = clearSheet;
-    acts.append(pen, er, un, cl);
-    box.append(cols, sizes, acts);
+    const tb = (t, txt, title, fn, cls) => { const b = el("button", "sk-tool" + (cls ? " " + cls : ""), txt); b.type = "button"; if (t) b.dataset.t = t; b.title = title; b.onclick = fn; return b; };
+    const pen = tb("pen", "✏️ Brush", "Brush (B)", () => { tool.e = false; X.sfx("toggle"); syncTools(); });
+    const er = tb("eraser", "🧽 Eraser", "Eraser (E)", () => { tool.e = true; X.sfx("toggle"); syncTools(); });
+    const un = tb("", "↶ Undo", "Undo (Ctrl+Z)", undoLast); un.id = "skUndo"; un.setAttribute("aria-keyshortcuts", "Control+Z Meta+Z");
+    const re = tb("", "↷ Redo", "Redo (Ctrl+Y)", redoLast); re.id = "skRedo"; re.setAttribute("aria-keyshortcuts", "Control+Y Control+Shift+Z Meta+Shift+Z");
+    const cl = tb("", "🗑 Clear", "Clear the whole drawing", clearSheet, "danger");
+    acts.append(pen, er, un, re, cl);
+    box.append(cols, sz, acts);
     syncTools();
 }
 function syncTools() {
     document.querySelectorAll("#skTools .sk-col").forEach(b => { const on = !tool.e && b.dataset.c === tool.c; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
-    document.querySelectorAll("#skTools .sk-size").forEach(b => { const on = Number(b.dataset.w) === tool.w; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
-    document.querySelectorAll("#skTools .sk-tool[data-t]").forEach(b => b.classList.toggle("on", (b.dataset.t === "eraser") === tool.e));
+    document.querySelectorAll("#skTools .sk-tool[data-t]").forEach(b => { const on = (b.dataset.t === "eraser") === tool.e; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
+    const w = tool.e ? tool.ew : tool.w, rng = $("Size"), dot = $("SizeDot"), val = $("SizeVal");
+    if (rng) { rng.value = String(w); rng.setAttribute("aria-label", (tool.e ? "Eraser" : "Brush") + " size"); }
+    if (dot) { dot.style.setProperty("--d", Math.max(3, Math.min(26, w * .55)) + "px"); dot.style.setProperty("--c", tool.e ? "#ffffff" : tool.c); dot.classList.toggle("erase", tool.e); }
+    if (val) val.textContent = (tool.e ? "Eraser " : "") + w + " px";
+    const u = $("Undo"), r = $("Redo"); if (u) u.disabled = !undo.length; if (r) r.disabled = !redo.length;
     const cv = $("Canvas"); if (cv) cv.classList.toggle("erasing", tool.e);
 }
 // the word line: blanks with any revealed letters, or the word itself for whoever knows it
@@ -544,7 +692,7 @@ function render(d, s) {
     players(d, s);
     $("Tools").classList.toggle("hidden", !(drawer && s.phase === "draw"));
     const paper = $("Paper"); paper.classList.toggle("drawable", drawer && s.phase === "draw");
-    if (ink.turn !== s.mid + ":" + s.n) { ink.turn = s.mid + ":" + s.n; if (!(cur && cur.turn === ink.turn)) { cur = null; undo = []; } redraw(); }
+    if (ink.turn !== s.mid + ":" + s.n) { ink.turn = s.mid + ":" + s.n; if (!(cur && cur.turn === ink.turn)) { cur = null; undo = []; redo = []; } zoomResetNow(); syncTools(); redraw(); }
     overlay(d, s);
     rebuildChat(s);
     // the input: guessers type guesses, the drawer and players who got it can chat, spectators can join the next round
@@ -605,12 +753,15 @@ function overlay(d, s) {
             ov.classList.add("pick");
             ov.appendChild(el("h3", null, "Pick a word to draw"));
             const row = el("div", "sk-opts");
+            const ICON = { Character: "👤", Weapon: "⚔️", Object: "🎒" }, LEVEL = ["", "Easy", "Medium", "Hard"];
             myOptions(s).forEach((w, i) => {
-                const b = el("button", "sk-opt"); b.type = "button"; b.onclick = () => window.skChoose(i);
-                b.append(el("small", null, w.cat.toUpperCase() + (arr(s.series).length > 1 ? " · " + label(w.s) : "")), el("b", null, w.t), el("i", null, [...w.t].filter(c => /[\p{L}\p{N}]/u.test(c)).length + " letters"));
+                const b = el("button", "sk-opt c-" + w.cat.toLowerCase()); b.type = "button"; b.onclick = () => window.skChoose(i);
+                b.style.setProperty("--i", i);
+                const lv = el("span", "sk-olv l" + (w.d || 2)); lv.setAttribute("aria-label", "Difficulty: " + LEVEL[w.d || 2]); lv.append(el("i"), el("i"), el("i"), el("em", null, LEVEL[w.d || 2]));
+                b.append(el("span", "sk-oicon", ICON[w.cat] || "✦"), el("small", null, (CAT_NAME[w.cat] || w.cat).toUpperCase() + (arr(s.series).length > 1 ? " · " + label(w.s) : "")), el("b", null, w.t), lv, el("i", null, [...w.t].filter(c => /[\p{L}\p{N}]/u.test(c)).length + " letters"));
                 row.appendChild(b);
             });
-            ov.append(row, el("p", null, "Only you see these. One is picked for you when the timer runs out."));
+            ov.append(row, el("p", null, "Only you see these: a character, a weapon and an object or item" + (Number(s.diff) ? " (" + DIFF_NAME[Number(s.diff)].toLowerCase() + " words)" : "") + ". One is picked for you when the timer runs out."));
         } else {
             ov.classList.add("wait");
             const a = el("div", "sk-who"); a.appendChild(X.avatarEl(X.pPub(d, s.drawer), { size: 64 }));
@@ -662,10 +813,15 @@ function onEvent(d, s, e) {
         const mine = Number(e.p) === me;
         X.sfx(mine ? "skCorrect" : Number(s.drawer) === me ? "skBonus" : "skPop");
         const row = $("Score" + e.p); if (row) { const r = row.getBoundingClientRect(); X.burstText("+" + e.pts, r.left + r.width / 2, r.top, "#3fd47a"); const tot = Number((s.score || {})["p" + e.p]) || 0; X.countUp(row, Math.max(0, tot - Number(e.pts)), tot, 600); }
+        const pp = $("Paper"); if (pp && X.motionOK()) { pp.classList.remove("flash"); void pp.offsetWidth; pp.classList.add("flash"); }
         if (mine) { feedback("Correct! +" + e.pts + (e.i === 1 ? " · first to get it!" : ""), "ok"); const w = $("Word"); if (w && X.motionOK() && w.animate) w.animate([{ transform: "scale(1)" }, { transform: "scale(1.08)" }, { transform: "scale(1)" }], { duration: 420 }); }
     }
     else if (e.k === "hint") { if (Number(s.drawer) !== me) X.sfx("skHint"); }
-    else if (e.k === "end") { X.sfx(e.why === "all" ? "skAll" : e.why === "time" ? "skTime" : "skip"); }
+    else if (e.k === "end") {
+        X.sfx(e.why === "all" ? "skAll" : e.why === "time" ? "skTime" : "skip");
+        if (e.why === "time") banner("TIME'S UP!", "Let's see what it was");
+        else if (e.why === "all") banner("EVERYONE GOT IT!", "Nice drawing!");
+    }
     else if (e.k === "round") X.sfx("skRound");
 }
 function banner(text, sub) { const fx = $("Fx"); if (!fx) return; const b = el("div", "sk-banner"); b.append(el("b", null, text)); if (sub) b.appendChild(el("small", null, sub)); fx.appendChild(b); setTimeout(() => b.remove(), 1900); }
