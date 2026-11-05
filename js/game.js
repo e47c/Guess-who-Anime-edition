@@ -1859,21 +1859,24 @@ function imCardEl(im, reveal) {
     card.style.setProperty("--pc", isImp && !reveal ? "#ff4d6d" : "#ffd23f");
     if (isImp && !reveal) {
         card.appendChild(hbEl("div", "hb-pname sus-glitch", "YOU ARE THE IMPOSTER"));
-        const m = hbEl("div", "sus-mask"); m.append(hbEl("i", "sus-hood"), hbEl("i", "sus-eye l"), hbEl("i", "sus-eye r")); card.appendChild(m);
+        card.appendChild(imCam(im, "● REC", hbEl("div", "hb-pic sus-void"), [hbEl("i", "sus-smoke s1"), hbEl("i", "sus-smoke s2"), hbEl("i", "sus-smoke s3")]));
         card.appendChild(hbEl("div", "hb-series", "Everyone else can see the character. Blend in with your clues."));
         return card;
     }
     card.appendChild(hbEl("div", "hb-pname", reveal ? "THE CHARACTER WAS" : "THE SECRET CHARACTER"));
     if (c.i) {
-        const w = hbEl("div", "hb-pic"); w.appendChild(makeImg(hbImg(c)));
-        const d = new Date(), ts = d.toISOString().slice(0, 10) + " " + d.toTimeString().slice(0, 8);
-        w.append(hbEl("span", "cam-rec", reveal ? "● IDENTIFIED" : "● REC"), hbEl("span", "cam-time", ts), hbEl("span", "cam-id", "CAM 0" + (1 + (Number(im.round) || 0) % 9)), hbEl("i", "cam-c tl"), hbEl("i", "cam-c tr"), hbEl("i", "cam-c bl"), hbEl("i", "cam-c br"));
-        card.appendChild(w);
+        card.appendChild(imCam(im, reveal ? "● IDENTIFIED" : "● REC", hbEl("div", "hb-pic"), [makeImg(hbImg(c))]));
     }
     card.appendChild(hbEl("div", "hb-name" + (c.i ? "" : " big"), c.n));
     card.appendChild(hbEl("div", "hb-series", c.s));
     if (!reveal) card.appendChild(hbEl("div", "im-forbid", "🚫 Don't say: " + [c.n].concat(arr(c.a)).filter(Boolean).join(" · ")));
     return card;
+}
+// the security-camera frame: REC, timestamp, camera number and corner marks around what it shows
+function imCam(im, rec, w, inner) {
+    const d = new Date(), ts = d.toISOString().slice(0, 10) + " " + d.toTimeString().slice(0, 8);
+    w.append(...inner, hbEl("span", "cam-rec", rec), hbEl("span", "cam-time", ts), hbEl("span", "cam-id", "CAM 0" + (1 + (Number(im.round) || 0) % 9)), hbEl("i", "cam-c tl"), hbEl("i", "cam-c tr"), hbEl("i", "cam-c bl"), hbEl("i", "cam-c br"));
+    return w;
 }
 function imSeriesPicker(box, data) {
     box.appendChild(hbEl("label", "", "Series for the next " + (data.im.phase === "match" ? "match" : "round")));

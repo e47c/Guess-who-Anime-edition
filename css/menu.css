@@ -232,14 +232,12 @@ body[data-scene="home"] .arc-floor { display: none; }
 .guide[data-mode="headbanz"] .g-step p { color: rgba(36,23,10,.78); }
 .guide[data-mode="headbanz"] .g-num { border-radius: 50%; color: #fff; background: radial-gradient(circle at 35% 30%, #ff7a6a, #b8160f 60%); font-family: 'Special Elite', var(--f-ui); font-size: 18px; box-shadow: 0 3px 6px rgba(0,0,0,.35); }
 
-/* IMPOSTER · Suspicion: something watches from the dark; red eyes, scanlines, a glitch */
+/* IMPOSTER · Suspicion: something in the dark; scanlines, a glitch */
 [data-mode="imposter"] { --mc: #ff2a44; --mfont: var(--f-ui); }
 .mtab[data-mode="imposter"] { background: #07050b; }
 .mtab[data-mode="imposter"] .mt-art img { filter: grayscale(1) brightness(.42) contrast(1.3); }
 .mtab[data-mode="imposter"] .mt-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,42,68,.18), rgba(40,0,10,.5)), repeating-linear-gradient(0deg, rgba(0,0,0,.35) 0 1px, transparent 1px 3px); mix-blend-mode: multiply; }
 .mtab[data-mode="imposter"] .mt-name { font-weight: 700; font-size: clamp(15px, 1.3vw, 19px); letter-spacing: .12em; text-transform: uppercase; text-shadow: 0 0 12px rgba(255,42,68,.55); }
-.mtab[data-mode="imposter"] .mt-deco { left: 50%; top: 34%; width: 52%; height: 12px; margin-left: -26%; background: radial-gradient(ellipse 22% 50% at 25% 50%, #ff2a44 0 40%, transparent 70%), radial-gradient(ellipse 22% 50% at 75% 50%, #ff2a44 0 40%, transparent 70%); filter: drop-shadow(0 0 6px #ff2a44); animation: imBlink 6s ease-in-out infinite; }
-@keyframes imBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
 .mtab[data-mode="imposter"]:hover .mt-name { animation: imGlitch .4s steps(2) 1; }
 @keyframes imGlitch { 25% { transform: translateX(-2px); text-shadow: 2px 0 #ff2a44, -2px 0 #3ee8ff; } 75% { transform: translateX(2px); } }
 .guide[data-mode="imposter"] { background: radial-gradient(ellipse 50% 50% at 100% 0%, rgba(255,42,68,.14), transparent 70%), radial-gradient(ellipse 60% 50% at 0% 100%, rgba(120,90,200,.12), transparent 70%), repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px), #07060b; --gline: rgba(255,42,68,.16); }
@@ -358,5 +356,5 @@ body[data-scene="home"] .arc-floor { display: none; }
     .pc-stats { gap: 4px; } .pc-stat b { font-size: 21px; }
     .home-discord { font-size: 11px; padding: 6px 10px; }
 }
-body.fx-lite .home-fire i, body.fx-lite #homeTitle .aa-mark, body.fx-lite .mtab[data-mode="imposter"] .mt-deco, body.fx-lite .mtab[data-mode="feud"] .mt-deco { animation: none !important; }
+body.fx-lite .home-fire i, body.fx-lite #homeTitle .aa-mark, body.fx-lite .mtab[data-mode="feud"] .mt-deco { animation: none !important; }
 body.fx-lite .profile-card::before { backdrop-filter: none; -webkit-backdrop-filter: none; }
