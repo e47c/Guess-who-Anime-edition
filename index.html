@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="css/feud.css?v=4">
 <link rel="stylesheet" href="css/case.css?v=1">
 <link rel="stylesheet" href="css/suspect.css?v=1">
-<link rel="stylesheet" href="css/sketch.css?v=3">
+<link rel="stylesheet" href="css/sketch.css?v=4">
 </head>
 <body class="anime-theme" data-scene="home">
 
@@ -217,9 +217,10 @@
 <div><label class="field-label">Vote time</label><div class="sizes" id="mlTimerBtns"></div></div></div>
 <div id="mlTeamsBox"><label class="field-label" style="margin-top:14px">Teams</label><div id="mlTeams" class="dr-teams fd-teams"></div></div>
 <p class="anime-hint" id="mlHint"></p></div>
-<div id="sketchBox" class="field hidden"><label class="field-label">Anime Sketch · everyone draws in turn</label>
+<div id="sketchBox" class="field hidden"><label class="field-label" id="skBoxLabel">Anime Sketch · everyone draws in turn</label>
 <div class="fd-scope" id="skScope"></div>
-<div class="fd-opts"><div><label class="field-label">Rounds</label><div class="sizes" id="skRoundsBtns"></div></div>
+<div class="fd-opts"><div><label class="field-label">Game type</label><div class="sizes" id="skModeBtns"></div></div>
+<div><label class="field-label">Rounds</label><div class="sizes" id="skRoundsBtns"></div></div>
 <div><label class="field-label">Drawing time</label><div class="sizes" id="skTimerBtns"></div></div>
 <div><label class="field-label">Word difficulty</label><div class="sizes" id="skDiffBtns"></div></div></div>
 <p class="anime-hint" id="skHint"></p></div>
@@ -477,7 +478,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=38"></script>
+<script type="module" src="js/game.js?v=39"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){

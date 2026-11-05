@@ -182,6 +182,7 @@ function finish(s, why) {
 /* the moves. Returns null when applied, or a short reason when not (the caller then aborts the transaction).
    a = { k, by, tk, ... }   ctx = { now, present(p) } */
 export function act(s, a, ctx) {
+    if (s && s.type === "contest") return actContest(s, a, ctx);
     const now = ctx.now, present = ctx.present || (() => true), by = Number(a.by), inTurn = a.tk == null || Number(a.tk) === Number(s.n);
     switch (a.k) {
         case "pick": {
@@ -317,4 +318,163 @@ export function near(msg, salt, wt) {
     }
     const j = n.replace(/ /g, "");            // written without spaces, or split oddly
     return j.length >= 4 && (set.has(sfp(salt, "x:" + j)) || set.has(sfp(salt, "p:" + j)) || del1(j).some(v => v.length >= 4 && set.has(sfp(salt, "t:" + v))));
+}
+
+/* =====================================================================
+   CONTEST: a second way to play Anime Sketch. Every round, everyone gets the SAME word and draws it at the same time,
+   each on their own sheet. When time runs out (or everyone pressed Done) the drawings are shown side by side without
+   names, and every player rates every other drawing 1 to 5 stars (never their own). Stars received are the points;
+   the highest total after the last round wins.
+   Phases:   draw (everyone draws, the word is public) -> rate (anonymous gallery) -> results (names, stars, points)
+             -> next round ... -> over.
+   A contest match is marked type: "contest"; act() hands it to actContest(), so Classic matches never reach this code.
+   s.n counts rounds (the transaction guard, and the turn the strokes belong to); moves that end a phase also name the
+   phase (a.ph), so a late duplicate can never skip one.
+   ===================================================================== */
+export const CT = {
+    rateBase: 15000, ratePer: 6000, rateMin: 25000, rateMax: 60000,   // rating time: 15 s + 6 s per drawing, 25-60 s
+    resultsMs: 10000,                                                  // the round results stay up this long
+    stars: 5
+};
+export const isContest = s => !!s && s.type === "contest";
+export const rateMsFor = n => Math.max(CT.rateMin, Math.min(CT.rateMax, CT.rateBase + CT.ratePer * Number(n || 0)));
+/* the round's word: categories take turns (character, weapon, object & item, from a different start every match),
+   never a word already drawn this match; diff and recent work as in Classic */
+export function contestWord(words, series, { used = [], recent = [], round = 1, mid = 0, diff = 0, rnd = Math.random } = {}) {
+    const opts = pickOptions(words, series, { used, recent, diff, rnd });
+    const want = CATS[(Math.abs(Number(mid) || 0) + Number(round) - 1) % CATS.length];
+    return opts.find(w => w.cat === want) || opts[0] || null;
+}
+const wordOf = w => w && w.t ? { t: String(w.t).slice(0, 40), c: Number(w.c) || 0, cat: String(w.cat || ""), s: String(w.s || "") } : null;
+// the gallery order: shuffled, but the same in every browser (seeded by match and round), so "drawing C" means one thing
+export function seeded(list, seed) {
+    let x = (Math.abs(Math.floor(Number(seed) || 0)) % 2147483646) + 1;
+    const r = () => (x = (x * 16807) % 2147483647) / 2147483647, a = arr(list).slice();
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+}
+export const ents = s => arr(s && s.ent).map(Number);
+export const isDone = (s, p) => !!((s && s.done) || {})[pk(p)];
+export const ratedBy = (s, p) => Object.assign({}, ((s && s.rt) || {})[pk(p)]);
+export const toRate = (s, p) => ents(s).filter(q => q !== Number(p));
+export const ratedAll = (s, p) => { const r = ratedBy(s, p); return toRate(s, p).every(q => Number(r[pk(q)]) >= 1); };
+export const allDone = (s, present = () => true) => { const e = ents(s).filter(p => present(p)); return e.length > 0 && e.every(p => isDone(s, p)); };
+export const allRated = (s, present = () => true) => { const e = ents(s).filter(p => present(p)); return e.length > 0 && e.every(p => ratedAll(s, p)); };
+// stars each drawing received this round (only entrants' ratings, only 1-5), best first
+export function tally(s) {
+    const E = ents(s);
+    return E.map(p => {
+        const got = E.filter(q => q !== p).map(q => Number(ratedBy(s, q)[pk(p)]) || 0).filter(v => v >= 1 && v <= CT.stars);
+        return { p, pts: got.reduce((a, b) => a + b, 0), n: got.length };
+    }).sort((a, b) => b.pts - a.pts || a.p - b.p);
+}
+export function newContest({ mid, lv = 0, series, rounds = SK.rounds, timer = SK.timer, diff = 0, players, now, word }) {
+    const ps = arr(players).map(Number), score = {};
+    ps.forEach(p => { score[pk(p)] = 0; });
+    const s = { type: "contest", mid, lv, series: arr(series), rounds: SK.roundChoices.includes(Number(rounds)) ? Number(rounds) : SK.rounds, timer: SK.timerChoices.includes(Number(timer)) ? Number(timer) : SK.timer,
+        diff: SK.diffChoices.includes(Number(diff)) ? Number(diff) : 0, players: ps, round: 1, n: 0, score, log: [], ev: { n: 0 } };
+    startDraw(s, ps, word, now);
+    return s;
+}
+function startDraw(s, ent, word, now) {
+    s.n = (Number(s.n) || 0) + 1; s.ent = arr(ent).map(Number); s.word = wordOf(word);
+    s.done = null; s.rt = null; s.gal = null; s.gain = null; s.why = null; s.nx = null;
+    s.phase = "draw"; s.t0 = now; s.dl = now + Number(s.timer) * 1000;
+    ev(s, "draw", { r: s.round });
+}
+function endDraw(s, now) {
+    if (ents(s).length < 2) { endRate(s, "solo", now); return; }        // nobody to rate with: straight to the results
+    s.phase = "rate"; s.gal = seeded(ents(s), Number(s.mid) * 31 + Number(s.n) * 7919);
+    s.t0 = now; s.dl = now + rateMsFor(ents(s).length);
+    ev(s, "rate");
+}
+function endRate(s, why, now) {
+    const res = tally(s), gain = {};
+    res.forEach(x => { s.score[pk(x.p)] = (Number(s.score[pk(x.p)]) || 0) + x.pts; gain[pk(x.p)] = x.pts; });
+    s.gain = gain; s.phase = "results"; s.why = why; s.dl = null; s.t0 = now; s.nx = now + CT.resultsMs;
+    if (!s.gal) s.gal = ents(s);
+    s.log = arr(s.log).concat([{ r: s.round, n: s.n, w: s.word ? s.word.t : null, c: s.word ? s.word.c : 0, cat: s.word ? s.word.cat : "", res: res.map(x => ({ p: x.p, pts: x.pts, n: x.n })) }]);
+    ev(s, "results", { why });
+}
+function finishContest(s, why) {
+    const st = standings(s), top = st.length ? st[0].score : 0;
+    s.phase = "over"; s.dl = null; s.nx = null; s.end = why; s.done = null; s.rt = null;
+    s.winners = st.filter(x => x.score === top).map(x => x.p);
+    ev(s, "over", { why });
+}
+function contestNewRound(s, now, present, word) {
+    const pend = Object.keys(s.pend || {}).map(k => Number(k.slice(1))).filter(p => present(p) && !arr(s.players).map(Number).includes(p));
+    s.players = arr(s.players).map(Number).concat(pend);
+    pend.forEach(p => { if (s.score[pk(p)] == null) s.score[pk(p)] = 0; });
+    s.pend = null;
+    const live = s.players.filter(p => present(p));
+    if (live.length < 2) { finishContest(s, "few"); return; }
+    s.round = Number(s.round) + 1;
+    startDraw(s, live, word, now);
+    if (pend.length) s.ev.joined = pend;
+}
+export function actContest(s, a, ctx) {
+    const now = ctx.now, present = ctx.present || (() => true), by = Number(a.by), inTurn = a.tk == null || Number(a.tk) === Number(s.n);
+    const phaseOk = a.ph == null || a.ph === s.phase, players = arr(s.players).map(Number);
+    switch (a.k) {
+        case "done": {          // finished drawing (the last one to finish ends the drawing time)
+            if (s.phase !== "draw" || !inTurn) return "stale";
+            if (!ents(s).includes(by)) return "You're not drawing this round.";
+            s.done = Object.assign({}, s.done, { [pk(by)]: true });
+            if (allDone(s, present)) endDraw(s, now);
+            return null;
+        }
+        case "undone": {        // back to drawing, while there's time
+            if (s.phase !== "draw" || !inTurn || !isDone(s, by) || now >= Number(s.dl)) return "stale";
+            const d = Object.assign({}, s.done); delete d[pk(by)]; s.done = Object.keys(d).length ? d : null;
+            return null;
+        }
+        case "enter": {         // a player who was offline when the round began comes back while it's still being drawn
+            if (s.phase !== "draw" || !inTurn || !players.includes(by) || ents(s).includes(by) || now >= Number(s.dl)) return "stale";
+            s.ent = ents(s).concat([by]);
+            return null;
+        }
+        case "rate": {
+            if (s.phase !== "rate" || !inTurn) return "stale";
+            if (!ents(s).includes(by)) return "Only this round's artists rate.";
+            const to = Number(a.to), v = Number(a.v);
+            if (to === by) return "You can't rate your own drawing.";
+            if (!ents(s).includes(to)) return "stale";
+            if (!Number.isInteger(v) || v < 1 || v > CT.stars) return "Pick 1 to 5 stars.";
+            if (now > Number(s.dl) + 1500) return "stale";
+            const rt = Object.assign({}, s.rt), mine = Object.assign({}, rt[pk(by)]);
+            mine[pk(to)] = v; rt[pk(by)] = mine; s.rt = rt;
+            return null;
+        }
+        case "timeout": {
+            if (!inTurn || !phaseOk || !Number(s.dl) || now < Number(s.dl)) return "stale";
+            if (s.phase === "draw") { endDraw(s, now); return null; }
+            if (s.phase === "rate") { endRate(s, "time", now); return null; }
+            return "stale";
+        }
+        case "check": {         // everyone still here is done / has rated everything (also after someone left)
+            if (!inTurn || !phaseOk) return "stale";
+            if (s.phase === "draw" && allDone(s, present)) { endDraw(s, now); return null; }
+            if (s.phase === "rate" && allRated(s, present)) { endRate(s, "all", now); return null; }
+            return "stale";
+        }
+        case "next": {
+            if (s.phase !== "results" || !inTurn || !phaseOk || now < Number(s.nx)) return "stale";
+            if (Number(s.round) >= Number(s.rounds)) { finishContest(s, "done"); return null; }
+            const w = wordOf(a.word);
+            if (!w) return "need word";
+            if (arr(s.log).some(L => L.w && norm(L.w) === norm(w.t))) return "used word";
+            contestNewRound(s, now, present, w);
+            return null;
+        }
+        case "join": {
+            if (s.phase === "over" || players.includes(by)) return "stale";
+            s.pend = Object.assign({}, s.pend, { [pk(by)]: true }); return null;
+        }
+        case "unjoin": {
+            if (!(s.pend || {})[pk(by)]) return "stale";
+            const p = Object.assign({}, s.pend); delete p[pk(by)]; s.pend = Object.keys(p).length ? p : null; return null;
+        }
+    }
+    return "unknown move";
 }

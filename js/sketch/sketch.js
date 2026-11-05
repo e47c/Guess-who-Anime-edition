@@ -13,7 +13,8 @@
    The word is never written to any of these while it is being drawn (see engine.js).
    ===================================================================== */
 import { SK, arr, maskOf, hintMax, pickHint, hintAt, buildWords, poolFor, pickOptions, newMatch, act, hasGot, gotList, allGot,
-    hintDue, standings, wordPrints, claim, near, CATS, CAT_NAME } from "./engine.js?v=3";
+    hintDue, standings, wordPrints, claim, near, CATS, CAT_NAME,
+    CT, isContest, newContest, contestWord, ents, isDone, ratedBy, ratedAll, toRate, allDone, allRated, tally } from "./engine.js?v=4";
 import { LIBRARY } from "./words.js?v=3";
 import { CHARS } from "../draft/data.js?v=3";
 import { el, srvNow, label, presentIn, pickOpt, seriesOf, initCommon, charOf, img, optButtons, confetti } from "../feud/common.js?v=3";
@@ -26,9 +27,10 @@ const words = () => WORDS || (WORDS = buildWords({ library: LIBRARY, chars: CHAR
 const sRounds = d => pickOpt(d && d.sketchRounds, SK.roundChoices, SK.rounds);
 const sTimer = d => pickOpt(d && d.sketchTimer, SK.timerChoices, SK.timer);
 const sDiff = d => pickOpt(d && d.sketchDiff, SK.diffChoices, 0);
-const DIFF_NAME = ["Mixed", "Easy", "Medium", "Hard"];
-export const sketchPrefs = p => ({ sketchRounds: pickOpt(p.sketchRounds, SK.roundChoices, SK.rounds), sketchTimer: pickOpt(p.sketchTimer, SK.timerChoices, SK.timer), sketchDiff: pickOpt(p.sketchDiff, SK.diffChoices, 0) });
-export const sketchPrefsOf = d => ({ sketchRounds: sRounds(d), sketchTimer: sTimer(d), sketchDiff: sDiff(d) });
+const sMode = d => pickOpt(d && d.sketchMode, [0, 1], 0);        // 0 Classic (draw & guess), 1 Contest (everyone draws, then rates)
+const DIFF_NAME = ["Mixed", "Easy", "Medium", "Hard"], MODE_NAME = ["Classic", "Contest"];
+export const sketchPrefs = p => ({ sketchRounds: pickOpt(p.sketchRounds, SK.roundChoices, SK.rounds), sketchTimer: pickOpt(p.sketchTimer, SK.timerChoices, SK.timer), sketchDiff: pickOpt(p.sketchDiff, SK.diffChoices, 0), sketchMode: pickOpt(p.sketchMode, [0, 1], 0) });
+export const sketchPrefsOf = d => ({ sketchRounds: sRounds(d), sketchTimer: sTimer(d), sketchDiff: sDiff(d), sketchMode: sMode(d) });
 const PCOL = ["#ff5a5a", "#ffb02e", "#3fc46b", "#3aa0ff", "#b06bff", "#ff6fb1", "#22c7c7", "#e8d14a"];
 const pCol = (d, p) => (X.pPub(d, p) || {}).col || PCOL[(Number(p) - 1) % PCOL.length];
 const COLORS = ["#16161d", "#ffffff", "#8a8a96", "#d81e2c", "#ff7a1a", "#ffd21f", "#38b94a", "#13704a", "#2f8cff", "#1d3bb3", "#8a3ffc", "#ff5fa8", "#8b5a2b", "#f3c9a1", "#19c1c4", "#c7c7cf"];
@@ -46,6 +48,7 @@ export function initSketch(ctx) {
             if (k === "rounds") X.lobbySet({ sketchRounds: Number(v) });
             if (k === "timer") X.lobbySet({ sketchTimer: Number(v) });
             if (k === "diff") X.lobbySet({ sketchDiff: Number(v) });
+            if (k === "mode") X.lobbySet({ sketchMode: Number(v) });
         },
         skChoose: i => choose(i),
         skJoin: () => joinNext(),
@@ -68,6 +71,7 @@ export function initSketch(ctx) {
             return;
         }
         if (mod || e.altKey || typing()) return;
+        if (k === "escape" && closeLightbox()) return;
         if (e.code === "Space" && !e.repeat && view.z > 1) { spaceDown = true; paperClass("grab", true); e.preventDefault(); return; }
         if (!canDraw()) return;
         if (k === "b") { tool.e = false; syncTools(); }
@@ -86,11 +90,17 @@ export function sketchReq(d) {
     const series = seriesOf(d), n = X.activeSlots(d).length, rounds = sRounds(d);
     if (!series.length) return { ok: false, msg: "Tick at least one series." };
     const pool = poolFor(words(), series).length, need = n * rounds + 2;
+    if (sMode(d) === 1) {          // Contest: one word per round, for everyone
+        if (pool < rounds + 2) return { ok: false, msg: "Anime Sketch has " + pool + " words for this pick, not enough for " + rounds + " rounds. Tick another series or pick fewer rounds." };
+        return { ok: true, msg: "Anime Sketch Contest · " + n + " players · " + (series.length === 1 ? "Single anime" : "Anime Mix") + " · " + rounds + " word" + (rounds === 1 ? "" : "s") + " · " + sTimer(d) + " s to draw, then rate" };
+    }
     if (pool < need) return { ok: false, msg: "Anime Sketch has " + pool + " words for " + (series.length === 1 ? label(series[0]) + " on its own" : "this mix") + ", not enough for " + rounds + " round" + (rounds === 1 ? "" : "s") + " with " + n + " players. Tick another series or pick fewer rounds." };
     return { ok: true, msg: "Anime Sketch · " + n + " players · " + (series.length === 1 ? "Single anime" : "Anime Mix") + " · " + rounds + " round" + (rounds === 1 ? "" : "s") + " × " + n + " turns · " + sTimer(d) + " s to draw" };
 }
 export function sketchLobby(d, lock) {
-    const series = seriesOf(d);
+    const series = seriesOf(d), contest = sMode(d) === 1;
+    if ($("ModeBtns")) optButtons($("ModeBtns"), [0, 1], sMode(d), lock, v => MODE_NAME[v], v => window.setSketchOpt("mode", v));
+    if ($("BoxLabel")) $("BoxLabel").textContent = contest ? "Anime Sketch · Contest: one word, everyone draws, everyone rates" : "Anime Sketch · everyone draws in turn";
     optButtons($("RoundsBtns"), SK.roundChoices, sRounds(d), lock, String, v => window.setSketchOpt("rounds", v));
     optButtons($("TimerBtns"), SK.timerChoices, sTimer(d), lock, v => v + " s", v => window.setSketchOpt("timer", v));
     if ($("DiffBtns")) optButtons($("DiffBtns"), SK.diffChoices, sDiff(d), lock, v => DIFF_NAME[v], v => window.setSketchOpt("diff", v));
@@ -100,6 +110,7 @@ export function sketchLobby(d, lock) {
     box.append(el("b", "fd-scope-tag " + (series.length > 1 ? "mix" : "single"), series.length > 1 ? "ANIME MIX" : "SINGLE ANIME"),
         el("span", null, series.length === 1 ? label(series[0]) : series.length + " series"),
         el("em", null, pool.length + " words · " + CATS.filter(c => cats[c]).map(c => cats[c] + " " + (c === "Object" ? "objects & items" : c.toLowerCase() + (cats[c] === 1 ? "" : "s"))).join(", ")));
+    if (contest) { $("Hint").textContent = "Contest: every round, everyone gets the same word (a character, a weapon or an object & item) and draws it at the same time on their own sheet. Then the drawings are shown without names and you rate every other drawing 1 to 5 stars. Stars received are your points; the highest total after the last round wins. Best with 3 or more players. Word difficulty: " + DIFF_NAME[sDiff(d)] + "."; return; }
     $("Hint").textContent = "Every round, each player draws once: pick a character, a weapon or an object & item, then draw it while everyone else types guesses. First right guess +100, then 75, 50, 25; the drawer gets +25 for each player who gets it. Word difficulty: " + DIFF_NAME[sDiff(d)] + (sDiff(d) ? " (every drawer gets words of that level)" : " (easy, medium and hard words)") + ".";
 }
 
@@ -112,6 +123,15 @@ export async function sketchStart(again) {
         const players = X.activeSlots(d), series = again && prev ? arr(prev.series) : seriesOf(d);
         if (players.length < 2) { X.toast("Anime Sketch needs at least 2 players."); return; }
         const mid = Date.now();
+        if (again && prev ? isContest(prev) : sMode(d) === 1) {
+            const diff = again && prev ? Number(prev.diff) || 0 : sDiff(d), recent = load(RKEY) || [];
+            const word = contestWord(words(), series, { round: 1, mid, diff, recent });
+            if (!word) { X.toast("No words for this pick. Tick another series."); return; }
+            save(RKEY, recent.concat([word.id]).slice(-90));
+            const s = newContest({ mid, lv: 1, series, players, rounds: again && prev ? prev.rounds : sRounds(d), timer: again && prev ? prev.timer : sTimer(d), diff, now: srvNow(), word });
+            await X.update(X.ref(X.db, "rooms/" + X.room()), { status: "playing", matchId: mid, sketch: s, sketchInk: null, sketchChat: null });
+            return;
+        }
         const s = newMatch({ mid, lv: 1, series, players, rounds: again && prev ? prev.rounds : sRounds(d), timer: again && prev ? prev.timer : sTimer(d), diff: again && prev ? Number(prev.diff) || 0 : sDiff(d), now: srvNow() });
         await X.update(X.ref(X.db, "rooms/" + X.room()), { status: "playing", matchId: mid, sketch: s, sketchInk: null, sketchChat: null });
     } catch (e) { console.error(e); X.toast("Could not start Anime Sketch: " + (e.message || e)); }
@@ -183,6 +203,7 @@ function loop() {
     if (!s || d.gameType !== GT || !d.status || d.status === "waiting") { stopLoop(); return; }
     paintTimer(d, s);
     if (s.phase === "over") return;
+    if (isContest(s)) { contestLoop(d, s); return; }
     const now = srvNow(), me = X.me(), pres = presentIn(d), key = s.mid + ":" + s.n + ":" + s.phase, playing = arr(s.players).map(Number).includes(me);
     if (Number(s.drawer) === me && playing) {
         const sec = mySecret(s);
@@ -226,6 +247,38 @@ function watchHost(d, s, now) {
         X.update(X.ref(X.db, "rooms/" + X.room()), { host: X.me() }).then(() => X.toast(X.pName(d, host) + " lost connection. You're the host now.")).catch(() => {});
     }, 10000);
 }
+/* Contest duties. Everyone: step into a round you missed the start of (while it's still being drawn).
+   The host (or the backups, later): end the drawing / rating time, end it early once everyone still here is done /
+   has rated everything (rating gets a moment's grace to change a star), then the next round with its word. */
+function contestLoop(d, s) {
+    const now = srvNow(), me = X.me(), pres = presentIn(d), key = s.mid + ":" + s.n + ":" + s.phase;
+    if (s.phase === "draw" && arr(s.players).map(Number).includes(me) && !ents(s).includes(me) && pres(me) && now < Number(s.dl) - 5000) once("enter:" + key, () => tx({ k: "enter", tk: s.n }), 4000);
+    watchHost(d, s, now);
+    const rank = dutyRank(d); if (rank < 0) return;
+    const lag = rank === 0 ? 0 : 2500 + rank * 900;
+    if (s.phase === "draw" || s.phase === "rate") {
+        if (now >= Number(s.dl) + 400 + lag) once("to:" + key, () => tx({ k: "timeout", tk: s.n, ph: s.phase }));
+        const ready = s.phase === "draw" ? allDone(s, pres) : allRated(s, pres);
+        if (ready) once("chk:" + key, () => setTimeout(() => tx({ k: "check", tk: s.n, ph: s.phase }), (s.phase === "rate" ? 1500 : 300) + lag), 3500 + lag);
+    }
+    if (s.phase === "results" && now >= Number(s.nx) + lag) once("nx:" + key, () => contestNext(s));
+}
+async function contestNext(s) {
+    let word = null;
+    if (Number(s.round) < Number(s.rounds)) {
+        const recent = load(RKEY) || [];
+        word = contestWord(words(), s.series, { used: arr(s.log).map(L => L.w).filter(Boolean), recent, round: Number(s.round) + 1, mid: s.mid, diff: Number(s.diff) || 0 });
+        if (!word) return;
+        save(RKEY, recent.concat([word.id]).slice(-90));
+    }
+    const err = await tx({ k: "next", tk: s.n, ph: "results", word });
+    // the last round's drawings are not needed any more: remove them (only those, never a stroke of the new round)
+    if (!err && word) {
+        const upd = {};
+        ink.strokes.forEach((st, k) => { if (st.m === Number(s.mid) && st.n <= Number(s.n)) upd[k] = null; });
+        if (Object.keys(upd).length) X.update(inkRef(), upd).catch(() => {});
+    }
+}
 function startLoop() { if (!loopT) loopT = setInterval(loop, 250); }
 function stopLoop() { clearInterval(loopT); loopT = 0; }
 
@@ -241,14 +294,16 @@ function listenInk() {
     if (ink.room === X.room() && ink.unsub.length) return;
     unlistenInk(); ink.room = X.room();
     const r = inkRef();
-    const take = snap => { const v = snap.val(); if (!v || ink.mine.has(snap.key)) return null; return { m: Number(v.m), n: Number(v.n), g: v.g, c: v.c, w: Number(v.w) || 7, e: !!v.e, pts: String(v.p || "").split(",").map(Number).filter(x => !isNaN(x)), drawn: 0 }; };
-    ink.unsub.push(onChildAdded(r, snap => { const st = take(snap); if (!st) return; ink.strokes.set(snap.key, st); if (liveTurn(st)) paint(st, 0); }));
-    ink.unsub.push(onChildChanged(r, snap => { const st = take(snap); if (!st) return; const old = ink.strokes.get(snap.key); const from = old ? old.drawn : 0; ink.strokes.set(snap.key, st); if (liveTurn(st)) paint(st, from); }));
+    const take = snap => { const v = snap.val(); if (!v || ink.mine.has(snap.key)) return null; return { m: Number(v.m), n: Number(v.n), g: v.g, c: v.c, w: Number(v.w) || 7, e: !!v.e, o: Number(v.o) || 0, pts: String(v.p || "").split(",").map(Number).filter(x => !isNaN(x)), drawn: 0 }; };
+    ink.unsub.push(onChildAdded(r, snap => { const st = take(snap); if (!st) return; ink.strokes.set(snap.key, st); if (shown(st)) paint(st, 0); gallerySoon(st); }));
+    ink.unsub.push(onChildChanged(r, snap => { const st = take(snap); if (!st) return; const old = ink.strokes.get(snap.key); const from = old ? old.drawn : 0; ink.strokes.set(snap.key, st); if (shown(st)) paint(st, from); gallerySoon(st); }));
     ink.unsub.push(onChildRemoved(r, snap => { ink.strokes.delete(snap.key); ink.mine.delete(snap.key); redrawSoon(); }));
 }
 function unlistenInk() { ink.unsub.forEach(f => { try { f(); } catch (e) {} }); ink.unsub = []; ink.room = ""; ink.strokes.clear(); ink.mine.clear(); }
 const curTurn = () => { const s = (X.data() || {}).sketch; return s ? s.mid + ":" + s.n : ""; };
 const liveTurn = st => st.m + ":" + st.n === curTurn();
+// what the big sheet shows: Classic = the drawer's live strokes; Contest = only your own sheet (the others stay hidden until the gallery)
+const shown = st => { if (!liveTurn(st)) return false; const s = (X.data() || {}).sketch; return !isContest(s) || st.o === X.me(); };
 const xform = g => { const k = ink.scale * view.z; g.setTransform(k, 0, 0, k, -view.x * k, -view.y * k); };
 // a smooth stroke: quadratic curves through the midpoints. "from" = points already painted: continue from there.
 function paint(st, from) {
@@ -272,7 +327,7 @@ function paint(st, from) {
 function redraw() {
     const g = ink.g, cv = ink.cv; if (!g || !cv) return;
     g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = PAPER; g.fillRect(0, 0, cv.width, cv.height);
-    [...ink.strokes.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1).forEach(([, st]) => { if (liveTurn(st)) paint(st, 0); });
+    [...ink.strokes.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1).forEach(([, st]) => { if (shown(st)) paint(st, 0); });
     if (cur && cur.turn === curTurn()) paint(cur.st, 0);
 }
 function redrawSoon() { if (ink.raf) return; ink.raf = requestAnimationFrame(() => { ink.raf = 0; redraw(); }); }
@@ -282,7 +337,8 @@ function fitCanvas() {
     const W = Math.max(1, Math.round(r.width * dpr)), H = Math.max(1, Math.round(r.width * dpr * LH / LW));
     if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; ink.scale = W / LW; redraw(); }
 }
-const canDraw = () => { const s = (X.data() || {}).sketch; return !!s && s.phase === "draw" && Number(s.drawer) === X.me() && arr(s.players).map(Number).includes(X.me()) && srvNow() < Number(s.dl); };
+const canDraw = () => { const s = (X.data() || {}).sketch; if (isContest(s)) return s.phase === "draw" && ents(s).includes(X.me()) && !isDone(s, X.me()) && srvNow() < Number(s.dl);
+    return !!s && s.phase === "draw" && Number(s.drawer) === X.me() && arr(s.players).map(Number).includes(X.me()) && srvNow() < Number(s.dl); };
 // screen point -> sheet point (through this viewer's viewport), clamped to the sheet
 function toLogical(e) {
     const r = ink.cv.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
@@ -352,6 +408,7 @@ function bindCanvas(cv) {
         e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (er) {}
         const s = X.data().sketch, [x, y] = toLogical(e), key = push(inkRef()).key, w = tool.e ? tool.ew : tool.w;
         cur = { key, g: key, turn: s.mid + ":" + s.n, m: s.mid, n: s.n, keys: [key], data: {}, st: { m: Number(s.mid), n: Number(s.n), c: tool.c, w, e: tool.e, pts: [x, y], drawn: 0 }, dirty: true };
+        if (isContest(s)) cur.st.o = X.me();            // Contest: every stroke says whose sheet it's on
         redo = [];                                      // a new stroke ends the redo trail
         ink.mine.add(key); ink.strokes.set(key, cur.st); paint(cur.st, 0); flushSoon(); syncTools();
     });
@@ -373,6 +430,7 @@ function bindCanvas(cv) {
         if (st.pts.length >= 160) {      // long strokes go out in pieces so each write stays small
             flush();
             const P = st.pts, key = push(inkRef()).key, nst = { m: st.m, n: st.n, c: st.c, w: st.w, e: st.e, pts: [P[P.length - 2], P[P.length - 1]], drawn: 1 };
+            if (st.o) nst.o = st.o;
             cur.key = key; cur.st = nst; cur.keys.push(key); ink.mine.add(key); ink.strokes.set(key, nst); cur.dirty = true;
         }
     });
@@ -401,11 +459,13 @@ function flush() {
     if (!cur || !cur.dirty) return;
     cur.dirty = false;
     const v = { m: cur.m, n: cur.n, g: cur.g, c: cur.st.c, w: cur.st.w, e: cur.st.e ? 1 : 0, p: cur.st.pts.join(",") };
+    if (cur.st.o) v.o = cur.st.o;
+    gallerySoon(cur.st);
     cur.data[cur.key] = v;
     set(inkRef(cur.key), v).catch(() => {});
 }
 function endStroke() { if (!cur) return; flush(); undo.push({ keys: cur.keys, data: cur.data }); if (undo.length > 80) undo.shift(); cur = null; syncTools(); }
-const stOf = v => ({ m: Number(v.m), n: Number(v.n), g: v.g, c: v.c, w: Number(v.w) || 7, e: !!v.e, pts: String(v.p || "").split(",").map(Number), drawn: 0 });
+const stOf = v => ({ m: Number(v.m), n: Number(v.n), g: v.g, c: v.c, w: Number(v.w) || 7, e: !!v.e, o: Number(v.o) || 0, pts: String(v.p || "").split(",").map(Number), drawn: 0 });
 function undoLast() {
     if (!canDraw()) return;
     const it = undo.pop(); if (!it) return;
@@ -426,6 +486,14 @@ async function clearSheet() {
     if (!canDraw()) return;
     if (ink.strokes.size && !(await X.uiConfirm({ title: "Clear the drawing?", text: "Everything on the sheet is erased for everyone. This can't be undone.", ok: "Clear", danger: true }))) return;
     if (!canDraw()) return;
+    const s = X.data().sketch;
+    if (isContest(s)) {             // Contest: clear only your own sheet
+        const upd = {}; ink.strokes.forEach((st, k) => { if (st.o === X.me() && liveTurn(st)) upd[k] = null; });
+        Object.keys(upd).forEach(k => ink.strokes.delete(k));
+        X.sfx("skErase"); undo = []; redo = []; redraw(); syncTools();
+        if (Object.keys(upd).length) X.update(inkRef(), upd).catch(() => {});
+        return;
+    }
     X.sfx("skErase"); undo = []; redo = []; ink.strokes.clear(); redraw(); syncTools();
     remove(inkRef()).catch(() => {});
 }
@@ -491,6 +559,7 @@ async function send(e) {
     if (!playing) { feedback("You're watching. Join next round to guess.", "warn"); return; }
     if (Date.now() - lastSend < 350 || sending) return;
     lastSend = Date.now();
+    if (isContest(s)) { inp.value = ""; post("c", text); return; }      // Contest: the word is public, the chat is just chat
     const live = s.phase === "draw", drawer = Number(s.drawer) === me;
     const hot = () => !!claim(text, s.salt, s.wh, s.wv) || near(text, s.salt, s.wt);   // the answer, or anything close to it
     if (live && drawer) {
@@ -533,6 +602,7 @@ export function sketchReset() {
     unlistenInk(); unlistenChat();
     if (roRef) { roRef.disconnect(); roRef = null; }
     const o = $("Over"); if (o) o.remove();
+    closeLightbox(); keeps.clear(); doneBusy = false;
 }
 const feedback = (msg, kind) => { const f = $("Feedback"); if (!f) return; f.textContent = msg; f.className = "sk-feedback show " + (kind || ""); clearTimeout(f._t); f._t = setTimeout(() => f.classList.remove("show"), 3000); };
 export function showSketch(d) {
@@ -567,7 +637,10 @@ function build() {
     const rg = el("i", "sk-ring hidden"); rg.id = "skRing"; rg.setAttribute("aria-hidden", "true");
     paper.append(el("i", "sk-tape a"), el("i", "sk-tape b"), cv, rg, zm, ov);
     const tools = el("div", "sk-tools"); tools.id = "skTools";
-    board.append(paper, tools);
+    // Contest only: the "I'm done" bar under your sheet, and the gallery that replaces the sheet for rating and results
+    const doneBar = el("div", "sk-donebar hidden"); doneBar.id = "skDoneBar";
+    const gal = el("section", "sk-gallery hidden"); gal.id = "skGallery"; gal.setAttribute("aria-label", "Drawings");
+    board.append(paper, tools, doneBar, gal);
     const side = el("aside", "sk-chat");
     const log = el("ul", "sk-log"); log.id = "skLog"; log.setAttribute("aria-live", "polite");
     const form = el("form", "sk-input"); form.id = "skForm";
@@ -584,7 +657,7 @@ function build() {
     bindCanvas(cv); bindZoom(paper, cv);
     buildTools(tools); syncZoom();
     if (roRef) roRef.disconnect();
-    roRef = new ResizeObserver(() => fitCanvas()); roRef.observe(paper);
+    roRef = new ResizeObserver(() => { fitCanvas(); gallerySoon(); }); roRef.observe(paper); roRef.observe(gal);
     fitCanvas();
 }
 function buildTools(box) {
@@ -669,6 +742,18 @@ function slots(mask, shown) {
 }
 function paintTimer(d, s) {
     const tm = $("Timer"); if (!tm) return;
+    if (isContest(s)) {
+        const on = (s.phase === "draw" || s.phase === "rate") && Number(s.dl);
+        tm.classList.toggle("off", !on);
+        if (!on) { tm.querySelector("b").textContent = ""; tm.classList.remove("low"); return; }
+        const total = Math.max(1, Number(s.dl) - Number(s.t0)), left = Math.max(0, Number(s.dl) - srvNow()), sec = Math.ceil(left / 1000);
+        tm.querySelector("b").textContent = String(sec);
+        tm.querySelector(".sk-tarc").style.strokeDashoffset = String(119.4 * (1 - Math.min(1, left / total)));
+        tm.classList.toggle("low", sec <= 10);
+        const mine = s.phase === "draw" ? ents(s).includes(X.me()) && !isDone(s, X.me()) : ents(s).includes(X.me()) && !ratedAll(s, X.me());
+        if (sec <= 5 && sec > 0 && tm._last !== sec && mine) { tm._last = sec; X.sfx("tick"); }
+        return;
+    }
     const live = (s.phase === "draw" || s.phase === "pick") && Number(s.dl);
     tm.classList.toggle("off", !live);
     if (!live) { tm.querySelector("b").textContent = ""; return; }
@@ -684,6 +769,7 @@ function paintTimer(d, s) {
     }
 }
 function render(d, s) {
+    if (isContest(s)) { renderContest(d, s); return; }
     const me = X.me(), playing = arr(s.players).map(Number).includes(me), drawer = Number(s.drawer) === me && playing;
     $("TurnT").textContent = s.phase === "over" ? "FINAL SCORES" : "ROUND " + s.round + " / " + s.rounds;
     $("Status").textContent = s.phase === "pick" ? (drawer ? "Pick a word to draw" : X.pName(d, s.drawer) + " is picking a word") : s.phase === "draw" ? (drawer ? "You're drawing! Don't write the word." : !playing ? "You're watching " + X.pName(d, s.drawer) + " draw" : hasGot(s, me) ? "You got it! Watch the others" : "Guess what " + X.pName(d, s.drawer) + " is drawing") : s.phase === "reveal" ? "Turn over" : s.phase === "round" ? "Round " + s.round + " summary" : "";
@@ -802,6 +888,7 @@ function overlay(d, s) {
     }
 }
 function onEvent(d, s, e) {
+    if (isContest(s)) { onContestEvent(d, s, e); return; }
     const me = X.me(), playing = arr(s.players).map(Number).includes(me);
     if (e.k === "turn") {
         X.sfx("skTurn");
@@ -828,6 +915,7 @@ function banner(text, sub) { const fx = $("Fx"); if (!fx) return; const b = el("
 
 /* ---------------- the end ---------------- */
 function showOver(d, s) {
+    if (isContest(s)) { showContestOver(d, s); return; }
     const old = $("Over"); if (old) old.remove();
     const o = el("div", "sk-over"); o.id = "skOver"; o.setAttribute("role", "dialog"); o.setAttribute("aria-label", "Final scores");
     const card = el("div", "sk-ocard");
@@ -844,6 +932,337 @@ function showOver(d, s) {
     card.appendChild(list);
     const words2 = arr(s.log).filter(L => L.w).map(L => L.w);
     if (words2.length) card.appendChild(el("p", "sk-owords", "Drawn: " + words2.join(" · ")));
+    const btns = el("div", "sk-obtns");
+    if (X.amHost()) { const a = el("button", "btn xl", "Rematch"); a.onclick = () => window.skAgain(); const b = el("button", "btn ghost", "Back to lobby"); b.onclick = () => window.skLobby(); btns.append(a, b); }
+    else btns.appendChild(el("p", "sk-wait", "Waiting for " + X.pName(d, X.hostSlot(d)) + " to start a rematch or go back to the lobby."));
+    card.appendChild(btns);
+    o.appendChild(card); document.body.appendChild(o);
+    X.sfx(iWon ? "win" : arr(s.players).map(Number).includes(me) ? "skRound" : "skAll");
+    if (X.motionOK()) confetti(o, ["#ff5a5a", "#ffd21f", "#3fc46b", "#2f8cff", "#b06bff", "#ff5fa8"]);
+    setTimeout(() => { const f = o.querySelector("button"); if (f) try { f.focus({ preventScroll: true }); } catch (e) {} }, 60);
+}
+
+/* =====================================================================
+   CONTEST (the second game type): everyone draws the same word on their own sheet, then rates the others' drawings.
+   Rules in engine.js (actContest). The drawings live in sketchInk like Classic strokes, each tagged with its owner (o);
+   while drawing, each player's sheet shows only their own strokes. In the rating phase the sheet is replaced by an
+   anonymous gallery (same shuffled order and letters in every browser); the results show names and stars.
+   ===================================================================== */
+const LETTERS = "ABCDEFGH";
+let doneBusy = false, galRaf = 0, lb = null;
+const keeps = new Map();         // "mid:round" -> the round's best drawing as a picture, for the final screen (this browser only)
+const inRoundOf = (s, p) => ents(s).includes(Number(p));
+function renderContest(d, s) {
+    const me = X.me(), playing = arr(s.players).map(Number).includes(me), inRound = inRoundOf(s, me), drawing = inRound && s.phase === "draw" && !isDone(s, me);
+    $("TurnT").textContent = s.phase === "over" ? "FINAL SCORES" : "CONTEST · ROUND " + s.round + " / " + s.rounds;
+    $("Status").textContent = s.phase === "draw" ? (drawing ? "Draw it! No letters or words." : inRound ? "Done! Waiting for the others" : "Everyone is drawing")
+        : s.phase === "rate" ? (inRound ? (ratedAll(s, me) ? "All rated! You can still change a star" : "Rate every drawing 1 to 5 stars") : "The artists are rating")
+        : s.phase === "results" ? "Round " + s.round + " results" : "";
+    const rc = $("Round"); if (rc.dataset.k !== s.round + "/" + s.rounds) { rc.dataset.k = s.round + "/" + s.rounds; rc.innerHTML = ""; rc.append(el("small", null, "ROUND"), el("b", null, s.round + "/" + s.rounds)); }
+    const ch = document.querySelector("#skWrap .sk-chat-h"); if (ch) ch.textContent = "CHAT";
+    contestWordView(d, s);
+    contestPlayers(d, s);
+    $("Tools").classList.toggle("hidden", !drawing);
+    $("Paper").classList.toggle("drawable", drawing);
+    if (ink.turn !== s.mid + ":" + s.n) { ink.turn = s.mid + ":" + s.n; if (!(cur && cur.turn === ink.turn)) { cur = null; undo = []; redo = []; } zoomResetNow(); syncTools(); redraw(); }
+    if (!drawing && cur) endStroke();
+    if (lb && (lb.n !== s.n || lb.ph !== s.phase)) closeLightbox();
+    contestOverlay(d, s);
+    doneBarView(d, s);
+    galleryView(d, s);
+    rebuildChat(s);
+    const inp = $("Input"), form = $("Form"), jb = $("JoinBar");
+    form.classList.toggle("hidden", !playing);
+    inp.placeholder = "Chat…";
+    jb.classList.toggle("hidden", playing);
+    if (!playing) {
+        const queued = !!(s.pend || {})["p" + me], k = queued + ":" + s.phase;
+        if (jb.dataset.k !== k) {
+            jb.dataset.k = k; jb.innerHTML = "";
+            jb.appendChild(el("p", null, queued ? "You're in! You'll draw and rate from the next round." : "You're watching this contest. Spectators can't draw or rate."));
+            if (s.phase !== "over") { const b = el("button", "btn " + (queued ? "ghost" : ""), queued ? "Stay a spectator" : "Join next round"); b.type = "button"; b.onclick = () => window.skJoin(); jb.appendChild(b); }
+        }
+    }
+}
+function contestWordView(d, s) {
+    const box = $("Word"); if (!box) return;
+    const me = X.me(), w = s.word || {}, inRound = inRoundOf(s, me), L = arr(s.log)[arr(s.log).length - 1] || {};
+    const sig = [s.mid, s.n, s.phase, w.t || "", inRound, isDone(s, me)].join("|");
+    if (box.dataset.k === sig) return; box.dataset.k = sig;
+    box.innerHTML = "";
+    const kick = el("small", "sk-wkick"), line = el("div", "sk-wline"), sub = el("small", "sk-wsub"); sub.id = "skWordSub";
+    const cat = (CAT_NAME[w.cat] || w.cat || "").toUpperCase(), from = arr(s.series).length > 1 && w.s ? " · " + label(w.s).toUpperCase() : "";
+    if (s.phase === "draw") {
+        kick.textContent = "EVERYONE DRAWS · " + cat + from;
+        line.appendChild(el("span", "sk-secret", w.t || "…"));
+        sub.textContent = !inRound ? "You're watching. The drawings are shown when time runs out." : isDone(s, me) ? "Done! Changed your mind? Press Keep drawing while the timer runs." : "Same word for everyone. Draw it your way: no letters or words!";
+    } else if (s.phase === "rate") {
+        kick.textContent = "RATE THE DRAWINGS · " + cat;
+        line.appendChild(el("span", "sk-secret", w.t || "…"));
+        sub.textContent = inRound ? "1 to 5 stars for every drawing except yours. Names stay hidden until the results." : "The artists are rating. Names stay hidden until the results.";
+    } else if (s.phase === "results") {
+        kick.textContent = "ROUND " + s.round + " OF " + s.rounds + " · RESULTS";
+        if (w.c && charOf(w.c)) line.appendChild(img(w.c, "sk-wimg"));
+        line.appendChild(el("span", "sk-answer", w.t || L.w || "…"));
+        const res = arr(L.res), top = res.length ? Number(res[0].pts) : 0, best = res.filter(x => Number(x.pts) === top && top > 0).map(x => X.pName(d, x.p));
+        sub.textContent = best.length ? "Best drawing: " + best.join(" & ") + " · " + top + " ★" : "No ratings this round.";
+    } else {
+        kick.textContent = "CONTEST OVER";
+        line.appendChild(el("span", "sk-wait", "Final scores"));
+    }
+    box.append(kick, line, sub);
+}
+function contestPlayers(d, s) {
+    const box = $("Players"), pres = presentIn(d), me = X.me(), st = standings(s);
+    const off = new Set(arr(s.players).map(Number).filter(p => !pres(p)));
+    if (offSeen && offSeen.mid === s.mid) {
+        off.forEach(p => { if (!offSeen.set.has(p)) localLine(X.pName(d, p) + ((d["player" + p] || {}).left ? " left the match." : " lost connection."), "join"); });
+        offSeen.set.forEach(p => { if (!off.has(p) && d["player" + p] && !d["player" + p].left) localLine(X.pName(d, p) + " is back.", "join"); });
+    }
+    offSeen = { mid: s.mid, set: off };
+    const spect = X.activeSlots(d).filter(p => !arr(s.players).map(Number).includes(p));
+    const prog = arr(s.players).map(Number).map(p => [p, isDone(s, p) ? 1 : 0, Object.keys(ratedBy(s, p)).length]);
+    const sig = JSON.stringify([st, s.n, s.phase, s.ent, prog, s.phase === "results" ? s.gain : null, spect, s.pend, X.activeSlots(d).map(p => pres(p)), X.hostSlot(d)]);
+    if (box.dataset.k === sig) return; box.dataset.k = sig;
+    box.innerHTML = "";
+    const ol = el("ol", "sk-plist");
+    st.forEach(x => {
+        const p = x.p, place = st.findIndex(y => y.score === x.score) + 1, inR = inRoundOf(s, p);
+        const busy = inR && (s.phase === "draw" ? !isDone(s, p) : s.phase === "rate" ? !ratedAll(s, p) : false);
+        const fin = inR && (s.phase === "draw" ? isDone(s, p) : s.phase === "rate" ? ratedAll(s, p) : false);
+        const li = el("li", "sk-p" + (p === me ? " me" : "") + (busy ? " drawing" : "") + (fin ? " got" : "") + (pres(p) ? "" : " off"));
+        li.dataset.emote = "p" + p; li.style.setProperty("--pc", pCol(d, p));
+        const n = toRate(s, p).filter(q => Number(ratedBy(s, p)["p" + q]) >= 1).length;
+        const what = !pres(p) ? "offline" : s.phase === "over" ? "" : !inR ? "next round"
+            : s.phase === "draw" ? (isDone(s, p) ? "✔ done" : "✏️ drawing") : s.phase === "rate" ? (ratedAll(s, p) ? "✔ rated all" : "⭐ rating " + n + "/" + toRate(s, p).length) : "";
+        const nm = el("span", "sk-pn"); nm.append(el("b", null, X.pName(d, p) + (p === me ? " (you)" : "")), el("small", null, what || (p === X.hostSlot(d) ? "host" : "")));
+        const sc = el("strong", "sk-ps", String(x.score)); sc.id = "skScore" + p;
+        li.append(el("span", "sk-prank", "#" + place), X.avatarEl(X.pPub(d, p), { size: 30 }), nm, sc);
+        const gain = s.phase === "results" && s.gain ? Number(s.gain["p" + p]) || 0 : 0;
+        if (gain) li.appendChild(el("em", "sk-pgain", "+" + gain + " ★"));
+        ol.appendChild(li);
+    });
+    box.appendChild(ol);
+    if (spect.length) {
+        const sp = el("div", "sk-spect"); sp.appendChild(el("small", null, "WATCHING"));
+        spect.forEach(p => { const c = el("span", "sk-sp" + ((s.pend || {})["p" + p] ? " queued" : "")); c.append(X.avatarEl(X.pPub(d, p), { size: 20 }), el("i", null, X.pName(d, p) + ((s.pend || {})["p" + p] ? " · next round" : ""))); sp.appendChild(c); });
+        box.appendChild(sp);
+    }
+}
+// the sheet's overlay: only for people who aren't drawing this round (everyone else sees their own sheet)
+function contestOverlay(d, s) {
+    const ov = $("Overlay"), me = X.me(), watching = s.phase === "draw" && !inRoundOf(s, me);
+    const k = ["c", s.mid, s.n, s.phase, watching, watching ? ents(s).filter(p => isDone(s, p)).length : ""].join("|");
+    if (ov.dataset.k === k) return; ov.dataset.k = k; ov.innerHTML = ""; ov.className = "sk-overlay";
+    if (!watching) { ov.classList.add("off"); return; }
+    ov.classList.add("wait");
+    const done = ents(s).filter(p => isDone(s, p)).length;
+    ov.append(el("h3", null, "Everyone is drawing"), el("p", null, "“" + ((s.word || {}).t || "…") + "” · " + done + " of " + ents(s).length + " done. The drawings are shown when time runs out."));
+}
+function doneBarView(d, s) {
+    const bar = $("DoneBar"); if (!bar) return;
+    const me = X.me(), on = s.phase === "draw" && inRoundOf(s, me);
+    bar.classList.toggle("hidden", !on);
+    if (!on) { bar.dataset.k = ""; return; }
+    const done = isDone(s, me), n = ents(s).filter(p => isDone(s, p)).length, tot = ents(s).length;
+    const sig = [s.mid, s.n, done, n, tot].join("|"); if (bar.dataset.k === sig) return; bar.dataset.k = sig;
+    bar.innerHTML = ""; bar.classList.toggle("is-done", done);
+    if (!done) {
+        const b = el("button", "btn", "✔ I'm done"); b.type = "button"; b.onclick = () => markDone(true);
+        bar.append(el("p", null, n ? n + " of " + tot + " finished. When everyone is done, the drawings are revealed." : "Finished early? Press Done. When everyone is done, the drawings are revealed."), b);
+    } else {
+        const b = el("button", "btn ghost", "Keep drawing"); b.type = "button"; b.onclick = () => markDone(false);
+        bar.append(el("p", null, "✔ You're done · " + n + " of " + tot + " finished"), b);
+    }
+}
+async function markDone(on) {
+    const s = (X.data() || {}).sketch; if (!isContest(s) || s.phase !== "draw" || doneBusy) return;
+    doneBusy = true;
+    if (on && cur) endStroke();
+    X.sfx(on ? "skCorrect" : "toggle");
+    const err = await tx({ k: on ? "done" : "undone", tk: s.n });
+    doneBusy = false;
+    if (err && err !== "stale") feedback(err === "net" ? "Couldn't send that. Check your connection." : err, "warn");
+}
+async function rateIt(p, v) {
+    const s = (X.data() || {}).sketch; if (!isContest(s) || s.phase !== "rate") return;
+    X.sfx("pick");
+    const err = await tx({ k: "rate", tk: s.n, to: p, v });
+    if (err === "stale") feedback("Rating is over for this round.", "warn");
+    else if (err) feedback(err === "net" ? "Couldn't send that. Check your connection." : err, "warn");
+}
+
+/* ---------------- the gallery ---------------- */
+function galleryView(d, s) {
+    const box = $("Gallery"), paper = $("Paper"); if (!box) return;
+    const on = s.phase === "rate" || s.phase === "results" || s.phase === "over";      // over: the last results stay behind the final screen
+    box.classList.toggle("hidden", !on); paper.classList.toggle("hidden", on);
+    if (!on) { box.dataset.k = ""; return; }
+    const me = X.me(), results = s.phase !== "rate", L = arr(s.log)[arr(s.log).length - 1] || {}, gal = arr(s.gal).map(Number);
+    const order = results ? arr(L.res).map(x => Number(x.p)) : gal;
+    const sig = [s.mid, s.n, results ? "res" : "rate", order.join()].join("|");      // results -> over keeps the same cards
+    if (box.dataset.k !== sig) {
+        box.dataset.k = sig; box.innerHTML = "";
+        box.classList.toggle("results", results);
+        const head = el("div", "sk-ghead");
+        head.append(el("b", null, results ? "Round " + s.round + " results" : "Rate the drawings"), el("span", null, results ? "Names revealed · points = stars received" : "Anonymous · tap a drawing to see it bigger"));
+        const prog = el("em", "sk-gprog"); prog.id = "skRateProg"; head.appendChild(prog);
+        const grid = el("div", "sk-ggrid");
+        const res = arr(L.res), top = res.length ? Number(res[0].pts) : 0;
+        order.forEach((p, i) => {
+            const letter = LETTERS[gal.indexOf(p)] || "?";
+            const card = el("figure", "sk-gcard" + (p === me ? " mine" : "")); card.dataset.p = p; card.style.setProperty("--i", i);
+            const sheet = el("button", "sk-gsheet"); sheet.type = "button";
+            const title = results ? X.pName(d, p) + "'s drawing" : p === me ? "Your drawing" : "Drawing " + letter;
+            sheet.setAttribute("aria-label", "Enlarge: " + title); sheet.appendChild(el("canvas")); sheet.onclick = () => openLightbox(p, title);
+            const cap = el("figcaption");
+            if (!results) {
+                cap.appendChild(el("b", "sk-gtag", p === me ? "YOURS" : "DRAWING " + letter));
+                if (p === me) cap.appendChild(el("small", null, "You can't rate your own"));
+                else if (inRoundOf(s, me)) cap.appendChild(starsEl(p, letter));
+                else cap.appendChild(el("small", null, "Waiting for the artists' stars"));
+            } else {
+                const r = res.find(x => Number(x.p) === p) || { pts: 0, n: 0 }, place = res.findIndex(x => Number(x.pts) === Number(r.pts)) + 1, win = Number(r.pts) === top && top > 0;
+                if (win) card.classList.add("win");
+                const who = el("span", "sk-gwho"); who.append(el("i", "sk-gplace", win ? "👑" : "#" + place), X.avatarEl(X.pPub(d, p), { size: 24 }), el("b", null, X.pName(d, p) + (p === me ? " (you)" : "")));
+                const avg = r.n ? (r.pts / r.n).toFixed(1) : "–";
+                cap.append(who, el("small", null, "Drawing " + letter + " · ★ " + avg + " avg · " + r.n + " rating" + (r.n === 1 ? "" : "s")), el("strong", "sk-gpts", "+" + r.pts));
+            }
+            card.append(sheet, cap); grid.appendChild(card);
+        });
+        box.append(head, grid);
+        paintGallery();
+    }
+    if (!results) syncStars(s);
+    else { const pr = $("RateProg"); if (pr) pr.textContent = ""; }
+}
+function starsEl(p, letter) {
+    const row = el("div", "sk-stars"); row.setAttribute("role", "group"); row.setAttribute("aria-label", "Your stars for drawing " + letter);
+    for (let v = 1; v <= CT.stars; v++) { const b = el("button", "sk-star", "★"); b.type = "button"; b.dataset.v = v; b.setAttribute("aria-label", v + " star" + (v > 1 ? "s" : "")); b.onclick = e => { e.stopPropagation(); rateIt(p, v); }; row.appendChild(b); }
+    return row;
+}
+function syncStars(s) {
+    const me = X.me(), mine = ratedBy(s, me);
+    document.querySelectorAll("#skGallery .sk-gcard, .sk-lightbox .sk-gcard").forEach(card => {
+        const v = Number(mine["p" + card.dataset.p]) || 0;
+        card.querySelectorAll(".sk-star").forEach(b => { const n = Number(b.dataset.v); b.classList.toggle("on", n <= v); b.setAttribute("aria-pressed", String(n === v)); });
+        card.classList.toggle("rated", v > 0);
+    });
+    const pr = $("RateProg");
+    if (pr) { const all = toRate(s, me), n = all.filter(q => Number(mine["p" + q]) >= 1).length; pr.textContent = inRoundOf(s, me) ? n + " / " + all.length + " rated" : ""; pr.classList.toggle("ok", inRoundOf(s, me) && n === all.length); }
+}
+const sheetStrokes = (s, p) => [...ink.strokes.entries()].filter(([, st]) => st.m === Number(s.mid) && st.n === Number(s.n) && st.o === Number(p)).sort((a, b) => a[0] < b[0] ? -1 : 1).map(x => x[1]);
+function strokeOn(g, st, k) {
+    const P = st.pts, n = P.length / 2; if (n < 1) return;
+    g.save(); g.setTransform(k, 0, 0, k, 0, 0);
+    g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = g.fillStyle = st.e ? PAPER : st.c; g.lineWidth = st.w;
+    if (n === 1) { g.beginPath(); g.arc(P[0], P[1], st.w / 2, 0, Math.PI * 2); g.fill(); }
+    else {
+        g.beginPath(); g.moveTo(P[0], P[1]);
+        for (let i = 1; i <= n - 2; i++) g.quadraticCurveTo(P[2 * i], P[2 * i + 1], (P[2 * i] + P[2 * i + 2]) / 2, (P[2 * i + 1] + P[2 * i + 3]) / 2);
+        g.lineTo(P[2 * n - 2], P[2 * n - 1]); g.stroke();
+    }
+    g.restore();
+}
+// paint one player's whole sheet into a canvas of any size; returns how many strokes it has
+function paintSheet(cv, list) {
+    const r = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = Math.max(40, Math.round((r.width || 240) * dpr)), H = Math.round(W * LH / LW);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    const g = cv.getContext("2d"); g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = PAPER; g.fillRect(0, 0, W, H);
+    list.forEach(st => strokeOn(g, st, W / LW));
+    return list.length;
+}
+function gallerySoon(st) {
+    const s = (X.data() || {}).sketch;
+    if (!isContest(s) || !(s.phase === "rate" || s.phase === "results" || s.phase === "over")) return;
+    if (st && st.m + ":" + st.n !== s.mid + ":" + s.n) return;
+    if (galRaf) return;
+    galRaf = requestAnimationFrame(() => { galRaf = 0; paintGallery(); });
+}
+function paintGallery() {
+    const s = (X.data() || {}).sketch; if (!isContest(s)) return;
+    document.querySelectorAll("#skGallery .sk-gcard").forEach(card => { const cv = card.querySelector("canvas"); if (cv) card.classList.toggle("blank", !paintSheet(cv, sheetStrokes(s, card.dataset.p))); });
+    if (lb && lb.n === s.n) paintSheet(lb.cv, sheetStrokes(s, lb.p));
+    if (s.phase === "results") keepBest(s);
+}
+// the round's best drawing, kept as a picture for the final screen
+function keepBest(s) {
+    const L = arr(s.log)[arr(s.log).length - 1]; if (!L || Number(L.n) !== Number(s.n)) return;
+    const top = arr(L.res)[0]; if (!top || !Number(top.pts)) return;
+    const card = document.querySelector('#skGallery .sk-gcard[data-p="' + Number(top.p) + '"]'), cv = card && card.querySelector("canvas");
+    if (!cv || card.classList.contains("blank")) return;
+    try { keeps.set(s.mid + ":" + s.round, { p: Number(top.p), w: L.w, pts: Number(top.pts), url: cv.toDataURL("image/png") }); } catch (e) {}
+}
+function openLightbox(p, title) {
+    closeLightbox();
+    const s = (X.data() || {}).sketch; if (!isContest(s)) return;
+    const me = X.me(), o = el("div", "sk-lightbox"); o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true"); o.setAttribute("aria-label", title);
+    const fig = el("figure", "sk-gcard sk-lbcard"); fig.dataset.p = p;
+    const cv = el("canvas"), cap = el("figcaption"); cap.appendChild(el("b", null, title));
+    if (s.phase === "rate" && p !== me && inRoundOf(s, me)) cap.appendChild(starsEl(p, LETTERS[arr(s.gal).map(Number).indexOf(p)] || "?"));
+    fig.append(cv, cap);
+    const x = el("button", "sk-lbx", "✕"); x.type = "button"; x.setAttribute("aria-label", "Close"); x.onclick = closeLightbox;
+    o.onclick = e => { if (e.target === o) closeLightbox(); };
+    o.append(fig, x); document.body.appendChild(o);
+    lb = { o, cv, p: Number(p), n: s.n, ph: s.phase };
+    paintSheet(cv, sheetStrokes(s, p));
+    if (s.phase === "rate") syncStars(s);
+    try { x.focus({ preventScroll: true }); } catch (e) {}
+}
+function closeLightbox() { if (!lb) return false; lb.o.remove(); lb = null; return true; }
+
+/* ---------------- events + the end ---------------- */
+function onContestEvent(d, s, e) {
+    const me = X.me(), w = (s.word || {}).t || "";
+    if (e.k === "draw") {
+        X.sfx("skTurn");
+        banner("ROUND " + s.round, "Everyone draws: " + w);
+        localLine("Round " + s.round + ": everyone draws “" + w + "”.", "turn");
+        if (arr(e.joined).length) localLine(arr(e.joined).map(p => X.pName(d, p)).join(", ") + " joined the contest.", "join");
+    } else if (e.k === "rate") {
+        X.sfx("skTime");
+        banner("PENCILS DOWN!", inRoundOf(s, me) ? "Rate the drawings" : "The artists are rating");
+    } else if (e.k === "results") {
+        X.sfx("skAll");
+        Object.entries(s.gain || {}).forEach(([k, g]) => {
+            const p = Number(k.slice(1)), row = $("Score" + p); if (!row || !Number(g)) return;
+            const r = row.getBoundingClientRect(); X.burstText("+" + g, r.left + r.width / 2, r.top, "#ffd21f");
+            const tot = Number((s.score || {})["p" + p]) || 0; X.countUp(row, Math.max(0, tot - Number(g)), tot, 700);
+        });
+        const L = arr(s.log)[arr(s.log).length - 1] || {}, top = arr(L.res)[0];
+        if (top && Number(top.pts)) localLine("Best drawing of round " + s.round + ": " + X.pName(d, top.p) + " (" + top.pts + " ★)", "turn");
+    }
+}
+function showContestOver(d, s) {
+    const old = $("Over"); if (old) old.remove();
+    closeLightbox();
+    const o = el("div", "sk-over"); o.id = "skOver"; o.setAttribute("role", "dialog"); o.setAttribute("aria-label", "Final scores");
+    const card = el("div", "sk-ocard");
+    const w = arr(s.winners).map(Number), me = X.me(), iWon = w.includes(me);
+    card.appendChild(el("div", "sk-okick", (s.end === "few" ? "NOT ENOUGH PLAYERS LEFT · " : "") + "ANIME SKETCH CONTEST · " + s.rounds + " ROUND" + (s.rounds == 1 ? "" : "S")));
+    card.appendChild(el("h2", "sk-otitle", w.length === 1 ? X.pName(d, w[0]).toUpperCase() + " WINS!" : w.length ? "SHARED WIN: " + w.map(p => X.pName(d, p)).join(" & ").toUpperCase() : "GAME OVER"));
+    const list = el("ol", "sk-orank");
+    standings(s).forEach((x, i, all) => {
+        const place = all.findIndex(y => y.score === x.score) + 1;
+        const mine = arr(s.log).map(L => arr(L.res).find(r => Number(r.p) === x.p)).filter(Boolean), n = mine.reduce((a, r) => a + Number(r.n), 0);
+        const best = arr(s.log).filter(L => { const t = arr(L.res)[0]; return t && Number(t.p) === x.p && Number(t.pts) > 0; }).length;
+        const li = el("li", (w.includes(x.p) ? "won" : "") + (x.p === me ? " me" : ""));
+        li.append(el("span", "sk-orn", place === 1 ? "🏆" : "#" + place), X.avatarEl(X.pPub(d, x.p), { size: 34 }), el("b", null, X.pName(d, x.p) + (x.p === me ? " (you)" : "")),
+            el("small", null, (n ? "★ " + (x.score / n).toFixed(1) + " avg from " + n + " rating" + (n === 1 ? "" : "s") : "no ratings") + (best ? " · best drawing ×" + best : "")), el("strong", null, String(x.score)));
+        list.appendChild(li);
+    });
+    card.appendChild(list);
+    const shots = arr(s.log).map(L => keeps.get(s.mid + ":" + L.r)).filter(Boolean);
+    if (shots.length) {
+        const strip = el("div", "sk-owin"); strip.appendChild(el("small", null, "BEST DRAWING OF EACH ROUND"));
+        const row = el("div", "sk-owrow");
+        shots.forEach(k => { const f = el("figure"); const im = new Image(); im.src = k.url; im.alt = k.w + " by " + X.pName(d, k.p); f.append(im, el("figcaption", null, k.w + " · " + X.pName(d, k.p) + " · " + k.pts + " ★")); row.appendChild(f); });
+        strip.appendChild(row); card.appendChild(strip);
+    } else {
+        const ws = arr(s.log).filter(L => L.w).map(L => L.w);
+        if (ws.length) card.appendChild(el("p", "sk-owords", "Drawn: " + ws.join(" · ")));
+    }
     const btns = el("div", "sk-obtns");
     if (X.amHost()) { const a = el("button", "btn xl", "Rematch"); a.onclick = () => window.skAgain(); const b = el("button", "btn ghost", "Back to lobby"); b.onclick = () => window.skLobby(); btns.append(a, b); }
     else btns.appendChild(el("p", "sk-wait", "Waiting for " + X.pName(d, X.hostSlot(d)) + " to start a rematch or go back to the lobby."));

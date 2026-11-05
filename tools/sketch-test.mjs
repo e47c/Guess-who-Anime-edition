@@ -1,6 +1,7 @@
 // Anime Sketch rules + word library tests: node tools/sketch-test.mjs
 import { SK, norm, maskOf, letters, hintMax, pickHint, hintAt, spans, buildWords, poolFor, pickOptions, newMatch, act, eligible, allGot, hasGot, gotList,
-    hintDue, standings, ptsFor, fp, prints, claim, near, wordPrints, del1, CATS, TYPO_MIN, parseEntry } from "../js/sketch/engine.js";
+    hintDue, standings, ptsFor, fp, prints, claim, near, wordPrints, del1, CATS, TYPO_MIN, parseEntry,
+    CT, isContest, rateMsFor, contestWord, seeded, ents, isDone, ratedBy, toRate, ratedAll, allDone, allRated, tally, newContest } from "../js/sketch/engine.js";
 import { LIBRARY } from "../js/sketch/words.js";
 import { CHARS } from "../js/draft/data.js";
 
@@ -269,6 +270,136 @@ for (const n of [2, 8]) {
     t(total === Object.values(m.score).reduce((a, b) => a + b, 0), n + " players: the scores add up to the turn log exactly");
     t(m.log.filter(L => !L.got.length).every(L => L.bonus === 0), n + " players: no drawer bonus when nobody guessed");
     t(standings(m)[0].score >= standings(m)[n - 1].score && m.winners.length >= 1, n + " players: final ranking + winner");
+}
+
+/* ---------------- Contest: same word for everyone, then 1-5 star ratings ---------------- */
+sect("contest: a round");
+{
+    const w1 = contestWord(W, ["onepiece"], { round: 1, mid: 0, rnd });
+    t(w1 && w1.cat === "Character", "round 1 of match 0 is a character");
+    t(contestWord(W, ["onepiece"], { round: 2, mid: 0, rnd }).cat === "Weapon" && contestWord(W, ["onepiece"], { round: 3, mid: 0, rnd }).cat === "Object", "categories take turns: character, weapon, object & item");
+    t(contestWord(W, ["onepiece"], { round: 1, mid: 1, rnd }).cat === "Weapon", "each match starts the rotation somewhere else");
+    const usedC = W.gachiakuta.slice(0, W.gachiakuta.length - 2).map(w => w.t), wl = contestWord(W, ["gachiakuta"], { used: usedC, rnd });
+    t(wl && !usedC.includes(wl.t), "never a word already drawn this match");
+    let m = newContest({ mid: 50, series: ["onepiece"], players: [1, 2, 3, 4], rounds: 2, timer: 60, now: NOW, word: luffy });
+    t(isContest(m) && !isContest(newMatch({ mid: 1, series: ["onepiece"], players: [1, 2], now: NOW, rnd })), "a contest is marked as one; Classic matches aren't");
+    t(m.phase === "draw" && m.round === 1 && m.n === 1 && m.word.t === "Monkey D. Luffy" && m.word.c === 40 && m.dl === NOW + 60000, "everyone draws the same, public word at once (60 s)");
+    t(ents(m).join() === "1,2,3,4" && Object.values(m.score).every(v => v === 0) && !m.drawer, "all 4 draw; nobody is 'the drawer'; everyone at 0");
+    t(run(m, { k: "rate", by: 1, tk: 1, to: 2, v: 5 }, NOW + 1000).err === "stale", "no rating while drawing");
+    t(run(m, { k: "guess", by: 1, tk: 1, h: "x" }, NOW + 1000).err === "unknown move" && run(m, { k: "pick", by: 1, tk: 1, mask: "_", salt: "x", wh: ["a"] }, NOW).err === "unknown move", "Classic moves don't exist in a contest");
+    t(run(m, { k: "done", by: 9, tk: 1 }, NOW + 1000).err, "a spectator can't be 'done'");
+    m = run(m, { k: "done", by: 1, tk: 1 }, NOW + 5000).s; m = run(m, { k: "done", by: 2, tk: 1 }, NOW + 6000).s;
+    t(m.phase === "draw" && isDone(m, 1) && isDone(m, 2) && !isDone(m, 3), "done players wait; the round goes on");
+    m = run(m, { k: "undone", by: 2, tk: 1 }, NOW + 7000).s;
+    t(!isDone(m, 2) && m.phase === "draw", "a player can go back to drawing");
+    t(run(m, { k: "timeout", tk: 1, ph: "draw" }, NOW + 59999).err === "stale", "no early timeout");
+    for (const p of [2, 3]) m = run(m, { k: "done", by: p, tk: 1 }, NOW + 8000).s;
+    const offline4 = p => p !== 4;
+    const c = run(m, { k: "check", tk: 1, ph: "draw" }, NOW + 9000, offline4);
+    t(!c.err && c.s.phase === "rate", "everyone still here is done (4 went offline): drawing ends early");
+    m = run(m, { k: "done", by: 4, tk: 1 }, NOW + 9000).s;
+    t(m.phase === "rate" && m.dl === NOW + 9000 + rateMsFor(4) && rateMsFor(4) === 39000, "the last 'done' ends the drawing; rating time 15 s + 6 s × 4 = 39 s");
+    t(m.gal.slice().sort().join() === "1,2,3,4" && JSON.stringify(m.gal) === JSON.stringify(seeded([1, 2, 3, 4], 50 * 31 + 1 * 7919)), "the anonymous gallery order is shuffled, and the same in every browser");
+    t(rateMsFor(1) === CT.rateMin && rateMsFor(2) === 27000 && rateMsFor(8) === 60000 && rateMsFor(20) === CT.rateMax, "rating time: 2 drawings 27 s, 8 drawings 60 s (25 s min, 60 s max)");
+
+    sect("contest: rating");
+    t(run(m, { k: "rate", by: 1, tk: 1, to: 1, v: 5 }, NOW + 10000).err === "You can't rate your own drawing.", "nobody rates their own drawing");
+    t(run(m, { k: "rate", by: 9, tk: 1, to: 1, v: 5 }, NOW + 10000).err, "spectators can't rate");
+    t(run(m, { k: "rate", by: 1, tk: 1, to: 9, v: 5 }, NOW + 10000).err === "stale", "only this round's drawings can be rated");
+    t([0, 6, 2.5, -1, "x", null].every(v => run(m, { k: "rate", by: 1, tk: 1, to: 2, v }, NOW + 10000).err === "Pick 1 to 5 stars."), "only whole stars from 1 to 5");
+    t(run(m, { k: "rate", by: 1, tk: 0, to: 2, v: 3 }, NOW + 10000).err === "stale", "a rating from an old round is refused");
+    const R = { 1: { 2: 5, 3: 3, 4: 1 }, 2: { 1: 4, 3: 3, 4: 2 }, 3: { 1: 2, 2: 5, 4: 2 } };
+    for (const [by, row] of Object.entries(R)) for (const [to, v] of Object.entries(row)) m = run(m, { k: "rate", by: Number(by), tk: 1, to: Number(to), v }, NOW + 12000).s;
+    t(ratedAll(m, 1) && ratedAll(m, 2) && ratedAll(m, 3) && !ratedAll(m, 4) && !allRated(m), "player 4 hasn't rated yet");
+    m = run(m, { k: "rate", by: 1, tk: 1, to: 4, v: 2 }, NOW + 13000).s;
+    t(ratedBy(m, 1).p4 === 2 && m.phase === "rate", "a rating can be changed until rating ends");
+    t(run(m, { k: "check", tk: 1, ph: "rate" }, NOW + 14000).err === "stale", "no early end while someone still has drawings to rate");
+    const early = run(m, { k: "check", tk: 1, ph: "rate" }, NOW + 14000, offline4);
+    t(!early.err && early.s.phase === "results" && early.s.why === "all", "everyone still here has rated everything: rating ends");
+    m = run(m, { k: "rate", by: 4, tk: 1, to: 1, v: 5 }, NOW + 15000).s;      // 4 rates only one drawing
+    t(run(m, { k: "rate", by: 4, tk: 1, to: 2, v: 5 }, m.dl + 2000).err === "stale", "a rating after the time is up is refused");
+    m = run(m, { k: "timeout", tk: 1, ph: "rate" }, m.dl).s;
+    t(m.phase === "results" && m.why === "time" && m.nx === m.t0 + CT.resultsMs, "time's up: results");
+    // stars received: 1 ← 4 + 2 + 5 = 11 · 2 ← 5 + 5 = 10 · 3 ← 3 + 3 = 6 · 4 ← 2 + 2 + 2 = 6
+    t(m.score.p1 === 11 && m.score.p2 === 10 && m.score.p3 === 6 && m.score.p4 === 6, "points = the stars each drawing received (11, 10, 6, 6)");
+    t(m.gain.p1 === 11 && m.log[0].res[0].p === 1 && m.log[0].res[0].n === 3 && m.log[0].res.find(x => x.p === 2).n === 2, "the results list each drawing's stars and how many ratings it got");
+    t(m.log[0].w === "Monkey D. Luffy" && m.log[0].c === 40 && m.log[0].cat === "Character", "the round log keeps the word and its picture");
+    t(run(m, { k: "timeout", tk: 1, ph: "rate" }, m.nx + 1).err === "stale" && run(m, { k: "check", tk: 1, ph: "draw" }, m.nx + 1).err === "stale", "a late duplicate can't end a phase twice");
+
+    sect("contest: rounds, joiners, leavers");
+    t(run(m, { k: "next", tk: 1, ph: "results", word: W.onepiece[3] }, m.nx - 1).err === "stale", "the results stay up before moving on");
+    t(run(m, { k: "next", tk: 1, ph: "results" }, m.nx).err === "need word", "the next round needs its word");
+    t(run(m, { k: "next", tk: 1, ph: "results", word: luffy }, m.nx).err === "used word", "a word already drawn this match is refused");
+    m = run(m, { k: "join", by: 5 }, m.nx - 100, p => true).s;
+    t(m.pend.p5 && !m.players.includes(5), "a spectator queues for the next round");
+    const nw = contestWord(W, ["onepiece"], { used: m.log.map(L => L.w), round: 2, mid: 50, rnd });
+    const n2 = run(m, { k: "next", tk: 1, ph: "results", word: nw }, m.nx);
+    t(!n2.err && n2.s.round === 2 && n2.s.n === 2 && n2.s.phase === "draw" && n2.s.word.t === nw.t && n2.s.word.t !== "Monkey D. Luffy", "round 2: a new word for everyone");
+    t(ents(n2.s).join() === "1,2,3,4,5" && n2.s.score.p5 === 0 && n2.s.ev.joined.join() === "5" && !n2.s.done && !n2.s.rt, "the newcomer draws from round 2; done flags and ratings start fresh");
+    t(run(n2.s, { k: "next", tk: 1, ph: "results", word: nw }, m.nx + 10).err === "stale", "a duplicate 'next' can't advance twice");
+    let m2 = n2.s;
+    // 3 was offline when round 2 began? (here: leaves mid-round, comes back) · a player not in the round can enter while drawing
+    const late = newContest({ mid: 51, series: ["naruto"], players: [1, 2, 3], rounds: 1, timer: 60, now: NOW, word: ita });
+    const l2 = run(Object.assign(JSON.parse(JSON.stringify(late)), { ent: [1, 2] }), { k: "enter", by: 3, tk: 1 }, NOW + 1000);
+    t(!l2.err && ents(l2.s).join() === "1,2,3", "a player who was offline at the start can still enter while drawing");
+    t(run(late, { k: "enter", by: 7, tk: 1 }, NOW + 1000).err === "stale" && run(l2.s, { k: "enter", by: 3, tk: 1 }, NOW + 1000).err === "stale", "only match players, and only once");
+    // last round → over
+    for (const p of ents(m2)) m2 = run(m2, { k: "done", by: p, tk: 2 }, NOW + 200000).s;
+    for (const by of ents(m2)) for (const to of toRate(m2, by)) m2 = run(m2, { k: "rate", by, tk: 2, to, v: to === 5 ? 5 : 1 }, NOW + 201000).s;
+    t(m2.phase === "rate", "the last rating doesn't end rating at once (a moment to change it)");
+    m2 = run(m2, { k: "check", tk: 2, ph: "rate" }, NOW + 202000).s;
+    t(m2.gain.p5 === 20 && m2.gain.p1 === 4, "round 2: player 5 gets 5 stars from all 4 others (20)");
+    const fin = run(m2, { k: "next", tk: 2, ph: "results" }, m2.nx);
+    t(!fin.err && fin.s.phase === "over" && fin.s.end === "done" && fin.s.winners.join() === "5", "after the last round: over, the highest total wins (5: 20)");
+    t(standings(fin.s).map(x => x.score).join() === "20,15,14,10,10", "final standings add up both rounds");
+    // a tie at the top is a shared win
+    let tie = newContest({ mid: 52, series: ["bleach"], players: [1, 2], rounds: 1, timer: 60, now: NOW, word: W.bleach[0] });
+    tie = run(tie, { k: "done", by: 1, tk: 1 }, NOW).s; tie = run(tie, { k: "done", by: 2, tk: 1 }, NOW).s;
+    tie = run(tie, { k: "rate", by: 1, tk: 1, to: 2, v: 4 }, NOW + 100).s; tie = run(tie, { k: "rate", by: 2, tk: 1, to: 1, v: 4 }, NOW + 100).s;
+    tie = run(tie, { k: "check", tk: 1, ph: "rate" }, NOW + 200).s; tie = run(tie, { k: "next", tk: 1, ph: "results" }, tie.nx).s;
+    t(tie.phase === "over" && tie.winners.join() === "1,2", "2 players, same stars: a shared win");
+    // everyone else left before the next round
+    let few = newContest({ mid: 53, series: ["bleach"], players: [1, 2, 3], rounds: 3, timer: 60, now: NOW, word: W.bleach[0] });
+    few = run(few, { k: "timeout", tk: 1, ph: "draw" }, few.dl).s; few = run(few, { k: "timeout", tk: 1, ph: "rate" }, few.dl).s;
+    t(few.log[0].res.every(x => x.pts === 0 && x.n === 0), "nobody rated: 0 points each");
+    const f2 = run(few, { k: "next", tk: 1, ph: "results", word: W.bleach[1] }, few.nx, p => p === 1);
+    t(f2.s.phase === "over" && f2.s.end === "few", "fewer than 2 players left: the match ends");
+    // a lone player still here when drawing ends: no one to rate with
+    let solo = newContest({ mid: 54, series: ["bleach"], players: [1, 2], rounds: 2, timer: 60, now: NOW, word: W.bleach[0] });
+    solo.ent = [1];
+    solo = run(solo, { k: "done", by: 1, tk: 1 }, NOW + 1000, p => p === 1).s;
+    t(solo.phase === "results" && solo.why === "solo", "only one artist this round: straight to the results");
+}
+
+sect("contest: full matches, 2 and 8 players");
+for (const n of [2, 8]) {
+    const players = Array.from({ length: n }, (_, i) => i + 1), series = n === 2 ? ["dragonball"] : ["onepiece", "naruto", "jjk"];
+    let now = NOW, m = newContest({ mid: 60 + n, series, players, rounds: 5, timer: 90, now, word: contestWord(W, series, { round: 1, mid: 60 + n, rnd }) }), rounds = 0;
+    for (let guard = 0; guard < 100 && m.phase !== "over"; guard++) {
+        if (m.phase === "draw") {
+            rounds++;
+            if (rounds % 2) for (const p of ents(m)) m = run(m, { k: "done", by: p, tk: m.n }, now += 3000).s;
+            else m = run(m, { k: "timeout", tk: m.n, ph: "draw" }, now = m.dl).s;
+            continue;
+        }
+        if (m.phase === "rate") {
+            // round 3: one player skips rating; otherwise everyone rates everything
+            for (const by of ents(m)) { if (rounds === 3 && by === 1) continue; for (const to of toRate(m, by)) m = run(m, { k: "rate", by, tk: m.n, to, v: 1 + ((by * 3 + to * 5 + rounds) % 5) }, now += 200).s; }
+            const ch = run(m, { k: "check", tk: m.n, ph: "rate" }, now += 1500);
+            m = ch.err ? run(m, { k: "timeout", tk: m.n, ph: "rate" }, now = m.dl).s : ch.s;
+            continue;
+        }
+        const w = contestWord(W, m.series, { used: m.log.map(L => L.w), round: m.round + 1, mid: m.mid, rnd });
+        m = run(m, { k: "next", tk: m.n, ph: "results", word: w }, now = m.nx).s;
+    }
+    t(m.phase === "over" && rounds === 5 && m.log.length === 5, n + " players: 5 rounds, then over");
+    t(new Set(m.log.map(L => L.w)).size === 5, n + " players: a different word every round");
+    t(m.log.every(L => L.res.length === n && L.res.every(x => x.n <= n - 1)), n + " players: every drawing rated by at most everyone else");
+    t(m.log[2].res.filter(x => x.p !== 1).every(x => x.n === n - 2) || n === 2, n + " players: a player who didn't rate just gives no stars");
+    const total = m.log.reduce((a, L) => a + L.res.reduce((b, x) => b + x.pts, 0), 0);
+    t(total === Object.values(m.score).reduce((a, b) => a + b, 0), n + " players: scores add up to the round results exactly");
+    t(m.log.every(L => L.res.every(x => x.pts >= x.n && x.pts <= 5 * x.n)), n + " players: each rating is worth 1 to 5");
+    t(m.winners.length >= 1 && m.winners.every(p => m.score["p" + p] === Math.max(...Object.values(m.score))), n + " players: the highest total wins");
 }
 
 console.log("\n" + (bad ? "✘" : "✔") + " " + ok + " passed, " + bad + " failed");

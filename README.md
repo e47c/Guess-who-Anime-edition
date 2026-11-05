@@ -210,9 +210,9 @@ Every player keeps a history: `"<questionId>@<scope>": [last seen, times seen]`.
 
 ## Anime Sketch
 
-The eighth mode: one player draws an anime word, everyone else races to guess it. Code: `js/sketch/sketch.js` (lobby, screen, live canvas, chat, duties), `js/sketch/engine.js` (rules, word library builder, tested by `tools/sketch-test.mjs`), `js/sketch/words.js` (the word library), `css/sketch.css`.
+The eighth mode, with two game types. **Classic:** one player draws an anime word, everyone else races to guess it. **Contest:** everyone draws the same word, then rates each other's drawings (see [Contest](#contest-the-second-game-type) below). Code: `js/sketch/sketch.js` (lobby, screen, live canvas, chat, duties), `js/sketch/engine.js` (rules, word library builder, tested by `tools/sketch-test.mjs`), `js/sketch/words.js` (the word library), `css/sketch.css`.
 
-- **Setup (host):** 1–5 rounds (default 3), 60 / 90 / 120 s to draw (default 90), **word difficulty** (Mixed, Easy, Medium, Hard; default Mixed), and the series: one series = its own words, two or more = an Anime Mix from those series only. A round means every active player draws once, so 3 rounds with 4 players = 12 turns.
+- **Setup (host):** game type (Classic or Contest), 1–5 rounds (default 3), 60 / 90 / 120 s to draw (default 90), **word difficulty** (Mixed, Easy, Medium, Hard; default Mixed), and the series: one series = its own words, two or more = an Anime Mix from those series only. A round means every active player draws once, so 3 rounds with 4 players = 12 turns.
 - **Words** (`js/sketch/words.js`): **1,067 words** in three categories per series: **Characters** (621, Stands, Titans and devils included), **Weapons** (153) and **Objects & Items** (293). No places, attacks, powers or groups.
   - Every word is tied to its series and drawable, and has a **difficulty**: easy (very recognisable: Luffy, Straw Hat, Kunai), medium, hard (detailed or less obvious: Shusui, Hyottoko mask, Mechamaru). 189 easy, 391 medium, 487 hard.
   - Each word lists its other accepted spellings (Big Mom / Charlotte Linlin, Kizaru / Borsalino, Wind chime / furin). Characters are linked to the Anime Draft roster, so the reveal shows their AniList picture.
@@ -245,6 +245,20 @@ The eighth mode: one player draws an anime word, everyone else races to guess it
 - **Honest limits:**
   - The word list ships with the page, so someone using the developer tools could test every word in the list against the fingerprints and find the answer, or send a fake "right guess". Like the other modes, real enforcement would need a trusted server (a Cloud Function), which this project doesn't have. A normal player never sees the word.
   - Hints are written by the drawer's browser; if the drawer drops, the turn ends.
+
+### Contest (the second game type)
+
+Picked under **Game type** in the lobby (Classic / Contest; default Classic). Everyone draws the **same word at the same time**, then everyone rates everyone else's drawing. The rules live in `engine.js` (`actContest`): a contest match is marked `type: "contest"`, and `act()` hands only those matches to it, so Classic never runs Contest code.
+
+- **Setup:** the same options as Classic. Rounds (1–5) = words, drawing time (60 / 90 / 120 s), word difficulty and the series. Best with 3 or more players (2 works: each rates the other).
+- **A round:**
+  - **Draw:** one word for everyone, shown openly with its category. The categories take turns: character, weapon, then object & item, starting at a different one each match. A word is never repeated within a match. Each player draws on their own sheet with the full Classic toolset. Nobody sees anyone else's sheet while drawing, and Clear wipes only your own. **✔ I'm done** ends your drawing ("Keep drawing" undoes it while time is left). Drawing ends when everyone still here is done or time runs out.
+  - **Rate:** the drawings appear side by side **without names**, labelled Drawing A, B, C… in the same shuffled order in every browser. Your own is marked YOURS and can't be rated. Give every other drawing **1 to 5 stars**; tap a drawing to see it big and rate it there (Esc closes). Ratings can be changed until the phase ends. Rating time is 15 s plus 6 s per drawing, between 25 and 60 s. It ends early, after a short grace, once everyone still here has rated everything. The player list shows who is still rating, never the stars.
+  - **Results:** names are revealed. Each drawing shows its stars received, average and number of ratings; the best one gets a crown, and the character's picture appears with the word. After 10 s the next round starts.
+- **Scoring:** your points are the total stars your drawings receive. A rating that never comes (a player who ran out of time or left) just gives no stars. The highest total after the last round wins, and a tie is a shared win. The final screen lists everyone's average stars and how many rounds they won, and shows the best drawing of each round. Those pictures are kept in each browser during the match; someone who joined late may not have the earlier ones.
+- **Joining, leaving:** spectators can join from the next round. A player who was offline when a round began steps in automatically if they're back while it's still being drawn. Someone who leaves no longer blocks "everyone is done / has rated". Fewer than 2 players at the start of a round ends the match. The host duties and the host takeover work as in Classic.
+- **Firebase:** the same three nodes. In `sketch` a contest holds the public word, the round's artists (`ent`), who is done, the ratings (`rt`, rater → drawing → stars), the gallery order and a round log with every drawing's stars. Every move (done, rate, timeout, check, next, join) is a transaction checked against the round number. Moves that end a phase also name it, so a late duplicate can't skip one. In `sketchInk` each stroke also carries its owner (`o`). The previous round's strokes are deleted when the next round starts.
+- **Honest limit:** the strokes and ratings are in the shared room, so someone using the developer tools could peek at other sheets while drawing, or see who gave which stars. Normal players can't.
 
 ## Customising
 
