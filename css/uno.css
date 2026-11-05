@@ -486,6 +486,14 @@ body.fx-lite .uw-rim, body.fx-lite .uw-line { animation: none !important; }
 .u-sight small { display: block; margin-bottom: 4px; font: 700 11px/1.2 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--pc, #ff7ad9); }
 .u-sight-row { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
 .u-sight-cell { position: relative; width: 33px; height: 49px; flex: 0 0 auto; }
+/* Diavolo's Future Sight: the cards you saw stay readable, framed by a thin King Crimson aura */
+.u-sight.kc { max-width: 380px; border-width: 1px; border-color: #ff3a55; background: radial-gradient(120% 140% at 50% 0%, #2a0510e6, #08020ae6); box-shadow: 0 0 0 1px #e8173c66, 0 0 14px #e8173c99, inset 0 0 18px #e8173c40; animation: kcAura 2.4s ease-in-out infinite; }
+#uno:has(> .u-fx.cine:not(.lite):not(.out)) #unoSight:not(.kc-in) { visibility: hidden; }     /* nothing to read before the scene reveals it */
+.u-sight.kc small { color: #ff8a9c; text-shadow: 0 0 8px #e8173c; }
+.u-sight.kc .u-sight-cell { width: 43px; height: 64px; filter: drop-shadow(0 0 3px #e8173c99); }
+.u-sight.kc .u-sight-cell .ucard { transform: scale(.365); }
+@keyframes kcAura { 50% { box-shadow: 0 0 0 1px #ff6a8088, 0 0 22px #e8173ccc, inset 0 0 22px #e8173c59; } }
+@media (prefers-reduced-motion: reduce) { .u-sight.kc { animation: none; } }
 .u-sight-cell .ucard { position: absolute; left: 0; top: 0; width: 118px; height: 176px; margin: 0; transform: scale(.28); transform-origin: 0 0; animation: none; transition: none; pointer-events: none; }
 
 /* ===== reduced effects: the special card's whole picture, framed (Future Sight: plus the hand you saw) ===== */

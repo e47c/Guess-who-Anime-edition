@@ -26,7 +26,7 @@ import * as DRAFT from "./draft/draft.js?v=5";
 import * as FEUD from "./feud/feud.js?v=4";
 import * as LIKELY from "./feud/likely.js?v=1";
 import * as SKETCH from "./sketch/sketch.js?v=2";
-import { initCine, cineHook, cineHas } from "./cine/engine.js?v=11";
+import { initCine, cineHook, cineHas } from "./cine/engine.js?v=12";
 import { hand as cineHand } from "./cine/hands.js?v=11";
 import * as CK from "./cine/kit.js?v=11";
 import * as HOLD from "./cine/holds.js?v=11";
@@ -3257,10 +3257,11 @@ function unoSightStrip(u, me, show) {
     const old = $("unoSight"); if (old) old.remove();
     if (!show || !u.peek || u.peek.p !== me) return;
     const to = Number(u.peek.to), hand = u.hands["p" + to] || []; if (!to || !hand.length) return;
-    const box = hbEl("div", "u-sight"); box.id = "unoSight"; box.style.setProperty("--pc", HB_COLORS[(to - 1) % HB_COLORS.length]);
+    const used = u.fx && u.fx.id === u.peek.id ? u.cards[u.fx.ci] : null, kc = !!used && used.sk === "jojo";      // Diavolo: framed in King Crimson's red aura
+    const box = hbEl("div", "u-sight" + (kc ? " kc" : "")); box.id = "unoSight"; box.style.setProperty("--pc", kc ? "#e8173c" : HB_COLORS[(to - 1) % HB_COLORS.length]);
     box.appendChild(hbEl("small", null, "👁 " + (u.names["p" + to] || "?") + "'s hand"));
     const row = hbEl("div", "u-sight-row");
-    hand.slice().sort((a, b) => (u.cards[a].s - u.cards[b].s) || (u.cards[a].v - u.cards[b].v)).forEach(ci => { const cell = hbEl("div", "u-sight-cell"); cell.appendChild(unoCardEl(u, ci, "")); cell.title = u.cards[ci].n; row.appendChild(cell); });
+    hand.slice().sort((a, b) => (u.cards[a].s - u.cards[b].s) || (u.cards[a].v - u.cards[b].v)).forEach(ci => { const cell = hbEl("div", "u-sight-cell"); cell.dataset.ci = ci; cell.appendChild(unoCardEl(u, ci, "")); cell.title = u.cards[ci].n; row.appendChild(cell); });
     box.appendChild(row); $("unoInfo").appendChild(box);
 }
 

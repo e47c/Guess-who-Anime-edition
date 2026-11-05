@@ -165,6 +165,12 @@ const FX = {
     teleport(o, t) { V.sweep(o, t, 400, 10000, .14, 1, 5); V.pluck(o, t + .12, 98, .06, .6, "square", 9000, .1); V.hat(o, t + .12, .9, true); V.kick(o, t + .12, .5); },
     spin(o, t) { V.sweep(o, t, 300, 5000, .65, .7, 8); },
     gust(o, t) { V.sweep(o, t, 150, 1600, 1.5, 1.1, 1.1); V.sweep(o, t + .5, 400, 2600, 1.1, .9, 1.3); },
+    // Diavolo / King Crimson (Future Sight): the awakening, the drone that sinks through the slow motion, drops of blood, the time skip
+    kcAwake(o, t) { V.kick(o, t, 1.3); V.tom(o, t, 52, 1.1); V.sweep(o, t, 160, 2400, .45, .8, 2); V.pad(o, t, [26, 33, 38], .8, 1.6, 300, "sawtooth"); V.snare(o, t, .4, .3); },
+    kcDrone(o, t) { const D = 4.2, g = gainTo(o, 0); env(g, t, .7, .55, D * .5, .85, .5, t + D); const f = filt("lowpass", 420, 1.2, g); f.frequency.setValueAtTime(420, t); f.frequency.exponentialRampToValueAtTime(95, t + D);
+        [[55, "sawtooth", .5], [55.4, "sawtooth", .5], [27.5, "sine", 1]].forEach(([fr, wv, k]) => osc(wv, fr, t, t + D + .7, gainTo(f, k)).frequency.exponentialRampToValueAtTime(fr * .6, t + D)); V.sweep(o, t, 260, 50, D, .7, 1.4); send(g, .35); },
+    kcDrop(o, t) { V.tom(o, t, 150, .3); V.pluck(o, t + .01, 74, .05, .22, "sine", 3000, .3); },
+    kcSkip(o, t) { V.sweep(o, t, 700, 12000, .07, 1, 4); V.kick(o, t + .06, 1); V.snare(o, t + .06, .8, .06); V.hat(o, t + .06, 1); V.pluck(o, t + .06, 100, .05, .7, "square", 12000, 0); V.sweep(o, t + .08, 9000, 300, .3, .6, 3); },
     tock(o, t) { V.hat(o, t, .3); V.pluck(o, t, 79, .03, .2, "square", 3000, 0); },
     toll(o, t) { V.bell(o, t, 48, 1, 4); V.pad(o, t, [36, 43], 2.5, .7, 400, "sine"); V.kick(o, t, .6); },
     // Headbanz, the investigation: typewriter, camera flash, rubber stamp, the desk bell

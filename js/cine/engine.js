@@ -17,7 +17,7 @@ import * as K from "./kit.js?v=11";
 import { FREEZE } from "./freeze.js?v=11";
 import { SWAP } from "./swap.js?v=11";
 import { ULT } from "./ult.js?v=11";
-import { PEEK } from "./peek.js?v=11";
+import { PEEK } from "./peek.js?v=12";
 
 let A = null;                 // game hooks (see initCine)
 /* api: { hbEl, unoCardEl, unoNext, plateRect(p), me(), arr } */
@@ -51,7 +51,7 @@ const SYNC = {
     bleach_u: [[.5, 5.78], [.74, 6.75]], hxh_u: [[.42, 3.43], [.74, 8.22]], blackclover_u: [[.3, 2.2], [.62, 3.6]], jojo_u: [[.26, 1.9], [.66, 6.25]],
     // Future Sight: R = the reveal of the next player's cards
     onepiece_e: [[.3, 1.6], [.56, 4.4]], naruto_e: [[.36, 7.2], [.6, 13.8]], dragonball_e: [[.5, 3.4]], jjk_e: [[.3, 3.0], [.46, 5.6]], demonslayer_e: [[.3, 5.5], [.58, 11.3]],
-    bleach_e: [[.3, 2.9], [.6, 6.2]], hxh_e: [[.62, 7.96]], blackclover_e: [[.4, 1.4], [.62, 2.7]], jojo_e: [[.4, 1.2]]
+    bleach_e: [[.3, 2.9], [.6, 6.2]], hxh_e: [[.62, 7.96]], blackclover_e: [[.4, 1.4], [.62, 2.7]]     // jojo_e runs on its own millisecond timeline (peek.js)
 };
 export const cineHas = key => !!SCENES[key];
 
@@ -209,7 +209,7 @@ function swapBegin(env, u, box) {
 function peekBegin(env, u, box) {
     const layer = cardLayer(env, box), hand = A.arr(u.hands["p" + env.to]).slice().sort((a, b) => cardKey(u, a) - cardKey(u, b));
     const st = ";position:absolute;left:0;top:0;width:118px;height:176px;transform-origin:59px 88px;transition:none;opacity:0;margin:0;animation:none;will-change:transform,opacity";
-    env.peek = hand.map(ci => { const back = A.hbEl("div", "ucard cb"); back.style.cssText += st; layer.appendChild(back); let face = null; if (env.owner) { face = A.unoCardEl(u, ci, ""); face.style.cssText += st; layer.appendChild(face); } return { back, face }; });
+    env.peek = hand.map(ci => { const back = A.hbEl("div", "ucard cb"); back.style.cssText += st; layer.appendChild(back); let face = null; if (env.owner) { face = A.unoCardEl(u, ci, ""); face.style.cssText += st; layer.appendChild(face); } return { back, face, ci }; });
     const w = innerWidth, h = innerHeight, n = Math.max(1, hand.length), rows = n <= 7 ? 1 : n <= 16 ? 2 : 3, per = Math.ceil(n / rows);
     let ch = Math.min(h * (rows === 1 ? .36 : rows === 2 ? .25 : .19), 260), cw = ch * 118 / 176, gap = cw * .14;
     const fit = w * .92; if (per * cw + (per - 1) * gap > fit) { const k = fit / (per * cw + (per - 1) * gap); cw *= k; ch *= k; gap *= k; }
@@ -292,14 +292,14 @@ export function cineHook(key) {
         let ended = false, voice = null, raf = 0, jump = null;
         const finish = () => { if (ended) return; ended = true; cancelAnimationFrame(raf); if (voice) voiceStop(voice); try { kd.end && kd.end(env, u); } catch (e) { console.warn(e); } done(); };
         // a tap skips; on Future Sight the player who used it skips straight to the cards (a second tap closes)
-        box.addEventListener("click", () => { if (c.k === "e" && env.owner && jump && !env.tailed) jump(); else finish(); });
+        box.addEventListener("click", () => { if (c.k === "e" && env.owner && jump && !env.tailed && !env.jumped) jump(); else finish(); });
         try { kd.begin(env, u, box); S.begin && S.begin(env, u); } catch (e) { console.warn(e); }
         const X = { env, u, card: c, col: S.col, kanji: KANJI[c.k], who: u.names["p" + u.fx.p] || "?", cap: m[1], ab: c.ab || m[0], kj: m[2], focus: [m[3], m[4]], art: null, fx: {}, vox: 0 };
         artLoad(c, im => { X.art = im; });
         Promise.all([voiceLoad(key, 900), fontsReady()]).then(([info]) => { if (!ended) run(info); }).catch(e => { console.warn(e); finish(); });
 
         function run(info) {
-            const tail = kd.tail(env) + (S.tailPlus || 0), I = INTRO, VA = info ? S.voiceAt || 0 : 0, vd = info ? Math.min(info.dur, S.voiceEnd || 1e9) : 0;
+            const tail = (S.tailMs ? S.tailMs(env) : kd.tail(env)) + (S.tailPlus || 0), I = INTRO, VA = info ? S.voiceAt || 0 : 0, vd = info ? Math.min(info.dur, S.voiceEnd || 1e9) : 0;
             const main = (info ? Math.min(V_MAX, Math.max(V_MIN, vd * 1000 + 300 + VA - I)) : S.ms || V_MS) + (S.mainPlus || 0);   // mainPlus: extra screen time after the voice
             const total = I + main + tail, warp = warpOf(SYNC[key], info, I, main, VA), w = innerWidth, h = innerHeight, mk = z => { const cv = A.hbEl("canvas", "fx-cv"); cv.style.zIndex = z; box.appendChild(cv); return cv; };
             let dpr = Math.min(1.5, window.devicePixelRatio || 1); if (w * h * dpr * dpr > 2.4e6) dpr = Math.sqrt(2.4e6 / (w * h));
@@ -314,7 +314,7 @@ export function cineHook(key) {
             X.reveal = (tt, len) => { if (env.snap) { g.save(); g.globalAlpha = 1 - K.ss(0, len, tt); g.drawImage(env.snap, 0, 0, w, h); g.restore(); } };
             if (info && !VA) voice = voicePlay(info);
             let t0 = performance.now(), vox = 0;
-            jump = () => { t0 = performance.now() - (I + main); };
+            jump = () => { env.jumped = 1; const to = I + (S.jumpAt != null ? Math.min(S.jumpAt, main) : main); if (performance.now() - t0 < to) t0 = performance.now() - to; };   // S.jumpAt: a scene can skip to a point of its main act instead
             const frame = now => {
                 if (ended) return; if (!box.isConnected) { finish(); return; }
                 const el = now - t0, ph = el < I ? "intro" : el < I + main ? "main" : "tail";

@@ -6,7 +6,8 @@
    cards up long enough to read them. X.env: r = the target's plate, slots = where each card rests, toName, top/bot.
    ===================================================================== */
 import * as K from "./kit.js?v=11";
-import { hand } from "./hands.js?v=11";
+import { hand, POSE } from "./hands.js?v=11";
+import { audio } from "../audio.js";
 const { lin, ss, hit, hs, TAU, mid, mix, bell } = K;
 
 const HS = X => X.M * (X.h > X.w ? .0036 : .003);
@@ -430,60 +431,229 @@ const vanessa = {
     }
 };
 
-/* ---------- DIAVOLO · King Crimson: the screen turns RED and shows a few seconds of the future: the next player's cards drift out
-   of their hand in slow motion, trailing after-images. Then time is erased: everything jumps forward at once, and the cards are
-   simply there, face up, wrapped in King Crimson's aura ---------- */
+/* ---------- DIAVOLO · King Crimson, in first person: you ARE Diavolo.
+   The main act runs on real milliseconds (T.el), pinned to the voice line ("KING CRIMSON!", audio/special/jojo_e.mp3):
+     calm   0 .. KC_VO      your hands hang low and loose at the bottom of the screen; up where your forehead is, the Epitaph shows
+                            the future: the next player's cards, blurred, trembling as if about to turn. Red creeps in at the edges.
+     call   KC_VO .. KC_PK  the line plays; your right hand rises with the shout and reaches its highest point on the loudest
+                            moment of the clip (KC_PK). King Crimson's hands come out around yours in a red aura, the screen turns red,
+                            4 drops of blood land in the middle of the screen.
+     slow   KC_PK .. KC_SK  the void: black space, faint red energy, drifting motes, distant glowing marks; a low drone that keeps
+                            sinking. The cards are drawn out of the Epitaph, gathered together, laid out and turned one by one; the
+                            Epitaph's blur leaves each card as it turns. Shimmering red aura with a slight colour split around them.
+     skip   KC_SK ..        time is erased: everything jumps to the next moment at once (no in-between), a flash, a sharp crack,
+                            4 more drops (8). The void and the red fade out fast and the real table is back.
+   Afterwards the cards stay with the player who used the card, in the game's reminder strip (King Crimson framed), until the extra
+   play; the tail jumps the cards into that strip. Everyone else sees the same scene with the cards' backs. ---------- */
 const KCR = "#e8173c";
-function kcAura(g, sl, s, a, i) {                                          // flickering crimson aura with King Crimson's white web pattern
-    if (a <= 0) return; g.save(); g.globalCompositeOperation = "lighter";
-    for (let k = 0; k < 14; k++) { const an = k / 14 * TAU + s * .4 + i, rx = sl.w * .62, ry = sl.h * .6, x = sl.x + Math.cos(an) * rx, y = sl.y + Math.sin(an) * ry, L = sl.w * (.25 + .25 * hs(k + Math.floor(s * 12) + i * 3));
-        g.strokeStyle = K.rgba(k % 3 ? KCR : "#ff8ab0", .5 * a); g.lineWidth = sl.w * .07; g.lineCap = "round"; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(an) * L, y + Math.sin(an) * L - L * .4); g.stroke(); }
-    K.glow(g, sl.x, sl.y, sl.h * .95, KCR, .45 * a); g.restore();
-    g.save(); g.globalAlpha = a * .55; g.strokeStyle = "#ffffff"; g.lineWidth = 1.2; const rx = sl.w * .66, ry = sl.h * .62;           // the web pattern of his body
-    for (let k = 0; k < 6; k++) { const a0 = k / 6 * TAU + s * .3; g.beginPath(); g.moveTo(sl.x + Math.cos(a0) * rx, sl.y + Math.sin(a0) * ry); g.quadraticCurveTo(sl.x + Math.cos(a0 + .5) * rx * 1.25, sl.y + Math.sin(a0 + .5) * ry * 1.25, sl.x + Math.cos(a0 + 1.05) * rx, sl.y + Math.sin(a0 + 1.05) * ry); g.stroke(); }
+const KC_VO = 1300, KC_PK = KC_VO + 2270, KC_SK = KC_PK + 3900, KC_END = KC_SK + 600;      // ms of the main act (2.27 s = the loudest moment of the line)
+const G0 = KC_PK + 350, G1 = KC_PK + 1750, SP1 = KC_PK + 2350, F0 = KC_PK + 2250, F1 = KC_SK - 450;
+const KCSK = { l: "#ff97a4", b: "#d2213b", s: "#9c0d26", d: "#5c0414", ink: "#2a0008", nail: "#f6c6cf" };       // King Crimson's red
+const DVSL = { c: "#1d2b27", s: "#0e1714", cuff: "#d9a43a", len: 300, w: 66 };                                  // Diavolo's patterned sleeve, gold wristband
+function kcLayer(X, key) {                                                    // an offscreen canvas the size of the screen (for clipped patterns)
+    const e = X.env, d = X.dpr || 1, W = Math.round(X.w * d), H = Math.round(X.h * d), c = e[key] || (e[key] = document.createElement("canvas"));
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    const o = c.getContext("2d"); o.setTransform(d, 0, 0, d, 0, 0); o.clearRect(0, 0, X.w, X.h); return o;
+}
+function poseMix(a, b, k) {                                                   // a hand pose part-way between two poses (no folded fingers)
+    const A = POSE[a], B = POSE[b], m = (p, q) => Array.isArray(p) ? p.map((v, i) => m(v, q[i])) : p + (q - p) * k;
+    return { sp: m(A.sp, B.sp), f: m(A.f, B.f), b: m(A.b, B.b), th: { a: m(A.th.a, B.th.a), b: m(A.th.b, B.th.b), f: m(A.th.f, B.th.f) } };
+}
+function inHand(g, x, y, s, ang, flip, fn) { g.save(); g.translate(x, y); g.rotate(ang); g.scale((flip ? -1 : 1) * s, s); fn(); g.restore(); }
+/* Diavolo's hand: his sleeve (dark, with the pale paisley vine pattern down to a gold wristband) and the hand itself */
+function dvHand(g, X, x, y, s, ang, flip, pz) {
+    const o = kcLayer(X, "dv" + (flip ? "L" : "R"));
+    hand(o, x, y, s, ang, pz, { flip, skin: "base", sleeve: DVSL });
+    o.save(); o.globalCompositeOperation = "source-atop";
+    inHand(o, x, y, s, ang, flip, () => {
+        o.beginPath(); o.rect(-80, 22, 160, 300); o.clip();
+        o.strokeStyle = "rgba(160,215,185,.5)"; o.lineWidth = 2.2; o.lineCap = "round";
+        for (let k = 0; k < 7; k++) { const yy = 34 + k * 40, xx = (k % 2 ? 14 : -18);                     // paisley drops on a vine
+            o.beginPath(); o.moveTo(xx, yy); o.bezierCurveTo(xx + 16, yy - 2, xx + 14, yy + 22, xx, yy + 20); o.bezierCurveTo(xx - 10, yy + 18, xx - 8, yy + 6, xx - 2, yy + 4); o.stroke();
+            o.beginPath(); o.arc(xx + 3, yy + 11, 3.2, 0, TAU); o.stroke();
+            o.beginPath(); o.moveTo(xx + (k % 2 ? -10 : 12), yy + 20); o.quadraticCurveTo(0, yy + 32, -xx * .4, yy + 46); o.stroke(); }
+        o.fillStyle = "rgba(255,240,200,.85)"; for (let k = -2; k <= 2; k++) { o.beginPath(); o.arc(k * 14, 9, 2.2, 0, TAU); o.fill(); }   // studs on the wristband
+    });
+    o.restore(); g.drawImage(o.canvas, 0, 0, X.w, X.h);
+}
+/* King Crimson's hand: red, a raised white diagonal grid all over, wrapped in a red aura that shimmers */
+function kcHand(g, X, x, y, s, ang, flip, pz, a, sm) {
+    if (a <= .01) return; const o = kcLayer(X, "kc" + (flip ? "L" : "R"));
+    hand(o, x, y, s, ang, pz, { flip, skin: KCSK, arm: 300 });
+    o.save(); o.globalCompositeOperation = "source-atop";
+    inHand(o, x, y, s, ang, flip, () => {
+        for (let d = -460; d < 460; d += 15) [1, -1].forEach(dir => {
+            o.beginPath(); o.moveTo(d - 260 * dir, -260); o.lineTo(d + 260 * dir, 300);
+            o.strokeStyle = "rgba(60,0,10,.4)"; o.lineWidth = 2.6; o.stroke();                      // the shadow under each raised line
+            o.strokeStyle = "rgba(255,236,240,.78)"; o.lineWidth = 1.25; o.stroke(); });
+        const gr = o.createLinearGradient(-60, -200, 60, 40); gr.addColorStop(0, "rgba(255,255,255,.18)"); gr.addColorStop(.5, "rgba(255,255,255,0)"); o.fillStyle = gr; o.fillRect(-90, -240, 180, 300);
+    });
+    o.restore();
+    g.save(); g.globalAlpha = a * (.8 + .2 * Math.sin(sm * 9)); hand(g, x, y, s, ang, pz, { flip, skin: KCSK, arm: 300, aura: KCR }); g.restore();   // the aura (rim light round the silhouette)
+    g.save(); g.globalAlpha = a; g.drawImage(o.canvas, 0, 0, X.w, X.h); g.restore();
+    g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = a * (.22 + .1 * Math.sin(sm * 13 + (flip ? 2 : 0)));      // the aura's colour split: two faint offset copies
+    g.drawImage(o.canvas, -X.M * .006, 0, X.w, X.h); g.drawImage(o.canvas, X.M * .006, X.M * .002, X.w, X.h); g.restore();
+}
+/* the red aura round a card: flames, two faint colour-split copies, a bright shimmer running round, King Crimson's white web */
+function kcAura(g, sl, s, a, i, thin) {
+    if (a <= 0) return; const rx = sl.w * .6, ry = sl.h * .57, n = thin ? 10 : 14, L0 = sl.w * (thin ? .08 : .13);
+    g.save(); g.globalCompositeOperation = "lighter"; g.lineCap = "round";
+    [[-1.6, "#ff2f8a", .2], [1.6, "#ff7a2a", .16], [0, KCR, .4]].forEach(([dx, c, al]) => {
+        g.strokeStyle = K.rgba(c, al * a); g.lineWidth = sl.w * (thin ? .03 : .045);
+        for (let k = 0; k < n; k++) { const an = k / n * TAU + s * .35 + i, x = sl.x + dx + Math.cos(an) * rx, y = sl.y + Math.sin(an) * ry, L = L0 * (.5 + .7 * hs(k + Math.floor(s * 10) + i * 3));
+            g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(an) * L, y + Math.sin(an) * L - L * .45); g.stroke(); }
+    });
+    K.glow(g, sl.x, sl.y, sl.h * (thin ? .75 : .95), KCR, (thin ? .3 : .45) * a);
+    const sh = s * 1.7 + i * .9; K.glow(g, sl.x + Math.cos(sh) * rx * 1.04, sl.y + Math.sin(sh) * ry * 1.04, sl.w * .3, "#ffd0da", .55 * a);   // the shimmer
+    g.restore();
+    if (thin) return;
+    g.save(); g.globalAlpha = a * .4; g.strokeStyle = "#ffffff"; g.lineWidth = 1.1; const wx = sl.w * .66, wy = sl.h * .62;
+    for (let k = 0; k < 6; k++) { const a0 = k / 6 * TAU + s * .25; g.beginPath(); g.moveTo(sl.x + Math.cos(a0) * wx, sl.y + Math.sin(a0) * wy); g.quadraticCurveTo(sl.x + Math.cos(a0 + .5) * wx * 1.22, sl.y + Math.sin(a0 + .5) * wy * 1.22, sl.x + Math.cos(a0 + 1.05) * wx, sl.y + Math.sin(a0 + 1.05) * wy); g.stroke(); }
     g.restore();
 }
+/* a drop of blood: small, dark, sharp; lands with a tiny pop and two specks */
+function kcDrop(g, x, y, r, p, k) {
+    if (p <= 0) return; const sc = 1 + (1 - K.oCub(lin(0, .5, p))) * .7, an = (hs(k * 7) - .5) * 1.2 + Math.PI / 2;
+    g.save(); g.translate(x, y); g.globalAlpha *= Math.min(1, p * 3) * .92; g.scale(sc, sc);
+    g.fillStyle = "#5e0010"; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.moveTo(Math.cos(an - .9) * r, Math.sin(an - .9) * r); g.lineTo(Math.cos(an) * r * 2.1, Math.sin(an) * r * 2.1); g.lineTo(Math.cos(an + .9) * r, Math.sin(an + .9) * r); g.fill();
+    g.fillStyle = "#b3001f"; g.beginPath(); g.arc(-r * .15, -r * .15, r * .68, 0, TAU); g.fill();
+    g.fillStyle = "rgba(255,225,230,.75)"; g.beginPath(); g.arc(-r * .38, -r * .38, r * .2, 0, TAU); g.fill();
+    g.fillStyle = "#7a0014"; [[1.9, .28], [-1.6, .2]].forEach(([d, rr], j) => { const a2 = an + Math.PI + (j ? .8 : -.7); g.beginPath(); g.arc(Math.cos(a2) * r * d, Math.sin(a2) * r * d, r * rr, 0, TAU); g.fill(); });
+    g.restore();
+}
+/* the void: deep black space, faint red energy, drifting motes, far-off glowing marks */
+function kcVoid(g, X, s, a) {
+    if (a <= 0) return; const { w, h, M } = X, R = Math.hypot(w, h) / 2;
+    g.save(); g.globalAlpha = a; K.radial(g, w / 2, h * .48, R, ["#16020a", "#070105", "#000000"]);
+    for (let i = 0; i < 6; i++) K.pool(g, w * (.12 + .76 * hs(i + 21)) + Math.sin(s * .12 + i) * M * .05, h * (.15 + .7 * hs(i + 33)) + Math.cos(s * .1 + i) * M * .04, R * (.3 + .25 * hs(i + 45)), i % 3 ? "#5a0016" : "#3a0030", .32);
+    g.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 90; i++) { const z = (hs(i + 3) + s * .006 * (1 + hs(i + 9))) % 1, x = hs(i + 61) * w + Math.sin(s * .2 + i) * 6, y = (hs(i + 71) - s * .004 * (1 + hs(i))) % 1; g.globalAlpha = a * (.25 + .5 * hs(i + 5)) * Math.sin(z * Math.PI); g.fillStyle = i % 4 ? "#ffd6dc" : "#ff4a6a"; const r = .6 + 1.6 * hs(i + 7); g.fillRect(x, ((y + 1) % 1) * h, r, r); }
+    for (let i = 0; i < 7; i++) { const x = w * (.08 + .84 * hs(i + 90)), y = h * (.1 + .8 * hs(i + 97)), pu = .5 + .5 * Math.sin(s * 1.3 + i * 2), r = M * (.008 + .01 * hs(i + 99));   // distant marks: a ring with a four-point glint
+        g.globalAlpha = a * (.35 + .35 * pu); K.glow(g, x, y, r * 6, "#ff3050", .5); g.strokeStyle = "rgba(255,190,200,.7)"; g.lineWidth = 1; g.beginPath(); g.arc(x, y, r * 1.6, 0, TAU); g.stroke();
+        g.beginPath(); g.moveTo(x - r * 3.2, y); g.lineTo(x + r * 3.2, y); g.moveTo(x, y - r * 3.2); g.lineTo(x, y + r * 3.2); g.stroke(); }
+    g.restore();
+    K.drift(g, w, h, s, 26, 41, { up: 1, speed: .025, col: "#ff3a5a", size: 2.2, glow: 1, add: 1, a: .55 * a });
+}
+/* Diavolo's hair: long pink strands with dark spots, hanging in at the top edges of the view */
+function kcHair(g, X, s, a) {
+    if (a <= 0) return; const { w, h, M } = X, W = Math.max(M * .07, w * .06);
+    g.save(); g.globalAlpha = a; g.lineJoin = "round"; if ("filter" in g) g.filter = "blur(1.2px)";          // right in front of the eyes: a touch out of focus
+    [2, 1, 0].forEach(k => [-1, 1].forEach(side => {
+        const i = k * 2 + (side > 0 ? 1 : 0), x0 = side < 0 ? W * (.25 + k * .8) : w - W * (.25 + k * .8), len = h * (.46 - k * .11) * (.9 + .2 * hs(i + 3)), wd = W * (1.2 - k * .15), sw = Math.sin(s * .8 + i) * M * .004, o = side * wd * .18;
+        const path = () => { g.beginPath(); g.moveTo(x0 - wd / 2, -6); g.bezierCurveTo(x0 - wd * .62 + sw, len * .3, x0 - wd * .3 + o + sw, len * .62, x0 - wd * .18 + o * 1.6 + sw, len * .9);
+            g.quadraticCurveTo(x0 + o * 1.8 + sw, len * 1.04, x0 + wd * .2 + o * 1.6 + sw, len * .9); g.bezierCurveTo(x0 + wd * .36 + o + sw, len * .6, x0 + wd * .62 + sw, len * .3, x0 + wd / 2, -6); g.closePath(); };
+        path(); const gr = g.createLinearGradient(x0 - wd / 2, 0, x0 + wd / 2, 0), dk = "#b9487c", lt = "#f6a9c9";
+        gr.addColorStop(0, side < 0 ? dk : lt); gr.addColorStop(.55, "#ef94bb"); gr.addColorStop(1, side < 0 ? lt : dk); g.fillStyle = gr; g.fill(); g.strokeStyle = "#3a0a22"; g.lineWidth = 2; g.stroke();
+        g.save(); path(); g.clip();
+        g.strokeStyle = "rgba(150,40,90,.45)"; g.lineWidth = 1.4; for (let j = -1; j <= 1; j++) { g.beginPath(); g.moveTo(x0 + j * wd * .22, 0); g.bezierCurveTo(x0 + j * wd * .26 + sw, len * .35, x0 + j * wd * .12 + o + sw, len * .65, x0 + j * wd * .05 + o * 1.5 + sw, len * .92); g.stroke(); }   // strands
+        g.fillStyle = "rgba(255,235,245,.35)"; g.beginPath(); g.ellipse(x0 - side * wd * .12, len * .22, wd * .08, len * .12, 0, 0, TAU); g.fill();                                               // sheen
+        g.fillStyle = "#1c2a1e"; for (let j = 0; j < 4; j++) { g.beginPath(); g.ellipse(x0 + (hs(i * 5 + j) - .5) * wd * .55 + o * j * .4, len * (.14 + .2 * j), wd * .15, wd * .09, .5 + hs(i + j), 0, TAU); g.fill(); }   // the dark spots
+        g.restore();
+    }));
+    g.restore();
+}
+/* where the drops of blood land: in the middle of the screen, in the gaps between the next player's cards (never on a card's face) */
+function kcDropSpots(X) {
+    const env = X.env; if (env.kcDrops) return env.kcDrops;
+    const { w, h, M } = X, SL = env.slots || [], r = M * .0062, out = [];
+    const Y = [-.42, .3, -.1, .55, .12, -.6, .45, -.28];
+    if (!SL.length) { [[-.05, -.01], [-.02, .02], [.02, -.02], [.05, .01], [-.07, .02], [0, -.03], [.04, .03], [.07, -.01]].forEach(([dx, dy]) => out.push([w / 2 + dx * M, h / 2 + dy * M, r])); return (env.kcDrops = out); }
+    const rows = {}; SL.forEach(sl => (rows[sl.row] = rows[sl.row] || []).push(sl));
+    const row = Object.values(rows).sort((a, b) => Math.abs(a[0].y - h / 2) - Math.abs(b[0].y - h / 2))[0].slice().sort((a, b) => a.x - b.x);
+    const f = row[0], l = row[row.length - 1], gap = row.length > 1 ? row[1].x - row[0].x - row[0].w : M * .03, xs = [];
+    for (let k = 1; k < row.length; k++) xs.push((row[k - 1].x + row[k].x) / 2);
+    xs.push(f.x - f.w / 2 - Math.max(gap, M * .025) * .6, l.x + l.w / 2 + Math.max(gap, M * .025) * .6);
+    xs.sort((a, b) => Math.abs(a - w / 2) - Math.abs(b - w / 2)); const use = xs.slice(0, 4);
+    for (let k = 0; k < 8; k++) out.push([use[k % use.length] + (hs(k + 3) - .5) * Math.min(gap, r * 2) * .4, f.y + Y[k] * f.h * .5, r * (.85 + .3 * hs(k + 11))]);
+    return (env.kcDrops = out);
+}
 const diavolo = {
-    col: "#ff4fa8", ms: 5000, fg: 1,
+    col: KCR, fg: 1, grain: .03,
+    ms: 4690, voiceAt: 1000 + KC_VO, mainPlus: KC_END - 4690,          // the line starts KC_VO into the main act; the act runs to KC_END either way
+    jumpAt: KC_SK - 1100,                                               // the player who used it can tap straight to the cards turning
+    tailMs: () => 1000,
     main(g, X, T) {
-        const { w, h, M, gf } = X, t = T.t, s = T.s, KC = .14, SKIP = .66;
-        X.cue(.02, "rumble", t); X.cue(KC, "rewind", t); X.cue(KC + .01, "heartbeat", t); X.cue(SKIP, "boom", t); X.cue(SKIP + .01, "reveal", t);
-        if (t < KC) {                                                        // the call
-            K.sky(g, w, h, ["#08010a", "#14021a", "#08010a"]); K.cutIn(g, X, lin(-.02, KC + .02, t), { y: .5, hh: .4, dir: 1, ang: -.06, kj: "キング・クリムゾン", name: "DIAVOLO" });
-            X.cards(() => ({ a: 0 })); K.bars(gf, w, h, 1); return;
+        const { w, h, M, gf, env } = X, ms = T.el - 1000, s = T.s, SL = env.slots, n = SL.length;
+        const cue = (at, name) => { const c = env.cues; if (!c || c["kc" + name + at] || ms < at) return; c["kc" + name + at] = 1; if (ms < at + 400) audio.sfx(name); };
+        cue(80, "hum"); cue(KC_PK - 40, "kcAwake"); cue(KC_PK + 300, "kcDrone"); cue(KC_SK, "kcSkip");
+        for (let k = 0; k < 4; k++) { cue(KC_PK + 180 + k * 130, "kcDrop"); cue(KC_SK + 40 + k * 70, "kcDrop"); }
+        const red = ss(KC_PK - 140, KC_PK + 160, ms), voidA = ss(KC_PK + 150, KC_PK + 1000, ms), skip = ms >= KC_SK, out = 1 - ss(KC_SK + 60, KC_SK + 460, ms);
+        const shake = (hit(ms, KC_PK - 30, 260) * 9 + X.vox * 2.5) * (skip ? 0 : 1);
+        // ---- the world behind: the real table, dimmed (calm) -> red -> the void; after the skip, only the fade back to the table
+        if (!skip) { g.fillStyle = "rgba(8,0,5," + (.74 + .16 * ss(KC_VO, KC_PK, ms)) + ")"; g.fillRect(0, 0, w, h); }
+        if (red > 0 && !skip) { g.save(); g.globalAlpha = red * (1 - voidA * .55); K.radial(g, w / 2, h / 2, Math.hypot(w, h) * .6, ["#e3142f", "#8e0018", "#2a0004"]); g.restore(); }
+        kcVoid(g, X, s, voidA * (skip ? out : 1));
+        if (!skip) { g.save(); K.cam(g, X, { shake });
+            // ---- the hands: Diavolo's, and King Crimson's coming out around them
+            const hs0 = M * (h > w ? .003 : .0023), breathe = Math.sin(s * 1.7) * M * .004;
+            const rise = lin(KC_PK - 1150, KC_PK, ms), up = ss(0, 1, rise), dip = K.bell(rise, 0, .3) * M * .025, low = ss(KC_PK + 700, KC_PK + 2300, ms);
+            const R0 = [w * .88, h * .93 + breathe, -.95], R1 = [w * .62, h * .9, -.1], R2 = [w * .9, h * 1.04, -.9];
+            const rx = K.mix(K.mix(R0[0], R1[0], up), R2[0], low), ry = K.mix(K.mix(R0[1], R1[1], up) + dip, R2[1], low), ra = K.mix(K.mix(R0[2], R1[2], up), R2[2], low);
+            const lx = K.mix(w * .12, w * .1, low), ly = K.mix(h * .93 - breathe - up * M * .02, h * 1.04, low), la = K.mix(.95 - up * .15, .9, low);
+            if (!POSE._dvLax) POSE._dvLax = poseMix("relax", "cup", .65);
+            POSE._dvR = poseMix("_dvLax", "spread", ss(.35, 1, rise) * (1 - low * .6)); POSE._dvL = poseMix("_dvLax", "open", up * .4);
+            const em = K.oExpo(lin(KC_PK - 60, KC_PK + 420, ms)), ka = em * (.95 + .05 * Math.sin(s * 11));
+            POSE._kcR = poseMix("spread", "claw", .55 + .25 * low); POSE._kcL = poseMix("open", "claw", .5);
+            if (em > 0) { const k1 = K.mix(1, 1.28, em), lift = em * M * .05;
+                kcHand(g, X, lx - em * M * .03, ly - lift, hs0 * k1, la + em * .08, 1, "_kcL", ka, s);
+                kcHand(g, X, rx + em * M * .03, ry - lift, hs0 * k1, ra - em * .08, 0, "_kcR", ka, s); }
+            dvHand(g, X, lx, ly, hs0, la, 1, "_dvL"); dvHand(g, X, rx, ry, hs0, ra, 0, "_dvR");
+            g.restore();
+            if (red > 0) { g.save(); g.globalCompositeOperation = "color"; g.globalAlpha = red * .55 * (1 - voidA * .6); g.fillStyle = "#ff0828"; g.fillRect(0, 0, w, h); g.restore(); }   // the screen turns red
+            K.vignette(g, w, h, .3 + .35 * ss(0, KC_PK, ms), "#c0001c", .3);                           // red creeping in at the edges
         }
-        if (t < SKIP) {                                                      // RED: a few seconds of the future, in slow motion
-            const f = lin(KC, SKIP, t), slow = f * .55;                          // only half of the way plays: the rest is erased
-            K.sky(g, w, h, ["#4a0008", "#a3001c", "#3a0006"]); K.radial(g, w / 2, h / 2, M * .9, ["rgba(255,60,80,.35)", "rgba(0,0,0,0)"]);
-            g.save(); g.globalAlpha = .32; K.still(g, X, f * .3, { z0: 1.08, dz: .1 }); g.globalCompositeOperation = "color"; g.fillStyle = "#ff1030"; g.fillRect(0, 0, w, h); g.restore();
-            g.save(); g.strokeStyle = "rgba(255,200,210,.25)"; g.lineWidth = 2; for (let i = 0; i < 18; i++) { const y = hs(i + 30) * h, x = (hs(i + 31) * 1.4 - .2 + s * .004) % 1.2 * w; g.beginPath(); g.moveTo(x, y); g.lineTo(x + w * .18, y); g.stroke(); } g.restore();          // speed lines, frozen almost still
-            for (let i = 0; i < 26; i++) { const x = hs(i) * w, y = ((hs(i + 4) + s * .015 * (1 + hs(i))) % 1.2 - .1) * h, r = M * (.01 + .03 * hs(i + 8)); g.strokeStyle = "rgba(255,190,200,.45)"; g.lineWidth = 1.4; g.beginPath(); g.arc(x, y, r, 0, TAU); g.stroke(); }   // floating bubbles
-            g.save(); g.translate(w * .86, h * .24); const cr = M * .11; g.strokeStyle = "rgba(255,220,225,.8)"; g.lineWidth = 3; g.beginPath(); g.arc(0, 0, cr, 0, TAU); g.stroke(); for (let k = 0; k < 12; k++) { g.save(); g.rotate(k * TAU / 12); g.fillStyle = "#fff"; g.fillRect(-1.5, -cr, 3, cr * .14); g.restore(); }
-            g.rotate(f * .7); g.fillStyle = "#fff"; g.fillRect(-1.5, -cr * .85, 3, cr * .85); g.restore();                                     // a second hand, crawling
-            K.plateGhost(g, X, X.env.r, X.env.toName, "#ffd0d8", .55, .3);
-            X.env.slots.forEach((sl, i) => { for (let k = 3; k >= 1; k--) { const p = Math.max(0, lin(stag(i, sl.n, .2), .8 + stag(i, sl.n, .2), slow) - k * .04), q = travel(X, sl, p, -.18, x => x); if (p <= 0) continue; g.save(); g.globalAlpha = .18 * (4 - k) / 3; g.translate(q.x, q.y); g.rotate((1 - p) * .5); g.fillStyle = "#ffb0c0"; g.fillRect(-sl.w * q.s / 2, -sl.h * q.s / 2, sl.w * q.s, sl.h * q.s); g.restore(); } });   // after-images
-            X.cards((i, n, sl) => { const p = lin(stag(i, n, .2), .8 + stag(i, n, .2), slow), q = travel(X, sl, p, -.18, x => x); return { x: q.x, y: q.y, s: q.s, r: (1 - p) * 28.6, a: lin(0, .1, p), flip: 0, f: "sepia(1) saturate(4) hue-rotate(-40deg) brightness(.85)" }; });
-            if (f < .9) K.txt(gf, "未来", w * .1, h * .2, M * .09, { font: K.F_JP, weight: "400", fill: "rgba(255,255,255,.85)", stroke: "#3a0006", sw: 3 });
-            K.slam(gf, "時間を消し飛ばす", w / 2, h * .86, M * .06, lin(KC + .05, SKIP - .02, t), { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#3a0006", glow: KCR, from: .3 });
-            X.fx.rgb = 3; K.bars(gf, w, h, 1); return;
-        }
-        const q = lin(SKIP, SKIP + .06, t);                                    // ERASED: the jump. No in-between: they are simply there
-        K.sky(g, w, h, ["#08010a", "#170212", "#08010a"]);
-        if (q < 1) { g.save(); g.globalAlpha = 1 - q; g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); g.restore(); X.fx.glitch = .9 * (1 - q); X.fx.rgb = 20 * (1 - q); }
-        X.env.slots.forEach((sl, i) => kcAura(g, sl, s, lin(SKIP, SKIP + .1, t) * (.8 + X.vox * .4), i));
-        X.cards((i, n, sl) => ({ x: sl.x, y: sl.y, a: 1, flip: 1 }));
-        X.env.slots.forEach((sl, i) => { if (i % 2 === 0) K.txt(gf, "ゴ", sl.x + sl.w * .7, sl.y - sl.h * .45 + Math.sin(s * 3 + i) * 4, sl.w * .32, { font: K.F_JP, weight: "400", fill: "#b04aff", stroke: "#1a0020", sw: 3, rot: -.2 }); });
-        label(X, lin(SKIP + .02, SKIP + .1, t), "#ff4fa8");
-        K.title(gf, X, lin(SKIP + .04, 1, t), { en: "KING CRIMSON", sub: "DIAVOLO · " + X.who, y: .8 });
-        if (hit(t, SKIP, .02)) X.fx.inv = "#ff9ad0";
-        K.bars(gf, w, h, 1);
+        // ---- the Epitaph: the future, blurred, up where the forehead is
+        const ew = Math.min(w * .5, M * .82), eh = Math.min(h * .2, ew * .42), ex = w / 2, ey = h * .135, epA = ss(150, 650, ms) * (1 - ss(G0 + 500, G1 + 300, ms));
+        if (epA > 0 && !skip) { g.save(); g.globalAlpha = epA; g.save(); g.beginPath(); g.ellipse(ex, ey, ew / 2, eh / 2, 0, 0, TAU); g.clip();
+            K.radial(g, ex, ey, ew * .6, ["#3a0614", "#16030a", "#060104"]); g.strokeStyle = "rgba(255,120,140,.12)"; g.lineWidth = 1; for (let k = -6; k <= 6; k++) { g.beginPath(); g.moveTo(ex + k * ew * .09, ey + eh * .5); g.lineTo(ex + k * ew * .03, ey - eh * .1); g.stroke(); }
+            if ("filter" in g) g.filter = "blur(2px)"; K.txt(g, (env.toName || "?").toUpperCase(), ex, ey - eh * .34, eh * .13, { font: K.F_UI, weight: "700", fill: "rgba(255,210,220,.55)", sw: 0, sp: 2 }); if ("filter" in g) g.filter = "none";
+            g.restore();
+            for (let k = 0; k < 5; k++) { g.strokeStyle = "rgba(40,0,8," + (.5 - k * .09) + ")"; g.lineWidth = 6 - k; g.beginPath(); g.ellipse(ex, ey, ew / 2 - k * 2, eh / 2 - k * 2, 0, 0, TAU); g.stroke(); }    // soft inner edge
+            g.globalCompositeOperation = "lighter"; g.strokeStyle = K.rgba(KCR, .55 + .2 * Math.sin(s * 3)); g.lineWidth = 2; g.beginPath(); g.ellipse(ex, ey, ew / 2 + 2, eh / 2 + 2, 0, 0, TAU); g.stroke(); K.glow(g, ex, ey + eh * .5, ew * .3, KCR, .25);
+            g.restore(); }
+        if (!skip) kcHair(gf, X, s, 1 - ss(KC_PK + 300, KC_PK + 1300, ms));
+        // ---- the cards: in the Epitaph (blurred, about to turn) -> gathered -> laid out -> turned one by one -> (skip) simply there
+        const cw0 = SL.length ? SL[0].w : 80, step = Math.min(ew * .8 / Math.max(1, n), cw0 * 1.1), se = Math.min(step / 1.12, eh * .6 * 118 / 176) / cw0;
+        const fd = Math.min(520, (F1 - F0) * .5), fs = n > 1 ? (F1 - F0 - fd) / (n - 1) : 0, flipOf = (i, m) => m >= KC_SK ? 1 : ss(0, 1, lin(F0 + i * fs, F0 + i * fs + fd, m));
+        const where = (i, sl, m) => {                                      // card i at time m (ms): Epitaph -> gathered -> its slot
+            const e = { x: ex + (i - (n - 1) / 2) * step, y: ey + eh * .08 + Math.sin(s * 2.3 + i) * 1.5, s: se, r: Math.sin(s * 3 + i) * 1.5 };
+            const gp = K.ioCub(lin(G0 + stag(i, n, 260), G1 - 260 + stag(i, n, 260), m)), gx = w / 2 + (i - (n - 1) / 2) * cw0 * .07, gy = h * .48 + (i - (n - 1) / 2) * 1.2, gr = (i - (n - 1) / 2) * 2.4;
+            const sp = K.ioCub(lin(G1, SP1, m)), fl = flipOf(i, m), drift = (1 - fl) * Math.sin(m * .0008 + i) * M * .006;
+            return { x: K.mix(K.mix(e.x, gx, gp), sl.x, sp), y: K.mix(K.mix(e.y, gy, gp), sl.y, sp) + drift - Math.sin(gp * Math.PI) * M * .05, s: K.mix(K.mix(e.s, .8, gp), 1, sp), r: K.mix(K.mix(e.r, gr, gp), (hs(i) - .5) * 4 * (1 - fl), sp), fl, gp, sp };
+        };
+        const P = SL.map((sl, i) => where(i, sl, ms));
+        if (!skip) P.forEach((q, i) => { const sl = SL[i]; if (!((q.gp > 0 && q.gp < 1) || (q.sp > 0 && q.sp < 1))) return;     // slow-motion after-images, trailing behind the moving cards
+            for (let k = 3; k >= 1; k--) { const o = where(i, sl, ms - k * 110), cw = sl.w * o.s, ch = sl.h * o.s;
+                g.save(); g.globalAlpha = .13 * (4 - k) / 3; g.translate(o.x, o.y); g.rotate(o.r * Math.PI / 180); g.fillStyle = "#ff6a84"; K.rr(g, -cw / 2, -ch / 2, cw, ch, cw * .08); g.fill(); g.restore(); }
+        });
+        if (!skip) P.forEach((q, i) => { const sl = SL[i]; if (q.gp <= 0) return; kcAura(g, { x: q.x, y: q.y, w: sl.w * q.s, h: sl.h * q.s }, s, ss(G0, G0 + 700, ms) * (.85 + X.vox * .3), i, false); });
+        else P.forEach((q, i) => kcAura(g, SL[i], s, out * .9 + .1, i, out < .6));
+        const blur0 = 3.2;
+        X.cards((i, n2, sl) => { const q = P[i]; if (skip) return { x: sl.x, y: sl.y, a: 1, flip: 1 };
+            const b = blur0 * (1 - q.fl) * (q.gp > 0 ? .85 : 1); return { x: q.x, y: q.y, s: q.s, r: q.r, a: q.gp > 0 ? 1 : epA, flip: q.gp > 0 ? q.fl : Math.max(0, Math.sin(s * 2.6 + i) * .09), f: b > .05 ? "blur(" + b.toFixed(2) + "px) brightness(" + (1 + .25 * (1 - q.fl)).toFixed(2) + ")" : "" }; });
+        // ---- the shout, lettered on the beat
+        if (!skip) { const p = lin(KC_PK - 90, KC_PK + 1250, ms); K.slam(gf, "キング・クリムゾン", w / 2, h * .42, M * .075, p, { font: K.F_JP, weight: "400", fill: "#fff", stroke: "#3a0006", glow: KCR, from: .5, ghost: 1 }); K.slam(gf, "KING CRIMSON!", w / 2, h * .42 + M * .085, M * .055, p, { fill: "#fff", stroke: "#000", glow: KCR, from: .4, sp: M * .006, skew: -.1 }); }
+        if (SL.length) { const la = ss(SP1 - 150, SP1 + 250, ms); if (la > 0) { gf.save(); gf.globalAlpha = la; K.txt(gf, ((env.toName || "?") + "'s hand").toUpperCase(), w / 2, Math.max(M * .06, env.top - M * .055), M * .036, { fill: "#fff", stroke: "#000", glow: KCR, sw: M * .006, sp: M * .005 }); gf.restore(); } }
+        // ---- the drops of blood, in the middle: 4 when King Crimson acts, 4 more at the skip
+        kcDropSpots(X).forEach(([x, y, r], k) => { const at = k < 4 ? KC_PK + 180 + k * 130 : KC_SK + 40 + (k - 4) * 70; kcDrop(gf, x, y, r, lin(at, at + 160, ms), k); });
+        // ---- post: colour split on the aura, the time skip (glitch slices + flash)
+        X.fx.rgb = skip ? 0 : red * .7 + hit(ms, KC_PK - 30, 260) * 3;
+        if (skip) { const q = lin(KC_SK, KC_SK + 160, ms); if (q < 1) { X.fx.glitch = .75 * (1 - q); X.fx.flash = [q < .35 ? "#ffffff" : "#ff5a70", (1 - q) * .8]; } }
+        else if (red > 0 && red < 1) X.fx.flash = ["#ffd0d8", K.bell(red, 0, 1) * .3];
+    },
+    tailStart(X) {                                                       // where the game's reminder strip shows the same cards (the player who used it)
+        const env = X.env, el = document.getElementById("unoSight"); env.sight = null; if (!el || !env.owner || !env.peek) return;
+        const map = {}; el.querySelectorAll(".u-sight-cell").forEach(c => { map[c.dataset.ci] = c.getBoundingClientRect(); });
+        const L = env.peek.map(p => map[p.ci]); if (L.every(Boolean)) env.sight = L.map(r => ({ x: r.left + r.width / 2, y: r.top + r.height / 2, k: r.width / 118 }));
     },
     tail(g, X, T) {
-        const { w, h, gf } = X, tt = T.tt, s = T.s, a = fade(tt);
-        K.sky(g, w, h, ["#08010a", "#170212", "#08010a"]); g.globalAlpha = a;
-        X.env.slots.forEach((sl, i) => kcAura(g, sl, s, .9, i)); X.cards((i, n, sl) => ({ x: sl.x, y: sl.y, a, flip: 1 }));
-        gf.save(); gf.globalAlpha = a; X.env.slots.forEach((sl, i) => { if (i % 2 === 0) K.txt(gf, "ゴ", sl.x + sl.w * .7, sl.y - sl.h * .45 + Math.sin(s * 3 + i) * 4, sl.w * .32, { font: K.F_JP, weight: "400", fill: "#b04aff", stroke: "#1a0020", sw: 3, rot: -.2 }); }); gf.restore();
-        label(X, a, "#ff4fa8"); g.globalAlpha = 1; K.bars(gf, w, h, a);
+        const { w, h, M, gf, env } = X, tt = T.tt, s = T.s, jump = tt >= .3, a = jump ? 1 - ss(.3, .8, tt) : 1, da = 1 - ss(.15, .85, tt);
+        if (jump) { const st = document.getElementById("unoSight"); if (st) st.classList.add("kc-in"); }
+        kcDropSpots(X).forEach(([x, y, r], k) => { gf.save(); gf.globalAlpha = da; kcDrop(gf, x, y, r, 1, k); gf.restore(); });
+        if (!jump) X.env.slots.forEach((sl, i) => kcAura(g, sl, s, .7, i, true));
+        if (jump && tt < .36) { const q = lin(.3, .36, tt); X.fx.flash = ["#ff5a70", (1 - q) * .25]; }
+        X.cards((i, n, sl) => { const st = env.sight && env.sight[i]; if (!jump) return { x: sl.x, y: sl.y, a: 1, flip: 1 };
+            return st ? { x: st.x, y: st.y, s: st.k * 118 / sl.w, a, flip: 1 } : { x: sl.x, y: sl.y, a, flip: 1 }; });
     }
 };
 
