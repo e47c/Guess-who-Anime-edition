@@ -10,8 +10,9 @@
                among the freshest. Nothing is ever banned for good: cooldowns fade with time.
    - Match:    newMatch / act / actorOf / advance: two teams, hidden ranked board, 3 strikes, one steal.
    ===================================================================== */
-import { CHARS } from "../draft/data.js?v=2";
+import { CHARS } from "../draft/data.js?v=3";
 import { NICKNAMES } from "./nicknames.js?v=1";
+import { ALIASES, NAME_ALIASES } from "./aliases.js?v=1";
 
 export const FEUD_RULES = {
     rounds: 5,                 // default match length (setup offers ROUND_CHOICES)
@@ -60,24 +61,30 @@ export function lev(a, b, max = 3) {
     }
     return prev[b.length];
 }
+// romanisation folding, for matching only: "Gojou" = "Gojo", "Yuuji" = "Yuji", "Kyouraku" = "Kyoraku", "Toushirou" = "Toshiro"
+export const fold = s => String(s).replace(/ou/g, "o").replace(/oo/g, "o").replace(/uu/g, "u").replace(/ii/g, "i").replace(/aa/g, "a");
 const typoOk = (k, n) => { if (/\d/.test(k) || /\d/.test(n)) return false; const L = Math.min(k.length, n.length); const t = L >= 9 ? 2 : L >= 5 ? 1 : 0; return t > 0 && lev(k, n, t) <= t; };
 // a whole-word piece of the key that is most of it: "shadow clone" for "shadow clone jutsu"
 const partOk = (k, n) => n.length >= 4 && n.length >= .6 * k.length && (" " + k + " ").includes(" " + n + " ");
-const wordsIn = (k, n) => { const w = n.split(" "); return k.length >= 4 && k.split(" ").every(x => w.includes(x)); };
+// the whole answer inside a slightly longer input ("the rasengan jutsu"), but not inside a sentence that names several things
+// ... and never when the extra words carry a number ("Super Saiyan 4" is not "Super Saiyan", "Gear 4" is not "Gear")
+const wordsIn = (k, n) => { const w = n.split(" "), kw = k.split(" "); return k.length >= 4 && w.length <= kw.length + 2 && kw.every(x => w.includes(x)) && !w.some(x => /\d/.test(x) && !kw.includes(x)); };
+const flat = x => x.replace(/ /g, "");
 
 /* match a typed answer against a board. Returns { k: "hit", i } | { k: "vague", i: [..] } | { k: "miss" } | { k: "empty" } */
 export function matchText(board, input) {
-    const n = stem(input); if (!n) return { k: "empty" };
-    const find = test => board.map((a, i) => a.keys.some(k => test(k, n)) ? i : -1).filter(i => i >= 0);
-    let h = find((k, x) => k === x);                          // exact (any alias)
+    const n = fold(stem(input)); if (!n) return { k: "empty" };
+    const keysOf = a => a.fk || (a.fk = arr(a.keys).map(fold)), toksOf = a => a.ft || (a.ft = arr(a.toks).map(fold));
+    const find = test => board.map((a, i) => keysOf(a).some(k => test(k, n)) ? i : -1).filter(i => i >= 0);
+    let h = find((k, x) => k === x || flat(k) === flat(x));    // exact (any alias), spaces ignored ("gumgum" = "gum gum")
     if (h.length) return { k: "hit", i: h[0] };
-    for (const t of [typoOk, partOk, wordsIn]) {               // one typo, most of the name, or the name inside a longer answer
+    for (const t of [typoOk, partOk, wordsIn]) {               // one typo, most of the name, or the name inside a slightly longer answer
         h = find(t);
         if (h.length === 1) return { k: "hit", i: h[0] };
         if (h.length > 1) return { k: "vague", i: h };
     }
     for (const t of [(k, x) => k === x, typoOk]) {             // a character's first or last name (exact, then one typo)
-        h = board.map((a, i) => a.toks.some(k => t(k, n)) ? i : -1).filter(i => i >= 0);
+        h = board.map((a, i) => toksOf(a).some(k => t(k, n)) ? i : -1).filter(i => i >= 0);
         if (h.length === 1) return { k: "hit", i: h[0] };
         if (h.length > 1) return { k: "vague", i: h };
     }
@@ -124,6 +131,57 @@ export function parseLine(line) {
         return { raw: x, t: parts[0] || "", al: parts.slice(1), p: m ? Number(m[2]) : NaN, char };
     });
 }
+// one board answer: shown text, points, every accepted spelling (keys) and, for characters, their first / last names (toks).
+// Character spellings: the pack's own aliases + nicknames.js + aliases.js (reviewed nicknames, titles, other romanisations).
+function mkAnswer(bid, s, t, c, p, al = []) {
+    const aliases = arr(al).concat(c ? (NICKNAMES[c.id] || []).concat(ALIASES[c.id] || []) : []);
+    const keys = [...new Set([t].concat(aliases).map(stem).filter(Boolean))];
+    const toks = c ? [...new Set(nameToks(c.n).concat(arr(NAME_ALIASES[c.id]).flatMap(nameToks)))] : [];
+    return { id: bid + "~" + s + "~" + slug(t), s, t, c: c ? c.id : 0, p, al: aliases, keys, toks };
+}
+/* Boards ranked by the Anime Draft ratings (gen: { stat, top, min, skip }): the series' best in ONE category, best first.
+   Classic: points by rank (ties share them; a tie is never split by the cut). Most Likely: points = the rating itself
+   (duels compare two characters' ratings; never across series, since ratings are measured inside each series). */
+export const GEN_STATS = { STR: 2, SPD: 3, IQ: 4, DUR: 5, CMB: 6 };
+const RANK_PTS = [28, 20, 15, 11, 9, 7, 5, 3, 2, 2, 2, 2];
+function genAnswers(b, type, chars, idx) {
+    const g = b.gen, col = GEN_STATS[g.stat], out = [];
+    if (col == null) return out;
+    Object.entries(chars).forEach(([s, rows]) => {
+        if (arr(g.skip).includes(s) || (g.only && !arr(g.only).includes(s))) return;
+        const list = rows.filter(r => r[col] >= (g.min || 0)).sort((x, y) => y[col] - x[col] || (x[0] - y[0]));
+        let top = g.top || 8;
+        while (top < list.length && top > 0 && list[top][col] === list[top - 1][col]) top--;   // don't split a tie at the cut
+        if (top < 5) { top = g.top || 8; while (top < list.length && list[top][col] === list[top - 1][col] && top < (g.top || 8) + 3) top++; }
+        let rank = 0;
+        const mine = [];
+        list.slice(0, top).forEach((r, i) => {
+            if (i && r[col] < list[i - 1][col]) rank = i;
+            const c = idx[s] && idx[s].full.get(norm(r[1]));
+            if (c) mine.push(mkAnswer(b.id, s, c.n, c, type === "likely" ? r[col] : RANK_PTS[Math.min(rank, RANK_PTS.length - 1)]));
+        });
+        const sum = mine.reduce((t, a) => t + a.p, 0);       // Classic: never more than 100 points per series (ties at the top can push it over)
+        if (type !== "likely" && sum > 100) mine.forEach(a => { a.p = Math.max(2, Math.floor(a.p * 100 / sum)); });
+        out.push(...mine);
+    });
+    return out;
+}
+// the board's ranking basis in a few words (shown above the question)
+export function kindLabel(B) {
+    if (!B) return "";
+    if (B.kind === "canon") return B.rank === "fans" ? "Canon answers · ranked by AniList fans" : "Canon answers · ranked by how well-known";
+    if (B.kind === "feats") return "Ranked by feats · Anime Draft ratings";
+    if (B.kind === "power") return "Ranked by canon feats";
+    return "Opinion · editors' poll, not canon";
+}
+// a typed answer that is right for the question but not among the answers shown (for a fairer "not on the board" message)
+export function fairAnswer(B, series, text, shown) {
+    if (!B || B.type !== "classic" || !text) return null;
+    series = arr(series);
+    const rest = B.ans.filter(a => (B.generic || B.only || series.includes(a.s)) && !arr(shown).some(x => x.id === a.id));
+    const r = rest.length ? matchText(rest, text) : { k: "miss" };
+    return r.k === "hit" ? rest[r.i] : null;
+}
 export function buildLibrary(packs, chars = CHARS) {
     const idx = charIndex(chars), boards = {}, questions = [], issues = [];
     const bad = (pack, b, msg, level = "error") => issues.push({ level, pack: pack.id, board: b && b.id, msg });
@@ -150,13 +208,13 @@ export function buildLibrary(packs, chars = CHARS) {
                     const t = c ? c.n : x.t, key = s + ":" + stem(t);
                     if (!c && seenT.has(key)) return bad(pack, b, s + ": \"" + t + "\" is listed twice");
                     seenT.add(key);
-                    const aliases = x.al.concat(c ? NICKNAMES[c.id] || [] : []), keys = [...new Set([t].concat(aliases).map(stem).filter(Boolean))];
-                    ans.push({ id: b.id + "~" + s + "~" + slug(t), s, t, c: c ? c.id : 0, p: x.p, al: aliases, keys, toks: c ? [...new Set(nameToks(c.n).concat(aliases.flatMap(nameToks)))] : [] });
+                    ans.push(mkAnswer(b.id, s, t, c, x.p, x.al));
                 });
             });
+            if (b.gen) genAnswers(b, pack.type, chars, idx).forEach(a => ans.push(a));
             const series = [...new Set(ans.map(a => a.s))];
             const B = { id: b.id, pack: pack.id, type: pack.type, fam: b.fam || b.id, cat: b.cat || "General", sub: b.sub || "", pol: b.pol || "0", diff: Number(b.diff) || 2, vt: b.vt || "base",
-                opp: b.opp || "", only: b.only ? (series[0] || "") : "", generic: series.length === 1 && series[0] === "any", series, ans,
+                opp: b.opp || "", only: b.only ? (series[0] || "") : "", kind: b.kind || "poll", rank: b.rank || "", why: b.why || "", noCross: !!(b.gen || b.noCross), gen: b.gen || null, agree: b.agree || null, beats: b.beats || null, generic: series.length === 1 && series[0] === "any", series, ans,
                 source: pack.source || "Anime Arcade curated answers", review: b.review || pack.review || "curated", ranking: "curated", votes: null };
             boards[b.id] = B;
             arr(b.q).forEach((w, i) => {
@@ -231,7 +289,7 @@ export function pairsFor(B, series) {
             if (n2 && list[i].p > n2.p && list[i].p - n2.p <= R.duelGap - 2 && n1.p !== n2.p) add(list[i], n2);
         }
     });
-    if (series.length > 1) {
+    if (series.length > 1 && !B.noCross) {
         const keys = Object.keys(by);
         for (let i = 0; i < keys.length; i++) for (let j = i + 1; j < keys.length; j++)
             by[keys[i]].forEach(x => by[keys[j]].forEach(y => { if (x.p >= 10 && y.p >= 10 && x.p !== y.p && Math.abs(x.p - y.p) <= R.duelCrossGap) add(x, y, true); }));

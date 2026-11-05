@@ -4,9 +4,9 @@
    the question library, the per-player question history and rotation, the server clock, the character pictures
    (the Anime Draft roster), and small screen helpers that work on a mode's own element ids (kit("fd") / kit("ml")).
    ===================================================================== */
-import { CHARS } from "../draft/data.js?v=2";
-import { PACKS } from "./packs/index.js?v=1";
-import { buildLibrary, eligible, pickQuestion, pickPair, qText, remember, trimHist, balanceTeams, poolInfo } from "./engine.js?v=3";
+import { CHARS } from "../draft/data.js?v=3";
+import { PACKS } from "./packs/index.js?v=2";
+import { buildLibrary, eligible, pickQuestion, pickPair, qText, remember, trimHist, balanceTeams, poolInfo } from "./engine.js?v=4";
 
 export const LIB = buildLibrary(PACKS);
 export const K = { X: null, DB: null, offset: 0 };

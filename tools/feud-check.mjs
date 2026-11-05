@@ -19,7 +19,7 @@ B.forEach(b => {
     b.ans.forEach(a => (bySeries[a.s] = bySeries[a.s] || []).push(a));
     Object.entries(bySeries).forEach(([s, list]) => {
         const sum = list.reduce((t, a) => t + a.p, 0);
-        if (sum > 100) errors.push(`${id}: ${s} points add up to ${sum} (max 100)`);
+        if (b.type === "classic" && sum > 100) errors.push(`${id}: ${s} points add up to ${sum} (max 100)`);
         for (let i = 1; i < list.length; i++) if (list[i].p > list[i - 1].p) { warns.push(`${id}: ${s} is not ranked best-first (${list[i - 1].t} ${list[i - 1].p} < ${list[i].t} ${list[i].p})`); break; }
         // two answers of the same line that accept the same text = an ambiguous board
         const seen = new Map();
@@ -43,6 +43,45 @@ B.forEach(b => {
     }
 });
 // --- wordings ---
+/* ---------- the accuracy review ----------
+   - every board says what kind of question it is and how it's ranked (shown to players above the question)
+   - "fans" boards: roster answers must follow AniList favourites (data/draft-pop.json); popularity drifts weekly, so a warning
+   - "agree" boards (opinion boards about a rated quality): no answer may sit above one rated clearly better/worse in that stat
+   - "feats" boards are generated from the Draft ratings, so they can't disagree with them */
+import fs from "fs";
+const pop = JSON.parse(fs.readFileSync(new URL("../data/draft-pop.json", import.meta.url), "utf8")).chars;
+const COL = { STR: 2, SPD: 3, IQ: 4, DUR: 5, CMB: 6 }, row = {};
+Object.values(CHARS).forEach(rows => rows.forEach(r => { row[r[0]] = r; }));
+const KINDS = { canon: 1, feats: 1, power: 1, poll: 1 };
+B.forEach(b => {
+    const id = b.pack + "/" + b.id;
+    if (!KINDS[b.kind]) errors.push(`${id}: kind must be canon, feats, power or poll (got ${b.kind})`);
+    if (b.kind === "canon" && !["fans", "known"].includes(b.rank)) errors.push(`${id}: a canon board needs rank "fans" or "known"`);
+    if (b.kind === "feats" && !b.gen) errors.push(`${id}: a feats board is generated from the ratings (gen: { stat })`);
+    if ((b.kind === "power" || b.kind === "feats") && !b.why) errors.push(`${id}: say what the ranking is based on (why)`);
+    if (b.rank === "fans") {
+        const by = {}; b.ans.filter(a => a.c).forEach(a => (by[a.s] = by[a.s] || []).push(a));
+        Object.entries(by).forEach(([s, list]) => {
+            list.sort((x, y) => y.p - x.p);
+            for (let i = 1; i < list.length; i++) {
+                const f0 = (pop[list[i - 1].c] || [0])[0], f1 = (pop[list[i].c] || [0])[0];
+                if (list[i].p < list[i - 1].p && f1 > f0 * 1.15) { warns.push(`${id}: ${s} popularity drifted (${list[i].t} now has more AniList favourites than ${list[i - 1].t}); re-rank this line`); break; }
+            }
+        });
+    }
+    if (b.beats) Object.entries(b.beats).forEach(([s, list]) => list.forEach(([w, l]) => {      // canon outcomes: the winner ranks higher
+        const W = b.ans.find(a => a.s === s && a.t === w), L = b.ans.find(a => a.s === s && a.t === l);
+        if (!W || !L) errors.push(`${id}: ${s} outcome ${w} > ${l} names someone who isn't on the board`);
+        else if (!(W.p > L.p)) errors.push(`${id}: ${s} ranks ${l} (${L.p}) at or above ${w} (${W.p}), but ${w} beat them in canon`);
+    }));
+    if (b.agree) {
+        const col = COL[b.agree.stat], dir = b.agree.dir || 1, tol = b.agree.tol || 10, by = {};
+        b.ans.filter(a => a.c).forEach(a => (by[a.s] = by[a.s] || []).push(a));
+        Object.entries(by).forEach(([s, list]) => list.forEach(x => list.forEach(y => {
+            if (x.p > y.p && dir * (row[y.c][col] - row[x.c][col]) > tol) errors.push(`${id}: ${s} ranks ${x.t} above ${y.t}, but their ${b.agree.stat} ratings say the opposite (${row[x.c][col]} vs ${row[y.c][col]})`);
+        })));
+    }
+});
 const Q = lib.questions;
 const seenText = new Map();
 Q.forEach(q => {

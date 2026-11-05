@@ -12,9 +12,9 @@
                      the right one), votes, turn key, deadline. Every vote and timeout runs in a transaction.
      feudHist/p<N>   the shared question history (same as Anime Feud: it never serves the same question twice in a row).
    ===================================================================== */
-import { FEUD_RULES as R, poolInfo, newMatch, act, advance, needsQuestion, balanceTeams, seatsOf, qText } from "./engine.js?v=3";
+import { FEUD_RULES as R, poolInfo, newMatch, act, advance, needsQuestion, balanceTeams, seatsOf, qText, kindLabel } from "./engine.js?v=4";
 import { LIB, K, arr, el, srvNow, label, presentIn, pickOpt, seriesOf, TEAM, initCommon, recordSeen, publishHist, syncRemoteHist, roomHists, nextQuestion,
-    charName, charSeries, img, teamsFrom, optButtons, scopeLine, teamColumns, tapTeam, shuffleTeams, kit, makeTimer, confetti, hintFor } from "./common.js?v=1";
+    charName, charSeries, img, teamsFrom, optButtons, scopeLine, teamColumns, tapTeam, shuffleTeams, kit, makeTimer, confetti, hintFor } from "./common.js?v=2";
 
 const TYPE = "likely", NODE = "likely", GT = "likely";
 const KT = kit("ml"), $ = KT.$, banner = KT.banner, feedback = KT.feedback;
@@ -235,7 +235,7 @@ function scoreBar(d, s) {
 function render(d, s) {
     const du = s.duel || {}, res = s.phase === "reveal" || s.phase === "over", L = res ? arr(s.log)[arr(s.log).length - 1] || {} : null, playing = inMatch(s);
     $("Status").textContent = s.phase === "vote" ? (!playing ? "Everyone is voting…" : s.ffa ? "Every player for themselves: who is more likely?" : "Vote with your team: who is more likely?") : s.phase === "reveal" ? "The answer is in!" : "";
-    KT.setTop(s, "MOST LIKELY · " + (s.ffa ? "FREE FOR ALL" : "TEAM VS TEAM") + " · " + (arr(s.series).length > 1 ? "ANIME MIX" : label(s.series[0]).toUpperCase()), "DUEL");
+    KT.setTop(s, ["MOST LIKELY", s.ffa ? "FREE FOR ALL" : "TEAM VS TEAM", arr(s.series).length > 1 ? "ANIME MIX" : label(s.series[0]).toUpperCase(), kindLabel(LIB.boards[s.q && s.q.g])].filter(Boolean).join(" · "), "DUEL");
     scoreBar(d, s);
     const arena = $("Arena"), key = s.round + ":" + du.a + ":" + du.b;
     if (arena.dataset.k !== key) {
@@ -357,7 +357,7 @@ function showOver(d, s) {
         li.appendChild(chips); rl.appendChild(li);
     });
     card.appendChild(rl);
-    card.appendChild(el("p", "fd-onote", "The more likely character is our editors' pick (Anime Arcade curated rankings), not a survey result."));
+    card.appendChild(el("p", "fd-onote", "Opinion duels are our editors' pick, labelled as such; strength, speed, toughness, skill and intelligence duels follow the Anime Draft ratings."));
     const btns = el("div", "fd-obtns");
     if (X.amHost()) { const a = el("button", "btn xl", "Rematch"); a.onclick = () => window.mlAgain(); const b = el("button", "btn ghost", "Back to lobby"); b.onclick = () => window.mlLobby(); btns.append(a, b); }
     else btns.appendChild(el("p", "fd-wait", "Waiting for " + X.pName(d, X.hostSlot(d)) + " to start a rematch or go back to the lobby."));

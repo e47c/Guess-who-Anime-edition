@@ -1,15 +1,15 @@
-/* ANIME FEUD pack: MOST LIKELY, crossover boards (Anime Arcade curated answers, not survey results).
-   Every board ranks characters PER SERIES ("Name 30" = 30 points). One series ticked: that series' line is the board
-   (it needs 5+ names). Two or more ticked: the board is built from the ticked series only, best points first.
-   Names are matched against the Anime Draft roster (js/draft/data.js); a short unique name is enough ("Luffy").
-   Wordings: "{a}" becomes "One Piece " with one series ticked and disappears in a mix. "S|" = single only, "M|" = mix only.
+/* ANIME FEUD pack: MOST LIKELY, crossover boards. A duel shows two characters of a board who are close in its ranking;
+   the higher one is the answer. kind "poll" = an opinion question (our editors' poll; the game labels it as such).
+   kind "feats" = computed from the Anime Draft ratings (gen: { stat }); those duels never mix two series, since the ratings
+   are measured inside each series. Poll lines: "Name 30" (a short unique roster name is enough: "Luffy").
+   "{a}" = "One Piece " with one series ticked, nothing in a mix. "S|" = single only, "M|" = mix only.
    Append new wordings at the END of a board's q list: a wording's id is its position. */
 export default {
-    id: "likely-cross", type: "likely", source: "Anime Arcade curated answers", review: "curated",
+    id: "likely-cross", type: "likely", source: "Anime Arcade curated answers", review: "audited 2026-11",
     boards: [
-        /* ---------------- leadership ---------------- */
-        { id: "x-leader-best", fam: "leadership", cat: "Leadership", sub: "Leader", pol: "+", diff: 1, opp: "x-leader-worst",
-            q: ["Which {a}character would make the best leader?", "Who would you follow into any battle?", "M|If these series formed one crossover army, who should lead it?"],
+        { id: "x-leader-best", fam: "leadership", cat: "Leadership", sub: "Leader", pol: "+", diff: 1, opp: "x-leader-worst", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Which {a}character would make the best leader?","Who would you follow into any battle?","M|If these series formed one crossover army, who should lead it?"],
             a: {
                 onepiece: "Luffy 30; Shanks 22; Newgate 16; Roger 12; Law 8; Jinbe 6",
                 naruto: "Naruto 26; Minato 18; Hashirama 16; Tsunade 12; Shikamaru 10; Hiruzen 8",
@@ -28,9 +28,11 @@ export default {
                 fireforce: "Obi 30; Benimaru 22; Burns 14; Shinra 14; Hinawa 8",
                 frieren: "Himmel 36; Serie 18; Frieren 12; Eisen 10; Denken 10; Flamme 8",
                 windbreaker: "Umemiya 36; Togame 16; Kaji 14; Hiragi 12; Suo 10; Sakura 8"
-            } },
-        { id: "x-leader-worst", fam: "leadership", cat: "Leadership", sub: "Leader", pol: "-", diff: 1, vt: "opposite", opp: "x-leader-best",
-            q: ["Which {a}character would make the worst leader?", "Who would run their team straight into the ground?"],
+            }
+        },
+        { id: "x-leader-worst", fam: "leadership", cat: "Leadership", sub: "Leader", pol: "-", diff: 1, vt: "opposite", opp: "x-leader-best", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Which {a}character would make the worst leader?","Who would run their team straight into the ground?"],
             a: {
                 onepiece: "Buggy 30; Luffy 18; Usopp 14; Enel 12; Teach 8; Brook 6",
                 naruto: "Obito 20; Jiraiya 16; Tsunade 14; Lee 12; Madara 10; Sasuke 10",
@@ -49,15 +51,17 @@ export default {
                 fireforce: "Arthur 30; Tamaki 18; Joker 14; Shinra 10; Vulcan 8",
                 frieren: "Frieren 26; Ubel 18; Stark 16; Heiter 14; Sein 8",
                 windbreaker: "Sakura 26; Takiishi 20; Nirei 16; Sugishita 12; Endo 10"
-            } },
-        { id: "x-strategist", fam: "leadership", cat: "Leadership", sub: "Strategy", pol: "+", diff: 2, vt: "context",
-            q: ["Who is the best {a}strategist?", "Who would you want planning your side of a war?"],
+            }
+        },
+        { id: "x-strategist", fam: "leadership", cat: "Leadership", sub: "Strategy", pol: "+", diff: 2, vt: "context", kind: "poll", agree: {"stat":"IQ","dir":1,"tol":12},
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who is the best {a}strategist?","Who would you want planning your side of a war?"],
             a: {
                 onepiece: "Law 24; Doflamingo 18; Crocodile 14; Robin 12; Nami 10; Teach 8",
                 naruto: "Shikamaru 36; Itachi 16; Kakashi 12; Madara 10; Minato 8; Kabuto 6",
                 dragonball: "Piccolo 22; Bulma 18; Frieza 14; Cell 12; Vegeta 8; Whis 8",
                 jjk: "Kenjaku 28; Megumi 16; Geto 14; Higuruma 10; Mahito 10; Yuta 6",
-                demonslayer: "Shinobu 22; Tengen 16; Tanjiro 14; Muzan 14; Tamayo 10; Doma 8",
+                demonslayer: "Kagaya 24; Tamayo 20; Shinobu 16; Tengen 12; Doma 10; Muzan 8",
                 bleach: "Aizen 38; Urahara 30; Mayuri 12; Yhwach 8; Shunsui 6",
                 aot: "Armin 32; Erwin 30; Zeke 14; Hange 10; Pixis 8",
                 mha: "All For One 24; Izuku 22; Momo 14; Aizawa 12; Hawks 10; Iida 6",
@@ -66,14 +70,15 @@ export default {
                 chainsaw: "Makima 40; Kishibe 22; Aki 10; Himeno 8; Reze 8",
                 blackclover: "Julius 24; Nacht 20; William 14; Dante 12; Zenon 10",
                 jojo: "Joseph 36; Giorno 20; Dio 12; Pucci 10; Bucciarati 10",
-                rezero: "Roswaal 20; Subaru 18; Echidna 18; Otto 14; Anastasia 12; Crusch 8",
-                fireforce: "Hinawa 24; Joker 20; Obi 14; Haumea 10; Giovanni 8",
+                rezero: "Echidna 24; Roswaal 20; Anastasia 16; Otto 12; Crusch 10; Subaru 8",
+                fireforce: "Joker 24; Hinawa 20; Viktor Licht 16; Haumea 12; Giovanni 10; Obi 8",
                 frieren: "Frieren 22; Denken 18; Serie 16; Himmel 10; Macht 10; Methode 6",
                 windbreaker: "Suo 32; Umemiya 14; Nirei 14; Kaji 10; Togame 10; Hiragi 8"
-            } },
-        /* ---------------- mentorship ---------------- */
-        { id: "x-teacher", fam: "mentorship", cat: "Mentorship", sub: "Teacher", pol: "+", diff: 1, vt: "context",
-            q: ["Who would be the best teacher at a {a}training school?", "Who would make the best mentor?", "Whose students would turn out the strongest?"],
+            }
+        },
+        { id: "x-teacher", fam: "mentorship", cat: "Mentorship", sub: "Teacher", pol: "+", diff: 1, vt: "context", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who would be the best teacher at a {a}training school?","Who would make the best mentor?","Whose students would turn out the strongest?"],
             a: {
                 onepiece: "Rayleigh 30; Mihawk 18; Garp 16; Robin 10; Shanks 10; Jinbe 8",
                 naruto: "Kakashi 26; Jiraiya 24; Guy 14; Hiruzen 10; Minato 8; Tsunade 8",
@@ -91,10 +96,11 @@ export default {
                 fireforce: "Obi 24; Benimaru 20; Hinawa 16; Konro 10; Burns 8",
                 frieren: "Flamme 26; Frieren 24; Eisen 16; Heiter 12; Serie 10; Denken 6",
                 windbreaker: "Umemiya 30; Hiragi 18; Kaji 12; Suo 8; Togame 8"
-            } },
-        /* ---------------- loyalty ---------------- */
-        { id: "x-loyal", fam: "loyalty", cat: "Personality", sub: "Loyalty", pol: "+", diff: 1, opp: "x-betray",
-            q: ["Which {a}character is the most loyal?", "Who would never turn their back on their friends?", "Who would follow their captain anywhere?"],
+            }
+        },
+        { id: "x-loyal", fam: "loyalty", cat: "Personality", sub: "Loyalty", pol: "+", diff: 1, opp: "x-betray", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Which {a}character is the most loyal?","Who would never turn their back on their friends?","Who would follow their captain anywhere?"],
             a: {
                 onepiece: "Zoro 30; Sanji 14; Marco 12; Jinbe 12; Ace 10; Chopper 8; Brook 6",
                 naruto: "Naruto 22; Itachi 20; Kakashi 12; Sakura 12; Hinata 12; Gaara 8",
@@ -113,9 +119,11 @@ export default {
                 fireforce: "Maki 18; Arthur 16; Shinra 14; Iris 12; Hinawa 10",
                 frieren: "Fern 22; Himmel 18; Stark 16; Eisen 12; Heiter 10; Frieren 8",
                 windbreaker: "Sugishita 32; Nirei 18; Kotoha 14; Sakura 12; Suo 10"
-            } },
-        { id: "x-betray", fam: "loyalty", cat: "Personality", sub: "Loyalty", pol: "-", diff: 1, vt: "opposite", opp: "x-loyal",
-            q: ["Which {a}character is most likely to betray their friends?", "Who would stab you in the back first?", "Who would switch sides the moment it paid off?"],
+            }
+        },
+        { id: "x-betray", fam: "loyalty", cat: "Personality", sub: "Loyalty", pol: "-", diff: 1, vt: "opposite", opp: "x-loyal", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Which {a}character is most likely to betray their friends?","Who would stab you in the back first?","Who would switch sides the moment it paid off?"],
             a: {
                 onepiece: "Teach 32; Buggy 14; Lucci 14; Crocodile 12; Doflamingo 10; Kuzan 8",
                 naruto: "Orochimaru 26; Sasuke 18; Obito 16; Kabuto 14; Itachi 10; Madara 6",
@@ -128,57 +136,43 @@ export default {
                 hxh: "Hisoka 34; Pariston 18; Illumi 16; Chrollo 10; Meleoron 6",
                 deathnote: "Light 30; Ryuk 20; Mello 14; Mikami 10; Takada 8",
                 chainsaw: "Makima 28; Reze 22; Power 16; Denji 10; Angel 8",
-                blackclover: "William 20; Nacht 16; Licht 14; Dante 12; Zenon 10",
+                blackclover: "William 20; Nacht 16; Dante 12; Zenon 10; Zora 8",
                 jojo: "Dio 26; Diavolo 18; Valentine 14; Hol Horse 14; Diego 12; Pucci 8",
                 rezero: "Roswaal 24; Echidna 20; Aldebaran 14; Priscilla 10; Elsa 10",
                 fireforce: "Giovanni 24; Rekka 22; Joker 16; Haumea 10; Charon 8",
                 frieren: "Aura 22; Lugner 18; Ubel 14; Linie 10; Draht 10"
-            } },
-        /* ---------------- intelligence ---------------- */
-        { id: "x-smartest", fam: "intelligence", cat: "Intelligence", sub: "Smartest", pol: "+", diff: 1, opp: "x-dumbest",
-            q: ["Who is the smartest {a}character?", "Which {a}character has the highest intelligence?", "Who would ace every exam without studying?"],
+            }
+        },
+        { id: "x-smartest", fam: "intelligence", cat: "Intelligence", sub: "Smartest", pol: "+", diff: 1, opp: "x-dumbest", kind: "feats", gen: {"stat":"IQ","top":8},
+            why: "Duels compare the two characters' IQ in the Anime Draft ratings (same series only: ratings are measured inside each series).",
+            q: ["Who is the smartest {a}character?","Which {a}character has the highest intelligence?","Who has the sharper mind?"]
+        },
+        { id: "x-dumbest", fam: "intelligence", cat: "Intelligence", sub: "Book smarts", pol: "-", diff: 1, vt: "opposite", opp: "x-smartest", kind: "poll", agree: {"stat":"IQ","dir":-1,"tol":10},
+            why: "Opinion (a comedy question), but every answer is rated low in IQ in the Anime Draft ratings and the order never contradicts them.",
+            q: ["Who would fail a written exam the hardest?","Which {a}character is the least book-smart?"],
             a: {
-                onepiece: "Robin 24; Law 20; Nami 14; Doflamingo 10; Franky 8; Crocodile 6",
-                naruto: "Shikamaru 36; Itachi 14; Kakashi 12; Orochimaru 10; Minato 8; Kabuto 8",
-                dragonball: "Bulma 40; Gohan 20; Whis 10; Piccolo 10; Frieza 6",
-                jjk: "Kenjaku 22; Gojo 18; Higuruma 14; Megumi 12; Geto 8; Yuki 8",
-                demonslayer: "Shinobu 24; Tamayo 22; Muzan 12; Doma 10; Tengen 10",
-                bleach: "Urahara 30; Aizen 28; Mayuri 22; Uryu 8; Byakuya 6",
-                aot: "Armin 32; Erwin 18; Hange 18; Zeke 12; Grisha 8; Pieck 6",
-                mha: "Izuku 22; Momo 20; All For One 14; Iida 12; Aizawa 10",
-                hxh: "Killua 22; Meruem 18; Kurapika 14; Chrollo 14; Pariston 10",
-                deathnote: "L 38; Light 34; Near 14; Mello 8; Mikami 4",
-                chainsaw: "Makima 38; Kishibe 18; Aki 12; Himeno 8; Reze 8",
-                blackclover: "Julius 24; Nacht 18; William 12; Dante 10; Yuno 10",
-                jojo: "Joseph 22; Jotaro 18; Giorno 18; Rohan 10; Pucci 10; Kakyoin 8",
-                rezero: "Echidna 26; Roswaal 18; Beatrice 14; Otto 12; Anastasia 12",
-                fireforce: "Hinawa 20; Joker 18; Giovanni 14; Vulcan 12; Haumea 10",
-                frieren: "Frieren 30; Serie 24; Denken 12; Fern 10; Flamme 10",
-                windbreaker: "Suo 30; Nirei 22; Umemiya 12; Kiryu 10; Hiragi 8"
-            } },
-        { id: "x-dumbest", fam: "intelligence", cat: "Intelligence", sub: "Book smarts", pol: "-", diff: 1, vt: "opposite", opp: "x-smartest",
-            q: ["Who would fail a written exam the hardest?", "Which {a}character is the least book-smart?"],
-            a: {
-                onepiece: "Luffy 34; Zoro 18; Buggy 12; Sanji 8; Brook 6; Franky 6",
-                naruto: "Naruto 38; Lee 18; Guy 14; Bee 10; Deidara 6",
-                dragonball: "Goku 36; Buu 14; Yamcha 12; Krillin 8; Goten 8; Broly 8",
-                jjk: "Todo 22; Yuji 18; Panda 12; Hakari 10; Jogo 10",
-                demonslayer: "Inosuke 38; Zenitsu 18; Nezuko 12; Tanjiro 8; Mitsuri 8",
+                onepiece: "Luffy 34; Zoro 18; Jack 12; Bartolomeo 10; Buggy 8",
+                naruto: "Naruto 38; Lee 18; Kiba 14; Choji 10; Guy 8",
+                dragonball: "Buu 34; Broly 20; Goku 16; Goten 12; Yamcha 8",
+                jjk: "Yuji 22; Jogo 18; Panda 14; Kasumi Miwa 10; Hakari 8",
+                demonslayer: "Inosuke 38; Nezuko 18; Zenitsu 14; Genya 10; Mitsuri 8",
                 bleach: "Kenpachi 30; Ichigo 14; Renji 14; Sado 10; Grimmjow 10; Orihime 8",
-                aot: "Connie 34; Sasha 26; Eren 12; Gabi 8; Jean 8",
-                mha: "Kaminari 36; Kirishima 18; Uraraka 10; Twice 10; Mirio 8",
-                hxh: "Gon 30; Leorio 16; Uvogin 16; Knuckle 10; Menthuthuyoupi 10",
+                aot: "Connie 34; Sasha 26; Hannes 12; Falco 10; Gabi 8",
+                mha: "Kaminari 36; Kirishima 18; Twice 12; Mina 10; Uraraka 8",
+                hxh: "Gon 30; Uvogin 22; Menthuthuyoupi 16; Knuckle 10; Leorio 8",
                 deathnote: "Matsuda 34; Misa 26; Ryuk 14; Sayu 8; Mogi 6",
-                chainsaw: "Denji 34; Power 32; Beam 12; Kobeni 8; Violence 6",
+                chainsaw: "Power 34; Denji 32; Beam 12; Kobeni 8; Violence 6",
                 blackclover: "Asta 36; Magna 18; Luck 12; Charmy 12; Mereoleona 8",
-                jojo: "Okuyasu 34; Narancia 22; Polnareff 14; Mista 10; Josuke 8",
-                rezero: "Garfiel 24; Emilia 18; Felt 16; Subaru 14; Ram 8",
-                fireforce: "Arthur 40; Tamaki 16; Shinra 10; Maki 8; Ogun 8",
-                frieren: "Stark 30; Eisen 14; Himmel 12; Sein 10; Ubel 8",
-                windbreaker: "Sakura 30; Sugishita 18; Choji 14; Tsugeura 14; Togame 8"
-            } },
-        { id: "x-detective", fam: "intelligence", cat: "Intelligence", sub: "Mystery", pol: "+", diff: 2, vt: "scenario",
-            q: ["Who would be the best person to solve a complicated mystery?", "Who would crack a murder case first?"],
+                jojo: "Okuyasu 34; Narancia 22; Secco 14; Polnareff 10; Mista 8",
+                rezero: "Garfiel 26; Shaula 20; Typhon 14; Felt 12; Emilia 8",
+                fireforce: "Arthur 40; Tamaki 16; Assault 12; Ogun 10; Shinra 8",
+                frieren: "Stark 30; Eisen 14; Draht 12; Kanne 10; Lawine 8",
+                windbreaker: "Sugishita 26; Tsugeura 22; Takiishi 16; Choji 14; Sakura 10"
+            }
+        },
+        { id: "x-detective", fam: "intelligence", cat: "Intelligence", sub: "Mystery", pol: "+", diff: 2, vt: "scenario", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who would be the best person to solve a complicated mystery?","Who would crack a murder case first?"],
             a: {
                 onepiece: "Robin 22; Law 18; Smoker 16; Lucci 10; Nami 10",
                 naruto: "Shikamaru 30; Kakashi 18; Itachi 12; Neji 12; Hinata 8",
@@ -196,10 +190,11 @@ export default {
                 fireforce: "Hinawa 22; Joker 16; Shinra 14; Obi 12; Hibana 10",
                 frieren: "Frieren 26; Serie 14; Fern 14; Denken 12; Heiter 8",
                 windbreaker: "Suo 28; Nirei 24; Kiryu 12; Umemiya 10; Kotoha 10"
-            } },
-        /* ---------------- survival ---------------- */
-        { id: "x-zombie-survive", fam: "survival", cat: "Scenario", sub: "Zombie apocalypse", pol: "+", diff: 1, vt: "scenario", opp: "x-zombie-first",
-            q: ["Who would survive a zombie apocalypse?", "Who would still be standing on day 100 of a zombie outbreak?"],
+            }
+        },
+        { id: "x-zombie-survive", fam: "survival", cat: "Scenario", sub: "Zombie apocalypse", pol: "+", diff: 1, vt: "scenario", opp: "x-zombie-first", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who would survive a zombie apocalypse?","Who would still be standing on day 100 of a zombie outbreak?"],
             a: {
                 onepiece: "Zoro 22; Luffy 18; Law 14; Brook 12; Robin 10; Chopper 8",
                 naruto: "Kakashi 20; Naruto 16; Sasuke 16; Orochimaru 12; Shikamaru 10",
@@ -219,9 +214,11 @@ export default {
                 frieren: "Frieren 30; Eisen 22; Stark 14; Fern 12; Serie 10",
                 gachiakuta: "Rudo 26; Enjin 22; Zanka 14; Riyo 12; Jabber 12",
                 windbreaker: "Umemiya 22; Sakura 20; Togame 14; Takiishi 14; Suo 12"
-            } },
-        { id: "x-zombie-first", fam: "survival", cat: "Scenario", sub: "Zombie apocalypse", pol: "-", diff: 1, vt: "opposite", opp: "x-zombie-survive",
-            q: ["Who would die first in a zombie apocalypse?", "Who wouldn't make it past the first night of a zombie outbreak?"],
+            }
+        },
+        { id: "x-zombie-first", fam: "survival", cat: "Scenario", sub: "Zombie apocalypse", pol: "-", diff: 1, vt: "opposite", opp: "x-zombie-survive", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who would die first in a zombie apocalypse?","Who wouldn't make it past the first night of a zombie outbreak?"],
             a: {
                 onepiece: "Usopp 26; Buggy 18; Chopper 12; Nami 12; Sanji 8; Brook 8",
                 naruto: "Jiraiya 18; Shikamaru 16; Sakura 14; Hinata 12; Neji 8",
@@ -240,9 +237,11 @@ export default {
                 fireforce: "Tamaki 22; Arthur 18; Iris 16; Vulcan 12; Konro 8",
                 frieren: "Heiter 22; Sein 14; Lawine 12; Kanne 12; Stark 10",
                 windbreaker: "Nirei 30; Choji 16; Kotoha 12; Kiryu 10; Sako 8"
-            } },
-        { id: "x-island", fam: "survival", cat: "Scenario", sub: "Deserted island", pol: "+", diff: 2, vt: "scenario",
-            q: ["Who would last the longest stranded alone on a deserted island?", "Who would turn a deserted island into a comfortable home?"],
+            }
+        },
+        { id: "x-island", fam: "survival", cat: "Scenario", sub: "Deserted island", pol: "+", diff: 2, vt: "scenario", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who would last the longest stranded alone on a deserted island?","Who would turn a deserted island into a comfortable home?"],
             a: {
                 onepiece: "Sanji 24; Luffy 20; Franky 14; Zoro 12; Usopp 10; Chopper 8",
                 naruto: "Hashirama 20; Naruto 18; Kakashi 14; Sasuke 12; Kisame 10",
@@ -261,10 +260,11 @@ export default {
                 fireforce: "Benimaru 20; Shinra 16; Vulcan 16; Arthur 12; Ogun 10",
                 frieren: "Frieren 26; Eisen 20; Stark 12; Fern 12; Serie 10",
                 windbreaker: "Umemiya 24; Sakura 18; Suo 12; Sugishita 10; Hiragi 8"
-            } },
-        /* ---------------- mishaps ---------------- */
-        { id: "x-lost", fam: "mishaps", cat: "Scenario", sub: "Getting lost", pol: "-", diff: 1, vt: "scenario",
-            q: ["Who would get lost first?", "Who would get lost on the way to their own house?"],
+            }
+        },
+        { id: "x-lost", fam: "mishaps", cat: "Scenario", sub: "Getting lost", pol: "-", diff: 1, vt: "scenario", kind: "poll",
+            why: "Opinion, not canon, though Zoro's sense of direction is a running joke of the series; the rest is our editors' poll.",
+            q: ["Who would get lost first?","Who would get lost on the way to their own house?"],
             a: {
                 onepiece: "Zoro 54; Luffy 14; Brook 8; Chopper 8; Usopp 6",
                 naruto: "Naruto 22; Kakashi 18; Lee 14; Guy 12; Bee 10",
@@ -283,9 +283,11 @@ export default {
                 fireforce: "Arthur 40; Tamaki 14; Shinra 10; Iris 8; Vulcan 6",
                 frieren: "Frieren 30; Stark 16; Heiter 12; Eisen 10; Fern 6",
                 windbreaker: "Sakura 24; Nirei 16; Choji 14; Sugishita 10; Umemiya 8"
-            } },
-        { id: "x-destroy-city", fam: "mishaps", cat: "Scenario", sub: "Destruction", pol: "-", diff: 2, vt: "scenario",
-            q: ["Who would accidentally destroy an entire city?", "Who would level a city just by sneezing?"],
+            }
+        },
+        { id: "x-destroy-city", fam: "mishaps", cat: "Scenario", sub: "Destruction", pol: "-", diff: 2, vt: "scenario", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who would accidentally destroy an entire city?","Who would level a city just by sneezing?"],
             a: {
                 onepiece: "Luffy 26; Kaido 16; Newgate 14; Garp 12; Kid 10; Enel 8",
                 naruto: "Naruto 24; Deidara 22; Madara 14; Kurama 14; Pain 12",
@@ -302,10 +304,11 @@ export default {
                 rezero: "Reinhard 24; Puck 22; Satella 18; Roswaal 12; Garfiel 8",
                 fireforce: "Benimaru 22; Shinra 20; Arthur 16; Sho 10; Tamaki 8",
                 frieren: "Frieren 20; Serie 18; Macht 14; Ubel 12; Aura 10"
-            } },
-        /* ---------------- living together ---------------- */
-        { id: "x-roommate-worst", fam: "living", cat: "Everyday life", sub: "Roommate", pol: "-", diff: 1, opp: "x-roommate-best",
-            q: ["Who would make the worst roommate?", "Who would you never share an apartment with?", "Who would eat all your food and never pay rent?"],
+            }
+        },
+        { id: "x-roommate-worst", fam: "living", cat: "Everyday life", sub: "Roommate", pol: "-", diff: 1, opp: "x-roommate-best", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who would make the worst roommate?","Who would you never share an apartment with?","Who would eat all your food and never pay rent?"],
             a: {
                 onepiece: "Luffy 30; Zoro 14; Brook 12; Sanji 10; Usopp 8; Buggy 6",
                 naruto: "Naruto 22; Jiraiya 20; Orochimaru 14; Kakashi 12; Deidara 10",
@@ -324,9 +327,11 @@ export default {
                 fireforce: "Arthur 24; Tamaki 18; Benimaru 14; Vulcan 12; Joker 10",
                 frieren: "Frieren 32; Ubel 14; Stark 12; Heiter 12; Lawine 8",
                 windbreaker: "Sakura 26; Takiishi 18; Sugishita 16; Nirei 10; Togame 8"
-            } },
-        { id: "x-roommate-best", fam: "living", cat: "Everyday life", sub: "Roommate", pol: "+", diff: 1, vt: "opposite", opp: "x-roommate-worst",
-            q: ["Who would make the best roommate?", "Who would you love to share an apartment with?"],
+            }
+        },
+        { id: "x-roommate-best", fam: "living", cat: "Everyday life", sub: "Roommate", pol: "+", diff: 1, vt: "opposite", opp: "x-roommate-worst", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who would make the best roommate?","Who would you love to share an apartment with?"],
             a: {
                 onepiece: "Sanji 30; Robin 16; Chopper 14; Jinbe 12; Franky 10",
                 naruto: "Hinata 24; Shikamaru 14; Itachi 14; Sakura 12; Lee 10",
@@ -345,10 +350,11 @@ export default {
                 fireforce: "Iris 22; Maki 16; Obi 16; Shinra 12; Hinawa 10",
                 frieren: "Fern 26; Himmel 18; Eisen 14; Stark 12; Sein 8",
                 windbreaker: "Umemiya 22; Kotoha 22; Nirei 14; Suo 12; Hiragi 10"
-            } },
-        /* ---------------- kindness ---------------- */
-        { id: "x-kindest", fam: "kindness", cat: "Personality", sub: "Kindness", pol: "+", diff: 1, opp: "x-cruelest",
-            q: ["Who is the kindest {a}character?", "Who would give the shirt off their back to a stranger?"],
+            }
+        },
+        { id: "x-kindest", fam: "kindness", cat: "Personality", sub: "Kindness", pol: "+", diff: 1, opp: "x-cruelest", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who is the kindest {a}character?","Who would give the shirt off their back to a stranger?"],
             a: {
                 onepiece: "Chopper 22; Luffy 16; Jinbe 14; Sanji 12; Brook 10; Kuma 10",
                 naruto: "Hinata 26; Naruto 22; Gaara 10; Lee 10; Minato 10",
@@ -367,9 +373,11 @@ export default {
                 fireforce: "Iris 26; Shinra 20; Obi 18; Maki 12; Tamaki 8",
                 frieren: "Himmel 34; Heiter 16; Fern 14; Eisen 12; Frieren 10",
                 windbreaker: "Umemiya 30; Nirei 16; Kotoha 14; Suo 12; Sakura 10"
-            } },
-        { id: "x-cruelest", fam: "kindness", cat: "Personality", sub: "Cruelty", pol: "-", diff: 1, vt: "opposite", opp: "x-kindest",
-            q: ["Who is the cruelest {a}character?", "Who would show absolutely no mercy?"],
+            }
+        },
+        { id: "x-cruelest", fam: "kindness", cat: "Personality", sub: "Cruelty", pol: "-", diff: 1, vt: "opposite", opp: "x-kindest", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who is the cruelest {a}character?","Who would show absolutely no mercy?"],
             a: {
                 onepiece: "Doflamingo 26; Teach 16; Kaido 16; Lucci 14; Enel 10; Crocodile 8",
                 naruto: "Orochimaru 22; Madara 18; Obito 14; Pain 14; Kisame 10; Kabuto 8",
@@ -388,10 +396,11 @@ export default {
                 fireforce: "Haumea 24; Rekka 20; Giovanni 18; Charon 8; Joker 6",
                 frieren: "Aura 24; Macht 16; Lugner 16; Ubel 12; Linie 8",
                 windbreaker: "Takiishi 30; Endo 22; Togame 10"
-            } },
-        /* ---------------- trust ---------------- */
-        { id: "x-secret-worst", fam: "trust", cat: "Personality", sub: "Secrets", pol: "-", diff: 1,
-            q: ["Who would be the worst at keeping a secret?", "Who would blurt out the surprise party plan?"],
+            }
+        },
+        { id: "x-secret-worst", fam: "trust", cat: "Personality", sub: "Secrets", pol: "-", diff: 1, kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who would be the worst at keeping a secret?","Who would blurt out the surprise party plan?"],
             a: {
                 onepiece: "Luffy 30; Usopp 20; Chopper 14; Buggy 10; Franky 8; Brook 6",
                 naruto: "Naruto 30; Lee 14; Guy 14; Jiraiya 12; Bee 10",
@@ -408,9 +417,11 @@ export default {
                 jojo: "Okuyasu 22; Polnareff 20; Narancia 14; Joseph 12; Mista 10",
                 rezero: "Garfiel 22; Felt 16; Emilia 16; Puck 12; Ram 8",
                 fireforce: "Arthur 26; Tamaki 20; Shinra 14; Vulcan 10; Iris 8"
-            } },
-        { id: "x-owe-money", fam: "trust", cat: "Scenario", sub: "Money", pol: "-", diff: 2, vt: "context",
-            q: ["Who would be the worst person to owe money to?", "Whose debt collectors would scare you the most?"],
+            }
+        },
+        { id: "x-owe-money", fam: "trust", cat: "Scenario", sub: "Money", pol: "-", diff: 2, vt: "context", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who would be the worst person to owe money to?","Whose debt collectors would scare you the most?"],
             a: {
                 onepiece: "Nami 34; Doflamingo 18; Crocodile 14; Kaido 10; Buggy 8",
                 dragonball: "Frieza 28; Vegeta 18; Beerus 16; Bulma 14; Cell 8",
@@ -425,10 +436,11 @@ export default {
                 blackclover: "Yami 22; Mereoleona 22; Nozel 14; Dante 12; Charmy 10",
                 jojo: "Diavolo 24; Dio 18; Kira 14; Abbacchio 12; Rohan 10",
                 rezero: "Anastasia 30; Priscilla 18; Roswaal 14; Elsa 12; Ram 10"
-            } },
-        /* ---------------- romance ---------------- */
-        { id: "x-love-fast", fam: "romance", cat: "Romance", sub: "Falling in love", pol: "0", diff: 1,
-            q: ["Who would fall in love the fastest?", "Who falls head over heels the moment they meet someone?"],
+            }
+        },
+        { id: "x-love-fast", fam: "romance", cat: "Romance", sub: "Falling in love", pol: "0", diff: 1, kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who would fall in love the fastest?","Who falls head over heels the moment they meet someone?"],
             a: {
                 onepiece: "Sanji 46; Hancock 18; Brook 12; Usopp 6; Franky 6",
                 naruto: "Jiraiya 24; Lee 18; Naruto 14; Hinata 14; Sakura 12",
@@ -445,10 +457,11 @@ export default {
                 rezero: "Subaru 34; Rem 22; Garfiel 12; Wilhelm 10; Ferris 8",
                 fireforce: "Hibana 24; Tamaki 20; Shinra 12; Maki 10; Arthur 8",
                 frieren: "Himmel 30; Stark 18; Fern 14; Ubel 10; Sein 8"
-            } },
-        /* ---------------- work ---------------- */
-        { id: "x-hardworking", fam: "work", cat: "Personality", sub: "Work ethic", pol: "+", diff: 1, opp: "x-lazy",
-            q: ["Who is the hardest-working {a}character?", "Who would still be training at 3 a.m.?"],
+            }
+        },
+        { id: "x-hardworking", fam: "work", cat: "Personality", sub: "Work ethic", pol: "+", diff: 1, opp: "x-lazy", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who is the hardest-working {a}character?","Who would still be training at 3 a.m.?"],
             a: {
                 onepiece: "Zoro 30; Usopp 14; Sanji 12; Chopper 10; Nami 8",
                 naruto: "Lee 36; Naruto 20; Guy 16; Neji 8; Sasuke 8",
@@ -467,9 +480,11 @@ export default {
                 fireforce: "Shinra 22; Maki 18; Obi 18; Vulcan 12; Arthur 8",
                 frieren: "Fern 30; Stark 18; Himmel 12; Denken 12; Land 8",
                 windbreaker: "Nirei 24; Sakura 20; Umemiya 14; Sugishita 12; Kotoha 10"
-            } },
-        { id: "x-lazy", fam: "work", cat: "Personality", sub: "Work ethic", pol: "-", diff: 1, vt: "opposite", opp: "x-hardworking",
-            q: ["Who is the laziest {a}character?", "Who would sleep through the final battle?"],
+            }
+        },
+        { id: "x-lazy", fam: "work", cat: "Personality", sub: "Work ethic", pol: "-", diff: 1, vt: "opposite", opp: "x-hardworking", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who is the laziest {a}character?","Who would sleep through the final battle?"],
             a: {
                 onepiece: "Kuzan 28; Zoro 20; Usopp 14; Luffy 10; Borsalino 8",
                 naruto: "Shikamaru 44; Kakashi 20; Tsunade 10; Jiraiya 8; Kurama 6",
@@ -486,9 +501,11 @@ export default {
                 jojo: "Iggy 18; Okuyasu 16; Mista 12; Hol Horse 12; Narancia 10",
                 rezero: "Ram 24; Beatrice 20; Subaru 16; Puck 12; Felt 8",
                 frieren: "Frieren 44; Stark 14; Heiter 12; Sein 10; Ubel 8"
-            } },
-        { id: "x-coworker-worst", fam: "work", cat: "Everyday life", sub: "Teamwork", pol: "-", diff: 1, vt: "context",
-            q: ["Who would be the most difficult person to work with?", "Who would be a nightmare in a group project?"],
+            }
+        },
+        { id: "x-coworker-worst", fam: "work", cat: "Everyday life", sub: "Teamwork", pol: "-", diff: 1, vt: "context", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who would be the most difficult person to work with?","Who would be a nightmare in a group project?"],
             a: {
                 onepiece: "Luffy 20; Zoro 16; Sanji 14; Kid 12; Buggy 12",
                 naruto: "Sasuke 26; Orochimaru 14; Neji 12; Deidara 12; Sasori 10",
@@ -507,10 +524,11 @@ export default {
                 fireforce: "Arthur 24; Benimaru 20; Hibana 14; Joker 12; Vulcan 10",
                 frieren: "Frieren 22; Ubel 20; Serie 16; Lawine 10; Kanne 10",
                 windbreaker: "Sakura 26; Takiishi 20; Sugishita 18; Choji 10; Endo 10"
-            } },
-        /* ---------------- maturity ---------------- */
-        { id: "x-mature", fam: "maturity", cat: "Personality", sub: "Maturity", pol: "+", diff: 2, opp: "x-childish",
-            q: ["Who is the most mature {a}character?", "Who would be the only adult in the room?"],
+            }
+        },
+        { id: "x-mature", fam: "maturity", cat: "Personality", sub: "Maturity", pol: "+", diff: 2, opp: "x-childish", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who is the most mature {a}character?","Who would be the only adult in the room?"],
             a: {
                 onepiece: "Robin 24; Jinbe 22; Rayleigh 14; Marco 12; Law 10",
                 naruto: "Itachi 28; Kakashi 18; Shikamaru 14; Gaara 12; Minato 10",
@@ -529,9 +547,11 @@ export default {
                 fireforce: "Obi 28; Hinawa 20; Benimaru 14; Konro 12; Maki 10",
                 frieren: "Fern 30; Eisen 18; Denken 14; Himmel 12; Heiter 8",
                 windbreaker: "Hiragi 22; Suo 16; Kaji 14; Kotoha 14; Togame 12"
-            } },
-        { id: "x-childish", fam: "maturity", cat: "Personality", sub: "Maturity", pol: "-", diff: 1, vt: "opposite", opp: "x-mature",
-            q: ["Who is the most childish {a}character?", "Who would throw a tantrum over the last slice of cake?"],
+            }
+        },
+        { id: "x-childish", fam: "maturity", cat: "Personality", sub: "Maturity", pol: "-", diff: 1, vt: "opposite", opp: "x-mature", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who is the most childish {a}character?","Who would throw a tantrum over the last slice of cake?"],
             a: {
                 onepiece: "Luffy 30; Buggy 16; Garp 14; Usopp 12; Chopper 8",
                 naruto: "Naruto 30; Tsunade 12; Lee 12; Guy 12; Deidara 10",
@@ -550,10 +570,11 @@ export default {
                 fireforce: "Arthur 28; Tamaki 18; Shinra 12; Benimaru 10; Vulcan 8",
                 frieren: "Frieren 28; Stark 20; Ubel 14; Lawine 12; Kanne 12",
                 windbreaker: "Sakura 28; Choji 22; Umemiya 12; Tsugeura 12; Nirei 8"
-            } },
-        /* ---------------- schemes ---------------- */
-        { id: "x-heist", fam: "schemes", cat: "Scenario", sub: "Heist", pol: "0", diff: 2, vt: "scenario",
-            q: ["Who would be the best person to organize a heist?", "Who would you recruit to rob a casino?"],
+            }
+        },
+        { id: "x-heist", fam: "schemes", cat: "Scenario", sub: "Heist", pol: "0", diff: 2, vt: "scenario", kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who would be the best person to organize a heist?","Who would you recruit to rob a casino?"],
             a: {
                 onepiece: "Nami 32; Law 16; Robin 14; Usopp 10; Brook 8",
                 naruto: "Shikamaru 24; Obito 16; Kakashi 14; Kabuto 12; Jiraiya 10",
@@ -569,10 +590,11 @@ export default {
                 blackclover: "Finral 24; Zora 18; Nacht 16; Vanessa 12; Yami 10",
                 jojo: "Joseph 22; Giorno 20; Bucciarati 14; Hol Horse 10; Mista 10",
                 rezero: "Felt 22; Anastasia 20; Otto 16; Subaru 14; Roswaal 10"
-            } },
-        /* ---------------- food ---------------- */
-        { id: "x-eater", fam: "food", cat: "Everyday life", sub: "Food", pol: "0", diff: 1, vt: "scenario",
-            q: ["Who would win an eating contest?", "Who would clear an all-you-can-eat buffet alone?"],
+            }
+        },
+        { id: "x-eater", fam: "food", cat: "Everyday life", sub: "Food", pol: "0", diff: 1, vt: "scenario", kind: "poll",
+            why: "Opinion built on canon appetites (Luffy, Goku, Sasha, Mitsuri and Charmy eat absurd amounts on screen); the order is our editors' poll.",
+            q: ["Who would win an eating contest?","Who would clear an all-you-can-eat buffet alone?"],
             a: {
                 onepiece: "Luffy 60; Zoro 8; Chopper 8; Usopp 6; Franky 6",
                 naruto: "Naruto 34; Lee 14; Kurama 12; Tsunade 10; Jiraiya 8",
@@ -588,10 +610,11 @@ export default {
                 blackclover: "Charmy 50; Asta 14; Noelle 8; Luck 8; Magna 8",
                 jojo: "Okuyasu 18; Iggy 14; Josuke 14; Narancia 12; Jotaro 10",
                 rezero: "Garfiel 24; Subaru 16; Felt 14; Rem 12; Otto 8"
-            } },
-        /* ---------------- fun ---------------- */
-        { id: "x-party", fam: "fun", cat: "Everyday life", sub: "Party", pol: "+", diff: 1,
-            q: ["Who would be the life of the party?", "Who would you invite to make any party legendary?"],
+            }
+        },
+        { id: "x-party", fam: "fun", cat: "Everyday life", sub: "Party", pol: "+", diff: 1, kind: "poll",
+            why: "Opinion, not canon: our editors' poll, built from the characters' canon personalities. Both characters in a duel fit the question; the higher one is the editors' pick.",
+            q: ["Who would be the life of the party?","Who would you invite to make any party legendary?"],
             a: {
                 onepiece: "Luffy 22; Brook 22; Franky 14; Usopp 12; Shanks 12; Buggy 8",
                 naruto: "Naruto 22; Bee 22; Guy 16; Lee 12; Jiraiya 12",
@@ -610,6 +633,23 @@ export default {
                 fireforce: "Benimaru 22; Hibana 16; Arthur 14; Shinra 12; Vulcan 10",
                 frieren: "Himmel 28; Heiter 22; Eisen 12; Stark 10; Ubel 8",
                 windbreaker: "Umemiya 24; Choji 18; Kiryu 14; Togame 12; Tsugeura 10"
-            } }
+            }
+        },
+        { id: "x-faster", fam: "feats-spd", cat: "Characters", sub: "Speed", pol: "+", diff: 2, kind: "feats", gen: {"stat":"SPD","top":8,"skip":["deathnote"]},
+            why: "Duels compare the two characters' Speed in the Anime Draft ratings (same series only).",
+            q: ["Who is faster?","Who has the greater speed?"]
+        },
+        { id: "x-stronger", fam: "feats-str", cat: "Characters", sub: "Physical strength", pol: "+", diff: 2, kind: "feats", gen: {"stat":"STR","top":8,"skip":["deathnote"]},
+            why: "Duels compare the two characters' Strength in the Anime Draft ratings: physical force only (same series only).",
+            q: ["Who is physically stronger?","Who has more raw strength?"]
+        },
+        { id: "x-tougher", fam: "feats-dur", cat: "Characters", sub: "Durability", pol: "+", diff: 2, kind: "feats", gen: {"stat":"DUR","top":8,"skip":["deathnote"]},
+            why: "Duels compare the two characters' Durability in the Anime Draft ratings; regeneration does not count (same series only).",
+            q: ["Who is harder to hurt?","Who can take more punishment?"]
+        },
+        { id: "x-fighter", fam: "feats-cmb", cat: "Characters", sub: "Combat skill", pol: "+", diff: 2, kind: "feats", gen: {"stat":"CMB","top":8,"skip":["deathnote"]},
+            why: "Duels compare the two characters' Combat Skill in the Anime Draft ratings (same series only).",
+            q: ["Who is the more skilled fighter?","Who has the better fighting technique?"]
+        }
     ]
 };

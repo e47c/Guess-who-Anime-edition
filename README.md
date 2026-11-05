@@ -82,7 +82,9 @@ The team survey game show. Team vs Team only (2–8 players, split as evenly as 
   - **Control.** The top answer wins control at once. Otherwise the other face-off player answers: a higher answer (or any answer after a miss) takes control, a lower one or a miss leaves it with the first team. If both miss, the next pair of players goes to the buzzers. Face-off answers count toward the pot; face-off misses are not strikes.
   - **Play or pass.** The team in control chooses PLAY (answer the rest of the board) or PASS (the other team has to play it). No choice in 15 s = play.
   - **The board.** The playing team answers one at a time (the answerer rotates, teammates can talk it through). A right answer opens its row; a wrong answer or running out of the 20/30/45 s clock is a strike. After 3 strikes the other team gets **one** answer: right = they steal the whole pot, wrong = the playing team keeps it. Clearing the board banks the pot with no steal.
-  - Typing is forgiving: case, accents, punctuation and "the" are ignored, one typo is allowed (two on long answers, never on numbers: "Gear 3" is not "Gear 5"), part of a long answer counts ("shadow clone"), and a character's first name, last name or nickname works ("Blackbeard", "Deku"). A word that fits two answers ("Uchiha") asks you to be more specific, with no strike.
+  - Typing is forgiving: case, accents, punctuation, spaces and "the" are ignored ("gumgum pistol"), romanisations are folded ("Gojou" = "Gojo", "Kyoujurou" = "Kyojuro"), one typo is allowed (two on long answers, never on numbers: "Gear 3" is not "Gear 5", "Super Saiyan 4" is not "Super Saiyan"), part of a long answer counts ("shadow clone"), and a character's first name, last name, nickname, title or other romanisation works ("Blackbeard", "Kurohige", "Big Mom", "Akainu", "Deku", "Uravity", "Barusu", "Gokuu Son"). A word that fits two answers ("Uchiha") asks you to be more specific, with no strike. A sentence naming several things is not accepted.
+  - Aliases are structured, not guessed: the board's own spellings, `js/feud/nicknames.js` and `js/feud/aliases.js` (hand-reviewed nicknames and titles plus every character's AniList name in its other word order; an alias that is also another character's name in that series is dropped).
+  - **A right answer that didn't make the board** is told so ("Charlotte Linlin fits, but didn't make this board"). It is still a strike: only the answers on the board score.
 - **Match.** 3, 5 (default) or 7 rounds; a tie plays one sudden-death question. The final screen shows both scores and every round with who found which answer; Rematch / Back to lobby for the host.
 - **Look and sound.** A classic blue TV studio of our own design (royal-blue tiles with gold trim, chasing marquee bulbs, buzzer podiums). Its own sound kit: a two-tone answer ding, a bell run plus applause for the top answer, the wrong-answer buzzer, a buzz-in beep, a drum roll before a steal, a brass fanfare for PLAY and each new round, applause at the end; bouncy game-show music (`show` in `js/audio.js`).
 - **Single anime or Anime Mix.** The same series checkboxes as Anime Draft.
@@ -99,7 +101,8 @@ Its own mode (seventh): two close characters, one question, and an argument abou
   - **Free For All:** every player votes alone and keeps their own score. Nobody sees anyone else's vote until the reveal. The highest score wins; a tie at the top plays up to three sudden-death duels, then the win is shared.
 - **The duel:**
   - Each duel shows **two characters who are close** on the question ("Who is the smartest?": Nami or Doflamingo).
-  - The pairs come from the curated Most Likely rankings: neighbours in a series' ranking a few points apart, and in an Anime Mix also two characters of two ticked series with nearly the same score. Ties are never used. The higher-ranked one is the "most likely" answer.
+  - The pairs come from the Most Likely rankings: neighbours in a series' ranking a few points apart, and in an Anime Mix also two characters of two ticked series with nearly the same score. Ties are never used. The higher-ranked one is the "most likely" answer.
+  - **Opinion duels** (who'd survive a zombie outbreak, the worst roommate …) are our editors' poll and say so above the question. **Rating duels** (who is faster, physically stronger, harder to hurt, the better fighter, smarter) compare the two characters' Anime Draft ratings, and never pair two series, since those ratings are measured inside each series.
   - Tap a card to vote; you can change it until everyone has voted or the 10/15/20 s clock runs out. Everyone who picks the more likely character scores: 30 for a photo finish, 20 for a close call, 10 otherwise.
   - 5, 10 (default) or 15 duels.
 - **Look and sound.** A dark, fiery argument: smoky glass panels, rising embers, a red-burning and a gold-burning card around a crackling VS crest; the winner blazes gold with a MOST LIKELY! stamp, the other card goes to smoke. Its own sound kit: taiko for each new duel, a whoosh and fire crackle when you vote (crackles as the others vote), a clash hit on the reveal then a rising win or a falling miss, the crowd's "ohh"; an aggressive taiko-and-bass theme (`clash` in `js/audio.js`).
@@ -129,11 +132,13 @@ Every player keeps a history: `"<questionId>@<scope>": [last seen, times seen]`.
   - **Opposites** (`opp`, linked both ways) have **their own, separately ranked board**, never the original reversed (`feud-check` rejects a reversed copy).
 - **Question:** each wording gets its own id (`x-loyal_2`) and carries every field: questionId, familyId, variantGroupId, variantType, questionType, animeScope, animeIds, category, subcategory, difficulty, polarity, questionText, answers, answerPoints, characterIds, acceptedAliases, curationSource, reviewStatus.
 - **Answers** have stable IDs (`x-loyal~onepiece~roronoa-zoro`) and explicit points. Character answers point at Anime Draft roster IDs (AniList), so pictures and names are shared and nothing is downloaded twice.
-- **Labelling:** every board is labelled **Anime Arcade curated answers**. The rankings are our own picks, not survey results, and the game says so on the board and the final screen. `ranking: "curated"` and `votes: null` are reserved so real community votes can be added later without changing the format. No votes are invented.
-- **Initial library:** 188 questions on 91 boards (55 Classic, 36 Most Likely), 25 families, 10 opposite pairs.
-  - **Most Likely:** 20 to 31 questions with close pairs for every series except Gachiakuta.
-  - **Classic:** 8 to 16 boards per series. Wind Breaker has 5, enough for 3 rounds.
-  - **Gachiakuta** can't be played on its own yet; it works inside a mix. Boards only list answers we are sure of, and there aren't enough of those for Gachiakuta yet.
+- **What kind of question, and how it's ranked** (`kind`, shown above every question in the game):
+  - **Canon** (`kind: "canon"`): every answer is a canon fact (a Hashira, a Devil Fruit, a villain of the story). Character answers are ranked by **AniList popularity** (`rank: "fans"`: the order comes from AniList favourites, the points follow a fixed survey-like curve), names of techniques, places and items by how well-known they are (`rank: "known"`, our estimate). Boards list every valid answer they can: the top 8 are shown.
+  - **Feats** (`kind: "feats"`): generated from the Anime Draft ratings (`gen: { stat }`), one category each: speed, physical strength, durability, combat skill or intelligence. They can never disagree with the Draft.
+  - **Power** (`kind: "power"`): overall strength ("one of the strongest"), ranked by canon outcomes; the decisive ones are written on the board (`beats`) and checked.
+  - **Opinion** (`kind: "poll"`): personality and scenario questions and anime tropes. The ranking is our editors' poll and the game labels it as such; it is never presented as canon. Opinion boards about a rated quality (`agree`, e.g. "least book-smart", "best strategist") may not contradict the ratings.
+  - `ranking` and `votes: null` stay reserved for real community votes later. No votes are invented.
+- **Library (audited Nov 2026):** 254 questions on 124 boards (84 Classic, 40 Most Likely). 60 canon, 10 feats, 1 power, 53 opinion boards. Every series, Gachiakuta included, now has a Classic pool and rating duels. The audit report is `docs/feud-audit.md`.
 
 ### Adding questions
 
@@ -149,6 +154,7 @@ Every player keeps a history: `"<questionId>@<scope>": [last seen, times seen]`.
    - **Mode-only wordings:** prefix with `S|` for single mode only, `M|` for mix only.
    - **Series-only boards:** `only: true` makes a board play only for that one series.
    - **Opposites:** `opp: "<board id>"` on both boards.
+   - **Kind:** `kind: "canon"` (+ `rank: "fans"` or `"known"`), `"feats"` (+ `gen: { stat: "SPD", top: 8, skip: [...] }`, no answers needed), `"power"` (+ `beats: { series: [[winner, loser]] }`) or `"poll"`; `why` says what the ranking rests on.
    - Add new wordings at the **end** of `q` (a wording's id is its position).
 3. Run `node tools/feud-check.mjs`. It rejects:
    - a duplicate or non-Firebase-safe id;
@@ -160,10 +166,16 @@ Every player keeps a history: `"<questionId>@<scope>": [last seen, times seen]`.
    - the same wording twice;
    - an opposite that is just the original reversed;
    - a mixed board showing a series that wasn't ticked;
-   - blocked words.
+   - blocked words;
+   - a board without a kind / ranking basis;
+   - a "power" board that ranks a character above someone who beat them in canon;
+   - an opinion board that contradicts the Anime Draft ratings it's checked against (`agree`).
+
+   It also warns when AniList popularity has drifted away from a "fans" board's order.
 
    It warns about wordings that are near copies of another board, rewordings that are only a synonym swap, and opposites sharing most of their answers. It then prints what every series and a sample of mixes can play.
-4. Run `node tools/feud-test.mjs` (256 checks: matching, filtering, rotation and cooldowns, histories across players and rooms, teams for 2–8 players, every face-off outcome, play or pass, strikes, steals, clears, duel pairs, voting and majorities, Free For All scoring, ties, sudden death, away players, full simulated matches of Anime Feud and of Most Likely in both ways to play for every player count).
+4. Run `node tools/feud-validate.mjs` (186 answer checks: full names, first and last names, nicknames, titles, Japanese and other romanisations, spacing, slightly longer answers; and wrong, vague or numbered answers that must NOT be accepted).
+5. Run `node tools/feud-test.mjs` (257 checks: matching, filtering, rotation and cooldowns, histories across players and rooms, teams for 2–8 players, every face-off outcome, play or pass, strikes, steals, clears, duel pairs, voting and majorities, Free For All scoring, ties, sudden death, away players, full simulated matches of Anime Feud and of Most Likely in both ways to play for every player count).
 
 ### Multiplayer, history and what Firebase can and can't protect
 

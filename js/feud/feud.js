@@ -12,9 +12,9 @@
    Every move runs in a transaction on rooms/<code>/feud and is checked there (turn key, phase, player).
    ===================================================================== */
 import { FEUD_RULES as R, eligible, poolInfo, stateBoard, qText, newMatch, act, actorOf, advance, needsQuestion,
-    balanceTeams, guessTeam, other, faceOffOf } from "./engine.js?v=3";
+    balanceTeams, guessTeam, other, faceOffOf, kindLabel, fairAnswer } from "./engine.js?v=4";
 import { LIB, K, arr, el, srvNow, label, presentIn, pickOpt, seriesOf, TEAM, initCommon, recordSeen, publishHist, syncRemoteHist, roomHists, nextQuestion,
-    img, teamsFrom, optButtons, scopeLine, teamColumns, tapTeam, shuffleTeams, kit, makeTimer, confetti, hintFor } from "./common.js?v=1";
+    img, teamsFrom, optButtons, scopeLine, teamColumns, tapTeam, shuffleTeams, kit, makeTimer, confetti, hintFor } from "./common.js?v=2";
 
 export const FEUD_LIB = LIB;
 const TYPE = "classic", NODE = "feud", GT = "feud";
@@ -238,7 +238,7 @@ function renderStudio(d, s) {
         reveal: () => "Round over.", over: () => ""
     };
     $("fdStatus").textContent = (status[s.phase] || (() => ""))();
-    setTop(s, "ANIME FEUD · " + (arr(s.series).length > 1 ? "ANIME MIX" : label(s.series[0]).toUpperCase()) + " · Anime Arcade curated answers");
+    setTop(s, ["ANIME FEUD", arr(s.series).length > 1 ? "ANIME MIX" : label(s.series[0]).toUpperCase(), kindLabel(LIB.boards[s.q && s.q.g])].filter(Boolean).join(" · "));
     teamPanel(d, s, "A"); teamPanel(d, s, "B");
     $("fdStrikes").querySelectorAll("i").forEach((x, i) => x.classList.toggle("on", i < (Number(s.strikes) || 0)));
     $("fdStrikes").classList.toggle("steal", s.phase === "steal");
@@ -342,7 +342,9 @@ function studioEvent(d, s, ev) {
         X.sfx("showBuzz");
         const fx = $("fdFx"), big = el("div", "fd-bigx"); big.textContent = "✕".repeat(ev.face ? 1 : Math.max(1, ev.strikes || 1)); fx.appendChild(big); setTimeout(() => big.remove(), 1100);
         X.shake($("fdBoard"), 9, 360);
-        feedback(ev.timeout ? name(ev.by) + " ran out of time." : name(ev.by) + ": \"" + (ev.said || "?") + "\" isn't on the board.", "miss");
+        // a right answer that didn't make the top of this board is told so (it's still a strike: only the board's answers score)
+        const fa = !ev.timeout && typeof ev.said === "string" ? fairAnswer(LIB.boards[s.q && s.q.g], arr(s.series), ev.said, board) : null;
+        feedback(ev.timeout ? name(ev.by) + " ran out of time." : fa ? name(ev.by) + ": " + fa.t + " fits, but didn't make this board." : name(ev.by) + ": \"" + (ev.said || "?") + "\" isn't on the board.", "miss");
     } else if (ev.k === "control") {
         X.sfx("showDing"); if (ev.why !== "top") banner("CONTROL!", TEAM[ev.team].name + " had the higher answer", TEAM[ev.team].cls);
     } else if (ev.k === "decide") {
@@ -387,7 +389,7 @@ function showOver(d, s) {
         li.appendChild(chips); rl.appendChild(li);
     });
     card.appendChild(rl);
-    card.appendChild(el("p", "fd-onote", "Boards are Anime Arcade curated answers, ranked by our editors, not survey results."));
+    card.appendChild(el("p", "fd-onote", "Each board says how it's ranked: canon answers by AniList fans or by how well-known they are, feats by the Anime Draft ratings, and opinion questions by our editors' poll (never presented as canon)."));
     const btns = el("div", "fd-obtns");
     if (X.amHost()) { const a = el("button", "btn xl", "Rematch"); a.onclick = () => window.fdAgain(); const b = el("button", "btn ghost", "Back to lobby"); b.onclick = () => window.fdLobby(); btns.append(a, b); }
     else btns.appendChild(el("p", "fd-wait", "Waiting for " + X.pName(d, X.hostSlot(d)) + " to start a rematch or go back to the lobby."));

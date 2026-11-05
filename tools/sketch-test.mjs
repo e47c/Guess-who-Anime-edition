@@ -3,6 +3,7 @@ import { SK, norm, maskOf, letters, hintMax, pickHint, hintAt, spans, buildWords
     hintDue, standings, ptsFor, fp, prints, claim, near, wordPrints, del1, CATS, TYPO_MIN } from "../js/sketch/engine.js";
 import { EXTRAS, BLOCK } from "../js/sketch/words.js";
 import { SKETCH_CHARS as CHARS } from "../js/sketch/roster.js";
+import { SKETCH_FEUD } from "../js/sketch/feudwords.js";
 import { NICKNAMES } from "../js/feud/nicknames.js";
 import { buildLibrary } from "../js/feud/engine.js";
 import { PACKS } from "../js/feud/packs/index.js";
@@ -13,7 +14,7 @@ const sect = s => console.log("• " + s);
 let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 
 sect("word library");
-const W = buildWords({ chars: CHARS, nick: NICKNAMES, lib: buildLibrary(PACKS), extras: EXTRAS, block: BLOCK });
+const W = buildWords({ chars: CHARS, nick: NICKNAMES, lib: SKETCH_FEUD, extras: EXTRAS, block: BLOCK });
 const SERIES = Object.keys(CHARS);
 t(SERIES.every(s => (W[s] || []).length >= 24), "every series has at least 24 words: " + SERIES.map(s => s + " " + (W[s] || []).length).join(", "));
 const all = Object.values(W).flat();
