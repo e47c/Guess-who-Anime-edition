@@ -18,12 +18,12 @@
    mode here: the site has no server to keep secrets from a player reading the database.
    Practice vs CPU runs the same engine locally (no coins).
    ===================================================================== */
-import { newBattle, act, resolveRound, alive, handOf, lifeOf, due, applyDue, normalize, cpuPick, autoPick, REVEAL_MS, arr } from "./engine.js?v=4";
+import { newBattle, act, resolveRound, alive, handOf, lifeOf, due, applyDue, normalize, cpuPick, autoPick, REVEAL_MS, arr } from "./engine.js?v=5";
 import { ABILITIES } from "./abilities.js?v=1";
-import { BATTLE } from "../vault/config.js?v=6";
+import { BATTLE } from "../vault/config.js?v=7";
 import { CARDS } from "../vault/carddb.js?v=2";
-import { cardEl } from "../vault/cardui.js?v=3";
-import { inspect } from "../vault/opening.js?v=3";
+import { cardEl } from "../vault/cardui.js?v=4";
+import { inspect } from "../vault/opening.js?v=4";
 import { rngFrom, newSeed, shuffleWith } from "../vault/rng.js?v=1";
 import { battleResultOf, resultToDb, resultFromDb } from "../vault/result.js?v=3";
 import { el, srvNow, presentIn, optButtons } from "../feud/common.js?v=4";

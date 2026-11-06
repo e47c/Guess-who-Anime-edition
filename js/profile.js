@@ -5,7 +5,8 @@
    player node so everybody sees the same card in every mode.
    ===================================================================== */
 
-import { SKINS } from "./vault/config.js?v=6";
+import { SKINS } from "./vault/config.js?v=7";
+import { NIGHT_PARTY } from "./party/config.js?v=1";
 
 const KEY = "gw_profile_v1";
 export const COLORS = ["#e11b1b", "#ff6a1a", "#f2c200", "#2ec4a6", "#3ea6ff", "#7a5cff", "#ff4fa8", "#e8e8f4"];
@@ -42,6 +43,7 @@ export const ACH = [
     { id: "uno_villain", icon: "😈", name: "Villain Arc", desc: "Play a Wild +4." },
     { id: "hype", icon: "📣", name: "Hype Man", desc: "Send 25 reactions." },
     { id: "new_look", icon: "🪞", name: "New Look", desc: "Pick a profile picture." },
+    { id: "np_win", icon: "🏆", name: "Night Party Winner", desc: "Win a Night Party tournament." },
     { id: "secret", icon: "🌀", name: "Ultra Instinct", desc: "Found a hidden technique on the main menu.", hidden: true }
 ];
 const MODE_KEYS = ["gw", "hb", "im", "uno"];
@@ -50,7 +52,7 @@ const MODE_KEYS = ["gw", "hb", "im", "uno"];
 function blank() {
     let legacy = ""; try { legacy = localStorage.getItem("gw_name") || ""; } catch (e) {}
     const c = COLORS[(Math.random() * COLORS.length) | 0];
-    return { v: 1, name: legacy, av: { t: "g", g: GLYPHS[(Math.random() * GLYPHS.length) | 0], c }, col: c, fr: "none", ttl: "rookie", xp: 0, st: {}, ach: {}, em: 0, sf: "", bg: "", ts: "", uc: "", vtn: "" };
+    return { v: 1, name: legacy, av: { t: "g", g: GLYPHS[(Math.random() * GLYPHS.length) | 0], c }, col: c, fr: "none", ttl: "rookie", xp: 0, st: {}, ach: {}, em: 0, sf: "", bg: "", ts: "", uc: "", vtn: "", np: { won: 0, played: 0, hist: [] } };
 }
 let P = blank();
 try { const s = JSON.parse(localStorage.getItem(KEY) || "null"); if (s && s.v === 1) P = Object.assign(blank(), s); } catch (e) {}
@@ -90,6 +92,18 @@ export const profile = {
         persist();
         return { gain, before, after, levelUp: after.lvl > before.lvl, achievements: earned, streak: stAll.s, best: stAll.b, unlocked: unlocksBetween(before.lvl, after.lvl) };
     },
+    /* a finished Night Party, once per tournament id: { id, name, reward, winner (name), date, won } -> the achievement if new */
+    recordNightParty(rec) {
+        const np = P.np && Array.isArray(P.np.hist) ? P.np : (P.np = { won: 0, played: 0, hist: [] });
+        if (!rec || !rec.id || np.hist.some(h => h.id === rec.id)) return null;
+        np.played = (np.played | 0) + 1; if (rec.won) np.won = (np.won | 0) + 1;
+        np.hist.unshift({ id: String(rec.id), name: String(rec.name || "Night Party").slice(0, 60), reward: String(rec.reward || "").slice(0, 140), winner: String(rec.winner || "").slice(0, 40), date: Number(rec.date) || Date.now(), won: !!rec.won });
+        np.hist = np.hist.slice(0, NIGHT_PARTY.historyKeep);
+        const a = rec.won ? this._unlockSilent("np_win") : null;
+        persist();
+        return a;
+    },
+    nightParty() { return P.np && Array.isArray(P.np.hist) ? P.np : { won: 0, played: 0, hist: [] }; },
     _unlockSilent(id) { if (P.ach[id] || !ACH.find(a => a.id === id)) return null; P.ach[id] = Date.now(); return ACH.find(a => a.id === id); }
 };
 
@@ -216,6 +230,19 @@ function renderEditor() {
     const pill = (box, list, key) => { box.innerHTML = ""; list.forEach(it => { const ok = isUnlocked(it); if (it.hidden && !ok) return; const b = mk("button", "pill" + (draft[key] === it.id ? " on" : "") + (ok ? "" : " locked"), it.name); b.title = ok ? it.name : (it.ach ? "Unlock: " + (ACH.find(a => a.id === it.ach) || {}).name : "Reach level " + it.lvl); if (!ok) b.disabled = true; b.onclick = () => { draft[key] = it.id; hooks.sfx("toggle"); renderEditor(); }; box.appendChild(b); }); };
     pill($("profTitles"), TITLES, "ttl"); pill($("profFrames"), FRAMES, "fr");
     const ach = $("profAch"); ach.innerHTML = "";
+    const npBox = $("profNp");
+    if (npBox) {
+        const N = profile.nightParty(); npBox.innerHTML = "";
+        const top = mk("div", "pnp-top"); top.append(mk("b", null, String(N.won | 0)), mk("small", null, "Tournaments won"), mk("b", null, String(N.played | 0)), mk("small", null, "Played"));
+        npBox.appendChild(top);
+        if (!N.hist.length) npBox.appendChild(mk("p", "anime-hint", "No Night Party yet. Pick NIGHT PARTY in a room's lobby to host one."));
+        N.hist.forEach(h => {
+            const r = mk("div", "pnp-row" + (h.won ? " won" : ""));
+            const l = mk("div"); l.append(mk("b", null, (h.won ? "🏆 " : "") + h.name), mk("small", null, "Winner: " + (h.winner || "?") + (h.reward ? " · " + h.reward : "")));
+            r.append(l, mk("time", null, new Date(h.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })));
+            npBox.appendChild(r);
+        });
+    }
     ACH.forEach(a => { const got = profile.has(a.id), secret = a.hidden && !got, d = mk("div", "ach" + (got ? " got" : "")); d.title = secret ? "A secret" : a.desc; d.append(mk("span", "ach-i", got ? a.icon : secret ? "❔" : "🔒"), mk("b", null, secret ? "???" : a.name), mk("small", null, secret ? "Hidden achievement" : a.desc)); ach.appendChild(d); });
 }
 function renderTabs() {

@@ -24,6 +24,7 @@
 <link rel="stylesheet" href="css/cards.css?v=3">
 <link rel="stylesheet" href="css/packs.css?v=1">
 <link rel="stylesheet" href="css/cardvault.css?v=2">
+<link rel="stylesheet" href="css/party.css?v=1">
 </head>
 <body class="anime-theme" data-scene="home">
 
@@ -292,6 +293,7 @@
 <div><label class="field-label">Winner picks a free pack</label><div class="sizes"><button type="button" class="modebtn" id="cvPackBtn" onclick="setCvOpt('pack')">Off</button></div></div></div>
 <p class="cv-mydeck" id="cvMyDeck"></p>
 <p class="anime-hint" id="cvHint"></p></div>
+<div id="partyBox" class="field hidden np-lobby"></div>
 </div>
 </section>
 </div>
@@ -357,6 +359,15 @@
 <nav class="av-tabs" id="vtTabs" role="tablist" aria-label="Vault sections"></nav>
 <main id="vtBody" class="av-body"></main>
 </div>
+
+<!-- =========================================
+     NIGHT PARTY (mode 10): the tournament screen between stages (js/party/party.js renders into #npWrap)
+========================================= -->
+<div id="party" class="screen hidden np-page">
+<div class="np-bg" aria-hidden="true"><i></i></div>
+<div id="npWrap" class="np-wrap"></div>
+</div>
+<button id="npHud" class="np-hud hidden" type="button" onclick="npChart()" aria-label="Night Party standings"></button>
 
 <div id="cardvault" class="hidden">
 <div class="game-header"><div class="game-header-inner"><div><div class="turn" id="cvTurnT"></div><div class="status" id="cvStatus"></div></div><button class="pop ghost menu-btn" onclick="openPause()" aria-label="Menu">☰</button></div></div>
@@ -548,12 +559,29 @@
 <div id="avaGrid" class="ava-grid"></div>
 <div class="ava-upload"><label class="btn ghost sm" for="avaFile">Upload your own</label><input id="avaFile" type="file" accept="image/*" hidden><span class="anime-hint">Square crop, shrunk to a tiny file.</span></div>
 <label class="field-label">Achievements</label><div id="profAch" class="ach-grid"></div>
+<label class="field-label">Night Party</label><div id="profNp" class="pnp"></div>
 </div>
 </div>
 <div class="sheet-foot"><button class="btn" onclick="saveProfile()">Save profile</button></div>
 </div>
 </div>
 
+<div id="npChart" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="npChartTitle">
+<div class="sheet wide-sheet np-sheet">
+<button class="sheet-x" onclick="closeOverlay('npChart')" aria-label="Close">✕</button>
+<div class="sheet-kicker">NIGHT PARTY</div>
+<h2 id="npChartTitle">Live standings</h2>
+<div id="npChartBody"></div>
+</div>
+</div>
+<div id="npSetup" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="npSetupTitle">
+<div class="sheet wide-sheet np-sheet np-setup-sheet">
+<button class="sheet-x" onclick="closeOverlay('npSetup')" aria-label="Close">✕</button>
+<div class="sheet-kicker">NIGHT PARTY</div>
+<h2 id="npSetupTitle">Set up the night</h2>
+<div id="npSetupBody" class="np-setup"></div>
+</div>
+</div>
 <div id="vaultRw" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="vaultRwTitle">
 <div class="sheet wide-sheet vault-sheet">
 <button class="sheet-x" onclick="closeOverlay('vaultRw')" aria-label="Close">✕</button>
@@ -590,7 +618,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=51"></script>
+<script type="module" src="js/game.js?v=52"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){

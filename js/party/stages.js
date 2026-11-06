@@ -12,9 +12,10 @@
    Adding a stage later (for example ARCADE VAULT card battles) = one registerStage(id, meta) call with its
    metadata, settings schema and format; nothing else here changes.
    ===================================================================== */
-import { MODE_META } from "../vault/config.js?v=6";
+import { MODE_META } from "../vault/config.js?v=7";
 import { FEUD_RULES as R } from "../feud/engine.js?v=5";
 import { SK } from "../sketch/engine.js?v=5";
+import { NIGHT_PARTY as NP } from "./config.js?v=1";
 
 /* one schema entry: choices (the lobby's buttons) + the default; series = a list of series keys */
 const pick = (choices, def) => ({ choices: choices.slice(), def });
@@ -93,6 +94,11 @@ export function stageFits(id, settings, n) {
     if (f === "duel") return n <= 8 ? { ok: true } : { ok: false, why: m.name + " brackets take up to 8 players." };
     if (n < m.min) return { ok: false, why: m.name + " needs at least " + m.min + " players." };
     if (n > m.max) return { ok: false, why: m.name + " seats up to " + m.max + " players." };
+    if (id === "uno") {                         // the deck needs its number of series
+        const k = s.animes.length;
+        if (s.unoDeck === "classic" && k !== 4) return { ok: false, why: "The Classic UNO deck uses exactly 4 series (" + k + " ticked)." };
+        if (s.unoDeck === "chaos" && (k < 4 || k > 8)) return { ok: false, why: "The Chaos UNO deck uses 4 to 8 series (" + k + " ticked)." };
+    }
     if (f === "teams" && id === "draft") {      // Build seats exactly N per side: everyone plays only when N = players / 2
         if (n % 2) return { ok: false, why: "Draft Build needs an even number of players (" + n + " here): use Auction, or another mode." };
         if (s.draftFmt * 2 !== n) return { ok: false, why: "Draft Build " + s.draftFmt + "v" + s.draftFmt + " seats " + s.draftFmt * 2 + " players: pick " + n / 2 + "v" + n / 2 + " so all " + n + " play." };
@@ -107,3 +113,21 @@ export function teamPatch(id, teams) {
     ["A", "B"].forEach(side => (teams[side] || []).forEach(p => { map["p" + Number(p)] = tk[side]; }));
     return Object.keys(map).length ? { key: tk.key, map } : null;
 }
+
+/* the setup's time estimate for one stage, in minutes (numbers in NIGHT_PARTY.minutes) */
+export function estMinutes(id, settings, n) {
+    const M = NP.minutes, s = normalizeSettings(id, settings) || {}, p = Math.max(2, n | 0);
+    switch (id) {
+        case "classic": return M.classic.perMatch * (p - 1);
+        case "headbanz": return M.headbanz.perRound * s.rounds;
+        case "imposter": return M.imposter.perRound * p * s.laps;
+        case "uno": return M.uno[s.unoDeck] || M.uno.classic;
+        case "draft": return M.draft[s.draftType] || M.draft.build;
+        case "feud": return M.feud.perRound * s.feudRounds;
+        case "likely": return M.likely.base + s.likelyRounds * (s.likelyTimer + M.likely.perDuelExtra) / 60;
+        case "sketch": return s.sketchMode === 1 ? s.sketchRounds * (s.sketchTimer + p * M.sketch.contestPerDrawing) / 60 : s.sketchRounds * p * (s.sketchTimer + M.sketch.turnExtra) / 60;
+        default: { const m = stageMeta(id); return m && m.minutes ? m.minutes : 5; }
+    }
+}
+/* a whole path: the stages + an intermission between each */
+export const estTotal = (stages, n) => (stages || []).reduce((t, st) => t + estMinutes(st.mode, st.settings, n), 0) + Math.max(0, (stages || []).length - 1) * NP.minutes.intermission;

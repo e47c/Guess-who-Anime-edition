@@ -3,14 +3,14 @@
 // atomic, never negative), the seeded RNG, the config. Phase 2: coins per placement, anti-farming, the daily
 // cap, missions and the login streak.
 import { resultOf, resultToDb, resultFromDb, placeRows, RESULT_MODES, battleResultOf } from "../js/vault/result.js";
-import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=6";
+import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=7";
 import { rngFrom, newSeed, pickWeighted, shuffleWith } from "../js/vault/rng.js?v=1";
-import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=6";
-import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, gameCoinsOn } from "../js/vault/economy.js?v=5";
-import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=4";
-import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordBattle, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=4";
+import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=7";
+import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, nightPartyValid, applyNightParty, gameCoinsOn, FEATURES } from "../js/vault/economy.js?v=6";
+import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=5";
+import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordBattle, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=5";
 import { CARDS, BY_SERIES, CARD_SERIES } from "../js/vault/carddb.js?v=2";
-import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=6";
+import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=7";
 
 let ok = 0, bad = 0;
 const t = (c, m) => { if (c) ok++; else { bad++; console.log("  ✘", m); } };
@@ -236,7 +236,21 @@ t(wb.ledger().filter(l => l.kind === "daily").length === 1 && wb.ledger().some(l
 const gb = createBank(memoryBackend(), { now: () => T0 }), rr = res("uno", [1, 2]);
 const two = await Promise.all([1, 2].map(() => gb.apply("game:ROOM:" + rr.key, "game", (w, x) => applyGame(w, rr, 1, x.now, 9, x.log))));
 t(two.filter(x => x.dup).length === 1 && gb.coins() === VAULT.startCoins + 40 + mc(two.find(x => !x.dup).result.missions), "the same game reported twice (reload, reconnect) pays once");
-t(nightPartyCoins(true, 4) === 140 && nightPartyCoins(false, 3) === 30, "Night Party hook: winner +100, +10 per stage");
+t(nightPartyCoins(true, 4) === 140 && nightPartyCoins(false, 3) === 30, "Night Party: winner +100, +10 per stage played");
+{
+    const NPO = { won: true, stages: 6, players: 8, seconds: 3600 };
+    let wv = blankVault(T0); const c0 = wv.coins; let o = applyNightParty(wv, NPO, T0, 9);
+    t(o.coins === 160 && wv.coins === c0 + 160 + o.missions.reduce((s, m) => s + m.coins, 0), "Night Party winner of 6 stages: +160 (+ the mission if rolled)");
+    wv = blankVault(T0); o = applyNightParty(wv, { won: false, stages: 5, players: 8, seconds: 3600 }, T0, 9); t(o.coins === 50, "a participant of 5 stages: +50");
+    t(applyNightParty(blankVault(T0), { won: true, stages: 3, players: 1, seconds: 3600 }, T0, 9).coins === 0 && /2\+/.test(nightPartyValid({ players: 1, seconds: 9999, stages: 2 }).why), "one real player: nothing (anti-farming)");
+    t(applyNightParty(blankVault(T0), { won: true, stages: 3, players: 4, seconds: 60 }, T0, 9).coins === 0, "a 1-minute tournament: nothing (minimum length)");
+    t(applyNightParty(blankVault(T0), { won: false, stages: 0, players: 4, seconds: 3600 }, T0, 9).coins === 0, "no stage played: nothing");
+    wv = blankVault(T0); wv.missions = { day: dayKey(T0), seed: 1, list: [Object.assign({}, MISSIONS.pool.find(m => m.id === "party1"), { prog: 0, done: false })] };
+    o = applyNightParty(wv, NPO, T0, 9); t(o.missions.length === 1 && o.missions[0].id === "party1", "the 'Finish a Night Party' daily mission completes");
+    t(MISSIONS.pool.some(m => m.id === "party1" && m.needs === "party"), "the Night Party mission is in the daily pool");
+    let ww = blankVault(T0); ensureMissions(ww, T0, 1); const pool = new Set(); for (let s2 = 0; s2 < 300; s2++) { ww = blankVault(T0); FEATURES.add("party"); ensureMissions(ww, T0, s2); ww.missions.list.forEach(m => pool.add(m.id)); }
+    t(pool.has("party1"), "it gets rolled once Night Party exists");
+}
 
 sect("shop: Season 1 skins");
 const rich = () => Object.assign(blankVault(T0), { coins: 100000 });

@@ -18,7 +18,7 @@
      document first, so two tabs can't both spend the same coins.
    - A coin balance never goes below 0 (spend() refuses instead).
    ===================================================================== */
-import { VAULT } from "./config.js?v=6";
+import { VAULT } from "./config.js?v=7";
 
 export const VAULT_KEY = "aap_vault_v1";
 const DAY = 86400000;

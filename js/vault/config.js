@@ -38,8 +38,8 @@ export const EARN = {
     top: 40, bottom: 10,                         // fewer players: spread evenly between these
     lengthMult: { short: 0.75, medium: 1, long: 1.5 },
     minRealPlayers: 2,                           // distinct accounts in the match
-    minSeconds: { short: 60, medium: 150, long: 240 },   // a game shorter than this pays nothing (no daily limit)
-    nightParty: { winner: 100, perStage: 10 }    // tournament bonus on top of each stage's normal coins
+    minSeconds: { short: 60, medium: 150, long: 240 }    // a game shorter than this pays nothing (no daily limit)
+    // Night Party bonus coins: js/party/config.js (NIGHT_PARTY.coins)
 };
 export const DAILY_LOGIN = [30, 30, 40, 40, 50, 50, 100];     // 7-day streak, then it repeats; a missed day resets it
 
@@ -56,7 +56,8 @@ export const MISSIONS = {
         { id: "scratch1",  text: "Scratch a card",                     kind: "scratch",  goal: 1, coins: 20, needs: "scratch" },
         { id: "battle1",   text: "Win a card battle",                  kind: "cvwin",    goal: 1, coins: 40, needs: "battle" },
         { id: "deck1",     text: "Build or edit a deck",               kind: "deck",     goal: 1, coins: 20, needs: "decks" },
-        { id: "team1",     text: "Win a team game",                    kind: "teamwin",  goal: 1, coins: 35 }
+        { id: "team1",     text: "Win a team game",                    kind: "teamwin",  goal: 1, coins: 35 },
+        { id: "party1",    text: "Finish a Night Party",               kind: "party",    goal: 1, coins: 40, needs: "party" }
     ],
     fresh: { id: "fresh", text: "Play a mode you haven't played in 7 days", kind: "fresh", goal: 1, coins: 40 }
 };

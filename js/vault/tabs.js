@@ -4,13 +4,13 @@
    Every action is an intent sent to the bank (bank.apply with an operation id), so a double click or a second tab
    can never pay twice; the button's operation id only changes after the action went through.
    ===================================================================== */
-import { SKINS, SCRATCH, PACKS, SHARDS, RARITY_ORDER, DECK, TRADE, BATTLE } from "./config.js?v=6";
-import { SKIN_ITEMS, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=4";
-import { rollPack, unopened, markOpened, owned, isHolo, ownedIds, seriesDone, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem } from "./packs.js?v=4";
-import { cvChallenge, cvBattles, busyIn, seatsOf, cvWatch, cvReturn, cvDeckOf, locOf } from "../cardvault/cardvault.js?v=4";
+import { SKINS, SCRATCH, PACKS, SHARDS, RARITY_ORDER, DECK, TRADE, BATTLE } from "./config.js?v=7";
+import { SKIN_ITEMS, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=5";
+import { rollPack, unopened, markOpened, owned, isHolo, ownedIds, seriesDone, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem } from "./packs.js?v=5";
+import { cvChallenge, cvBattles, busyIn, seatsOf, cvWatch, cvReturn, cvDeckOf, locOf } from "../cardvault/cardvault.js?v=5";
 import { CARDS, BY_SERIES, CARD_SERIES, CARD_COUNT, RARITY_NAMES, ARCHETYPES, TOTAL_CARDS } from "./carddb.js?v=2";
-import { cardEl, packEl, theme } from "./cardui.js?v=3";
-import { openPack, inspect, holdToInspect } from "./opening.js?v=3";
+import { cardEl, packEl, theme } from "./cardui.js?v=4";
+import { openPack, inspect, holdToInspect } from "./opening.js?v=4";
 import { motionOK } from "../fx.js";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -411,6 +411,14 @@ function battleTab() {
     dk.appendChild(btn("Change deck", "ghost sm", () => H.open("decks")));
     hero.appendChild(dk);
     v.appendChild(hero);
+    if (rd && rd.np && x.inRoom && x.inRoom()) {      // a Night Party is on: no challenges between stages
+        const nr = mk("section", "vt-card vt-bnoroom");
+        nr.append(mk("b", "vt-btitle", "Card battles are off during a Night Party"), mk("p", "vt-rule", "Challenges come back when the tournament is over. You can still build decks and practice against the CPU."));
+        const pr = mk("div", "vt-row vt-bgo");
+        pr.appendChild(btn("Practice vs CPU", "ghost", () => { if (bad) { toast(bad === "No deck" ? "Build a 10-card deck first (Decks tab)." : bad); return; } x.startPractice && x.startPractice(); }));
+        nr.appendChild(pr); v.appendChild(nr);
+        return v;
+    }
     if (!(x.inRoom && x.inRoom()) || !rd || !x.activeSlots) {      // no room (opened from the main menu)
         const nr = mk("section", "vt-card vt-bnoroom");
         nr.append(mk("b", "vt-btitle", "Host a party or join one to battle"), mk("p", "vt-rule", "Card battles are between friends in the same room. Everything else in the Vault works right here."));

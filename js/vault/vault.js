@@ -10,19 +10,19 @@
    Every coin change goes through bank.apply(opId, ...), so a reload, a reconnect or a double click
    never pays twice.
    ===================================================================== */
-import { createBank, localBackend } from "./store.js?v=6";
-import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=6";
-import { applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=5";
+import { createBank, localBackend } from "./store.js?v=7";
+import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=7";
+import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=6";
 import { newSeed } from "./rng.js?v=1";
-import { grantStarter, recordBattle, grantToken, activeDeck, deckProblem } from "./packs.js?v=4";
-import { publicLook } from "./shop.js?v=4";
-import { initOpening } from "./opening.js?v=3";
-import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=4";
+import { grantStarter, recordBattle, grantToken, activeDeck, deckProblem } from "./packs.js?v=5";
+import { publicLook } from "./shop.js?v=5";
+import { initOpening } from "./opening.js?v=4";
+import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=5";
 import { motionOK } from "../fx.js";
 
 export const bank = createBank(localBackend());
 export { MODE_META, FEATURES };
-["packs", "scratch", "decks", "battle"].forEach(f => FEATURES.add(f));      // every part of the Vault now exists: their missions can roll
+["packs", "scratch", "decks", "battle", "party"].forEach(f => FEATURES.add(f));      // every part of the Vault now exists: their missions can roll
 
 const $ = id => document.getElementById(id);
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -57,6 +57,16 @@ async function payGame(r, ctx) {
 export function vaultEvent(kind, opId) {
     return bank.apply(opId, "event", (w, x) => { ensureMissions(w, x.now, newSeed(), x.log); return { missions: missionEvent(w, { [kind]: 1 }, x.log) }; }, { silent: true })
         .then(res => { if (res.ok && !res.dup && res.result.missions.length) setTimeout(() => missionToast(res.result.missions), 400); return res; });
+}
+
+/* Night Party: the tournament bonus (winner + per stage played), once per tournament (operation id party:<id>) */
+export async function nightPartyReward(tid, o) {
+    const res = await bank.apply("party:" + tid, "nightparty", (w, x) => applyNightParty(w, o, x.now, newSeed(), x.log));
+    if (res.ok && !res.dup) {
+        if (res.result.coins) setTimeout(() => X.toast("Night Party bonus: +" + res.result.coins + " AAP Coins"), 1400);
+        if (res.result.missions && res.result.missions.length) setTimeout(() => missionToast(res.result.missions), 3400);
+    }
+    return res;
 }
 
 /* ---------- the coin pop-up after a match ---------- */
@@ -98,10 +108,17 @@ const TABS = [{ id: "shop", name: "Shop", ico: "◆" }, { id: "scratch", name: "
 let tab = "shop", pageOn = false, pageDismissed = false, roomD = null, bodySig = "", homeOpen = false, joinOpen = false;
 const inRoom = () => !!(X.inRoom && X.inRoom());
 try { const t = localStorage.getItem("aap_vault_tab"); if (TABS.some(x => x.id === t)) tab = t; } catch (e) {}
-const vaultRoom = d => !!d && d.gameType === "cardvault" && (!d.status || d.status === "waiting");
+const vaultRoom = d => !!d && !d.np && d.gameType === "cardvault" && (!d.status || d.status === "waiting");
+/* a Night Party in an intermission (or on its results / winner screen): anyone may open their own Vault page */
+const NP_PAUSE = ["next", "match", "results", "failed", "winner"];
+const npPause = d => !!d && !!d.np && (!d.status || d.status === "waiting") && NP_PAUSE.includes(d.np.phase);
+let npOn = false;
+export const vaultCanOpen = d => npPause(d);
 /* game.js asks on every room update while the room is in the lobby: should this player see their Vault page?
    Yes as soon as the lobby is on ARCADE VAULT, until they go back to the lobby (then: the lobby's Enter button). */
 export function vaultWanted(d) {
+    if (d && d.np) { if (!npPause(d)) npOn = false; return npOn; }       // Night Party: only during intermissions, only on request
+    npOn = false;
     if (!vaultRoom(d)) { pageOn = false; pageDismissed = false; return false; }
     if (!pageOn && !pageDismissed) { pageOn = true; bodySig = ""; }
     return pageOn;
@@ -112,13 +129,16 @@ export function openVault(which) {
         homeOpen = true; joinOpen = false; roomD = null; bodySig = ""; X.sfx("start");
         X.showOnly("arcadeVault"); window.scrollTo(0, 0); renderVault(); return;
     }
-    if (!vaultRoom(X.roomData ? X.roomData() : null)) { X.toast("In a room, the Vault opens when the lobby picks the ARCADE VAULT mode."); return; }
+    const rd = X.roomData ? X.roomData() : null;
+    if (rd && rd.np) { if (!npPause(rd)) { X.toast("The Vault opens between Night Party stages."); return; } npOn = true; bodySig = ""; X.sfx("start"); X.refresh(); return; }
+    if (!vaultRoom(rd)) { X.toast("In a room, the Vault opens when the lobby picks the ARCADE VAULT mode."); return; }
     pageOn = true; pageDismissed = false; bodySig = ""; X.sfx("start"); X.refresh();
 }
 /* leave the Vault: to the lobby (in a room) or to the main menu (no room) */
 export function vaultBack() {
     X.sfx("close");
     if (!inRoom()) { homeOpen = false; X.showOnly("home"); return; }
+    if (npOn) { npOn = false; X.refresh(); return; }
     pageOn = false; pageDismissed = true; X.refresh();
 }
 /* no-room context: HOST PARTY makes a room on ARCADE VAULT and lands on its Vault page (createRoom in game.js);
@@ -160,9 +180,9 @@ function renderCtx(force) {
     const box = $("avCtx"), back = $("avBack"), rt = $("avRoom"); if (!box) return;
     const room = inRoom(), d = roomD, code = room && X.roomCode ? X.roomCode() : "";
     const slots = room && d && X.activeSlots ? X.activeSlots(d) : [];
-    const sig = JSON.stringify([room, code, joinOpen, slots.map(p => { const n = d["player" + p] || {}; return [p, n.name, n.col, n.sf, n.av && (n.av.u || n.av.g)]; }), room && X.amHost && X.amHost()]);
+    const sig = JSON.stringify([room, code, joinOpen, npOn, slots.map(p => { const n = d["player" + p] || {}; return [p, n.name, n.col, n.sf, n.av && (n.av.u || n.av.g)]; }), room && X.amHost && X.amHost()]);
     if (!force && sig === ctxSig) return; ctxSig = sig;
-    if (back) back.textContent = room ? "‹ Lobby" : "‹ Menu";
+    if (back) back.textContent = room ? (npOn ? "‹ Night Party" : "‹ Lobby") : "‹ Menu";
     if (rt) rt.textContent = room ? "ROOM " + code : "INSERT COIN";
     box.innerHTML = ""; box.classList.toggle("noroom", !room);
     if (room) {
@@ -228,7 +248,7 @@ function rewardsTab() {
     wrap.appendChild(ec);
     // history
     const hc = mk("details", "vt-card vt-hist"); hc.appendChild(mk("summary", null, "Coin history"));
-    const LBL = { game: "Game", daily: "Daily login", mission: "Mission", missions: "New missions", grant: "Gift", spend: "Spent", start: "Welcome", skin: "Shop", bundle: "Shop bundle", scratch: "Scratch card", pack: "Pack", craft: "Crafted pack", starter: "Starter deck", trade: "Trade", token: "Free pack" };
+    const LBL = { nightparty: "Night Party", game: "Game", daily: "Daily login", mission: "Mission", missions: "New missions", grant: "Gift", spend: "Spent", start: "Welcome", skin: "Shop", bundle: "Shop bundle", scratch: "Scratch card", pack: "Pack", craft: "Crafted pack", starter: "Starter deck", trade: "Trade", token: "Free pack" };
     const lines = bank.ledger().filter(l => l.d || l.kind === "missions").slice(-25).reverse();
     if (!lines.length) hc.appendChild(mk("p", "vt-rule", "Nothing yet. Finish a game or claim your daily bonus."));
     lines.forEach(l => {

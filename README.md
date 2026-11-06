@@ -296,7 +296,7 @@ hidden by the interface, as in the other modes.
   fewer; ties and teams share the average of the places they cover; x0.75 short / x1 medium / x1.5 long. Only with 2+
   accounts and only past the mode's minimum length; no daily limit. Daily login 30, 30, 40, 40, 50, 50, 100
   (a missed day resets it). 3 daily missions, one always "play a mode you haven't played in 7 days". Night Party bonus:
-  hook only (`nightPartyCoins`).
+  winner +100, +10 per stage played (`js/party/config.js`).
 - **Shop.** Season 1 skins: each tier (Iron 150 ... Prismatic 3000) as a **Frame** ("Iron Frame - Season 1") and a
   **Background** ("Iron Background - Season 1"), bundle -20%. Two separate slots, both seen by everyone in the room:
   the Frame is the animated ring around the circular picture (`.ava.sf-<tier>`: the ring's metal or gem, a layer masked
@@ -360,14 +360,28 @@ hidden by the interface, as in the other modes.
   sent when the connection is back.
 - Tests: `node tools/vault-test.mjs` (economy, shop, scratch, packs, pity, decks, trades), `node tools/cardvault-test.mjs`.
 
-## NIGHT PARTY (mode 10, in progress)
+## NIGHT PARTY (mode 10: a tournament of the other modes)
 
-A tournament controller that runs existing modes as stages, with presets, placement scoring and live standings.
-Build notes, phase status and the test checklist of each phase are in `docs/night-party.md`. So far (phase 1):
-- the daily coin cap is gone;
-- `js/party/stages.js` is the stage registry: metadata, settings schema, formats and fits (`node tools/party-test.mjs`);
-- `window.AAP_MODES` in game.js launches any mode with preset settings, an optional seat list (`rooms/<code>/seatsOnly`)
-  and team split, reads its result, and aborts it.
+Pick NIGHT PARTY in a room's lobby (2-8 players). The host opens SET UP THE NIGHT: a tournament name, a reward
+("Winner picks the next anime we watch"), and a path of stages. Each stage is a mode with its full rules, a weight
+(x1, x1.5, x2 or custom) and a label; the same mode can come back with other rules. Templates: "Night of Eight"
+(6 stages for 8 players ending with a x2 Final Round), "Quick Three", and your own. Every stage is checked against the
+player count, with the estimated duration. START NIGHT PARTY whenever everyone is in.
+
+- Free-for-all modes seat everyone; team modes split the room into two teams balanced by the standings (or random, or
+  picked by the host); Guess Who runs as a single-elimination bracket inside the stage (seeded by the standings, byes
+  to the top seeds) while the others spectate.
+- Placement points only: 10 for 1st down to 1 for last (shared places share them), times the stage weight, added to a
+  pool. A live race track, the scoreboard and the stage list are shown between stages, and from the HUD chip during
+  one. A tie at the top after the last stage plays sudden death among the tied players.
+- The winner screen shows the reward; then everyone is back in the lobby. Every game pays its normal coins (no daily
+  limit); the winner gets +100 and everyone +10 per stage played. Tournaments won and a short history are in the
+  profile, with the "Night Party Winner" achievement and a "Finish a Night Party" daily mission.
+- Disconnects, late joiners, leavers, the host leaving or going offline, a mode that can't start (Retry / Skip),
+  Close room at any point: see `docs/night-party.md`, which also has the build notes and the test checklist of each
+  phase.
+- Code: `js/party/` (config.js = every number, stages.js = the stage registry, scoring.js = the scoring engine,
+  party.js = setup, controller and screens), `css/party.css`. Tests: `node tools/party-test.mjs`.
 
 ## Customising
 

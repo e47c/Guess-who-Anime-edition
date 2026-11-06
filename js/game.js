@@ -20,16 +20,17 @@ import {
 
 import { audio } from "./audio.js?v=2";
 import { ambient, titleCard, shake, ring, burstText, countUp, flyClone, motionOK, setReduced, isReduced } from "./fx.js";
-import { profile, avatarEl, seatCard, styleName, styleTitle, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js?v=5";
-import { showResults, closeResults } from "./results.js?v=3";
+import { profile, avatarEl, seatCard, styleName, styleTitle, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js?v=6";
+import { showResults, closeResults } from "./results.js?v=4";
 import * as DRAFT from "./draft/draft.js?v=7";
 import * as FEUD from "./feud/feud.js?v=7";
 import * as LIKELY from "./feud/likely.js?v=4";
 import * as SKETCH from "./sketch/sketch.js?v=9";
-import * as VAULT from "./vault/vault.js?v=7";
-import * as CV from "./cardvault/cardvault.js?v=4";
+import * as VAULT from "./vault/vault.js?v=8";
+import * as CV from "./cardvault/cardvault.js?v=5";
+import * as NP from "./party/party.js?v=1";
 import { resultOf, resultToDb, resultFromDb } from "./vault/result.js?v=3";
-import { stageMeta, normalizeSettings, teamPatch } from "./party/stages.js?v=1";
+import { stageMeta, normalizeSettings, teamPatch } from "./party/stages.js?v=2";
 import { initCine, cineHook, cineHas } from "./cine/engine.js?v=13";
 import { hand as cineHand } from "./cine/hands.js?v=11";
 import * as CK from "./cine/kit.js?v=11";
@@ -999,10 +1000,10 @@ let rematchSize = 24;
    HELPERS
 ========================================= */
 
-const SCENE_OF = { home: "home", lobby: "lobby", secret: "gw", game: "gw", gwSpec: "gw", result: "gw", hb: "case", im: "im", uno: "uno", draft: "hb", feud: "hb", likely: "uno", sketch: "sketch", cardvault: "uno", arcadeVault: "lobby" };
+const SCENE_OF = { home: "home", lobby: "lobby", secret: "gw", game: "gw", gwSpec: "gw", result: "gw", hb: "case", im: "im", uno: "uno", draft: "hb", feud: "hb", likely: "uno", sketch: "sketch", cardvault: "uno", arcadeVault: "lobby", party: "lobby" };
 let currentScreen = "home";
 function showOnly(id) {
-    document.querySelectorAll("#home,#lobby,#secret,#game,#gwSpec,#hb,#im,#uno,#draft,#feud,#likely,#sketch,#cardvault,#arcadeVault,#result").forEach(el => el.classList.add("hidden"));
+    document.querySelectorAll("#home,#lobby,#secret,#game,#gwSpec,#hb,#im,#uno,#draft,#feud,#likely,#sketch,#cardvault,#arcadeVault,#party,#result").forEach(el => el.classList.add("hidden"));
     const element = document.getElementById(id);
     element.classList.remove("hidden");
     if (currentScreen !== id) {
@@ -1205,7 +1206,7 @@ const HB_Q = "query($id:Int,$search:String,$page:Int){Media(id:$id,search:$searc
 function applyModeUI(t) {
     homeMode = t;
     const multi = t === "hb" || t === "im";
-    document.body.classList.toggle("hb-mode", multi || t === "uno" || t === "dr" || t === "fd" || t === "ml" || t === "sk" || t === "cv");
+    document.body.classList.toggle("hb-mode", multi || t === "uno" || t === "dr" || t === "fd" || t === "ml" || t === "sk" || t === "cv" || t === "np");
     document.body.classList.toggle("uno-mode", t === "uno");
     $("sizeField").classList.toggle("hidden", t !== "gw");
     $("diffField").classList.toggle("hidden", !multi);
@@ -1217,7 +1218,8 @@ function applyModeUI(t) {
     $("likelyBox").classList.toggle("hidden", t !== "ml");
     $("sketchBox").classList.toggle("hidden", t !== "sk");
     $("cardvaultBox").classList.toggle("hidden", t !== "cv");
-    $("animePoll").classList.toggle("hidden", t === "cv");      // Arcade Vault battles use decks, not series
+    $("partyBox").classList.toggle("hidden", t !== "np");
+    $("animePoll").classList.toggle("hidden", t === "cv" || t === "np");      // Arcade Vault battles use decks, Night Party stages pick their own series      // Arcade Vault battles use decks, not series
     const picked = document.querySelectorAll("#animePoll input:checked").length, chaos = unoDeckType(currentRoomData) === "chaos";
     $("modeHint").textContent = {
         gw: "Classic board: characters are drawn from every series you tick.",
@@ -1229,7 +1231,8 @@ function applyModeUI(t) {
         fd: currentRoomData ? FEUD.feudHint(currentRoomData) : "",
         ml: currentRoomData ? LIKELY.likelyHint(currentRoomData) : "",
         sk: currentRoomData ? SKETCH.sketchHint(currentRoomData) : "",
-        cv: currentRoomData ? CV.cvHint(currentRoomData) : ""
+        cv: currentRoomData ? CV.cvHint(currentRoomData) : "",
+        np: "Every stage picks its own series in the Night Party setup."
     }[t] || "";
 }
 window.setGameType = function (t) { pickMode(MODE_OF_KEY[t] || "classic"); };
@@ -3290,7 +3293,7 @@ function unoSightStrip(u, me, show) {
    ===================================================================== */
 const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8];          // the squad: up to 8 players per room
 const ROOM_MAX = SLOTS.length;
-const MODE_OF_KEY = { gw: "classic", hb: "headbanz", im: "imposter", uno: "uno", dr: "draft", fd: "feud", ml: "likely", sk: "sketch", cv: "cardvault" };
+const MODE_OF_KEY = { gw: "classic", hb: "headbanz", im: "imposter", uno: "uno", dr: "draft", fd: "feud", ml: "likely", sk: "sketch", cv: "cardvault", np: "party" };
 const MODES = {
     classic:  { key: "gw",  name: "Guess Who", tag: "CASE FILE", kanji: "探", min: 2, max: 8, seats: "1v1 · rest spectate", short: "1v1", color: "#f0c869", sub: "Hide. Ask. Accuse.", blurb: "1v1 deduction duel. Hide a character, ask yes/no questions, accuse first.",
         art: ["images/anime/naruto/na2.jpg", "images/special/onepiece_ultimate.jpg", "images/anime/bleach/bc6.jpg"] },
@@ -3309,7 +3312,9 @@ const MODES = {
     sketch:   { key: "sk",  name: "Anime Sketch", tag: "DRAW & GUESS", kanji: "描", min: 2, max: 8, seats: "everyone draws in turn", short: "FFA", color: "#38d39f", sub: "Draw it. Guess it. Fast.", blurb: "Take turns drawing while everyone races to guess, or all draw one word and rate each other.",
         art: ["images/anime/naruto/na7.jpg", "images/anime/bleach/bc5.jpg", "images/anime/jjk/jk9.jpg"] },
     cardvault: { key: "cv", name: "Arcade Vault", tag: "SHOP · PACKS · BATTLES", kanji: "庫", min: 1, max: 8, seats: "everyone, own Vault", short: "Own pace", color: "#b38bff", sub: "Spend. Collect. Challenge.", blurb: "Everyone opens their own Vault: skins, scratch cards, card packs, decks. Challenge anyone in the room to a card battle.",
-        art: ["images/anime/jjk/jk12.jpg", "images/anime/dragonball/db7.jpg", "images/anime/naruto/na23.jpg"] }
+        art: ["images/anime/jjk/jk12.jpg", "images/anime/dragonball/db7.jpg", "images/anime/naruto/na23.jpg"] },
+    party:    { key: "np", name: "Night Party", tag: "TOURNAMENT", kanji: "宴", min: 2, max: 8, seats: "a tournament of the modes", short: "Tournament", color: "#ff9f43", sub: "Many games. One champion.", blurb: "Chain the other modes into a tournament: placements score points on a live race track, the winner takes the reward.",
+        art: ["images/special/onepiece_ultimate.jpg", "images/anime/naruto/na9.jpg", "images/anime/jjk/jk19.jpg"] }
 };
 /* the mode art shows only each series' main protagonists and main villains */
 const RULES = {
@@ -3320,6 +3325,7 @@ const RULES = {
     draft: ["Tick the series for the character pool. One series uses its own six roles (Haki, Domain Expansion, Nen...); two or more use the six Mixed roles. The Classic roles switch (Captain, Vice Captain, Tank, Duelist, Healer, Support) replaces either.", "Build: two sides, 1v1 up to 4v4, named after their players. Sides take turns drawing a random character and placing it in a free role. Each side has ONE blind reroll: decide right after the draw, before seeing the stats or the rarity.", "Auction: everyone starts with $25. A random character is revealed; in turn, bid at least $1 more than the last bid or pass. The last bidder standing wins it and puts it in a free role.", "Score = the six role scores + a rarity bonus per character (Common +0, Rare +2, Epic +4, Legendary +6, Mythical +8; rarity comes from AniList popularity). The results show every number."],
     feud: ["Two teams (Team Crimson and Team Gold) and a hidden board of 5 to 8 ranked answers. Every round opens with a face-off: one player per team at the buzzers (they rotate), first to buzz answers.", "Top answer = control. Otherwise the other face-off player answers, and the higher answer wins control. The team in control chooses PLAY (answer the rest of the board) or PASS (the other team must play it).", "The playing team answers in turn; a wrong answer or running out of time is a strike. Three strikes and the other team gets ONE answer to steal the whole pot. Clearing the board banks it.", "One series ticked = questions about that series; two or more = an Anime Mix answered only from the ticked series. A tie after the last round plays one sudden-death question. Boards are Anime Arcade curated answers, not real survey results."],
     likely: ["Each duel shows two characters who are close on the question (who is smarter, lazier, more loyal...). Pick the one who is MORE likely.", "Team vs Team: both teams vote at the same moment; a team's pick is its majority (a split team goes with whoever voted first). Free For All: every player votes alone and keeps their own score.", "Everyone who picks the more likely character scores: 30 for a photo finish, 20 for a close call, 10 otherwise. Votes stay hidden until the reveal.", "One series ticked = that series' characters; two or more = an Anime Mix. A tie at the top after the last duel goes to up to three sudden-death duels. The right answer is our editors' pick (Anime Arcade curated rankings), not a survey result."],
+    party: ["The host builds the night in the lobby: a tournament name, a reward (\"winner picks the next anime we watch\"), and a path of stages. Each stage is one of the other modes with its own rules and a weight (x1, x1.5, x2 or custom); the same mode can come back with different rules. Templates save a path for later.", "Everyone plays the stages in a row. Free-for-all modes seat everyone; team modes split the room into two balanced teams; 1v1 modes (Guess Who) run as a bracket inside the stage while the others watch.", "Only placements count: 1st gets 10 points down to 1 for last (shared places share their points), times the stage weight. A live race track shows everyone's pool after every stage.", "After the last stage the top pool wins the reward. A tie at the top plays sudden death: only the tied players, one round of a fast mode, until one is left. Every game still pays its normal coins; the winner gets +100 and everyone +10 per stage."],
     cardvault: ["Pick ARCADE VAULT in the lobby and everyone gets their own Vault page; nobody is locked into one screen, and anyone can go back to the lobby at any time (the host keeps picking modes from there).", "Shop: Season 1 skins. A Frame is the animated ring around your picture, a Background restyles your whole player card; everyone in the room sees both. Scratch Cards win titles, title skins and username styles. Coins come from placements in every mode, the daily login and daily missions.", "Packs and Collection: open per-series card packs (one card per character, Common to Mythic), fill your book, trade cards with friends in the room. Decks: build 10-card decks (everyone starts with a free Starter Deck).", "Battle: pick one player (1v1, 20 life) or several (free-for-all, 25 life) and challenge them. Each round everyone picks a card in secret, all flip at once: damage = Power minus the opposing Defense, then abilities. Last one standing wins; anyone else can watch."],
     sketch: ["Every round, each player draws once. On your turn you privately pick one of 3 random anime words (characters, objects or weapons, in any mix) and draw it; no letters or numbers. Drawer: Ctrl+Z undoes your last stroke.", "Everyone else types guesses in the chat. A right guess (one typo is fine on longer words) is never shown to the others, and neither is a guess that is close: you just score. First right guess +100, second +75, third +50, everyone after +25. The drawer gets +25 for each player who gets it.", "Stuck? After 20 s without a right guess a letter is revealed, then another every 15 s (1 letter for short words, 2 for medium, 3 for long). The turn ends when everyone has it or time runs out.", "One series ticked = words from that series; two or more = an Anime Mix. People who join during a match watch, and can join from the next round. Highest total after the last round wins.", "Contest (pick it under Game type): every round, everyone gets the same word and draws it at the same time on their own sheet; press Done to finish early. Then the drawings are shown big, one at a time and without names (15 s each, sooner once everyone has rated it): give every other drawing 1 to 5 stars (not your own); you can still change a star on an earlier one until rating ends. Names and stars are revealed with the results; the stars you receive are your points, and the highest total after the last round wins."]
 };
@@ -3628,6 +3634,7 @@ function modeReq(d) {
     if (n < M.min) return { ok: false, msg: M.name + " needs " + (M.min === M.max ? "exactly " + M.min : M.min + " to " + M.max) + " players. " + n + " here, invite " + (M.min - n === 1 ? "one more" : (M.min - n) + " more") + "." };
     if (n > M.max) return { ok: false, msg: M.name + " seats up to " + M.max + " players (" + n + " here). Pick another mode." };
     if (t === "cardvault") return CV.cvReq(d);
+    if (t === "party") return NP.npReq(d);
     if (!keys.length) return { ok: false, msg: "Pick at least one series." };
     if (t === "draft") return DRAFT.draftReq(d);
     if (t === "feud") return FEUD.feudReq(d);
@@ -3676,6 +3683,7 @@ const GUIDE = {
     feud:     { fmt: "Team vs Team", steps: ["Face-off at the buzzer", "Play or pass", "Three strikes, then steal", "Single anime or a Mix"] },
     likely:   { fmt: "Teams or Free For All", steps: ["Two close picks", "Vote at the same time", "Closer call, bigger score", "Single anime or a Mix"] },
     sketch:   { fmt: "Everyone draws in turn", steps: ["Pick a word, draw it", "Guess fast, score more", "Letters when you're stuck", "Everyone draws each round"] },
+    party:    { fmt: "Tournament", steps: ["Build the path", "Play stage by stage", "Placements score points", "The champion takes the reward"] },
     cardvault: { fmt: "Everyone at their own pace", steps: ["Your own Vault page", "Skins, scratch cards, packs", "Build a 10-card deck", "Challenge anyone in the room"] }
 };
 const NUMWORD = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
@@ -3734,6 +3742,7 @@ function pickGuide(t, animate) {
     const foot = hbEl("div", "g-foot");
     const go = hbEl("button", "btn", "Host " + (/^[aeiou]/i.test(M.name) ? "an " : "a ") + M.name + " party"); go.type = "button"; go.onclick = () => { sfx("click"); window.hostMode(t); };
     if (t === "cardvault") foot.appendChild(hbEl("small", null, "The Arcade Vault only opens inside a room: host or join a party, then pick ARCADE VAULT in the lobby."));      // reachable only from the lobby
+    else if (t === "party") { go.textContent = "Host a Night Party"; foot.append(go, hbEl("small", null, "Opens a room on Night Party. Build the path in the lobby while your friends join with the room code.")); }
     else foot.append(go, hbEl("small", null, "Opens a room on " + M.name + ". Everyone else joins with the room code, and the host can still switch games in the lobby."));
     main.append(head, ol, foot);
     box.append(art, main);
@@ -3790,7 +3799,7 @@ function lobbyRefresh() { if (currentRoomData && !$("lobby").classList.contains(
 let lobbyCountSeen = 0;
 /* the lobby wears the picked mode (css/lobby.css): its backdrop crossfades, the panels, seats and buttons restyle,
    and the ambient particles switch to that mode's own. Purely visual. */
-const LOBBY_FX = { classic: "gw", headbanz: "case", imposter: "im", uno: "uno", draft: "gw", feud: "gw", likely: "uno", sketch: "sketch", cardvault: "uno" };
+const LOBBY_FX = { classic: "gw", headbanz: "case", imposter: "im", uno: "uno", draft: "gw", feud: "gw", likely: "uno", sketch: "sketch", cardvault: "uno", party: "uno" };
 let lobbyThemeCur = "";
 function lobbyTheme(t) {
     const lb = $("lobby"), bg = $("lobbyBg"); if (!lb || !bg) return;
@@ -3878,6 +3887,7 @@ function lobbyRender(d) {
     if (t === "likely") LIKELY.likelyLobby(d, lock);
     if (t === "sketch") SKETCH.sketchLobby(d, lock);
     if (t === "cardvault") CV.cvLobby(d, lock);
+    if (t === "party") NP.partyLobby(d, lock);
     gwDuelRenderPick(d, lock || t !== "classic");
     applyModeUI(M.key);   // again, so the 4/4 counter reflects the boxes just ticked
     // background prep for the chosen mode
@@ -3915,6 +3925,7 @@ window.startGame = async function () {
 };
 /* START for the room's mode (the lobby button and modeLaunch both come here) */
 function startMode(d) {
+    if (d.gameType === "party") return NP.npStart();
     if (d.gameType === "headbanz") return hbStart();
     if (d.gameType === "imposter") return imBegin("first");
     if (d.gameType === "uno") return unoStart();
@@ -3991,7 +4002,12 @@ async function modeAbort() {
 }
 const modeOver = (d = currentRoomData) => !!d && !!d.status && d.status !== "waiting" && matchOver(d);
 const modeResult = (d = currentRoomData) => (d ? resultNow(d) : null);
-window.AAP_MODES = { launch: modeLaunch, abort: modeAbort, over: modeOver, result: modeResult, prep: () => currentRoomData && modePrep(currentRoomData), seats: d => matchSeats(d || currentRoomData), deal: d => dealSlots(d || currentRoomData) };
+/* warm up a mode before it is launched, on every device (Headbanz / Imposter pictures) */
+function modePrepFor(mode, settings) {
+    const s = normalizeSettings(mode, settings); if (!s) return;
+    if (mode === "headbanz" || mode === "imposter") hbPrefetch(fixSeries(mode, s.animes));
+}
+window.AAP_MODES = { launch: modeLaunch, abort: modeAbort, over: modeOver, result: modeResult, prep: () => currentRoomData && modePrep(currentRoomData), prepFor: modePrepFor, seats: d => matchSeats(d || currentRoomData), deal: d => dealSlots(d || currentRoomData) };
 async function gwStart() {
     const d = currentRoomData, seats = gwDuelists(d), keys = arr(d.animes), size = Number(d.boardSize) || 24;
     if (seats.length !== 2) { toast("Pick the 2 duelists first."); return; }
@@ -4036,7 +4052,7 @@ function softHome(notice) {
     room = ""; myPlayer = null; currentRoomData = null; listeningRoom = "";
     try { closeAllOverlays(); resetMatchState(); } catch (e) {}
     try { history.replaceState(null, "", location.pathname); } catch (e) {}
-    try { CV.cvSync(null); } catch (e) {}
+    try { CV.cvSync(null); NP.npSync(null); } catch (e) {}
     document.body.classList.remove("is-host", "hb-mode", "uno-mode");
     showOnly("home"); exiting = false;
     if (notice) toast(notice);
@@ -4112,6 +4128,7 @@ function listenToRoom() {
         resultSync(d);       // before rendering: a render error must never swallow a finished match
         VAULT.roomSync(d);   // card trades + the collection binder friends browse
         CV.cvSync(d);        // Arcade Vault card battles: my deck, coins for finished battles, the challenge strip
+        NP.npSync(d);        // Night Party: prep, host takeover, the end-of-night bonus, the HUD chip
         hostDuties(d);
         route(d);
     }));
@@ -4198,6 +4215,7 @@ function hostDuties(d) {
     if (!amHost() || exiting) return;
     const me = Number(myPlayer);
     if (Number(d.host) !== me) update(ref(db, "rooms/" + room), { host: me }).catch(() => {});     // hosting moved to me
+    NP.npDuties(d);      // Night Party controller (stages, brackets, results), in the lobby and during its matches
     if (!d.status || d.status === "waiting") {
         const gone = SLOTS.filter(i => d["player" + i] && d["player" + i].left);
         if (gone.length) { const upd = {}; gone.forEach(i => { upd["player" + i] = null; upd["presence/p" + i] = null; upd["packs/p" + i] = null; upd["emote/p" + i] = null; upd["vloc/p" + i] = null; }); update(ref(db, "rooms/" + room), upd).catch(() => {}); }
@@ -4251,6 +4269,17 @@ function matchIntro(d) {
 let lastStatus = "";
 function route(d) {
     const st = d.status || "waiting", spec = gwSpectating(d), drLive = (d.gameType === "draft" && st !== "waiting" && !!d.draft) || (d.gameType === "feud" && st !== "waiting" && !!d.feud) || (d.gameType === "likely" && st !== "waiting" && !!d.likely) || (d.gameType === "sketch" && st !== "waiting" && !!d.sketch) ; // a draft or a feud is watched live by everyone in the room
+    // NIGHT PARTY: between stages (and for anyone not in the running match) everyone is on the tournament screen;
+    // during an intermission a player may open their own Vault page
+    if (NP.npActive(d) && (st === "waiting" || (!inMatch(d) && !spec && !drLive))) {
+        lastStatus = st;
+        if (st === "waiting" && VAULT.vaultWanted(d)) {
+            if ($("arcadeVault").classList.contains("hidden")) { closeOverlay("pause"); showOnly("arcadeVault"); window.scrollTo(0, 0); }
+            VAULT.renderPage(d); return;
+        }
+        if ($("party").classList.contains("hidden")) resetMatchState();
+        NP.showParty(d); return;
+    }
     if (st === "waiting" || (!inMatch(d) && !spec && !drLive)) {
         lastStatus = st;
         // ARCADE VAULT: no shared screen. Each player sees their own Vault page, their battle, a battle they watch, or the lobby.
@@ -4789,6 +4818,11 @@ async function initApp() {
     const feudCtx = { db, ref, update, get, onValue, runTransaction, room: () => room, me: () => Number(myPlayer), uid: () => (user && user.uid) || "", data: () => currentRoomData, amHost, hostSlot, activeSlots, dealSlots, pName, pPub, avatarEl,
         sfx, toast, showOnly, uiConfirm, lobbySet, backToLobby: skip => window.backToLobby(skip), draftDb: () => DRAFT.draftLoad(), HB_SERIES, burstText, shake, countUp, motionOK };
     FEUD.initFeud(feudCtx); LIKELY.initLikely(feudCtx); SKETCH.initSketch(feudCtx);
+    NP.initParty({ db, ref, update, room: () => room, me: () => Number(myPlayer), uid: () => (user && user.uid) || "", data: () => currentRoomData, amHost, hostSlot, activeSlots, pName, pPub, avatarEl,
+        sfx, toast, showOnly, uiConfirm, openOverlay, closeOverlay, lobbySet, motionOK, screen: () => currentScreen, modes: window.AAP_MODES,
+        modeInfo: m => { const M = MODES[m] || {}; return { name: M.name || m, color: M.color || "#d9a441", kanji: M.kanji || "?", tag: M.tag || "" }; },
+        seriesFor: m => (m === "classic" ? Object.keys(ANIME_LIBRARY) : m === "uno" ? Object.keys(UNO_DECKS) : Object.keys(HB_SERIES)).map(k => ({ k, label: (HB_SERIES[k] && HB_SERIES[k].label) || UNO_SHORT[k] || k })),
+        vaultReward: (tid, o) => VAULT.nightPartyReward(tid, o), openVault: () => VAULT.openVault(), recordNightParty: rec => { const a = profile.recordNightParty(rec); renderProfileCard(); return a; }, achToast });
     const refresh = () => { if (currentRoomData && !exiting) route(currentRoomData); };
     CV.initCardVault(Object.assign({}, feudCtx, { activeDeck: () => VAULT.activeDeckCards(), myName: () => profile.get().name, myPub: () => profile.public(), isHolo: id => !!((VAULT.bank.get().cards || {})[id] || {}).h,
         report: battleReport, refresh, screen: () => currentScreen, inRoom: () => !!room, openVault: tab => VAULT.openVault(tab) }));

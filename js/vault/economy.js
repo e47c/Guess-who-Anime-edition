@@ -12,8 +12,9 @@
    4. Paid only if: 2+ real players (distinct accounts) and the game lasted the mode's minimum length.
       There is no daily limit on coins from games.
    ===================================================================== */
-import { EARN, DAILY_LOGIN, MISSIONS, MODE_META, BATTLE } from "./config.js?v=6";
+import { EARN, DAILY_LOGIN, MISSIONS, MODE_META, BATTLE } from "./config.js?v=7";
 import { rngFrom, shuffleWith } from "./rng.js?v=1";
+import { NIGHT_PARTY } from "../party/config.js?v=1";
 
 /* parts of the Vault that exist so far (missions that need a missing part are never rolled) */
 export const FEATURES = new Set(["games"]);
@@ -131,5 +132,31 @@ export function claimDaily(w, now, log) {
 /* coins from games on one day, read from the ledger (a plain stat: nothing is limited by it) */
 export const gameCoinsOn = (ledger, day) => (ledger || []).reduce((s, l) => s + (l.kind === "game" && dayKey(l.t) === day ? Number(l.d) || 0 : 0), 0);
 
-/* ---------- Night Party bonus coins ---------- */
-export const nightPartyCoins = (won, stages) => (won ? EARN.nightParty.winner : 0) + EARN.nightParty.perStage * Math.max(0, stages | 0);
+/* ---------- Night Party bonus coins (on top of each stage's normal coins) ----------
+   winner + perStage x the stages this player played. Pays only when the tournament had 2+ real players (accounts)
+   and lasted the minimum length; at most once per tournament (the bank's operation id). */
+const NPC = NIGHT_PARTY.coins;
+export const nightPartyCoins = (won, stages) => (won ? NPC.winner : 0) + NPC.perStage * Math.max(0, stages | 0);
+export function nightPartyValid(o) {
+    if ((o.players | 0) < NPC.minPlayers) return { ok: false, why: "needs " + NPC.minPlayers + "+ real players" };
+    if ((Number(o.seconds) || 0) < NPC.minMinutes * 60) return { ok: false, why: "tournament too short (under " + NPC.minMinutes + " min)" };
+    if ((o.stages | 0) < 1) return { ok: false, why: "no stage played" };
+    return { ok: true };
+}
+/* o = { won, stages (played by this player), players (distinct accounts), seconds }; also counts the Night Party mission */
+export function applyNightParty(w, o, now, seed, log) {
+    ensureMissions(w, now, seed, log);
+    const ok = nightPartyValid(o), out = { coins: 0, why: ok.ok ? "" : ok.why, won: !!o.won, stages: o.stages | 0, missions: [] };
+    if (!ok.ok) return out;
+    out.coins = nightPartyCoins(o.won, o.stages);
+    w.coins += out.coins;
+    if (log) log({ kind: "nightparty", d: out.coins, info: (o.won ? "winner, " : "") + (o.stages | 0) + " stages" });
+    out.missions = missionEvent(w, { party: 1 }, log);
+    if (o.won && NIGHT_PARTY.winnerCosmetic) out.cosmetic = winnerCosmeticHook(w, NIGHT_PARTY.winnerCosmetic, log);
+    w.party = { played: ((w.party || {}).played | 0) + 1, won: ((w.party || {}).won | 0) + (o.won ? 1 : 0) };
+    return out;
+}
+/* HOOK (not built): an earn-only cosmetic for tournament winners. To build it: add the tier to SKINS.earnOnly (so the
+   shop can't sell it), set NIGHT_PARTY.winnerCosmetic to its item id, and grant it here (w.inv[id] = 1 + a ledger line).
+   Until then it does nothing. */
+export function winnerCosmeticHook(w, id, log) { return null; }
