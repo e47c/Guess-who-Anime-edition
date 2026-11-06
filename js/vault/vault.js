@@ -121,9 +121,11 @@ export function vaultBack() {
     if (!inRoom()) { homeOpen = false; X.showOnly("home"); return; }
     pageOn = false; pageDismissed = true; X.refresh();
 }
-/* no-room context: HOST PARTY makes a room (the player lands in its lobby, the Vault one mode away), JOIN takes a code */
+/* no-room context: HOST PARTY makes a room on ARCADE VAULT and lands on its Vault page (createRoom in game.js);
+   JOIN takes a code and lands in that room's lobby */
 export function landInLobby() { pageOn = false; pageDismissed = true; homeOpen = false; }
-function hostParty() { landInLobby(); X.sfx("coin"); X.hostParty(); }
+export function arriveInVault() { pageOn = false; pageDismissed = false; homeOpen = false; bodySig = ""; }      // the room's Vault page opens on arrival
+function hostParty() { X.sfx("coin"); X.hostParty(); }
 function joinParty(code) { code = String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6); if (code.length !== 6) { X.toast("Enter a 6-character room code."); return; } landInLobby(); X.joinParty(code); }
 /* draw the page; on room updates only a tab that reads the room is redrawn (Battle, trades) */
 export function renderPage(d) {

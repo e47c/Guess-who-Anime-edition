@@ -26,7 +26,7 @@ import * as DRAFT from "./draft/draft.js?v=6";
 import * as FEUD from "./feud/feud.js?v=6";
 import * as LIKELY from "./feud/likely.js?v=3";
 import * as SKETCH from "./sketch/sketch.js?v=8";
-import * as VAULT from "./vault/vault.js?v=5";
+import * as VAULT from "./vault/vault.js?v=6";
 import * as CV from "./cardvault/cardvault.js?v=3";
 import { resultOf, resultToDb, resultFromDb } from "./vault/result.js?v=2";
 import { initCine, cineHook, cineHas } from "./cine/engine.js?v=12";
@@ -3520,16 +3520,20 @@ function busy(sel, on, label) {
     else { if (b.dataset.label) b.innerHTML = b.dataset.label; delete b.dataset.label; b.disabled = false; b.removeAttribute("aria-busy"); }
 }
 let creating = false;
-window.createRoom = async function () {
+/* o.vault = HOST PARTY from inside the Arcade Vault (main menu): the room starts on ARCADE VAULT and the player lands on
+   its Vault page. Every other way of hosting (the red Host a party button, the guide) lands in the lobby, whatever mode
+   the room starts on (the last one used). */
+window.createRoom = async function (o = {}) {
     if (creating) return;
-    if (needName(() => createRoom())) return;
+    if (needName(() => createRoom(o))) return;
     if (!user) { toast("Still connecting to the server. Try again in a moment."); return; }
     creating = true; sfx("click"); busy("#home .home-cta > .btn", true, "Creating…");
     try {
         let code = "";
         for (let t = 0; t < 5; t++) { code = generateCode(); const s = await get(ref(db, "rooms/" + code)); if (!s.exists()) break; }
         room = code; myPlayer = 1;
-        const pref = lobbyPrefs();
+        const pref = Object.assign(lobbyPrefs(), o.vault ? { gameType: "cardvault" } : {});
+        if (o.vault) VAULT.arriveInVault(); else VAULT.landInLobby();
         await set(ref(db, "rooms/" + room), Object.assign({ mode: mode, host: 1, status: "waiting", turn: 1, winner: null, result: null, createdAt: Date.now() }, pref, { player1: Object.assign({ uid: user.uid, ready: false }, profile.public()) }));
         saveSession(); sfx("join"); openLobby();
     } catch (e) { console.error(e); toast("Could not create the room: " + (e.message || e)); room = ""; myPlayer = null; }
@@ -4716,7 +4720,7 @@ async function initApp() {
         profilePub: () => profile.public(), profileName: () => profile.get().name, startPractice: () => CV.startPractice(), hostMode: t => window.hostMode(t), setGameType: t => window.setGameType(t),
         amHost: () => amHost(), db, ref, update, runTransaction, room: () => room, me: () => Number(myPlayer), pName, activeSlots,
         seatCard, roomData: () => currentRoomData, roomCode: () => room, refresh, showOnly,
-        crinkle: v => audio.crinkle(v), hostParty: () => window.createRoom(), joinParty: code => { $("joinCode").value = code; window.joinRoom(); } });
+        crinkle: v => audio.crinkle(v), hostParty: () => window.createRoom({ vault: true }), joinParty: code => { $("joinCode").value = code; window.joinRoom(); } });
     bindUpload(); bindSettings(); syncDock(); renderProfileCard(); buildHomeModes();
     $("name").value = profile.get().name || "";
     $("joinCode").addEventListener("keydown", e => { if (e.key === "Enter") joinRoom(); });
