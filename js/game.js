@@ -956,10 +956,14 @@ function netState(up) {
     if (up) { document.body.classList.remove("net-down"); if (netWasDown) toast("Reconnected"); netWasDown = false; return; }
     netTimer = setTimeout(() => { if (exiting) return; netWasDown = true; document.body.classList.add("net-down"); }, 1500);   // brief blips are ignored
 }
+/* returns the cancel of my "offline" flag (when asked), so leaving can wait for it: a flag left armed on the server
+   would write rooms/<code>/presence/pN as the page unloads and put a deleted room back in the database */
 function stopPresence(cancelDisconnect) {
+    let done = Promise.resolve();
     if (presenceUnsub) { presenceUnsub(); presenceUnsub = null; }
-    if (cancelDisconnect && presenceRef) { try { onDisconnect(presenceRef).cancel(); } catch (e) {} }
+    if (cancelDisconnect && presenceRef) { try { done = onDisconnect(presenceRef).cancel().catch(() => {}); } catch (e) {} }
     presenceRef = null; presenceKey = "";
+    return done;
 }
 let oppDismissKey = "";
 window.dismissOpp = function () { oppDismissKey = $("oppBanner").dataset.key || ""; $("oppBanner").classList.add("hidden"); };
@@ -3946,13 +3950,13 @@ window.backToLobby = async function (skipConfirm) {
 /* ---------- leave / close ---------- */
 function goHome(notice) {
     exiting = true; VAULT.roomSync(null);
-    stopPresence(true);
+    const unarmed = stopPresence(true);
     if (roomUnsubs.length) { roomUnsubs.forEach(f => { try { f(); } catch (e) {} }); roomUnsubs = []; }
     if (unsubReveal) { unsubReveal(); unsubReveal = null; }
     clearSession();
     try { if (notice) sessionStorage.setItem("gw_notice", notice); } catch (e) {}
     if (!navigator.onLine) { softHome(notice); return; }      // a reload would fail offline (the browser's own offline page)
-    location.href = location.pathname;
+    Promise.race([unarmed, new Promise(r => setTimeout(r, 800))]).then(() => { location.href = location.pathname; });
 }
 /* back to the main menu without reloading (offline): the room is already forgotten above; drop its state and screens */
 function softHome(notice) {
@@ -3989,24 +3993,28 @@ window.leaveRoom = async function () {
     goHome("You left the room.");
 };
 window.exitGame = window.leaveRoom;          // older buttons
-/* Close room (host only, from the lobby, the in-game menu or the Vault page). The room is replaced by a small
-   tombstone { closed: true } instead of being deleted: every client's listener sees it and goes to the main menu
-   ("The host closed the room."), joinRoom refuses the code, and a late write from a client that hasn't noticed yet
-   (a presence flag, a debounced binder publish) can't bring the room back to life. Each step is guarded, and the host
-   always ends on the main menu, even offline (the write is given a few seconds) or when the room is already gone. */
+/* Close room (host only, from the lobby, the in-game menu or the Vault page). The room is DELETED from the database:
+   every client's listener sees it vanish and goes to the main menu ("The host closed the room."), and the code stops
+   working. Guests leaving cancel their own "offline" flag before the page unloads (goHome); a moment later the host
+   deletes once more, so nothing a departing client still wrote can leave part of the room behind. Each step is
+   guarded, and the host always ends on the main menu, even offline (the delete is sent when the connection is back)
+   or when the room is already gone. */
 window.closeRoom = async function () {
     if (!room || !currentRoomData) { goHome("That room is already closed."); return; }
     if (!amHost()) { toast("Only the host can close the room."); return; }
     if (!(await uiConfirm({ title: "Close the room?", text: "Everyone is sent back to the main menu and code " + room + " stops working.", ok: "Close room", danger: true }))) return;
     exiting = true;
     try { closeAllOverlays(); } catch (e) {}
-    try { stopPresence(true); } catch (e) {}
+    try { await Promise.race([stopPresence(true), new Promise(r => setTimeout(r, 800))]); } catch (e) {}
+    const roomRef = ref(db, "rooms/" + room), within = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(false), ms))]);
     let done = false;
-    try {
-        await Promise.race([set(ref(db, "rooms/" + room), { closed: true, closedAt: Date.now(), by: (user && user.uid) || "" }).then(() => { done = true; }), new Promise(r => setTimeout(r, 6000))]);
-    } catch (e) { console.error("Could not close the room:", e); }
-    if (done) goHome("Room closed.");
-    else goHome(navigator.onLine ? "Couldn't reach the server, so the room may stay open until the others leave." : "You're offline: the room closes as soon as you're back online (keep this tab open).");
+    try { done = await within(remove(roomRef).then(() => true), 6000); } catch (e) { console.error("Could not delete the room:", e); }
+    if (done) {
+        toast("Closing the room…");
+        await new Promise(r => setTimeout(r, 1800));              // the others are leaving now
+        try { await within(get(roomRef).then(sn => sn.exists() ? remove(roomRef) : null), 2500); } catch (e) {}
+        goHome("Room closed.");
+    } else goHome(navigator.onLine ? "Couldn't reach the server, so the room may stay open until the others leave." : "You're offline: the room is deleted as soon as you're back online (keep this tab open).");
 };
 const roomClosed = d => !d || d.closed === true || !SLOTS.some(i => d["player" + i] && !d["player" + i].left);
 

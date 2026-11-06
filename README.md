@@ -353,10 +353,11 @@ hidden by the interface, as in the other modes.
   better makes the stack glow first), reactions by rarity (Legendary / Mythic: a canvas cinematic), hold to inspect
   (3D tilt, light, holo parallax, card thickness), summary with NEW, shards and the pity counter. Sounds are generated
   (Web Audio). Timings in `OPENING` (config). The pull is rolled and saved before the animation. Dev page: `dev/pack.html`.
-- **Close room** (host, from the lobby, the in-game menu or the Vault page): after a confirmation the room becomes a
-  closed marker `{ closed: true }`; every client returns to the main menu ("The host closed the room."), the code can't
-  be joined again, and late writes can't revive it. Offline, the host still lands on the main menu (no reload); the
-  close is sent when the connection is back.
+- **Close room** (host, from the lobby, the in-game menu or the Vault page): after a confirmation the room is deleted
+  from the database. Every client returns to the main menu ("The host closed the room.") and the code can't be joined
+  again. Leaving clients cancel their own disconnect flag before the page unloads, and the host deletes once more a
+  moment later, so nothing is left behind. Offline, the host still lands on the main menu (no reload) and the delete is
+  sent when the connection is back.
 - Tests: `node tools/vault-test.mjs` (economy, shop, scratch, packs, pity, decks, trades), `node tools/cardvault-test.mjs`.
 
 ## Customising
