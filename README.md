@@ -263,11 +263,19 @@ Picked under **Game type** in the lobby (Classic / Contest; default Classic). Ev
 
 ## ARCADE VAULT (mode 9: the economy and card battles)
 
-The **Arcade Vault** opens only one way: the host picks the **ARCADE VAULT** mode in the lobby. There is no shared
-screen: every player gets their own Vault page (`#arcadeVault`, `js/vault/vault.js` + `tabs.js`) with the tabs Shop,
-Scratch Cards, Packs, Collection, Decks and Battle, and anyone can go back to the lobby at any time (the lobby then
-shows ENTER THE VAULT; the host keeps the normal mode controls). The coin chips on the home screen and in the lobby
-only show the balance; the ★ Daily button on the Vault page opens the login streak, missions and coin history.
+**One currency: AAP Coins.** The arcade **CREDIT** counter at the top of the main menu is the AAP Coin balance (live);
+the same balance shows in the lobby, on the Vault page and next to every price (coin icon). Shards are not a currency:
+they are what duplicate cards turn into, and they only craft packs.
+
+The **Arcade Vault** is ONE page (`#arcadeVault`, `js/vault/vault.js` + `tabs.js`, tabs Shop, Scratch Cards, Packs,
+Collection, Decks, Battle) with two ways in:
+- **Main menu** (the ARCADE VAULT button, or the CREDIT counter): no room. Instead of the room code and friends it shows
+  HOST PARTY (makes a room; you land in its lobby) and JOIN (a room code). Everything works except battles and trades;
+  the Battle tab says "Host a party or join one to battle". ‹ Menu goes back to the main menu.
+- **A room's lobby**, by picking the ARCADE VAULT mode: every player gets their own page (no shared screen), with the
+  room code, the friends in the room and, for the host, Close room. ‹ Lobby goes back (the lobby then shows ENTER THE
+  VAULT; the host keeps the normal mode controls).
+The ★ Daily button opens the login streak, missions and coin history.
 **Every number** (prices, odds, rewards, pity, life totals, timers, mode lengths, challenge expiry, skin animation
 speeds) is in one file: `js/vault/config.js`. The full card list with rarity, stats and abilities is `docs/cards.md`
 (generated).
@@ -330,6 +338,25 @@ hidden by the interface, as in the other modes.
 - **Balance.** `node tools/cardvault-test.mjs` simulates thousands of battles: in mixed decks a deck holding a given
   card wins 48% (Common) to 53% (Mythic) of the time and no ability falls outside 44-60%; an all-Common deck still beats an all-Legendary/Mythic one now and
   then. Re-run it after changing an ability or `BATTLE.statTotal`.
+- **Card faces.** Every card is 63:88 with one square art window (`CARD_ART` in `js/vault/config.js`); nothing is drawn
+  over it (the name plate and PWR / DEF sit under it). Each picture is placed by its face centre: `focusX` / `focusY`
+  (and an optional zoom) are columns of `js/vault/cards.js`, measured ONCE offline by `py -3.12 tools/card-faces.py
+  <pictures>` (an anime face detector, OpenCV + nagadomi's MIT lbpcascade_animeface) into `data/card-focus.json`; hand
+  fixes go in `data/card-focus-fix.json`; `node tools/cards-build.mjs` turns both into the columns. No face found = upper
+  part, centred. A face that can't fit, or a picture far off the window's shape, is shown whole (contain) over a blurred,
+  darkened copy of itself. Dev gallery of every card (art-window review mode): `dev/cards.html`.
+- **Booster packs and the opening** (`css/packs.css`, `js/vault/opening.js`). Crimped zig-zag seals, a centre seam,
+  puffed shading, a crinkled foil texture (SVG noise), a specular highlight and rim light that follow the pointer;
+  Premium = gold foil, embossed, a moving shine, finer ridges. Opening: hover, drag across the top crimp (a tear line
+  follows the finger; foil crinkle sound, a short vibration on phones), the strip peels off and falls, light and foil
+  flakes burst out, the cards slide up into a face-down stack, tap or swipe to flip (3D turn + shine pass; a Rare or
+  better makes the stack glow first), reactions by rarity (Legendary / Mythic: a canvas cinematic), hold to inspect
+  (3D tilt, light, holo parallax, card thickness), summary with NEW, shards and the pity counter. Sounds are generated
+  (Web Audio). Timings in `OPENING` (config). The pull is rolled and saved before the animation. Dev page: `dev/pack.html`.
+- **Close room** (host, from the lobby, the in-game menu or the Vault page): after a confirmation the room becomes a
+  closed marker `{ closed: true }`; every client returns to the main menu ("The host closed the room."), the code can't
+  be joined again, and late writes can't revive it. Offline, the host still lands on the main menu (no reload); the
+  close is sent when the connection is back.
 - Tests: `node tools/vault-test.mjs` (economy, shop, scratch, packs, pity, decks, trades), `node tools/cardvault-test.mjs`.
 
 ## Customising

@@ -4,13 +4,13 @@
    Every action is an intent sent to the bank (bank.apply with an operation id), so a double click or a second tab
    can never pay twice; the button's operation id only changes after the action went through.
    ===================================================================== */
-import { SKINS, SCRATCH, PACKS, SHARDS, RARITY_ORDER, DECK, TRADE, BATTLE } from "./config.js?v=4";
-import { SKIN_ITEMS, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=2";
-import { rollPack, unopened, markOpened, owned, isHolo, ownedIds, seriesDone, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem } from "./packs.js?v=2";
-import { cvChallenge, cvBattles, busyIn, seatsOf, cvWatch, cvReturn, cvDeckOf, locOf } from "../cardvault/cardvault.js?v=2";
-import { CARDS, BY_SERIES, CARD_SERIES, CARD_COUNT, RARITY_NAMES, ARCHETYPES, TOTAL_CARDS } from "./carddb.js?v=1";
-import { cardEl, packEl, theme } from "./cardui.js?v=1";
-import { openPack, inspect, holdToInspect } from "./opening.js?v=1";
+import { SKINS, SCRATCH, PACKS, SHARDS, RARITY_ORDER, DECK, TRADE, BATTLE } from "./config.js?v=5";
+import { SKIN_ITEMS, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=3";
+import { rollPack, unopened, markOpened, owned, isHolo, ownedIds, seriesDone, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem } from "./packs.js?v=3";
+import { cvChallenge, cvBattles, busyIn, seatsOf, cvWatch, cvReturn, cvDeckOf, locOf } from "../cardvault/cardvault.js?v=3";
+import { CARDS, BY_SERIES, CARD_SERIES, CARD_COUNT, RARITY_NAMES, ARCHETYPES, TOTAL_CARDS } from "./carddb.js?v=2";
+import { cardEl, packEl, theme } from "./cardui.js?v=2";
+import { openPack, inspect, holdToInspect } from "./opening.js?v=2";
 import { motionOK } from "../fx.js";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -278,7 +278,7 @@ async function doPack(series, kind, via) {
 function reveal(res) {
     openPack(res, {
         onDone: () => { H.act("opened:" + res.seed, "opened", w => markOpened(w, res.seed)).then(() => H.rerender()); },
-        onNext: W().coins >= PACKS[res.kind].price ? { label: "Open another (" + PACKS[res.kind].price + " coins)", fn: () => { H.act("opened:" + res.seed, "opened", w => markOpened(w, res.seed)).then(() => doPack(res.series, res.kind, "coins")); } } : null
+        onNext: W().coins >= PACKS[res.kind].price ? { label: "Open another", price: PACKS[res.kind].price, fn: () => { H.act("opened:" + res.seed, "opened", w => markOpened(w, res.seed)).then(() => doPack(res.series, res.kind, "coins")); } } : null
     });
 }
 
@@ -411,7 +411,16 @@ function battleTab() {
     dk.appendChild(btn("Change deck", "ghost sm", () => H.open("decks")));
     hero.appendChild(dk);
     v.appendChild(hero);
-    if (!rd || !x.activeSlots) { v.appendChild(mk("p", "vt-rule", "Battles happen between players in the same room.")); return v; }
+    if (!(x.inRoom && x.inRoom()) || !rd || !x.activeSlots) {      // no room (opened from the main menu)
+        const nr = mk("section", "vt-card vt-bnoroom");
+        nr.append(mk("b", "vt-btitle", "Host a party or join one to battle"), mk("p", "vt-rule", "Card battles are between friends in the same room. Everything else in the Vault works right here."));
+        const r = mk("div", "vt-row vt-bgo"); r.append(btn("HOST PARTY", "alt", () => H.hostParty()), btn("JOIN", "", () => H.joinParty()));
+        nr.appendChild(r); v.appendChild(nr);
+        const pr = mk("div", "vt-row vt-bgo");
+        pr.appendChild(btn("Practice vs CPU", "ghost", () => { if (bad) { toast(bad === "No deck" ? "Build a 10-card deck first (Decks tab)." : bad); return; } x.startPractice && x.startPractice(); }));
+        v.appendChild(pr); v.appendChild(mk("p", "vt-rule", "Practice never pays coins."));
+        return v;
+    }
     const all = cvBattles(rd), mine = busyIn(rd, me), others = x.activeSlots(rd).filter(p => p !== me);
     // my own battle / challenge
     if (mine) {

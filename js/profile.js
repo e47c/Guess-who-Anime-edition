@@ -5,7 +5,7 @@
    player node so everybody sees the same card in every mode.
    ===================================================================== */
 
-import { SKINS } from "./vault/config.js?v=4";
+import { SKINS } from "./vault/config.js?v=5";
 
 const KEY = "gw_profile_v1";
 export const COLORS = ["#e11b1b", "#ff6a1a", "#f2c200", "#2ec4a6", "#3ea6ff", "#7a5cff", "#ff4fa8", "#e8e8f4"];

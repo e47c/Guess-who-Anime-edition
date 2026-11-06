@@ -20,8 +20,9 @@
 <link rel="stylesheet" href="css/case.css?v=1">
 <link rel="stylesheet" href="css/suspect.css?v=2">
 <link rel="stylesheet" href="css/sketch.css?v=5">
-<link rel="stylesheet" href="css/vault.css?v=4">
-<link rel="stylesheet" href="css/cards.css?v=1">
+<link rel="stylesheet" href="css/vault.css?v=5">
+<link rel="stylesheet" href="css/cards.css?v=3">
+<link rel="stylesheet" href="css/packs.css?v=1">
 <link rel="stylesheet" href="css/cardvault.css?v=2">
 </head>
 <body class="anime-theme" data-scene="home">
@@ -136,8 +137,7 @@
 <div id="home" class="screen">
 <div class="home-fire" aria-hidden="true"><i></i><i></i></div>
 <header class="home-top">
-<div class="home-top-r"><span class="credit" id="credit" aria-label="Credits">CREDIT <b>00</b></span>
-<button class="vault-chip" type="button" onclick="vaultChip()" aria-label="Your AAP Coins"><i class="coin-ico" aria-hidden="true"></i><b class="vault-bal">0</b></button>
+<div class="home-top-r"><button class="credit" id="credit" type="button" onclick="openVault()" aria-label="Credit: your AAP Coins. Opens the Arcade Vault"><span>CREDIT</span><i class="coin-ico" aria-hidden="true"></i><b class="vault-bal">0</b></button>
 <button class="icon-btn" onclick="openSettings()" aria-label="Settings">⚙</button></div>
 </header>
 <main class="home-main">
@@ -156,6 +156,7 @@
 </div>
 <span class="coin-fly" id="coinFly" aria-hidden="true"></span>
 </div>
+<button class="av-homebtn" type="button" onclick="openVault()"><span class="av-hk" aria-hidden="true">庫</span><span class="av-ht"><b>ARCADE VAULT</b><small>shop · scratch cards · packs · collection · decks</small></span><span class="av-hc"><i class="coin-ico" aria-hidden="true"></i><b class="vault-bal">0</b></span></button>
 <ul class="home-facts"><li><b id="factModes">8</b>games</li><li><b>2–8</b>players</li><li><b>1</b>room code</li></ul>
 </section>
 <aside class="profile-card" id="profileCard" aria-label="Your Arcade Pass" data-tilt>
@@ -347,11 +348,12 @@
 <div id="arcadeVault" class="screen hidden av-page">
 <div class="av-bg" aria-hidden="true"><i class="av-grid"></i><i class="av-scan"></i></div>
 <header class="av-top">
-<button class="btn ghost sm av-back" type="button" onclick="vaultBack()">‹ Lobby</button>
+<button class="btn ghost sm av-back" id="avBack" type="button" onclick="vaultBack()">‹ Lobby</button>
 <div class="av-marquee"><small id="avRoom"></small><h1>ARCADE <em>VAULT</em></h1></div>
-<div class="av-credits" aria-label="Your balance"><small>CREDITS</small><span><i class="coin-ico" aria-hidden="true"></i><b id="vtBal">0</b></span></div>
+<div class="av-credits" aria-label="Your AAP Coins"><small>AAP COINS</small><span><i class="coin-ico" aria-hidden="true"></i><b id="vtBal">0</b></span></div>
 <button class="av-rw" type="button" onclick="vaultRewards()" aria-label="Daily rewards and missions"><span aria-hidden="true">★</span>Daily<i class="av-dot hidden" id="avRwDot"></i></button>
 </header>
+<div class="av-ctx" id="avCtx"></div>
 <nav class="av-tabs" id="vtTabs" role="tablist" aria-label="Vault sections"></nav>
 <main id="vtBody" class="av-body"></main>
 </div>
@@ -588,7 +590,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=47"></script>
+<script type="module" src="js/game.js?v=48"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){

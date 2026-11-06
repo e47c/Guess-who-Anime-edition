@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Pack Test (dev)</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Special+Elite&family=Permanent+Marker&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/base.css?v=13">
+<link rel="stylesheet" href="../css/vault.css?v=5">
+<link rel="stylesheet" href="../css/cards.css?v=3">
+<link rel="stylesheet" href="../css/packs.css?v=1">
+<style>
+/* DEV ONLY: one pack and one opening, with a chosen line-up, to review the look and every step. Not linked from the game.
+   Nothing here touches saved coins or cards: the "pull" is made up on this page. */
+body { margin: 0; min-height: 100vh; padding: 16px; background: #0b0810; color: #eee; font: 500 14px/1.4 Inter, sans-serif; }
+h1 { margin: 0 0 4px; font: 400 26px/1 'Dela Gothic One'; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 18px; }
+.bar select, .bar button { padding: 7px 10px; border-radius: 6px; border: 1px solid #555; background: #1c1824; color: #eee; font: 600 13px Inter; cursor: pointer; }
+.bar button.go { background: #b38bff; color: #120820; border-color: #b38bff; }
+.show { display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-end; justify-content: center; padding: 30px 10px 50px; border-radius: 14px; background: radial-gradient(ellipse at 50% 40%, #2a1840, #07040d 75%); }
+.show figure { margin: 0; display: grid; justify-items: center; gap: 10px; }
+.show figcaption { font: 600 12px/1 'JetBrains Mono'; color: #aaa; }
+.show .vpack { --pw: min(40vw, 230px); }
+</style>
+</head>
+<body>
+<h1>Pack test · dev</h1>
+<p>Move the pointer over a pack to move its light. "Open" plays the full opening with the line-up below (drag across the top crimp, or press the Tear button / Enter).</p>
+<div class="bar">
+<select id="series"></select>
+<select id="kind"><option value="normal">Normal (5 cards)</option><option value="premium">Premium (6 cards)</option></select>
+<select id="lineup">
+<option value="mixed">Common, Uncommon, Rare, Ultra Rare, Epic</option>
+<option value="commons">all Common / Uncommon</option>
+<option value="rare">best = Rare</option>
+<option value="ultra">best = Ultra Rare</option>
+<option value="epic">best = Epic</option>
+<option value="legendary">best = Legendary</option>
+<option value="mythic">best = Mythic</option>
+</select>
+<select id="dupes"><option value="0">all NEW</option><option value="1">some duplicates (shards)</option></select>
+<button id="lite">Reduced effects: off</button>
+<button id="open" class="go">Open</button>
+</div>
+<div class="show" id="show"></div>
+<script type="module">
+import { CARD_SERIES, BY_SERIES_RARITY } from "../js/vault/carddb.js?v=2";
+import { packEl, theme, bindShine } from "../js/vault/cardui.js?v=2";
+import { openPack, initOpening } from "../js/vault/opening.js?v=2";
+import { SHARDS, RARITY_ORDER } from "../js/vault/config.js?v=5";
+import { audio } from "../js/audio.js?v=2";
+initOpening({ sfx: n => audio.sfx(n), crinkle: v => audio.crinkle(v), stamp: () => null, sleeve: () => "" });
+const $ = id => document.getElementById(id);
+CARD_SERIES.forEach(s => $("series").add(new Option(theme(s).label, s)));
+$("series").value = new URLSearchParams(location.search).get("s") || "naruto";
+function draw() {
+    const box = $("show"); box.innerHTML = "";
+    ["normal", "premium"].forEach(k => { const f = document.createElement("figure"), p = packEl($("series").value, k); bindShine(p, {}); p.addEventListener("pointermove", e => { const r = p.getBoundingClientRect(); p.style.setProperty("--mx", ((e.clientX - r.left) / r.width * 100) + "%"); p.style.setProperty("--my", ((e.clientY - r.top) / r.height * 100) + "%"); }); f.append(p, Object.assign(document.createElement("figcaption"), { textContent: k.toUpperCase() })); box.appendChild(f); });
+}
+const LINE = { mixed: [0, 1, 2, 3, 4], commons: [0, 0, 1, 0, 1], rare: [0, 1, 0, 1, 2], ultra: [0, 1, 1, 2, 3], epic: [0, 1, 2, 2, 4], legendary: [0, 1, 2, 3, 5], mythic: [1, 2, 3, 4, 6] };
+function fakeRes() {
+    const s = $("series").value, kind = $("kind").value, dup = $("dupes").value === "1";
+    let rs = LINE[$("lineup").value].slice(); if (kind === "premium") rs = [Math.max(0, rs[0])].concat(rs).sort((a, b) => a - b), rs[1] = Math.max(rs[1], 0);
+    rs.sort((a, b) => a - b);
+    const used = new Set();
+    const cards = rs.map((r, i) => { let pool = BY_SERIES_RARITY[s][r]; let rr = r; while (!pool.length && rr > 0) pool = BY_SERIES_RARITY[s][--rr]; const id = pool.find(x => !used.has(x)) || pool[0]; used.add(id); const isDup = dup && i % 2 === 1; return { id, r: rr, h: i === rs.length - 1 && rr >= 2 ? 1 : 0, isNew: isDup ? 0 : 1, shards: isDup ? SHARDS[RARITY_ORDER[rr]] : 0 }; });
+    return { seed: Date.now(), series: s, kind, via: "coins", cards, shards: cards.reduce((t, c) => t + c.shards, 0), pity: false, pityLeft: kind === "premium" ? 22 : 13 };
+}
+$("series").onchange = draw;
+$("lite").onclick = () => { document.body.classList.toggle("fx-lite"); $("lite").textContent = "Reduced effects: " + (document.body.classList.contains("fx-lite") ? "on" : "off"); };
+$("open").onclick = () => { window.__op = openPack(fakeRes(), { onDone: () => { window.__op = null; }, onNext: { label: "Open another", price: 150, fn: () => $("open").click() } }); };
+draw(); window.__ready = true; window.__fakeRes = fakeRes;
+</script>
+</body>
+</html>

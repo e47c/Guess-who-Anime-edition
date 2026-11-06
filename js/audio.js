@@ -93,6 +93,14 @@ function sfx(name, opt) {
 }
 const chord = (o, t, ms, step, v, w) => ms.forEach((m, i) => V.pluck(o, t + i * step, m, .5, v, w || "triangle", 3800, .35));
 const FX = {
+    // Arcade Vault pack opening (all generated: filtered noise + a few tones, no downloads)
+    whoosh(o, t) { const g = gainTo(o, 0); env(g, t, .12, .5, .35, .001); const b = filt("bandpass", 500, 1.2, g); b.frequency.setValueAtTime(400, t); b.frequency.exponentialRampToValueAtTime(3200, t + .4); noise(t, .55, b); send(g, .2); },
+    tick(o, t) { V.pluck(o, t, 96, .03, .35, "square", 7000, 0); },
+    cardShine(o, t) { V.sweep(o, t, 3000, 9000, .35, .35, 4); V.bell(o, t + .05, 96, .25, .6); },
+    stUncommon(o, t) { V.bell(o, t, 84, .35, .9); V.bell(o, t + .07, 88, .25, .9); },
+    stRare(o, t) { chord(o, t, [72, 76, 79, 84], .05, .7); V.sweep(o, t, 1200, 5000, .5, .35, 4); },
+    stUltra(o, t) { V.kick(o, t, .9); chord(o, t + .02, [74, 78, 81, 86], .035, .9, "sawtooth"); V.sweep(o, t, 8000, 900, .5, .6, 3); },
+    stEpic(o, t) { V.kick(o, t, 1.1); V.snare(o, t + .03, .6, .3); V.sweep(o, t, 200, 7000, .6, .7, 2); chord(o, t + .12, [77, 81, 84, 89, 93], .04, 1, "sawtooth"); },
     // Arcade Vault: packs, scratch cards, card battles
     rip(o, t) { V.sweep(o, t, 2200, 9500, .34, 1.1, 1.1); V.snare(o, t + .02, .75, .24); V.hat(o, t + .12, .6, true); V.sweep(o, t + .18, 6000, 2000, .2, .5, 2); },
     epicHit(o, t) { V.kick(o, t, 1); V.sweep(o, t, 6000, 1200, .3, .8, 3); chord(o, t + .05, [76, 83, 88], .03, .9); },
@@ -334,12 +342,30 @@ const music = {
     }
 };
 
+/* foil crinkle while a pack is dragged: one looping filtered-noise voice, loudness and brightness follow the drag speed */
+let crk = null;
+function crinkle(level) {
+    if (S.mute || !ensure() || ctx.state !== "running") return;
+    const t = ctx.currentTime;
+    if (!crk) {
+        const g = ctx.createGain(); g.gain.value = 0; g.connect(sfxBus);
+        const hp = filt("highpass", 1800, .7, g), bp = filt("bandpass", 4200, 1.4, hp);
+        const am = ctx.createGain(); am.gain.value = 1; am.connect(bp);           // crackle: noise gated by a fast random LFO
+        const src = ctx.createBufferSource(); src.buffer = noiseBuf; src.loop = true; src.connect(am); src.start();
+        const lfo = ctx.createBufferSource(); lfo.buffer = noiseBuf; lfo.loop = true; lfo.playbackRate.value = .02; const lg = ctx.createGain(); lg.gain.value = .9; lfo.connect(lg); lg.connect(am.gain); lfo.start();
+        crk = { g, bp, src, lfo };
+    }
+    const v = Math.max(0, Math.min(1, level || 0));
+    crk.g.gain.setTargetAtTime(v * .32, t, .03); crk.bp.frequency.setTargetAtTime(2600 + v * 4200, t, .05);
+    if (!v) { clearTimeout(crk.stopT); crk.stopT = setTimeout(() => { if (crk && crk.g.gain.value < .01) { try { crk.src.stop(); crk.lfo.stop(); } catch (e) {} crk.g.disconnect(); crk = null; } }, 600); }
+}
+
 /* ---------------- public API ---------------- */
 export const audio = {
     get settings() { return Object.assign({}, S); },
     set(patch) { Object.assign(S, patch); applyVolumes(); save(); },
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
-    sfx, tone, music,
+    sfx, tone, music, crinkle,
     get muted() { return !!S.mute; },
     mediaVolume(scale = 1) { return S.mute ? 0 : Math.max(0, Math.min(1, S.master * S.sfx * scale)); },
     duck(ms = 1800) { if (!ctx || !musicBus) return; const t = ctx.currentTime, v = !S.mute && S.musicOn ? S.music * .55 : 0; musicBus.gain.cancelScheduledValues(t); musicBus.gain.setTargetAtTime(v * .25, t, .08); musicBus.gain.setTargetAtTime(v, t + ms / 1000, .6); },

@@ -101,7 +101,34 @@ export const PACKS = {
         odds: { common: 35, uncommon: 30, rare: 20, ultra: 9, epic: 4, legendary: 1.6, mythic: 0.4 },
         pity: { after: 30, atLeast: "legendary" } }
 };
+/* the opening animation (js/vault/opening.js): when each step starts after the tear, how far to drag, how many foil
+   flakes, how long the Legendary / Mythic cinematics last. Reduced effects uses the short values. */
+export const OPENING = {
+    tearAt: 0.82,                                 // share of the pack's width the finger must cross to tear it
+    emergeMs: 450, freeMs: 1250, flipsMs: 1950,   // after the tear: cards rise, pack drops away, flipping starts
+    emergeMsLite: 80, freeMsLite: 260, flipsMsLite: 420,
+    flakes: { normal: 28, premium: 40, reduced: 8 },
+    cinematicMs: { legendary: 2300, mythic: 2600, reduced: 800 },
+    flipMs: 760, holdMs: 450                      // a flip's length; press-and-hold to inspect
+};
 export const SHARDS = { common: 5, uncommon: 10, rare: 25, ultra: 60, epic: 120, legendary: 250, mythic: 500, holoMult: 2 };
+
+/* ---------- Card faces: one card shape, one art window, faces always whole ----------
+   The art window is a fixed square inside the 63:88 card. Each picture is placed by its face centre (focusX / focusY
+   in js/vault/cards.js, measured offline): the face lands at targetY of the window. A face that can't fit is shown
+   whole (fit) over a blurred, darkened copy; so is any picture more than maxCrop times taller/wider than the window. */
+export const CARD_ART = {
+    cardRatio: [63, 88],                 // width : height of every card
+    artRatio: 1,                         // the art window's width / height (1 = square)
+    targetY: 0.45,                       // where the face centre sits in the window (0 top .. 1 bottom)
+    targetYMythic: 0.36,                 // Mythic: the whole card is the art; the face sits above the name plate
+    faceMargin: 1.12,                    // the face plus this much room must fit, otherwise fit (whole picture)
+    minFace: 0,                          // auto zoom-in on small faces: off (0); zoom per card in data/card-focus-fix.json
+    maxZoom: 1.5,
+    maxCrop: 2.2,                        // safety net: picture/window aspect mismatch beyond this = fit
+    defaultFocus: [0.5, 0.4],            // no face found: horizontally centred, upper part (most pictures are busts)
+    defaultFaceH: 0.5
+};
 
 /* ---------- A7. Decks ---------- */
 export const DECK = { size: 10, maxCopies: 1, starterCount: 10, maxDecks: 8, veteranWins: 10 };

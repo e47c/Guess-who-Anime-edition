@@ -1,0 +1,190 @@
+/* =====================================================================
+   ARCADE VAULT · BOOSTER PACKS AND THE OPENING (js/vault/cardui.js packEl, js/vault/opening.js)
+   Everything is CSS 3D transforms + opacity (GPU), driven by a few custom properties the script sets in
+   requestAnimationFrame: --mx / --my (light position over the foil), --rx / --ry (tilt). A canvas is only used for the
+   Legendary / Mythic cinematics. Reduced effects (body.fx-lite): static foil, no float, no shake, few flakes,
+   a simple flip.
+   ===================================================================== */
+
+/* ---------- the pack ---------- */
+.vpack { --pw: 190px; --mx: 50%; --my: 32%; position: relative; width: var(--pw); aspect-ratio: 5 / 8; font-size: calc(var(--pw) / 12); color: var(--ink, #fff); isolation: isolate;
+    filter: drop-shadow(0 1.1em 1.1em rgba(0,0,0,.55)) drop-shadow(0 .2em .25em rgba(0,0,0,.4)); }
+.vp-body { position: absolute; inset: 0; overflow: hidden; border-radius: .12em; }
+.vp-body > * { position: absolute; pointer-events: none; }
+/* coloured foil: the series colours + its motif, partly matte */
+.vp-base { inset: 0; background: var(--motif, linear-gradient(160deg, var(--c1), var(--c2))); background-size: cover; }
+.vp-base::after { content: ""; position: absolute; inset: 0; background: linear-gradient(165deg, color-mix(in srgb, var(--c1) 70%, transparent), transparent 45%, color-mix(in srgb, var(--c2) 80%, transparent)); mix-blend-mode: multiply; opacity: .55; }
+/* the series motif as a big stylised silhouette + the kanji */
+.vp-big { left: 50%; top: 30%; width: 82%; aspect-ratio: 1; transform: translate(-50%, -50%) rotate(-8deg); color: var(--c3); opacity: .5; filter: drop-shadow(0 .12em 0 rgba(0,0,0,.35)); }
+.vp-big svg { width: 100%; height: 100%; } .vp-big .ke-menace { font: 400 7em/1 'Dela Gothic One', sans-serif; }
+.vp-kanji { right: 4%; top: 7%; font: 400 3.6em/1 var(--f-title); color: var(--ink, #fff); opacity: .2; writing-mode: vertical-rl; }
+.vp-title { left: 5%; right: 5%; top: 50%; z-index: 2; text-align: center; line-height: .95; color: var(--ink, #fff); }
+.vp-title small { display: block; font: 700 .5em/1 var(--f-mono); letter-spacing: .32em; opacity: .9; text-shadow: 0 .08em .1em rgba(0,0,0,.5); }
+.vp-title b { display: block; margin-top: .18em; font: 400 1.75em/1 var(--f-title); letter-spacing: .02em; overflow-wrap: anywhere; color: #fff;
+    text-shadow: .06em .06em 0 var(--c3), .12em .12em 0 rgba(0,0,0,.55), 0 0 .5em rgba(0,0,0,.35); -webkit-text-stroke: .02em rgba(0,0,0,.35); transform: skewY(-4deg); }
+.vp-title.f-pirate b, .vp-title.f-gothic b { font-family: 'Pirata One', serif; font-size: 2em; letter-spacing: .03em; }
+.vp-title.f-brush b, .vp-title.f-graffiti b { font-family: 'Permanent Marker', cursive; }
+.vp-title.f-military b { font-family: 'Special Elite', monospace; font-size: 1.55em; }
+.vp-title.f-elegant b, .vp-title.f-sharp b { font-family: 'Teko', sans-serif; font-weight: 700; font-size: 2.1em; letter-spacing: .08em; }
+.vp-title.f-heavy b, .vp-title.f-comic b, .vp-title.f-pose b { font-family: 'Dela Gothic One', sans-serif; }
+.vp-title.long { top: 47%; } .vp-title.long b { font-size: 1.3em; } .vp-title.long.f-pirate b, .vp-title.long.f-gothic b { font-size: 1.55em; } .vp-title.long.f-elegant b, .vp-title.long.f-sharp b { font-size: 1.6em; }
+/* rarity hint strip: seven bars Common -> Mythic */
+.vp-strip { left: 9%; right: 9%; top: 73%; z-index: 2; display: grid; gap: .25em; justify-items: center; }
+.vp-bars { display: flex; gap: .14em; width: 100%; height: .42em; }
+.vp-bars i { flex: 1; border-radius: .1em; background: var(--rc); box-shadow: inset 0 .06em 0 rgba(255,255,255,.5), 0 .05em .1em rgba(0,0,0,.4); }
+.vp-strip small { font: 700 .42em/1 var(--f-mono); letter-spacing: .2em; color: #fff; text-shadow: 0 .06em .1em rgba(0,0,0,.7); }
+.vp-label { left: 0; right: 0; bottom: 9%; z-index: 2; display: grid; justify-items: center; gap: .15em; }
+.vp-label b { padding: .18em .6em; border-radius: .2em; background: rgba(0,0,0,.55); font: 700 .7em/1 var(--f-mono); letter-spacing: .2em; color: #fff; }
+.vp-label small { font: 700 .48em/1 var(--f-mono); letter-spacing: .3em; color: #fff; text-shadow: 0 .06em .1em rgba(0,0,0,.7); }
+/* crimped seals: ridged bands top and bottom (the zig-zag edge itself is the body's clip-path) */
+.vp-crimp { left: 0; right: 0; z-index: 3; height: 7%; background: repeating-linear-gradient(90deg, rgba(255,255,255,.34) 0 .14em, rgba(0,0,0,.28) .14em .32em), linear-gradient(180deg, rgba(255,255,255,.2), rgba(0,0,0,.25)); }
+.vp-crimp.top { top: 0; box-shadow: 0 .08em .12em rgba(0,0,0,.35); } .vp-crimp.bot { bottom: 0; box-shadow: 0 -.08em .12em rgba(0,0,0,.35); transform: scaleY(-1); }
+/* vertical centre seam */
+.vp-seam { left: calc(50% - .22em); width: .44em; top: 7%; bottom: 7%; z-index: 3; background: linear-gradient(90deg, rgba(0,0,0,.14), rgba(255,255,255,.2) 45%, rgba(0,0,0,.22) 60%, transparent); opacity: .7; }
+/* air inside the bag: bright middle, darker edges */
+.vp-puff { inset: 0; z-index: 3; background: radial-gradient(ellipse 62% 46% at 50% 47%, rgba(255,255,255,.2), transparent 72%), linear-gradient(90deg, rgba(0,0,0,.42), transparent 16%, transparent 84%, rgba(0,0,0,.42)), linear-gradient(180deg, rgba(0,0,0,.25), transparent 14%, transparent 86%, rgba(0,0,0,.32)); }
+/* crinkled foil: a lit SVG noise surface (static image, rasterised once) + fine grain */
+.vp-crinkle { inset: 0; z-index: 4; opacity: .55; mix-blend-mode: soft-light;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.014 .05' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeDiffuseLighting lighting-color='%23fff' surfaceScale='3.6'%3E%3CfeDistantLight azimuth='225' elevation='40'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23c)'/%3E%3C/svg%3E") 0 0 / 240px 240px,
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 120px 120px; }
+/* the light: a specular spot + streak where the pointer / tilt puts it */
+.vp-spec { inset: 0; z-index: 5; background: radial-gradient(ellipse 42% 28% at var(--mx) var(--my), rgba(255,255,255,.5), transparent 70%), linear-gradient(115deg, transparent calc(var(--mx) - 16%), rgba(255,255,255,.22) var(--mx), transparent calc(var(--mx) + 16%)); mix-blend-mode: overlay; }
+.vp-shine { inset: 0; z-index: 5; }
+.vp-rim { inset: 0; z-index: 6; box-shadow: inset 0 0 0 .07em rgba(255,255,255,.35), inset .3em 0 .45em -.25em rgba(255,255,255,.4), inset -.3em 0 .45em -.25em rgba(0,0,0,.45), inset 0 -.4em .6em -.4em rgba(0,0,0,.5); }
+/* Normal: partly matte */
+.vpack.k-normal .vp-spec { opacity: .7; }
+/* Premium: metallic gold foil, embossed diamond pattern, stronger moving shine, finer crimp ridges */
+.vpack.k-premium .vp-base { background: linear-gradient(135deg, #6b4a08, #f5d37a 22%, #9a6a14 40%, #ffe9a6 58%, #a8761a 76%, #fff1b8); }
+.vpack.k-premium .vp-base::after { background: repeating-linear-gradient(45deg, rgba(255,255,255,.2) 0 .06em, transparent .06em .7em), repeating-linear-gradient(-45deg, rgba(60,35,0,.22) 0 .06em, transparent .06em .7em),
+    radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--c1) 55%, transparent), transparent 70%); mix-blend-mode: normal; opacity: 1; }
+.vpack.k-premium .vp-big { color: #fff4c8; opacity: .55; filter: drop-shadow(.06em .06em 0 rgba(90,55,0,.6)) drop-shadow(-.04em -.04em 0 rgba(255,255,255,.6)); }
+.vpack.k-premium .vp-title b { background: linear-gradient(180deg, #fffbe6, #f2c14e 52%, #a8761a); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(.06em .06em 0 #4a2f00) drop-shadow(0 0 .3em rgba(0,0,0,.4)); }
+.vpack.k-premium .vp-title small, .vpack.k-premium .vp-label small, .vpack.k-premium .vp-strip small { color: #3a2300; text-shadow: 0 .05em 0 rgba(255,255,255,.5); }
+.vpack.k-premium .vp-crimp { background: repeating-linear-gradient(90deg, #fff6c8 0 .08em, #8a5a10 .08em .18em), linear-gradient(180deg, rgba(255,255,255,.3), rgba(0,0,0,.25)); }
+.vpack.k-premium .vp-spec { mix-blend-mode: screen; opacity: .85; }
+.vpack.k-premium .vp-shine { background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.75) 47%, rgba(255,240,190,.4) 50%, transparent 58%) 0 0 / 300% 100%; mix-blend-mode: overlay; animation: vpShine 2.8s ease-in-out infinite; }
+.vpack.k-premium .vp-crinkle { opacity: .7; mix-blend-mode: overlay; }
+@keyframes vpShine { 0% { background-position: 100% 0; } 65%, 100% { background-position: -100% 0; } }
+.vp-big .ke-menace { color: inherit; }
+
+/* ---------- the opening ---------- */
+.pk-open { position: fixed; inset: 0; z-index: 320; display: grid; grid-template-rows: auto 1fr auto auto; overflow: hidden; color: #fff; touch-action: none; user-select: none; -webkit-user-select: none;
+    background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--c1, #333) 38%, #120a14), #050307 76%); animation: ovIn .3s ease both; }
+.pk-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 0; }
+.pk-head b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 13px/1.2 var(--f-mono); letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,.75); }
+.pk-head .btn { flex: none; white-space: nowrap; }
+.pk-stage { position: relative; display: grid; place-items: center; min-height: 0; perspective: 1100px; }
+.pk-hint { margin: 0; padding: 0 16px calc(18px + env(safe-area-inset-bottom, 0px)); text-align: center; font: 600 15px/1.4 var(--f-ui); color: rgba(255,255,255,.82); min-height: 1.4em; }
+.pk-scene { --pw: min(56vw, 250px, 38dvh); --cw: calc(var(--pw) * .9); position: relative; width: var(--pw); aspect-ratio: 5 / 8; }
+/* 1. hovering: a gentle bob + slow sway, the pointer adds tilt */
+.pk-float { position: absolute; inset: 0; animation: pkBob 3.4s ease-in-out infinite; will-change: transform; }
+@keyframes pkBob { 0%, 100% { transform: translateY(0) rotateZ(-1.2deg) rotateY(-5deg); } 50% { transform: translateY(-3.5%) rotateZ(1deg) rotateY(5deg); } }
+.pk-tilt { position: absolute; inset: 0; transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .25s ease-out; will-change: transform; }
+.pk-tilt > .vpack { position: absolute; inset: 0; width: 100%; --pw: inherit; font-size: calc(var(--pw) / 12); z-index: 3; }
+/* 2. tearing: the top crimp is the grab zone; a tear line follows the finger */
+.pk-grab { position: absolute; left: -10%; right: -10%; top: -7%; height: 21%; z-index: 9; cursor: grab; touch-action: none; }
+.pk-grab:active { cursor: grabbing; }
+.pk-grab::after { content: "⇢ drag across"; position: absolute; left: 50%; top: 62%; transform: translateX(-50%); padding: 4px 9px; border-radius: 99px; background: rgba(0,0,0,.6); font: 700 11px/1 var(--f-mono); letter-spacing: .1em; white-space: nowrap; animation: pkNudge 1.6s ease-in-out infinite; }
+.pk-scene.dragging .pk-grab::after, .pk-scene.torn .pk-grab::after { opacity: 0; }
+@keyframes pkNudge { 50% { transform: translateX(-38%); } }
+.pk-tear { position: absolute; left: 0; top: 7.5%; width: 100%; height: 5%; z-index: 8; overflow: visible; pointer-events: none; }
+.pk-tear polyline { fill: none; stroke: #fff; stroke-width: 1.4; stroke-linejoin: round; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px var(--c3, #ffd76a)); }
+.pk-scene.dragging .pk-tilt > .vpack .vp-crimp.top { filter: brightness(1.25); }
+/* 3. torn: the strip peels off and falls, the mouth opens, light + foil flakes burst out, the cards slide up */
+.pk-strip { position: absolute; left: 0; right: 0; top: 0; height: 100%; z-index: 7; pointer-events: none; transform-origin: var(--peel-x, 0%) 9%; visibility: hidden; }
+.pk-strip > .vpack { position: absolute; inset: 0; width: 100%; --pw: inherit; font-size: calc(var(--pw) / 12); }
+.pk-scene.torn .pk-strip { visibility: visible; animation: pkPeel 1.15s cubic-bezier(.35,.0,.6,1) forwards; }
+@keyframes pkPeel { 0% { transform: none; } 30% { transform: rotate(calc(var(--peel-dir, 1) * -16deg)) translateY(-6%); } 100% { transform: translate(calc(var(--peel-dir, 1) * 40%), 140vh) rotate(calc(var(--peel-dir, 1) * 70deg)); opacity: .9; } }
+.pk-mouth { position: absolute; left: 3%; right: 3%; top: 8.5%; height: 4%; z-index: 4; border-radius: 50%; background: radial-gradient(ellipse at 50% 40%, #000 30%, rgba(0,0,0,.7) 60%, transparent 72%); transform: scaleY(0); transform-origin: 50% 30%; transition: transform .35s .15s cubic-bezier(.2,.8,.2,1); }
+.pk-scene.torn .pk-mouth { transform: scaleY(1); }
+.pk-burst { position: absolute; left: 50%; top: 10%; width: 160%; aspect-ratio: 1; z-index: 10; pointer-events: none; border-radius: 50%; transform: translate(-50%, -50%) scale(0); opacity: 0;
+    background: radial-gradient(circle, #fff 0 8%, color-mix(in srgb, var(--c3, #ffd76a) 70%, #fff) 18%, rgba(255,255,255,0) 60%); mix-blend-mode: screen; }
+.pk-scene.torn .pk-burst { animation: pkBurst .9s .1s ease-out forwards; }
+@keyframes pkBurst { 0% { transform: translate(-50%, -50%) scale(.1); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.3); opacity: 0; } }
+.pk-rays { position: absolute; left: 50%; top: 10%; width: 220%; aspect-ratio: 1; z-index: 2; pointer-events: none; transform: translate(-50%, -50%) scale(.2); opacity: 0;
+    background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.22) 0 5deg, transparent 5deg 16deg); -webkit-mask: radial-gradient(circle, #000, transparent 65%); mask: radial-gradient(circle, #000, transparent 65%); }
+.pk-scene.torn .pk-rays { animation: pkRaysIn 1.6s .1s ease-out forwards; }
+@keyframes pkRaysIn { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.2) rotate(0deg); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1) rotate(40deg); } }
+.pk-flake { position: absolute; left: 50%; top: 10%; z-index: 11; width: .9em; height: .55em; pointer-events: none; background: linear-gradient(135deg, #fff, var(--fc, #ffd76a) 60%, rgba(0,0,0,.25)); border-radius: .08em; opacity: 0; will-change: transform, opacity;
+    animation: pkFlake var(--t, 1.2s) var(--d, 0s) cubic-bezier(.15,.6,.35,1) forwards; }
+@keyframes pkFlake { 0% { opacity: 1; transform: translate(-50%, -50%) rotate(0) scale(.6); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) rotateX(var(--rot)) scale(1); } }
+/* the cards: behind the pack front, they rise out of the mouth, then the pack drops away */
+.pk-deck { position: absolute; left: 50%; top: 50%; z-index: 2; width: var(--cw); aspect-ratio: 63 / 88; transform: translate(-50%, -46%) scale(.86); transition: transform .75s cubic-bezier(.2,.8,.2,1); }
+.pk-scene.emerge .pk-deck { transform: translate(-50%, -105%) scale(.86); }
+.pk-scene.free .pk-deck { transform: translate(-50%, -50%) scale(1.12); z-index: 12; }
+.pk-scene.free .pk-tilt > .vpack, .pk-scene.free .pk-mouth { transition: transform .6s cubic-bezier(.5,0,.75,0), opacity .5s .1s; transform: translateY(85vh) rotate(6deg); opacity: 0; }
+.pk-scene.free .pk-float { animation: none; }
+.pk-scene.free .pk-grab { display: none; }
+/* 4. the stack: face down, with thickness and small offsets */
+.pk-deck .vcard { position: absolute; left: 0; top: 0; --cw: inherit; width: 100%; transition: transform .5s cubic-bezier(.2,.8,.2,1), opacity .4s; transform: translate(calc(var(--k) * 1.6px), calc(var(--k) * -2.2px)); }
+.pk-deck .vcard.down .vc-back { box-shadow: 0 0 0 .05em rgba(255,255,255,.18), .12em .16em 0 -.02em #d8d2c4, .2em .28em .4em rgba(0,0,0,.55); }
+.pk-deck::after { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: .55em; transform: translate(calc(var(--n, 5) * 1.6px + 2px), calc(var(--n, 5) * -2.2px + 4px)); background: #cfc8b8; box-shadow: 0 .6em 1.4em rgba(0,0,0,.55); opacity: var(--deckop, 1); }
+.pk-deck .vcard.top { z-index: 50 !important; }
+.pk-deck .vcard.gone { transform: translate(calc(var(--throw, -1) * 150%), 12%) rotate(calc(var(--throw, -1) * 18deg)) scale(.6); opacity: 0; pointer-events: none; }
+/* tension: a Rare or better on top of the stack makes its edges glow before the flip */
+.pk-deck .vcard.hint { animation: pkHint 1.4s ease-in-out infinite; }
+.pk-deck .vcard.hint.h2 { --hc: rgba(80,170,255,.75); } .pk-deck .vcard.hint.h3 { --hc: rgba(210,190,255,.85); } .pk-deck .vcard.hint.h4 { --hc: rgba(255,80,170,.85); } .pk-deck .vcard.hint.h5 { --hc: rgba(255,215,106,.95); } .pk-deck .vcard.hint.h6 { --hc: rgba(176,107,255,.95); }
+@keyframes pkHint { 0%, 100% { filter: drop-shadow(0 0 .2em var(--hc)); } 50% { filter: drop-shadow(0 0 .9em var(--hc)) drop-shadow(0 0 .25em var(--hc)); } }
+/* 5. the flip: a real 3D turn with a lift, and a shine passing over the face */
+.pk-deck .vcard .vc-inner { transition: transform .7s cubic-bezier(.3,.7,.2,1); }
+.pk-deck .vcard.flipping { animation: pkLift .7s cubic-bezier(.3,.7,.2,1); }
+@keyframes pkLift { 40% { transform: translate(0, -6%) scale(1.06); } }
+.vcard.shinepass .vc-front::after { content: ""; position: absolute; inset: 0; z-index: 9; pointer-events: none; background: linear-gradient(115deg, transparent 32%, rgba(255,255,255,.8) 48%, rgba(255,255,255,.2) 54%, transparent 66%); transform: translateX(-130%); animation: pkPass .8s .3s ease-out forwards; mix-blend-mode: overlay; }
+@keyframes pkPass { to { transform: translateX(130%); } }
+/* reactions */
+.pk-open.glow .pk-deck::before { content: ""; position: absolute; inset: -22%; z-index: -2; border-radius: 50%; background: radial-gradient(circle, var(--gc, rgba(90,180,255,.6)), transparent 65%); animation: pkGlow 1.4s ease-out; }
+@keyframes pkGlow { from { opacity: 0; transform: scale(.6); } 40% { opacity: 1; } }
+.pk-open.flash::after { content: ""; position: absolute; inset: 0; z-index: 30; pointer-events: none; background: var(--flash, #fff); animation: pkFlash .55s ease-out forwards; }
+@keyframes pkFlash { from { opacity: .85; } to { opacity: 0; } }
+.pk-open.shake .pk-stage { animation: pkShake .42s cubic-bezier(.36,.07,.19,.97); }
+@keyframes pkShake { 15%, 55% { transform: translate(-6px, 2px); } 35%, 75% { transform: translate(6px, -3px); } 90% { transform: translate(-2px, 1px); } }
+.pk-ring { position: absolute; left: 50%; top: 50%; z-index: 13; width: 60%; aspect-ratio: 1; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%) scale(.2); box-shadow: 0 0 0 .3em var(--rc, #ff4fa0), 0 0 2em var(--rc, #ff4fa0), inset 0 0 1.5em var(--rc, #ff4fa0); opacity: 0;
+    animation: pkRing .9s var(--d, 0s) cubic-bezier(.1,.6,.3,1) forwards; }
+@keyframes pkRing { 0% { opacity: 1; transform: translate(-50%, -50%) scale(.2); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(3.2); } }
+/* Legendary / Mythic: a full-screen cinematic (a canvas of sparks / void shards under the title) */
+.pk-special { position: absolute; inset: 0; z-index: 25; display: grid; place-items: center; align-content: center; gap: 10px; pointer-events: none; text-align: center; overflow: hidden; }
+.pk-special canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pk-special.legendary { background: radial-gradient(circle at 50% 45%, rgba(255,226,140,.95), rgba(160,100,10,.6) 30%, rgba(5,3,0,.95) 70%); animation: pkSpecial 2.3s ease forwards; }
+.pk-special.mythic { background: radial-gradient(circle at 50% 45%, rgba(220,160,255,.6), rgba(40,0,80,.88) 35%, #000 70%); animation: pkSpecial 2.6s ease forwards; }
+@keyframes pkSpecial { 0% { opacity: 0; } 12% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; } }
+.pk-special b { position: relative; font: 400 clamp(36px, 11vw, 96px)/1 var(--f-title); letter-spacing: .04em; animation: pkTitle 2.2s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes pkTitle { 0% { transform: scale(2.4); opacity: 0; letter-spacing: .5em; } 30% { transform: scale(1); opacity: 1; letter-spacing: .04em; } }
+.pk-special.legendary b { background: linear-gradient(180deg, #fff8d0, #f2c14e 50%, #a8761a); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 4px 0 #5a3a00); }
+.pk-special.mythic b { color: #f1e6ff; text-shadow: 4px 0 #ff2bd6, -4px 0 #2bf5ff, 0 0 30px #a070ff; }
+.pk-special small { position: relative; font: 700 13px/1.2 var(--f-mono); letter-spacing: .3em; color: rgba(255,255,255,.88); }
+/* the row of revealed cards and the summary */
+.pk-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; padding: 0 12px 8px; min-height: 56px; }
+.pk-row .vcard { --cw: 44px; animation: pkSlide .35s cubic-bezier(.2,.8,.2,1) both; }
+.pk-row .vcard .vc-abil, .pk-row .vcard .vc-gems, .pk-row .vcard .vc-foot, .pk-row .vcard .vc-top, .pk-row .vcard .vc-name { display: none; }
+@keyframes pkSlide { from { opacity: 0; transform: translateY(30px) scale(.9); } }
+.pk-sum { width: min(980px, 100%); max-height: 100%; overflow: auto; padding: 8px 16px 16px; display: grid; gap: 14px; justify-items: center; align-content: start; }
+.pk-sum h3 { margin: 0; font: 400 clamp(26px, 6vw, 40px)/1 var(--f-title); text-shadow: 3px 3px 0 var(--red); }
+.pk-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.pk-grid .pk-cell { display: grid; justify-items: center; gap: 4px; animation: pkSlide .45s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--k) * 80ms); cursor: pointer; }
+.pk-grid .vcard { --cw: min(28vw, 132px); }
+.pk-shard { font: 700 12px/1.2 var(--f-mono); color: #9fe7ff; text-align: center; }
+.pk-shard.new { color: #1a1205; background: #ffd76a; padding: 2px 8px; border-radius: 99px; letter-spacing: .12em; }
+.pk-tot { display: flex; gap: 8px 16px; flex-wrap: wrap; justify-content: center; font: 600 14px/1.3 var(--f-ui); color: rgba(255,255,255,.88); }
+.pk-tot b { font-family: var(--f-mono); color: #9fe7ff; }
+.pk-pity { width: min(440px, 100%); display: grid; gap: 4px; font: 600 12px/1.3 var(--f-ui); color: rgba(255,255,255,.8); }
+.pk-pity i { display: block; height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; } .pk-pity i::after { content: ""; display: block; height: 100%; width: var(--p); background: linear-gradient(90deg, #6cc4ff, #ffd76a); }
+.pk-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+/* ---------- inspect: parallax holo, edge thickness, light ---------- */
+.vc-inspect .vcard .vc-front { transform: translateZ(.09em); }
+.vc-inspect .vcard .vc-back { transform: rotateY(180deg) translateZ(.09em); }
+.vc-edge { position: absolute; inset: 0; border-radius: .55em; background: linear-gradient(90deg, #bdb6a6, #efe9da 50%, #bdb6a6); transform: translateZ(var(--z)); pointer-events: none; }
+.vc-inspect .vcard .vc-art img { translate: calc(var(--px, 0) * -10px) calc(var(--py, 0) * -10px); }
+.vc-inspect .vcard .vc-holo { translate: calc(var(--px, 0) * 26px) calc(var(--py, 0) * 26px); }
+.vc-inspect .vcard .vc-glare { opacity: 1; background: radial-gradient(circle at var(--mx) var(--my), rgba(255,255,255,.42), transparent 42%), linear-gradient(calc(110deg + var(--px, 0) * 40deg), transparent 40%, rgba(255,255,255,.12) 50%, transparent 60%); }
+
+/* ---------- reduced effects: static foil, no float / shake, a simple flip ---------- */
+body.fx-lite .vpack .vp-shine, body.fx-lite .pk-float, body.fx-lite .pk-grab::after, body.fx-lite .pk-deck .vcard.hint, body.fx-lite .pk-deck .vcard.flipping, body.fx-lite .pk-rays, body.fx-lite .pk-ring { animation: none !important; }
+body.fx-lite .pk-tilt { transform: none !important; }
+body.fx-lite .pk-deck .vcard.hint { filter: drop-shadow(0 0 .5em var(--hc)); }
+body.fx-lite .pk-open.shake .pk-stage { animation: none !important; }
+body.fx-lite .pk-deck .vcard .vc-inner { transition-duration: .2s !important; }
+body.fx-lite .vcard.shinepass .vc-front::after { display: none; }
+body.fx-lite .pk-scene.torn .pk-strip { animation: none; visibility: hidden; }
+body.fx-lite .pk-special, body.fx-lite .pk-special b { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .pk-float, .vpack .vp-shine, .pk-deck .vcard.hint { animation: none !important; } }

@@ -18,12 +18,12 @@
    mode here: the site has no server to keep secrets from a player reading the database.
    Practice vs CPU runs the same engine locally (no coins).
    ===================================================================== */
-import { newBattle, act, resolveRound, alive, handOf, lifeOf, due, applyDue, normalize, cpuPick, autoPick, REVEAL_MS, arr } from "./engine.js?v=2";
+import { newBattle, act, resolveRound, alive, handOf, lifeOf, due, applyDue, normalize, cpuPick, autoPick, REVEAL_MS, arr } from "./engine.js?v=3";
 import { ABILITIES } from "./abilities.js?v=1";
-import { BATTLE } from "../vault/config.js?v=4";
-import { CARDS } from "../vault/carddb.js?v=1";
-import { cardEl } from "../vault/cardui.js?v=1";
-import { inspect } from "../vault/opening.js?v=1";
+import { BATTLE } from "../vault/config.js?v=5";
+import { CARDS } from "../vault/carddb.js?v=2";
+import { cardEl } from "../vault/cardui.js?v=2";
+import { inspect } from "../vault/opening.js?v=2";
 import { rngFrom, newSeed, shuffleWith } from "../vault/rng.js?v=1";
 import { battleResultOf, resultToDb, resultFromDb } from "../vault/result.js?v=2";
 import { el, srvNow, presentIn, optButtons } from "../feud/common.js?v=3";
@@ -156,7 +156,8 @@ function hostTx(bid, kind) {
 let deckSent = "", locSent = "";
 const paid = new Set();
 export function cvSync(d) {
-    if (!X || !d) return;
+    if (!X) return;
+    if (!d) { renderInvites(null); return; }      // left the room (or never in one): no challenge strip
     const me = X.me(), on = vaultOn(d);
     if (on) {
         const mine = X.activeDeck(), cur = (d.cvDeck || {})[pk(me)], want = mine ? JSON.stringify(mine) : "";

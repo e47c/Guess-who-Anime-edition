@@ -18,16 +18,16 @@ import {
     signInAnonymously
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
-import { audio } from "./audio.js";
+import { audio } from "./audio.js?v=2";
 import { ambient, titleCard, shake, ring, burstText, countUp, flyClone, motionOK, setReduced, isReduced } from "./fx.js";
-import { profile, avatarEl, seatCard, styleName, styleTitle, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js?v=3";
+import { profile, avatarEl, seatCard, styleName, styleTitle, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js?v=4";
 import { showResults, closeResults } from "./results.js?v=2";
 import * as DRAFT from "./draft/draft.js?v=6";
 import * as FEUD from "./feud/feud.js?v=6";
 import * as LIKELY from "./feud/likely.js?v=3";
 import * as SKETCH from "./sketch/sketch.js?v=8";
-import * as VAULT from "./vault/vault.js?v=4";
-import * as CV from "./cardvault/cardvault.js?v=2";
+import * as VAULT from "./vault/vault.js?v=5";
+import * as CV from "./cardvault/cardvault.js?v=3";
 import { resultOf, resultToDb, resultFromDb } from "./vault/result.js?v=2";
 import { initCine, cineHook, cineHas } from "./cine/engine.js?v=12";
 import { hand as cineHand } from "./cine/hands.js?v=11";
@@ -3389,7 +3389,8 @@ function closeOverlay(id) {
     if (i >= 0) { const o = overlayStack.splice(i, 1)[0]; if (o.focus && o.focus.focus) try { o.focus.focus({ preventScroll: true }); } catch (e) {} }
 }
 window.closeOverlay = closeOverlay;
-function closeAllOverlays() { ["pause", "settings", "profile", "confirm", "vault", "daily"].forEach(id => $(id).classList.add("hidden")); overlayStack.length = 0; $("emotePanel").classList.add("hidden"); }
+/* every overlay, whatever it is called (a hard-coded id list broke Close room / Leave room when an overlay was renamed) */
+function closeAllOverlays() { document.querySelectorAll(".overlay").forEach(o => o.classList.add("hidden")); overlayStack.length = 0; const ep = $("emotePanel"); if (ep) ep.classList.add("hidden"); }
 let confirmResolve = null;
 function uiConfirm({ title, text, ok = "OK", cancel = "Cancel", danger = false, info = false }) {
     if (confirmResolve) confirmResolve(false);
@@ -3545,6 +3546,7 @@ window.joinRoom = async function () {
     try {
         const snapshot = await get(ref(db, "rooms/" + code));
         if (!snapshot.exists()) { toast("Room not found. Check the code."); return; }
+        if (roomClosed(snapshot.val())) { toast(snapshot.val().closed ? "That room was closed by its host." : "Room not found. Check the code."); return; }
         const data = snapshot.val();
         for (const i of SLOTS) {        // coming back to a room you're already in = rejoin
             const p = data["player" + i];
@@ -3730,13 +3732,12 @@ function setRoomCode(code) {
     const el = $("roomCode"); if (el.textContent === code) return;
     el.innerHTML = ""; [...String(code)].forEach((ch, k) => { const c = hbEl("span", null, ch); c.style.setProperty("--k", k); el.appendChild(c); });
 }
-/* host = insert coin: the coin drops into the slot, the credit counter ticks, then the room is made */
-let credits = 0;
+/* host = insert coin: the coin drops into the slot, the CREDIT counter flashes, then the room is made */
 window.insertCoin = function () {
     const btn = document.querySelector("#home .home-cta > .btn"), coin = $("coinFly");
     if (creating || (btn && btn.disabled)) return;
     sfx("coin");
-    const cr = $("credit"); credits = Math.min(99, credits + 1); cr.querySelector("b").textContent = String(credits).padStart(2, "0"); cr.classList.remove("pop"); void cr.offsetWidth; cr.classList.add("pop");
+    const cr = $("credit"); cr.classList.remove("pop"); void cr.offsetWidth; cr.classList.add("pop");      // CREDIT = the AAP Coin balance (vault.js keeps it live); hosting is free
     if (!motionOK()) return createRoom();
     coin.classList.remove("go"); void coin.offsetWidth; coin.classList.add("go");
     setTimeout(() => { btn.classList.remove("fed"); void btn.offsetWidth; btn.classList.add("fed"); }, 330);
@@ -3946,7 +3947,19 @@ function goHome(notice) {
     if (unsubReveal) { unsubReveal(); unsubReveal = null; }
     clearSession();
     try { if (notice) sessionStorage.setItem("gw_notice", notice); } catch (e) {}
+    if (!navigator.onLine) { softHome(notice); return; }      // a reload would fail offline (the browser's own offline page)
     location.href = location.pathname;
+}
+/* back to the main menu without reloading (offline): the room is already forgotten above; drop its state and screens */
+function softHome(notice) {
+    try { sessionStorage.removeItem("gw_notice"); } catch (e) {}
+    room = ""; myPlayer = null; currentRoomData = null; listeningRoom = "";
+    try { closeAllOverlays(); resetMatchState(); } catch (e) {}
+    try { history.replaceState(null, "", location.pathname); } catch (e) {}
+    try { CV.cvSync(null); } catch (e) {}
+    document.body.classList.remove("is-host", "hb-mode", "uno-mode");
+    showOnly("home"); exiting = false;
+    if (notice) toast(notice);
 }
 window.leaveRoom = async function () {
     const d = currentRoomData;
@@ -3954,7 +3967,7 @@ window.leaveRoom = async function () {
     const me = Number(myPlayer), others = activeSlots(d).filter(i => i !== me), host = amHost();
     const text = !others.length ? "You're the last one here, so the room closes." : host ? "Hosting passes to " + pName(d, others[0]) + ". The room stays open for everyone else." : "The room stays open for everyone else. You can rejoin with code " + room + ".";
     if (!(await uiConfirm({ title: "Leave the room?", text: text, ok: "Leave", danger: true }))) return;
-    exiting = true; closeAllOverlays(); sfx("leave");
+    exiting = true; try { closeAllOverlays(); } catch (e) {} sfx("leave");
     try {
         stopPresence(true);
         if (!others.length) await remove(ref(db, "rooms/" + room));
@@ -3972,13 +3985,26 @@ window.leaveRoom = async function () {
     goHome("You left the room.");
 };
 window.exitGame = window.leaveRoom;          // older buttons
+/* Close room (host only, from the lobby, the in-game menu or the Vault page). The room is replaced by a small
+   tombstone { closed: true } instead of being deleted: every client's listener sees it and goes to the main menu
+   ("The host closed the room."), joinRoom refuses the code, and a late write from a client that hasn't noticed yet
+   (a presence flag, a debounced binder publish) can't bring the room back to life. Each step is guarded, and the host
+   always ends on the main menu, even offline (the write is given a few seconds) or when the room is already gone. */
 window.closeRoom = async function () {
-    if (!amHost()) return;
+    if (!room || !currentRoomData) { goHome("That room is already closed."); return; }
+    if (!amHost()) { toast("Only the host can close the room."); return; }
     if (!(await uiConfirm({ title: "Close the room?", text: "Everyone is sent back to the main menu and code " + room + " stops working.", ok: "Close room", danger: true }))) return;
-    exiting = true; closeAllOverlays(); stopPresence(true);
-    try { await remove(ref(db, "rooms/" + room)); } catch (e) { console.error("Could not delete room:", e); }
-    goHome("Room closed.");
+    exiting = true;
+    try { closeAllOverlays(); } catch (e) {}
+    try { stopPresence(true); } catch (e) {}
+    let done = false;
+    try {
+        await Promise.race([set(ref(db, "rooms/" + room), { closed: true, closedAt: Date.now(), by: (user && user.uid) || "" }).then(() => { done = true; }), new Promise(r => setTimeout(r, 6000))]);
+    } catch (e) { console.error("Could not close the room:", e); }
+    if (done) goHome("Room closed.");
+    else goHome(navigator.onLine ? "Couldn't reach the server, so the room may stay open until the others leave." : "You're offline: the room closes as soon as you're back online (keep this tab open).");
 };
+const roomClosed = d => !d || d.closed === true || !SLOTS.some(i => d["player" + i] && !d["player" + i].left);
 
 /* ---------- the one room listener + router ---------- */
 let roomUnsubs = [], listeningRoom = "";
@@ -3988,7 +4014,7 @@ function listenToRoom() {
     const roomRef = ref(db, "rooms/" + room);
     roomUnsubs.push(onValue(roomRef, snapshot => {
         if (exiting) return;
-        if (!snapshot.exists()) { goHome(currentRoomData ? "The host closed the room." : "That room no longer exists."); return; }
+        if (!snapshot.exists() || (snapshot.val() || {}).closed) { goHome(currentRoomData || (snapshot.val() || {}).closed ? "The host closed the room." : "That room no longer exists."); return; }
         const d = snapshot.val();
         // find myself (slot by uid). Gone = removed by the host.
         let mine = pNode(d, myPlayer);
@@ -4689,7 +4715,8 @@ async function initApp() {
         setLook: look => { const P = profile.get(); if (["sf", "bg", "ts", "uc", "vtn"].some(k => (P[k] || "") !== (look[k] || ""))) profile.update(look); },
         profilePub: () => profile.public(), profileName: () => profile.get().name, startPractice: () => CV.startPractice(), hostMode: t => window.hostMode(t), setGameType: t => window.setGameType(t),
         amHost: () => amHost(), db, ref, update, runTransaction, room: () => room, me: () => Number(myPlayer), pName, activeSlots,
-        seatCard, roomData: () => currentRoomData, roomCode: () => room, refresh });
+        seatCard, roomData: () => currentRoomData, roomCode: () => room, refresh, showOnly,
+        crinkle: v => audio.crinkle(v), hostParty: () => window.createRoom(), joinParty: code => { $("joinCode").value = code; window.joinRoom(); } });
     bindUpload(); bindSettings(); syncDock(); renderProfileCard(); buildHomeModes();
     $("name").value = profile.get().name || "";
     $("joinCode").addEventListener("keydown", e => { if (e.key === "Enter") joinRoom(); });

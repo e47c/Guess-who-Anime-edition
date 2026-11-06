@@ -6,7 +6,8 @@
    Layers of a card (moved with CSS transforms): background, character, foreground, frame, effects.
    Rarity is readable without colour: the number and shape of the rarity gems + the rarity word.
    ===================================================================== */
-import { CARDS, RARITY_NAMES } from "./carddb.js?v=1";
+import { CARDS, RARITY_NAMES } from "./carddb.js?v=2";
+import { CARD_ART } from "./config.js?v=5";
 import { ABILITIES, abilityText } from "../cardvault/abilities.js?v=1";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -56,9 +57,30 @@ export const seriesVars = (el, s) => { const T = theme(s); el.style.setProperty(
 const GEM_SHAPE = ["●", "◆", "▲", "✦", "⬟", "★", "✸"];
 export const rarityMark = r => { const m = mk("span", "vc-rmark"); m.setAttribute("aria-label", RARITY_NAMES[r]); m.append(mk("i", null, GEM_SHAPE[r].repeat(Math.min(r + 1, 4)) + (r >= 4 ? "+" : "")), mk("b", null, RARITY_NAMES[r].toUpperCase())); return m; };
 const statGem = (cls, v, lbl) => { const g = mk("span", "gem " + cls); g.append(mk("b", null, String(v)), mk("small", null, lbl)); g.setAttribute("aria-label", lbl + " " + v); return g; };
+/* Place a picture so its face is whole and where the layout expects it (CARD_ART in config.js; numbers from cards.js).
+   The window's shape depends on the rarity: square (most), taller with the top 22% breaking out of the frame (Ultra Rare),
+   the whole card (Mythic). With object-fit: cover only one axis overflows; object-position on that axis puts the face
+   centre at targetY (or centred across), the zoom scales around the face, and fit shows the whole picture contained
+   over a blurred, darkened copy when the face or the picture can't fit. */
+const clamp01 = v => Math.max(0, Math.min(1, v));
+export function artPlace(c, a, im) {
+    const W = CARD_ART, ultra = c.r === 3, mythic = c.r === 6;
+    const A = mythic ? W.cardRatio[0] / W.cardRatio[1] : ultra ? W.artRatio / 1.22 : W.artRatio;
+    const ty = mythic ? W.targetYMythic : ultra ? (.22 + W.targetY) / 1.22 : W.targetY;
+    const r = c.ar || 2 / 3, kk = r < A ? A / r : r / A;
+    a.style.setProperty("--art", "url(\"" + c.img + "\")");
+    if (c.fit || kk > W.maxCrop) { a.classList.add("fit"); return; }
+    let px = .5, py = .5, ox = c.fx, oy = .5;
+    if (r < A && kk > 1.001) { py = clamp01((kk * c.fy - ty) / (kk - 1)); oy = kk * c.fy - py * (kk - 1); }
+    else if (r > A && kk > 1.001) { px = clamp01((kk * c.fx - .5) / (kk - 1)); ox = kk * c.fx - px * (kk - 1); oy = c.fy; }
+    else oy = c.fy;
+    im.style.objectPosition = (px * 100).toFixed(1) + "% " + (py * 100).toFixed(1) + "%";
+    a.style.setProperty("--fo", (ox * 100).toFixed(1) + "% " + (oy * 100).toFixed(1) + "%");
+    if (c.fz > 1) a.style.setProperty("--fz", String(c.fz));
+}
 function artLayer(c) {
     const a = mk("div", "vc-art");
-    if (c.img) { const im = new Image(); im.alt = ""; im.decoding = "async"; im.loading = "lazy"; im.referrerPolicy = "no-referrer"; im.draggable = false; im.src = c.img; im.onerror = () => { im.remove(); a.classList.add("noimg"); a.textContent = c.n.split(/\s+/).map(w => w[0]).join("").slice(0, 2); }; a.appendChild(im); }
+    if (c.img) { const im = new Image(); im.alt = ""; im.decoding = "async"; im.loading = "lazy"; im.referrerPolicy = "no-referrer"; im.draggable = false; artPlace(c, a, im); im.src = c.img; im.onerror = () => { im.remove(); a.classList.add("noimg"); a.textContent = c.n.split(/\s+/).map(w => w[0]).join("").slice(0, 2); }; a.appendChild(im); }
     else { a.classList.add("noimg"); a.textContent = c.n.split(/\s+/).map(w => w[0]).join("").slice(0, 2); }
     return a;
 }
@@ -86,7 +108,7 @@ export function cardEl(id, o = {}) {
     const ab = mk("div", "vc-abil"); ab.append(mk("b", null, c.abName), mk("small", null, abilityText(c.ab))); f.appendChild(ab);
     const foot = mk("div", "vc-foot"); foot.append(mk("span", "vc-no", c.no), mk("span", "vc-arch", c.a), mk("span", "vc-ser", theme(c.s).short)); f.appendChild(foot);
     if (o.isNew) f.appendChild(mk("span", "vc-new", "NEW"));
-    if (o.veteran) { const v = mk("span", "vc-vet", "★"); v.title = "Veteran: in 10+ winning battles"; f.appendChild(v); }
+    if (o.veteran) { const v = mk("span", "vc-vet", "★"); v.title = "Veteran: in 10+ winning battles"; foot.prepend(v); }
     f.append(mk("div", "vc-holo"), mk("div", "vc-glare"));
     // back (shown when the card is turned: the info side)
     const b = mk("div", "vc-back");
@@ -109,14 +131,30 @@ export function coverEl(series, sleeve) {
 }
 export function backCard(series, sleeve, size = "md") { const el = mk("div", "vcard back sz-" + size); el.appendChild(coverEl(series, sleeve)); return el; }
 
-/* a sealed pack: Normal = matte coloured foil, Premium = metallic gold foil, embossed, moving shine, crimped edge */
-export function packEl(series, kind = "normal") {
-    const T = theme(series), el = mk("div", "vpack k-" + kind + " m-" + T.motif + " s-" + series); seriesVars(el, series);
-    el.setAttribute("role", "img"); el.setAttribute("aria-label", T.label + " " + (kind === "premium" ? "Premium" : "Normal") + " pack");
-    el.append(mk("i", "vp-crimp top"), mk("i", "vp-crimp bot"), mk("div", "vp-motif"));
-    const em = mk("div", "vp-emb"); em.innerHTML = T.emblem; el.appendChild(em);
-    const title = mk("div", "vp-title f-" + T.font); title.append(mk("small", null, "ARCADE VAULT"), mk("b", null, T.short)); el.appendChild(title);
-    el.append(mk("i", "vp-kanji", T.kanji), mk("div", "vp-kind", kind === "premium" ? "PREMIUM · 6 CARDS" : "5 CARDS"), mk("div", "vp-foil"), mk("div", "vp-shine"));
+/* a sealed booster pack (styles: css/packs.css). Fixed booster proportions; a crimped (zig-zag) top and bottom seal
+   with ridges, a vertical centre seam, puffed shading like air inside a foil bag, a crinkled foil texture, a
+   specular highlight that follows the pointer / tilt (--mx, --my), rim light and a soft shadow.
+   Normal = coloured foil, partly matte. Premium = metallic gold foil, embossed pattern, a stronger moving shine,
+   finer crimp ridges. Front: the series title in its own lettering, its emblem as a big motif, the kanji, a rarity
+   strip, the card count and the tier name. No official logos. */
+const TEETH = { normal: 14, premium: 22 };
+export function packClip(kind, amp = 1.6) {
+    const n = TEETH[kind] || 14, top = [], bot = [];
+    for (let i = 0; i <= n; i++) { const x = (i / n * 100).toFixed(2); top.push(x + "% " + (i % 2 ? 0 : amp) + "%"); bot.push((100 - i / n * 100).toFixed(2) + "% " + (100 - (i % 2 ? 0 : amp)) + "%"); }
+    return "polygon(" + top.concat(bot).join(", ") + ")";
+}
+const RCOL = ["#9aa1ab", "#b08d4a", "#4aa8ff", "#c9b6ff", "#ff4fa0", "#ffd76a", "#b06bff"];
+export function packEl(series, kind = "normal", o = {}) {
+    const T = theme(series), el = mk("div", "vpack k-" + kind + " s-" + series); seriesVars(el, series);
+    el.setAttribute("role", "img"); el.setAttribute("aria-label", T.label + " " + (kind === "premium" ? "Premium" : "Normal") + " pack, " + (kind === "premium" ? 6 : 5) + " cards");
+    const body = mk("div", "vp-body m-" + T.motif); body.style.clipPath = packClip(kind);
+    const big = mk("i", "vp-big"); big.innerHTML = T.emblem;
+    const title = mk("div", "vp-title f-" + T.font + (T.short.length > 9 ? " long" : "")); title.append(mk("small", null, "ARCADE VAULT"), mk("b", null, T.short));
+    const strip = mk("div", "vp-strip"); const bars = mk("span", "vp-bars"); RCOL.forEach((c, i) => { const b = mk("i"); b.style.setProperty("--rc", c); b.style.setProperty("--i", i); bars.appendChild(b); }); strip.append(bars, mk("small", null, kind === "premium" ? "RARE OR BETTER INSIDE" : "COMMON → MYTHIC"));
+    const label = mk("div", "vp-label"); label.append(mk("b", null, (o.cards || (kind === "premium" ? 6 : 5)) + " CARDS"), mk("small", null, kind === "premium" ? "PREMIUM PACK" : "NORMAL PACK"));
+    body.append(mk("i", "vp-base"), big, mk("b", "vp-kanji", T.kanji), title, strip, label,
+        mk("i", "vp-crimp top"), mk("i", "vp-crimp bot"), mk("i", "vp-seam"), mk("i", "vp-puff"), mk("i", "vp-crinkle"), mk("i", "vp-spec"), mk("i", "vp-shine"), mk("i", "vp-rim"));
+    el.appendChild(body);
     return el;
 }
 /* the pointer / finger moves the light over foil and holo */
