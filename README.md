@@ -260,6 +260,25 @@ Picked under **Game type** in the lobby (Classic / Contest; default Classic). Ev
 - **Firebase:** the same three nodes. In `sketch` a contest holds the public word, the round's artists (`ent`), who is done, the ratings (`rt`, rater → drawing → stars), the gallery order and a round log with every drawing's stars. Every move (done, rate, timeout, check, next, join) is a transaction checked against the round number. Moves that end a phase name it, and the rating moves name the drawing on screen (`gi`), so a late duplicate can't skip one. In `sketchInk` each stroke also carries its owner (`o`). The previous round's strokes are deleted when the next round starts.
 - **Honest limit:** the strokes and ratings are in the shared room, so someone using the developer tools could peek at other sheets while drawing, or see who gave which stars. Normal players can't.
 
+## Arcade Vault (economy) · in progress
+
+Being built in phases: coins (AAP Coins), daily rewards, missions, a shop, scratch cards, series packs, a card
+collection and decks, and Anime Card Vault (mode 9, a card battle). Phase 1 is the plumbing:
+
+- **Every mode reports one standard result** when a match ends: `{ key, mode, players, placements (ties share a place),
+  scores, teams?, duration, settings }`. It is built by `js/vault/result.js` from the room's own final state, so it never
+  changes how a mode plays. The host stores it once in `rooms/<code>/lastResult` and every client reports that same object
+  (if the host is gone, each client builds it from the room state after 5 s). `key` is one per started match, so a reload, a
+  reconnect or a Headbanz sudden death never counts a match twice.
+- **Per-mode metadata** (players, teams, 1v1, short/medium/long, fast) and **every balance number** (prices, odds, rewards,
+  life totals) live in one file: `js/vault/config.js`.
+- **Storage layer** (`js/vault/store.js`): coins, collection, decks, pity, missions and streaks are one document per player.
+  Like the profile, it is stored in this browser (localStorage `aap_vault_v1`): this site has no server and the Firebase
+  rules only allow writes under `rooms/`. Every change goes through `bank.apply(opId, ...)`: idempotent (an operation id
+  pays once), atomic across tabs (Web Locks), never below 0 coins, and logged with its seed in a ledger. A server backend
+  can replace the local one without touching the callers.
+- Tests: `node tools/vault-test.mjs`.
+
 ## Customising
 
 - **Series art and names:** `ANIME_LIBRARY` and `CHARACTER_NAMES` at the top of `js/game.js`. Every character is named; a name left as `""` would show as *Secret character*. The Guess Who Attack on Titan pack uses `images/anime/aot/aot1.jpg` through `aot24.jpg`, in order: Eren Jaeger, Armin Arlert, Sasha Blouse, Annie Leonhart, Miche Zacharias, Zeke Jaeger, Pieck Finger, Dot Pixis, Jean Kirstein, Ymir (Freed), Onyankopon, Floch Forster, Historia Reiss, Falco Grice, Kenny Ackerman, Hange Zoë, Grisha Jaeger, Bertholdt Hoover, Levi Ackerman, Erwin Smith, Mikasa Ackerman, Reiner Braun, Connie Springer, Gabi Braun.

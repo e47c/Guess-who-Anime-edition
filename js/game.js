@@ -26,6 +26,8 @@ import * as DRAFT from "./draft/draft.js?v=6";
 import * as FEUD from "./feud/feud.js?v=6";
 import * as LIKELY from "./feud/likely.js?v=3";
 import * as SKETCH from "./sketch/sketch.js?v=8";
+import * as VAULT from "./vault/vault.js?v=1";
+import { resultOf, resultToDb, resultFromDb } from "./vault/result.js?v=1";
 import { initCine, cineHook, cineHas } from "./cine/engine.js?v=12";
 import { hand as cineHand } from "./cine/hands.js?v=11";
 import * as CK from "./cine/kit.js?v=11";
@@ -119,6 +121,7 @@ try {
         "Firebase UID:",
         user.uid
     );
+    VAULT.bank.setOwner(user.uid);
 
 }
 
@@ -3979,6 +3982,7 @@ function listenToRoom() {
         if (d.boardSize) boardSize = Number(d.boardSize);
         document.body.classList.toggle("is-host", amHost());
         applyTheme(); updatePresenceBanner(d); winSoundPreload(d.animes); musicSync(d); emotesSync(d);
+        resultSync(d);       // before rendering: a render error must never swallow a finished match
         hostDuties(d);
         route(d);
     }));
@@ -4019,6 +4023,39 @@ function listenToRoom() {
         }
     }));
 }
+/* ---------- the standard match result (every mode, A1) ----------
+   When a match reaches its final state the host stores ONE result object in rooms/<code>/lastResult
+   (built by vault/result.js from the room's own state); every client then reports that same object to
+   the Vault. If the host doesn't write it within 5 s (left, offline), a client reports its own copy,
+   built from the same state. Reports are per match key; whatever pays for it must be idempotent. */
+let resultSeen = "", resultTimer = 0, resultWriting = "";
+const resultX = { draftStandings: s => DRAFT.standings(s, DRAFT.draftDb()) };
+function resultNow(d) { try { return resultOf(d, resultX); } catch (e) { console.error("result", e); return null; } }
+function resultSync(d) {
+    const r = resultNow(d);
+    if (!r) { clearTimeout(resultTimer); resultTimer = 0; return; }
+    const stored = resultFromDb(d.lastResult);
+    if (stored && stored.key === r.key) { resultEmit(stored); return; }
+    if (amHost()) {
+        if (resultWriting === r.key) return; resultWriting = r.key;
+        setTimeout(() => runTransaction(ref(db, "rooms/" + room + "/lastResult"), cur => (cur && cur.key === r.key) ? undefined : resultToDb(r)).catch(e => console.error("result write", e)), 0);
+    } else if (!resultTimer && resultSeen !== r.key) {
+        resultTimer = setTimeout(() => {
+            resultTimer = 0;
+            const d2 = currentRoomData, r2 = d2 && resultNow(d2);
+            if (r2 && r2.key === r.key && !(d2.lastResult && d2.lastResult.key === r.key)) resultEmit(Object.assign(r2, { src: "local" }));
+        }, 5000);
+    }
+}
+function resultEmit(r) {
+    if (resultSeen === r.key) return;
+    resultSeen = r.key; clearTimeout(resultTimer); resultTimer = 0;
+    window.__aapResults = (window.__aapResults || []).concat([r]).slice(-20);
+    console.info("[AAP result]", r.key, r);
+    VAULT.reportResult(r, { me: Number(myPlayer), room, uid: (user && user.uid) || "" });
+    document.dispatchEvent(new CustomEvent("aap:result", { detail: r }));
+}
+
 let guardKey = "";
 function hostDuties(d) {
     if (!amHost() || exiting) return;
