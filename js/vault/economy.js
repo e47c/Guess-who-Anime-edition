@@ -12,7 +12,7 @@
    4. Paid only if: 2+ real players (distinct accounts), the game lasted the mode's minimum, and today's
       coins from games stay under the daily cap (the last game is cut to fit the cap).
    ===================================================================== */
-import { EARN, DAILY_LOGIN, MISSIONS, MODE_META, BATTLE } from "./config.js?v=3";
+import { EARN, DAILY_LOGIN, MISSIONS, MODE_META, BATTLE } from "./config.js?v=4";
 import { rngFrom, shuffleWith } from "./rng.js?v=1";
 
 /* parts of the Vault that exist so far (missions that need a missing part are never rolled) */

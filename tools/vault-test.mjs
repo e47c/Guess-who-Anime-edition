@@ -2,15 +2,15 @@
 // Phase 1: the standard match result for every mode (from final room states), the storage layer (idempotent,
 // atomic, never negative), the seeded RNG, the config. Phase 2: coins per placement, anti-farming, the daily
 // cap, missions and the login streak.
-import { resultOf, resultToDb, resultFromDb, placeRows, RESULT_MODES } from "../js/vault/result.js";
-import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=3";
+import { resultOf, resultToDb, resultFromDb, placeRows, RESULT_MODES, battleResultOf } from "../js/vault/result.js";
+import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=4";
 import { rngFrom, newSeed, pickWeighted, shuffleWith } from "../js/vault/rng.js?v=1";
-import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=3";
-import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins } from "../js/vault/economy.js?v=2";
-import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=1";
-import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordBattle, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=1";
+import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=4";
+import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins } from "../js/vault/economy.js?v=3";
+import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=2";
+import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordBattle, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=2";
 import { CARDS, BY_SERIES, CARD_SERIES } from "../js/vault/carddb.js?v=1";
-import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=3";
+import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=4";
 
 let ok = 0, bad = 0;
 const t = (c, m) => { if (c) ok++; else { bad++; console.log("  ✘", m); } };
@@ -78,9 +78,29 @@ sect("Anime Sketch");
 r = resultOf(room("sketch", 3, { sketch: { phase: "over", players: [1, 2, 3], score: { p1: 300, p2: 450, p3: 300 } } }), null, NOW);
 t(places(r) === "2:1 1:2 3:2", "classic and contest share the score table");
 
-sect("Anime Card Vault (mode 9, built later)");
+sect("ARCADE VAULT battles (one result per challenge, not per room match)");
 r = resultOf(room("cardvault", 3, { cv: { phase: "over", places: [{ p: 2, place: 1, life: 7 }, { p: 1, place: 2, life: 0 }, { p: 3, place: 2, life: 0 }] } }), null, NOW);
 t(places(r) === "2:1 1:2 3:2", "elimination order with shared places");
+t(MODE_META.cardvault.name === "Arcade Vault", "the ninth mode is called Arcade Vault");
+{
+    const lobbyRoom = Object.assign({ status: "waiting", gameType: "cardvault" }, players(4));
+    t(resultOf(lobbyRoom, null, NOW) === null, "the Vault lobby itself never reports a match");
+    const node = { from: 3, to: [1], timer: 30, pack: 1, at: NOW - 200000, t0: NOW - 180000, end: NOW, uids: { p1: "u1", p3: "u3" },
+        s: { phase: "over", players: [3, 1], names: { p1: "P1", p3: "P3" }, places: [{ p: 3, place: 1, life: 9 }, { p: 1, place: 2, life: 0 }] } };
+    const br = battleResultOf(node, lobbyRoom, "bx1", NOW);
+    t(br && br.key === "cardvault:bx1" && br.mode === "cardvault", "battle result keyed per battle id");
+    t(places(br) === "3:1 1:2" && br.players.length === 2 && br.players.every(p => p.uid), "only the two duelists are in it, with their uids");
+    t(br.duration === 180 && br.settings.cvFormat === "duel" && br.settings.cvTimer === 30 && br.settings.cvPack === 1, "duration from the battle's own start; its settings");
+    t(battleResultOf(Object.assign({}, node, { s: Object.assign({}, node.s, { phase: "pick" }) }), lobbyRoom, "bx1", NOW) === null, "no result while the battle runs");
+    t(eq(resultFromDb(JSON.parse(JSON.stringify(resultToDb(br)))), br), "a battle result survives the Firebase round trip");
+    const ffa = battleResultOf({ from: 1, to: [2, 4], t0: NOW - 90000, end: NOW, s: { phase: "over", players: [1, 2, 4], names: {}, places: [{ p: 4, place: 1, life: 3 }, { p: 1, place: 2, life: 0 }, { p: 2, place: 2, life: 0 }] } }, lobbyRoom, "bx2", NOW);
+    t(ffa.settings.cvFormat === "ffa" && ffa.players.every(p => p.uid) && places(ffa) === "4:1 1:2 2:2", "free-for-all battle, uids taken from the room when the node has none");
+    let w = blankVault(NOW);
+    const pay = applyGame(w, br, 3, NOW, 7, null);
+    t(pay.place === 1 && pay.coins === Math.round(40 * EARN.lengthMult.short), "the winner of a 3-minute duel is paid like any short game");
+    w = blankVault(NOW); const quick = battleResultOf(Object.assign({}, node, { t0: NOW - 30000 }), lobbyRoom, "bx3", NOW);
+    t(applyGame(w, quick, 3, NOW, 7, null).coins === 0, "a battle under the minimum length pays nothing");
+}
 
 sect("Firebase round trip");
 r = resultOf(room("feud", 4, { feud: { phase: "over", teams: { A: [1, 2], B: [3, 4] }, score: { A: 3, B: 1 } } }), null, NOW);
@@ -178,7 +198,7 @@ const mx = w.missions.list.map(m => m.id).join();
 t(!ensureMissions(w, T0 + 3600000, 999) && w.missions.list.map(m => m.id).join() === mx, "rolled once per day");
 const w2 = blankVault(T0); ensureMissions(w2, T0, 3); t(w2.missions.list.map(m => m.id).join() === mx, "same seed, same missions (auditable)");
 const fresh = w.missions.list.find(m => m.kind === "fresh");
-t(fresh.modes.length >= 1 && fresh.modes.every(m => MODE_META[m] && m !== "cardvault"), "'try a mode' lists modes not played in 7 days (Card Vault once it exists)");
+t(fresh.modes.length >= 1 && fresh.modes.every(m => MODE_META[m] && m !== "cardvault"), "'try a mode' lists modes not played in 7 days (Arcade Vault excluded)");
 w = blankVault(T0); Object.keys(MODE_META).forEach(m => { w.modes[m] = T0 - 86400000; }); w.modes.imposter = T0 - 10 * 86400000; ensureMissions(w, T0, 4);
 t(eq(w.missions.list.find(m => m.kind === "fresh").modes, ["imposter"]), "only Imposter is stale -> that's the one");
 w = blankVault(T0); Object.keys(MODE_META).forEach((m, i) => { w.modes[m] = T0 - 3600000 * (i + 1); }); ensureMissions(w, T0, 4);
@@ -221,7 +241,8 @@ t(nightPartyCoins(true, 4) === 140 && nightPartyCoins(false, 3) === 30, "Night P
 sect("shop: Season 1 skins");
 const rich = () => Object.assign(blankVault(T0), { coins: 100000 });
 t(SKIN_ITEMS.length === 22 && SKIN_ITEMS.some(i => i.name === "Iron Frame - Season 1") && SKIN_ITEMS.some(i => i.name === "Prismatic Background - Season 1"), "11 tiers x (Frame + Background), named like \"Iron Frame - Season 1\"");
-t(eq(SKINS.tiers.map(x => x.price), [150, 250, 400, 600, 900, 1300, 1800, 2200, 2200, 2500, 3000]) && SKINS.tiers.filter(x => x.animated).map(x => x.id).join() === "flame,water", "prices as specified; only Flame and Water are animated");
+t(eq(SKINS.tiers.map(x => x.price), [150, 250, 400, 600, 900, 1300, 1800, 2200, 2200, 2500, 3000]) && SKINS.tiers.every(x => Number(x.speed) > 0), "prices as specified; every tier has an animation speed (all frames and backgrounds animate)");
+t(SKIN_ITEMS.filter(i => i.kind === "frame").every(i => / Frame - Season 1$/.test(i.name)) && SKIN_ITEMS.filter(i => i.kind === "bg").every(i => / Background - Season 1$/.test(i.name)), "names: \"Iron Frame - Season 1\", \"Iron Background - Season 1\"");
 w = Object.assign(blankVault(T0), { coins: 200 });
 let sres = buySkin(w, "sf_iron");
 t(!sres.error && w.coins === 50 && w.inv.sf_iron === 1, "buy the Iron Frame: -150");

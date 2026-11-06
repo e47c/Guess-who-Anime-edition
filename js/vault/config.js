@@ -1,6 +1,6 @@
 /* =====================================================================
    ARCADE VAULT · BALANCE CONFIG
-   Every number of the economy and of Anime Card Vault lives here, so balance can be tuned without touching
+   Every number of the economy and of ARCADE VAULT (the ninth lobby mode) lives here, so balance can be tuned without touching
    game logic. Nothing else in the code hard-codes a price, an odd, a reward or a life total.
    Edit a value, bump `?v=` where vault files are imported, done.
    ===================================================================== */
@@ -23,7 +23,7 @@ export const MODE_META = {
     feud:      { name: "Anime Feud",       min: 2, max: 8, teams: true,  duel: true,  length: "long",   fast: false },
     likely:    { name: "Most Likely",      min: 2, max: 8, teams: true,  duel: true,  length: "medium", fast: true  },
     sketch:    { name: "Anime Sketch",     min: 2, max: 8, teams: false, duel: true,  length: "long",   fast: false },
-    cardvault: { name: "Anime Card Vault", min: 2, max: 8, teams: false, duel: true,  length: "short",  fast: true  }
+    cardvault: { name: "Arcade Vault",     min: 2, max: 8, teams: false, duel: true,  length: "short",  fast: true  }   // id kept for saved data
 };
 
 /* ---------- A2. Earning coins ---------- */
@@ -56,25 +56,29 @@ export const MISSIONS = {
     fresh: { id: "fresh", text: "Play a mode you haven't played in 7 days", kind: "fresh", goal: 1, coins: 40 }
 };
 
-/* ---------- A3. Season 1 skins: each tier sold as a Frame and a Background ---------- */
+/* ---------- A3. Season 1 skins: each tier sold as a Frame and a Background ----------
+   Frame = the animated ring around the circular picture. Background = the whole player-card panel (the lobby seat).
+   speed = how fast that tier's animations run (1 = as designed, 2 = half as fast); read once into CSS at start. */
 export const SKINS = {
     season: 1,
     bundleOff: 0.20,                             // frame + background together
     dupRefund: 0.50,                             // a duplicate cosmetic refunds this share of its price
     tiers: [
-        { id: "iron",         name: "Iron",         price: 150 },
-        { id: "bronze",       name: "Bronze",       price: 250 },
-        { id: "silver",       name: "Silver",       price: 400 },
-        { id: "gold",         name: "Gold",         price: 600 },
-        { id: "platinum",     name: "Platinum",     price: 900 },
-        { id: "emerald",      name: "Emerald",      price: 1300 },
-        { id: "diamond",      name: "Diamond",      price: 1800 },
-        { id: "flame",        name: "Flame",        price: 2200, animated: true },
-        { id: "water",        name: "Water",        price: 2200, animated: true },
-        { id: "transcendent", name: "Transcendent", price: 2500 },
-        { id: "prismatic",    name: "Prismatic",    price: 3000 }      // was "Holo" in the brief; renamed so it never clashes with Holo cards
+        { id: "iron",         name: "Iron",         price: 150, speed: 1 },
+        { id: "bronze",       name: "Bronze",       price: 250, speed: 1 },
+        { id: "silver",       name: "Silver",       price: 400, speed: 1 },
+        { id: "gold",         name: "Gold",         price: 600, speed: 1 },
+        { id: "platinum",     name: "Platinum",     price: 900, speed: 1 },
+        { id: "emerald",      name: "Emerald",      price: 1300, speed: 1 },
+        { id: "diamond",      name: "Diamond",      price: 1800, speed: 1 },
+        { id: "flame",        name: "Flame",        price: 2200, speed: 1 },
+        { id: "water",        name: "Water",        price: 2200, speed: 1 },
+        { id: "transcendent", name: "Transcendent", price: 2500, speed: 1 },
+        { id: "prismatic",    name: "Prismatic",    price: 3000, speed: 1 }      // was "Holo" in the brief; renamed so it never clashes with Holo cards
     ],
-    earnOnly: []                                 // tier ids that can't be bought (future prestige rewards)
+    earnOnly: [],                                // tier ids that can't be bought (future prestige rewards)
+    ringWidth: 0.11,                             // frame ring thickness, as a share of the picture's size
+    pauseOffscreen: true                         // animated frames / backgrounds pause while scrolled out of view
 };
 
 /* ---------- A4. Scratch cards (rolled before the scratch UI; scratching only reveals) ---------- */
@@ -103,7 +107,7 @@ export const SHARDS = { common: 5, uncommon: 10, rare: 25, ultra: 60, epic: 120,
 export const DECK = { size: 10, maxCopies: 1, starterCount: 10, maxDecks: 8, veteranWins: 10 };
 export const TRADE = { maxCards: 5, maxOpen: 3 };      // cards per side of one offer, open offers per player
 
-/* ---------- B. Anime Card Vault ---------- */
+/* ---------- B. ARCADE VAULT card battles (challenges from the Vault's Battle tab) ---------- */
 export const BATTLE = {
     duel: { life: 20, hand: 4, draw: 1 },
     ffa:  { life: 25, hand: 4, draw: 1, min: 3, max: 8 },
@@ -111,5 +115,6 @@ export const BATTLE = {
     reconnectGrace: 20,                           // seconds a disconnected player is waited for before auto-picks
     length: "short",                              // for the coin multiplier (a duel takes 2-4 minutes)
     winnerPackOption: true,                       // host setting: "winner picks a free pack of any series"
+    challenge: { expireSeconds: 60, keepOverMinutes: 10 },   // an unanswered challenge expires; finished battles are cleared after this
     statTotal: { common: [11, 12], uncommon: [11, 12], rare: [11, 12], ultra: [11, 12], epic: [11, 12], legendary: [11, 12], mythic: [12, 13] }   // Power + Defense per rarity (nearly flat on purpose)
 };

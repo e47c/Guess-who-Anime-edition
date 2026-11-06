@@ -116,49 +116,223 @@ body.fx-lite .coin-pop { transition: opacity .2s; transform: translate(-50%, 0);
 @media (prefers-reduced-motion: reduce) { .vault-chip, .coin-pop, .vt-mbar i { transition: none; animation: none !important; } }
 
 /* =====================================================================
-   SEASON 1 COSMETICS (any avatar, any screen: lobby, results, profile card, battle)
-   Frame = the ring (drawn on top). Background = inside the circle, behind the picture.
-   Everything is clipped to the same circle as the picture: no square corners.
-   Plain metals are static with a shine; Flame and Water loop a subtle animation.
+   SEASON 1 COSMETICS
+   FRAME (.ava.sf-<tier>, any avatar on any screen) = the ring around the circular picture:
+     .ava background  -> the ring's base metal / gem
+     .ava-ring        -> a layer masked to the ring: glints, sweeps, facets, ripples that run along it
+     .ava-fx          -> a free layer just outside the ring: sparkles, flames, bubbles, orbiting lights
+   BACKGROUND (.seat.sbg[data-bg=<tier>]) = the whole player-card panel (the lobby seat), on top of the lobby's
+     diagonal-stripe base motif and its angled corner cuts. .sbg-fx is its animated layer (under the stripes).
+   Everything is CSS (transforms + opacity, so it stays on the compositor); --sp-<tier> (from config.js SKINS speed)
+   scales each tier's timing. .fx-off (off-screen) pauses; Reduced effects / reduced motion = the static look.
    ===================================================================== */
-.ava.sf { padding: calc(var(--ava) * .095); }
-.ava-bg { position: absolute; inset: calc(var(--ava) * .06); border-radius: 50%; overflow: hidden; z-index: 0; }
-.ava.sf .ava-bg { inset: calc(var(--ava) * .095); }
-.ava .ava-in { position: relative; z-index: 1; }
-.ava.has-bg .ava-in { transform: scale(.8); box-shadow: 0 0 0 calc(var(--ava) * .02) rgba(0,0,0,.35); }
-.ava.has-bg .ava-in.glyph { background: transparent; transform: none; box-shadow: none; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
-.ava-sheen { position: absolute; inset: 0; z-index: 2; border-radius: 50%; pointer-events: none; background: linear-gradient(135deg, rgba(255,255,255,.6), transparent 32%, transparent 68%, rgba(255,255,255,.28));
-    -webkit-mask: radial-gradient(circle, transparent calc(50% - var(--ava) * .095), #000 calc(50% - var(--ava) * .094)); mask: radial-gradient(circle, transparent calc(50% - var(--ava) * .095), #000 calc(50% - var(--ava) * .094)); }
-/* frames */
-.ava.sf-iron { background: linear-gradient(135deg, #8e959e, #4a4f57 45%, #9aa1aa 60%, #3b3f45); box-shadow: 0 0 0 1px #2a2d31, 0 4px 14px rgba(0,0,0,.5); }
-.ava.sf-bronze { background: linear-gradient(135deg, #f0b97a, #8a4f1d 45%, #d89355 60%, #5c3412); box-shadow: 0 0 0 1px #4a2a0c, 0 4px 14px rgba(0,0,0,.5); }
-.ava.sf-silver { background: linear-gradient(135deg, #ffffff, #9ea6b2 40%, #eef1f5 58%, #7b8491); box-shadow: 0 0 0 1px #5b636e, 0 4px 14px rgba(0,0,0,.5); }
-.ava.sf-gold { background: linear-gradient(135deg, #fff3b0, #d9a441 35%, #8a5a10 55%, #ffe38a 75%, #b8860b); box-shadow: 0 0 0 1px #6b4708, 0 0 14px rgba(240,200,105,.45), 0 4px 14px rgba(0,0,0,.5); }
-.ava.sf-platinum { background: linear-gradient(135deg, #f4fbff, #b8c9d6 35%, #e4f1fa 55%, #8fa4b5 75%, #f7fdff); box-shadow: 0 0 0 1px #6f8494, 0 0 16px rgba(200,230,255,.45), 0 4px 14px rgba(0,0,0,.5); }
-.ava.sf-emerald { background: conic-gradient(from 20deg, #b8ffe0, #0f9d58, #04482a, #3ddc84, #0b6b3c, #b8ffe0); box-shadow: 0 0 0 1px #033a22, 0 0 16px rgba(61,220,132,.45), 0 4px 14px rgba(0,0,0,.5); }
-.ava.sf-diamond { background: conic-gradient(from 0deg, #e8fbff, #7fd8ff, #ffffff, #4ab8f0, #dff6ff, #9ae6ff, #e8fbff); box-shadow: 0 0 0 1px #3a8cb8, 0 0 20px rgba(140,220,255,.6), 0 4px 14px rgba(0,0,0,.5); }
-.ava.sf-flame { background: conic-gradient(from var(--fa, 0deg), #fff3b0, #ff9a2c, #ff2a00, #ffcf4a, #ff4a00, #fff3b0); box-shadow: 0 0 18px rgba(255,106,26,.7), 0 4px 14px rgba(0,0,0,.5); animation: sfSpin 4s linear infinite; }
-.ava.sf-water { background: conic-gradient(from var(--fa, 0deg), #e0fbff, #3ec6ff, #0a4fb0, #7fe3ff, #0b6fd6, #e0fbff); box-shadow: 0 0 18px rgba(62,198,255,.6), 0 4px 14px rgba(0,0,0,.5); animation: sfSpin 6s linear infinite; }
-.ava.sf-transcendent { background: conic-gradient(from 0deg, #fff8d6, #ffffff, #ffe9a8, #ffffff, #fff8d6); box-shadow: 0 0 0 1px #e8d28a, 0 0 22px rgba(255,240,190,.85), 0 0 4px #fff, 0 4px 14px rgba(0,0,0,.5); }
-.ava.sf-prismatic { background: conic-gradient(from 0deg, #ff5ad1, #f0c869, #4dffb8, #4dc3ff, #b44dff, #ff5ad1); box-shadow: 0 0 0 1px rgba(255,255,255,.6), 0 0 18px rgba(200,120,255,.55), 0 4px 14px rgba(0,0,0,.5); }
-@property --fa { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
-@keyframes sfSpin { to { --fa: 360deg; } }
-/* backgrounds (inside the circle) */
-.bg-iron { background: radial-gradient(circle at 30% 25%, #6b727c, #2b2f35 70%); }
-.bg-bronze { background: radial-gradient(circle at 30% 25%, #c98a4b, #4e2a0e 75%); }
-.bg-silver { background: radial-gradient(circle at 30% 25%, #f4f6fa, #8a93a0 70%); }
-.bg-gold { background: radial-gradient(circle at 30% 25%, #fff1b0, #c48b26 55%, #5a3a06); }
-.bg-platinum { background: radial-gradient(circle at 30% 25%, #ffffff, #b9cbd8 55%, #63788a); }
-.bg-emerald { background: radial-gradient(circle at 30% 25%, #9cf5c9, #0c7a44 55%, #02301a); }
-.bg-diamond { background: conic-gradient(from 45deg at 50% 50%, #e8fbff, #8ed9ff, #ffffff, #5bbbe8, #e8fbff); }
-.bg-flame { background: radial-gradient(ellipse 60% 70% at 50% 110%, #fff3b0, #ff8a1a 35%, #c41a00 65%, #2a0500); }
-.bg-water { background: radial-gradient(ellipse 80% 60% at 50% 115%, #bff3ff, #2aa8e8 40%, #0a3a8a 75%, #03152e); }
-.bg-transcendent { background: radial-gradient(circle at 50% 40%, #ffffff, #fff4d0 40%, #e9cf86 80%); }
-.bg-prismatic { background: linear-gradient(135deg, #ff9ae2, #ffe9a0 25%, #9effd6 50%, #9edcff 75%, #d6a6ff); }
-.bg-flame::after, .bg-water::after { content: ""; position: absolute; inset: -20%; background: radial-gradient(circle, rgba(255,255,255,.35) 0 6%, transparent 7%) 0 0 / 30% 30%; animation: bgDrift 5s linear infinite; mix-blend-mode: overlay; }
-.bg-water::after { animation-duration: 8s; }
-@keyframes bgDrift { to { transform: translateY(-30%); } }
-body.fx-lite .ava.sf-flame, body.fx-lite .ava.sf-water, body.fx-lite .bg-flame::after, body.fx-lite .bg-water::after { animation: none !important; }
+:root { --ring: .11; }
+.ava.sf { padding: calc(var(--ava) * var(--ring)); }
+.ava.sf .ava-in { position: relative; z-index: 1; box-shadow: 0 0 0 1px rgba(0,0,0,.55); }
+.ava-ring, .ava-fx { position: absolute; pointer-events: none; border-radius: 50%; }
+.ava-ring { inset: 0; z-index: 2; overflow: hidden;
+    -webkit-mask: radial-gradient(circle closest-side, transparent calc(var(--ava) * (.5 - var(--ring)) - .6px), #000 calc(var(--ava) * (.5 - var(--ring))));
+            mask: radial-gradient(circle closest-side, transparent calc(var(--ava) * (.5 - var(--ring)) - .6px), #000 calc(var(--ava) * (.5 - var(--ring)))); }
+.ava-fx { inset: calc(var(--ava) * -.16); z-index: 3; }
+.ava-ring::before, .ava-ring::after, .ava-fx::before, .ava-fx::after { content: ""; position: absolute; inset: 0; border-radius: 50%; }
+.ava .ava-lvl { z-index: 4; }
+/* a small sparkle / bubble / ember placed on the fx layer: left/top = its centre */
+.sf-gold .ava-fx::before, .sf-gold .ava-fx::after, .sf-diamond .ava-fx::before, .sf-diamond .ava-fx::after, .sf-water .ava-fx::before, .sf-water .ava-fx::after {
+    inset: auto; width: calc(var(--ava) * var(--pz, .16)); height: calc(var(--ava) * var(--pz, .16)); margin: calc(var(--ava) * var(--pz, .16) / -2); border-radius: 0; }
+.ava.sf { --star: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%); }
+
+/* IRON: dark gunmetal, eight rivets, an occasional glint */
+.ava.sf-iron { --sp: var(--sp-iron, 1); background: linear-gradient(145deg, #737a83, #2c3036 38%, #59606a 60%, #1c1f23); box-shadow: 0 0 0 1px #121417, 0 4px 14px rgba(0,0,0,.5); }
+.sf-iron .ava-ring::before { --r1: calc(var(--ava) * .017); --r2: calc(var(--ava) * .027);
+    background: radial-gradient(circle at 50% 5.5%, #dfe3e8 0 var(--r1), #0b0c0e var(--r2), transparent calc(var(--r2) + .5px)), radial-gradient(circle at 81.5% 18.5%, #dfe3e8 0 var(--r1), #0b0c0e var(--r2), transparent calc(var(--r2) + .5px)),
+        radial-gradient(circle at 94.5% 50%, #dfe3e8 0 var(--r1), #0b0c0e var(--r2), transparent calc(var(--r2) + .5px)), radial-gradient(circle at 81.5% 81.5%, #dfe3e8 0 var(--r1), #0b0c0e var(--r2), transparent calc(var(--r2) + .5px)),
+        radial-gradient(circle at 50% 94.5%, #dfe3e8 0 var(--r1), #0b0c0e var(--r2), transparent calc(var(--r2) + .5px)), radial-gradient(circle at 18.5% 81.5%, #dfe3e8 0 var(--r1), #0b0c0e var(--r2), transparent calc(var(--r2) + .5px)),
+        radial-gradient(circle at 5.5% 50%, #dfe3e8 0 var(--r1), #0b0c0e var(--r2), transparent calc(var(--r2) + .5px)), radial-gradient(circle at 18.5% 18.5%, #dfe3e8 0 var(--r1), #0b0c0e var(--r2), transparent calc(var(--r2) + .5px)); }
+.sf-iron .ava-ring::after { background: conic-gradient(transparent 0 290deg, rgba(255,255,255,.85) 325deg, transparent 350deg); opacity: 0; animation: avGlintRare calc(7s * var(--sp)) ease-in-out infinite; }
+
+/* BRONZE: warm copper, a slow glint travelling round */
+.ava.sf-bronze { --sp: var(--sp-bronze, 1); background: linear-gradient(135deg, #f4c48f, #9a5a24 38%, #dc9a5c 58%, #5a3110); box-shadow: 0 0 0 1px #3d2008, 0 4px 14px rgba(0,0,0,.5); }
+.sf-bronze .ava-ring::before { background: repeating-radial-gradient(circle, rgba(60,25,0,.18) 0 1px, transparent 1px 3px); }
+.sf-bronze .ava-ring::after { background: conic-gradient(transparent 0 250deg, rgba(255,226,180,.75) 300deg, transparent 350deg); animation: avSpin calc(9s * var(--sp)) linear infinite; }
+
+/* SILVER: polished, a light sweep every few seconds */
+.ava.sf-silver { --sp: var(--sp-silver, 1); background: conic-gradient(from 210deg, #ffffff, #9aa3ae, #eef1f5, #737c89, #f6f8fb, #a3acb7, #ffffff); box-shadow: 0 0 0 1px #4e5560, 0 4px 14px rgba(0,0,0,.5); }
+.sf-silver .ava-ring::after { border-radius: 0; inset: -10%; background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,.95) 50%, transparent 62%); transform: translateX(-120%); animation: avSweep calc(4s * var(--sp)) ease-in-out infinite; }
+
+/* GOLD: gold with tiny sparkles */
+.ava.sf-gold { --sp: var(--sp-gold, 1); background: linear-gradient(135deg, #fff3b0, #d9a441 32%, #8a5a10 52%, #ffe38a 74%, #b8860b); box-shadow: 0 0 0 1px #5c3c06, 0 0 12px rgba(240,200,105,.4), 0 4px 14px rgba(0,0,0,.5); }
+.sf-gold .ava-ring::after { background: conic-gradient(transparent 0 200deg, rgba(255,250,215,.6) 260deg, transparent 320deg); animation: avSpin calc(6s * var(--sp)) linear infinite; }
+.sf-gold .ava-fx::before, .sf-gold .ava-fx::after { --pz: .15; clip-path: var(--star); background: radial-gradient(circle, #fff 0 22%, #ffe58a 45%, rgba(255,214,90,0) 70%); left: 74%; top: 26%; transform: scale(.7); animation: avTwinkle calc(2.2s * var(--sp)) ease-in-out infinite; }
+.sf-gold .ava-fx::after { --pz: .11; left: 21%; top: 79%; animation-delay: calc(-1.1s * var(--sp)); }
+
+/* PLATINUM: cool white-blue, a soft pulsing glow */
+.ava.sf-platinum { --sp: var(--sp-platinum, 1); background: linear-gradient(135deg, #f6fcff, #b9cad8 34%, #e8f3fb 54%, #8ea3b5 76%, #f8fdff); box-shadow: 0 0 0 1px #5f7485, 0 4px 14px rgba(0,0,0,.5); }
+.sf-platinum .ava-fx::before { inset: calc(var(--ava) * .16); box-shadow: 0 0 calc(var(--ava) * .14) calc(var(--ava) * .03) rgba(196,228,255,.9), 0 0 calc(var(--ava) * .05) rgba(255,255,255,.9); opacity: .7; animation: avPulse calc(2.8s * var(--sp)) ease-in-out infinite; }
+.sf-platinum .ava-ring::after { background: conic-gradient(from 90deg, transparent 0 140deg, rgba(220,240,255,.55) 180deg, transparent 220deg); animation: avSpin calc(10s * var(--sp)) linear infinite; }
+
+/* EMERALD: a faceted green gem ring, its inner edge glowing in pulses */
+.ava.sf-emerald { --sp: var(--sp-emerald, 1); background: linear-gradient(135deg, rgba(255,255,255,.38), transparent 45%, rgba(0,0,0,.4)), repeating-conic-gradient(from 6deg, #8af8c4 0 10deg, #14a85f 10deg 20deg, #05502b 20deg 30deg); box-shadow: 0 0 0 1px #022e19, 0 0 14px rgba(61,220,132,.4), 0 4px 14px rgba(0,0,0,.5); }
+.sf-emerald .ava-ring::after { background: conic-gradient(transparent 0 300deg, rgba(210,255,232,.7) 330deg, transparent 355deg); animation: avSpin calc(5s * var(--sp)) linear infinite; }
+.sf-emerald .ava-fx::after { inset: calc(var(--ava) * (.16 + var(--ring))); background: radial-gradient(circle closest-side, transparent 66%, rgba(61,220,132,.6) 100%); opacity: .5; animation: avPulse calc(2.4s * var(--sp)) ease-in-out infinite; }
+
+/* DIAMOND: faceted ice-white ring with sparkle bursts */
+.ava.sf-diamond { --sp: var(--sp-diamond, 1); background: linear-gradient(160deg, rgba(255,255,255,.45), transparent 50%), repeating-conic-gradient(from 0deg, #f2fdff 0 9deg, #8fdcff 9deg 18deg, #ffffff 18deg 24deg, #48ade3 24deg 36deg); box-shadow: 0 0 0 1px #2b7aa6, 0 0 18px rgba(140,220,255,.55), 0 4px 14px rgba(0,0,0,.5); }
+.sf-diamond .ava-ring::after { background: conic-gradient(transparent 0 320deg, #fff 340deg, transparent 355deg); animation: avSpin calc(3s * var(--sp)) linear infinite; }
+.sf-diamond .ava-fx { animation: avStep calc(7.8s * var(--sp)) steps(3) infinite; }
+.sf-diamond .ava-fx::before, .sf-diamond .ava-fx::after { --pz: .22; clip-path: var(--star); background: radial-gradient(circle, #fff 0 20%, #c8f1ff 40%, rgba(120,210,255,0) 70%); left: 80%; top: 22%; transform: scale(.55) rotate(0); animation: avBurst calc(2.6s * var(--sp)) ease-out infinite; }
+.sf-diamond .ava-fx::after { --pz: .16; left: 14%; top: 64%; animation-delay: calc(-1.3s * var(--sp)); }
+
+/* FLAME: fire licking round the ring (two counter-rotating tongues of flame outside it, the ring itself churning) */
+.ava.sf-flame { --sp: var(--sp-flame, 1); background: conic-gradient(#fff3b0, #ff9a2c, #ff2a00, #ffcf4a, #ff4a00, #fff3b0); box-shadow: 0 0 16px rgba(255,106,26,.65), 0 4px 14px rgba(0,0,0,.5); }
+.sf-flame .ava-ring::before { background: conic-gradient(#fff3b0, #ff9a2c, #ff2a00, #ffcf4a, #ff4a00, #fff3b0); animation: avSpin calc(3s * var(--sp)) linear infinite; }
+.sf-flame .ava-ring::after { background: repeating-conic-gradient(rgba(255,255,200,.55) 0 4deg, transparent 4deg 20deg); animation: avSpin calc(2s * var(--sp)) linear infinite reverse; mix-blend-mode: screen; }
+.sf-flame .ava-fx::before, .sf-flame .ava-fx::after { background: repeating-conic-gradient(rgba(255,214,90,.95) 0 3deg, rgba(255,96,10,.75) 8deg, transparent 13deg 24deg);
+    -webkit-mask: radial-gradient(circle closest-side, transparent 68%, #000 74%, rgba(0,0,0,.6) 84%, transparent 100%); mask: radial-gradient(circle closest-side, transparent 68%, #000 74%, rgba(0,0,0,.6) 84%, transparent 100%);
+    animation: avLick calc(2.6s * var(--sp)) linear infinite; }
+.sf-flame .ava-fx::after { background: repeating-conic-gradient(from 9deg, rgba(255,240,150,.85) 0 2deg, rgba(255,60,0,.6) 6deg, transparent 10deg 31deg); animation: avLick calc(1.8s * var(--sp)) linear infinite reverse; mix-blend-mode: screen; }
+
+/* WATER: ripples flowing round the ring, small bubbles rising off it */
+.ava.sf-water { --sp: var(--sp-water, 1); background: conic-gradient(#e0fbff, #3ec6ff, #0a4fb0, #7fe3ff, #0b6fd6, #e0fbff); box-shadow: 0 0 16px rgba(62,198,255,.5), 0 4px 14px rgba(0,0,0,.5); }
+.sf-water .ava-ring::before { background: repeating-conic-gradient(rgba(255,255,255,0) 0 8deg, rgba(255,255,255,.5) 13deg, rgba(255,255,255,0) 18deg 30deg); animation: avSpin calc(6s * var(--sp)) linear infinite; }
+.sf-water .ava-ring::after { background: repeating-conic-gradient(from 15deg, rgba(10,60,160,0) 0 20deg, rgba(10,60,160,.45) 32deg, rgba(10,60,160,0) 44deg 60deg); animation: avSpin calc(9s * var(--sp)) linear infinite reverse; }
+.sf-water .ava-fx::before, .sf-water .ava-fx::after { --pz: .1; border-radius: 50%; background: radial-gradient(circle at 34% 32%, rgba(255,255,255,.95) 0 16%, rgba(170,232,255,.25) 22% 58%, rgba(220,248,255,.85) 64% 72%, transparent 76%); left: 76%; top: 82%; opacity: .8; animation: avBubble calc(3s * var(--sp)) ease-in infinite; }
+.sf-water .ava-fx::after { --pz: .07; left: 25%; top: 85%; animation-duration: calc(3.8s * var(--sp)); animation-delay: calc(-1.6s * var(--sp)); }
+
+/* TRANSCENDENT: a halo, light particles orbiting it */
+.ava.sf-transcendent { --sp: var(--sp-transcendent, 1); background: conic-gradient(#fff8d6, #ffffff, #ffe9a8, #fffdf0, #ffd979, #fff8d6); box-shadow: 0 0 0 1px #d8bf72, 0 4px 14px rgba(0,0,0,.5); }
+.sf-transcendent .ava-ring::after { background: conic-gradient(transparent 0 180deg, rgba(255,214,120,.65) 270deg, transparent 360deg); animation: avSpin calc(5s * var(--sp)) linear infinite reverse; }
+.sf-transcendent .ava-fx::before { inset: calc(var(--ava) * .14); box-shadow: 0 0 calc(var(--ava) * .16) calc(var(--ava) * .04) rgba(255,236,170,.85), 0 0 calc(var(--ava) * .05) #fff; opacity: .8; animation: avPulse calc(3.2s * var(--sp)) ease-in-out infinite; }
+.sf-transcendent .ava-fx::after { --d: calc(var(--ava) * .035);
+    background: radial-gradient(circle at 50% 4.5%, #fff 0 var(--d), rgba(255,230,150,.6) calc(var(--d) * 1.6), transparent calc(var(--d) * 2.4)), radial-gradient(circle at 89.4% 72.7%, #fff 0 calc(var(--d) * .8), rgba(255,230,150,.6) calc(var(--d) * 1.4), transparent calc(var(--d) * 2.2)),
+        radial-gradient(circle at 10.6% 72.7%, #fffbe6 0 calc(var(--d) * .6), rgba(255,230,150,.5) calc(var(--d) * 1.2), transparent calc(var(--d) * 2)); animation: avSpin calc(6s * var(--sp)) linear infinite; }
+
+/* PRISMATIC: a rainbow ring that shifts colour and rotates */
+.ava.sf-prismatic { --sp: var(--sp-prismatic, 1); background: #20123a; box-shadow: 0 0 0 1px rgba(255,255,255,.55), 0 4px 14px rgba(0,0,0,.5); }
+.sf-prismatic .ava-ring::before { background: conic-gradient(#ff5ad1, #f0c869, #4dffb8, #4dc3ff, #b44dff, #ff5ad1); animation: avSpin calc(4s * var(--sp)) linear infinite; }
+.sf-prismatic .ava-ring::after { background: conic-gradient(from 90deg, #4dc3ff, transparent 25%, #ff5ad1 50%, transparent 75%, #4dc3ff); mix-blend-mode: overlay; animation: avSpin calc(2.5s * var(--sp)) linear infinite reverse; }
+.sf-prismatic .ava-fx::before { inset: calc(var(--ava) * .16); box-shadow: 0 0 calc(var(--ava) * .14) rgba(255,120,220,.55), 0 0 calc(var(--ava) * .22) rgba(80,200,255,.35); animation: avHue calc(4s * var(--sp)) linear infinite; }
+
+@keyframes avSpin { to { transform: rotate(360deg); } }
+@keyframes avGlintRare { 0%, 68% { opacity: 0; transform: rotate(0deg); } 74% { opacity: 1; } 94% { opacity: 1; } 100% { opacity: 0; transform: rotate(360deg); } }
+@keyframes avSweep { 0%, 50% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+@keyframes avTwinkle { 0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; } 45% { transform: scale(1) rotate(45deg); opacity: 1; } 70% { transform: scale(.35) rotate(80deg); opacity: .6; } }
+@keyframes avPulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+@keyframes avStep { to { transform: rotate(360deg); } }
+@keyframes avBurst { 0%, 62%, 100% { transform: scale(0) rotate(0deg); opacity: 0; } 70% { transform: scale(1.25) rotate(45deg); opacity: 1; } 84% { transform: scale(.5) rotate(90deg); opacity: .7; } }
+@keyframes avLick { 0% { transform: rotate(0deg) scale(1); } 25% { transform: rotate(90deg) scale(1.05); } 50% { transform: rotate(180deg) scale(.98); } 75% { transform: rotate(270deg) scale(1.06); } 100% { transform: rotate(360deg) scale(1); } }
+@keyframes avBubble { 0% { transform: translateY(0) scale(.4); opacity: 0; } 20% { opacity: .9; } 100% { transform: translateY(calc(var(--ava) * -.38)) scale(1.1); opacity: 0; } }
+@keyframes avHue { 0%, 100% { opacity: .55; filter: hue-rotate(0deg); } 50% { opacity: 1; filter: hue-rotate(180deg); } }
+
+/* ---------- backgrounds: the whole player card ---------- */
+:is(#lobby, #arcadeVault) .seat.sbg[data-bg] { --sp: 1; clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px)); border-radius: 0; transform: none; color: var(--paper);
+    box-shadow: inset 0 0 0 2px var(--sbg-edge, #555), 0 10px 24px rgba(0,0,0,.45); }
+:is(#lobby, #arcadeVault) .seat.sbg[data-bg]::before { display: block; inset: 0; z-index: -1; border-radius: 0; transform: none; opacity: 1; -webkit-mask: none; mask: none; box-shadow: none; mix-blend-mode: normal;
+    left: 0; top: 0; width: auto; height: auto; margin: 0; background: repeating-linear-gradient(135deg, var(--sbg-stripe, rgba(255,255,255,.04)) 0 10px, transparent 10px 20px); }
+:is(#lobby, #arcadeVault) .seat.sbg[data-bg].me { box-shadow: inset 0 0 0 3px var(--pc), inset 0 0 0 5px var(--sbg-edge, #555), 0 0 24px color-mix(in srgb, var(--pc) 40%, transparent); }
+:is(#lobby, #arcadeVault) .seat.sbg[data-bg].rdy { box-shadow: inset 0 0 0 3px #3ddc84, inset 0 0 0 5px var(--sbg-edge, #555), 0 0 22px rgba(61,220,132,.4); }
+:is(#lobby, #arcadeVault) .seat.sbg[data-bg] .seat-id b { color: #fff; text-shadow: 0 2px 0 #000, 0 0 10px rgba(0,0,0,.7); font-family: var(--f-head); }
+:is(#lobby, #arcadeVault) .seat.sbg[data-bg] .seat-id small { color: rgba(255,255,255,.78); text-shadow: 0 1px 2px #000; }
+.sbg-fx { position: absolute; inset: 0; z-index: -2; overflow: hidden; pointer-events: none; }
+.sbg-fx::before, .sbg-fx::after { content: ""; position: absolute; inset: 0; }
+
+/* IRON: steel plates, brushed diagonal lines, rivets at the plate corners */
+.seat.sbg[data-bg="iron"] { --sp: var(--sp-iron, 1); --sbg-edge: #6b737d; --sbg-stripe: rgba(200,212,224,.05);
+    background: radial-gradient(circle at 9px 9px, #9aa2ac 0 2px, #1a1c20 3px, transparent 3.5px), radial-gradient(circle at calc(100% - 9px) calc(100% - 9px), #9aa2ac 0 2px, #1a1c20 3px, transparent 3.5px),
+        linear-gradient(180deg, transparent calc(50% - 1px), rgba(0,0,0,.6) calc(50% - 1px) 50%, rgba(255,255,255,.08) 50% calc(50% + 1px), transparent calc(50% + 1px)),
+        repeating-linear-gradient(135deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px), linear-gradient(160deg, #4b525b, #262a30 55%, #181a1e) !important; }
+.seat.sbg[data-bg="iron"] .sbg-fx::before { inset: -20%; background: linear-gradient(115deg, transparent 42%, rgba(220,230,240,.12) 50%, transparent 58%); transform: translateX(-80%); animation: sbgSweep calc(11s * var(--sp)) ease-in-out infinite; }
+
+/* BRONZE: etched copper, worn edges */
+.seat.sbg[data-bg="bronze"] { --sp: var(--sp-bronze, 1); --sbg-edge: #c98a4b; --sbg-stripe: rgba(255,190,130,.06);
+    background: radial-gradient(ellipse 60% 40% at 0 0, rgba(255,214,170,.18), transparent 70%), radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255,214,170,.14), transparent 70%),
+        repeating-linear-gradient(45deg, rgba(0,0,0,.14) 0 1px, transparent 1px 7px), repeating-linear-gradient(-45deg, rgba(255,210,160,.06) 0 1px, transparent 1px 7px),
+        radial-gradient(ellipse at 30% 22%, #a8672c, #5e3413 58%, #2c1606) !important; }
+.seat.sbg[data-bg="bronze"] .sbg-fx { box-shadow: inset 0 0 22px rgba(20,8,0,.9); }
+.seat.sbg[data-bg="bronze"] .sbg-fx::before { inset: -20%; background: linear-gradient(115deg, transparent 44%, rgba(255,214,170,.18) 50%, transparent 56%); transform: translateX(-80%); animation: sbgSweep calc(9s * var(--sp)) ease-in-out infinite; }
+
+/* SILVER: chrome diagonals with a sweeping shine */
+.seat.sbg[data-bg="silver"] { --sp: var(--sp-silver, 1); --sbg-edge: #c9d0d8; --sbg-stripe: rgba(255,255,255,.08);
+    background: linear-gradient(rgba(10,12,16,.42), rgba(10,12,16,.42)), linear-gradient(135deg, #3b4148, #a1aab5 22%, #2a2f35 44%, #c3cad3 66%, #343a41 88%) !important; }
+.seat.sbg[data-bg="silver"] .sbg-fx::before { inset: -30%; background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.5) 50%, transparent 60%); transform: translateX(-90%); animation: sbgSweepFast calc(4.5s * var(--sp)) ease-in-out infinite; }
+
+/* GOLD: gold-foil stripes with a moving shine */
+.seat.sbg[data-bg="gold"] { --sp: var(--sp-gold, 1); --sbg-edge: #e7b84a; --sbg-stripe: rgba(255,215,106,.2);
+    background: radial-gradient(ellipse 80% 55% at 50% 38%, rgba(255,214,106,.25), transparent 75%), linear-gradient(135deg, #3b2705, #7a4f0e 25%, #2a1b03 50%, #8c5f10 75%, #3b2705) !important; }
+.seat.sbg[data-bg="gold"] .sbg-fx::before { inset: 0 auto 0 0; width: 300%; background: linear-gradient(115deg, transparent 36%, rgba(255,240,180,.42) 50%, transparent 64%) 0 0 / 33.3333% 100% repeat-x; animation: sbgSlide calc(5s * var(--sp)) linear infinite; }
+
+/* PLATINUM: brushed platinum with a faint glow */
+.seat.sbg[data-bg="platinum"] { --sp: var(--sp-platinum, 1); --sbg-edge: #cfe4f4; --sbg-stripe: rgba(220,240,255,.06);
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,.045) 0 1px, transparent 1px 2px), linear-gradient(160deg, #5a6773, #2f3842 52%, #46525e) !important; }
+.seat.sbg[data-bg="platinum"] .sbg-fx::before { background: radial-gradient(ellipse 70% 45% at 50% 36%, rgba(200,232,255,.38), transparent 72%); opacity: .5; animation: avPulse calc(3.4s * var(--sp)) ease-in-out infinite; }
+
+/* EMERALD: crystal shards with a green pulse */
+.seat.sbg[data-bg="emerald"] { --sp: var(--sp-emerald, 1); --sbg-edge: #2ee88a; --sbg-stripe: rgba(120,255,190,.05);
+    background: conic-gradient(from 200deg at 82% 100%, rgba(46,232,138,.42) 0 22deg, transparent 22deg), conic-gradient(from 110deg at 8% 0%, rgba(46,232,138,.32) 0 28deg, transparent 28deg),
+        conic-gradient(from 300deg at 0% 78%, rgba(150,255,205,.22) 0 18deg, transparent 18deg), conic-gradient(from 20deg at 100% 30%, rgba(20,170,95,.4) 0 24deg, transparent 24deg),
+        linear-gradient(115deg, transparent 58%, rgba(61,220,132,.2) 58% 66%, transparent 66%), linear-gradient(160deg, #053a21, #021a0f 70%) !important; }
+.seat.sbg[data-bg="emerald"] .sbg-fx::before { background: radial-gradient(ellipse 75% 50% at 50% 38%, rgba(61,220,132,.45), transparent 72%); opacity: .3; animation: avPulse calc(2.6s * var(--sp)) ease-in-out infinite; }
+
+/* DIAMOND: glassy facets that refract light */
+.seat.sbg[data-bg="diamond"] { --sp: var(--sp-diamond, 1); --sbg-edge: #9fe2ff; --sbg-stripe: rgba(200,240,255,.06);
+    background: conic-gradient(from 0deg at 28% 30%, rgba(190,238,255,.2) 0 40deg, transparent 40deg 95deg, rgba(120,210,255,.14) 95deg 150deg, transparent 150deg 215deg, rgba(225,250,255,.17) 215deg 260deg, transparent 260deg),
+        conic-gradient(from 30deg at 74% 72%, rgba(150,225,255,.16) 0 50deg, transparent 50deg 140deg, rgba(225,250,255,.12) 140deg 190deg, transparent 190deg 290deg, rgba(110,200,255,.18) 290deg),
+        linear-gradient(160deg, #0d2538, #06111d) !important; }
+.seat.sbg[data-bg="diamond"] .sbg-fx::before { inset: -40%; background: linear-gradient(115deg, transparent 38%, rgba(255,80,160,.22) 44%, rgba(255,230,120,.22) 47%, rgba(80,255,200,.22) 50%, rgba(80,170,255,.24) 53%, rgba(190,100,255,.2) 56%, transparent 62%); mix-blend-mode: screen; transform: translateX(-70%); animation: sbgSweep calc(6s * var(--sp)) ease-in-out infinite; }
+.seat.sbg[data-bg="diamond"] .sbg-fx::after { background: radial-gradient(circle at 22% 26%, #fff 0 1.5px, transparent 2.5px), radial-gradient(circle at 78% 64%, #fff 0 1.5px, transparent 2.5px), radial-gradient(circle at 62% 14%, #e6faff 0 1px, transparent 2px); animation: avPulse calc(1.8s * var(--sp)) ease-in-out infinite; }
+
+/* FLAME: embers rising through the stripes */
+.seat.sbg[data-bg="flame"] { --sp: var(--sp-flame, 1); --sbg-edge: #ff7a1a; --sbg-stripe: rgba(255,140,60,.07);
+    background: radial-gradient(ellipse 95% 48% at 50% 106%, rgba(255,128,24,.7), rgba(196,26,0,.35) 50%, transparent 75%), linear-gradient(180deg, #170402, #360a02 60%, #6a1902) !important; }
+.seat.sbg[data-bg="flame"] .sbg-fx::before, .seat.sbg[data-bg="flame"] .sbg-fx::after { inset: 0 0 auto 0; height: calc(100% + 90px);
+    background: radial-gradient(circle at 20% 30%, #ffd36a 0 1.5px, rgba(255,120,20,.5) 2.5px, transparent 4px), radial-gradient(circle at 70% 70%, #ffb347 0 1.2px, rgba(255,90,0,.45) 2.2px, transparent 3.5px), radial-gradient(circle at 45% 85%, #fff0b0 0 1px, transparent 2.5px);
+    background-size: 64px 90px; animation: sbgRise calc(4.5s * var(--sp)) linear infinite; }
+.seat.sbg[data-bg="flame"] .sbg-fx::after { background-size: 48px 90px; background-position: 20px 30px; opacity: .7; animation-duration: calc(7s * var(--sp)); }
+
+/* WATER: rolling waves under the stripes */
+.seat.sbg[data-bg="water"] { --sp: var(--sp-water, 1); --sbg-edge: #3ec6ff; --sbg-stripe: rgba(170,230,255,.06);
+    background: radial-gradient(ellipse 80% 40% at 50% 30%, rgba(62,198,255,.22), transparent 75%), linear-gradient(180deg, #03203f, #021228 60%, #010a18) !important; }
+.seat.sbg[data-bg="water"] .sbg-fx::before, .seat.sbg[data-bg="water"] .sbg-fx::after { inset: auto 0 0 0; height: 46%; width: calc(100% + 60px);
+    background: radial-gradient(ellipse 30px 11px at 30px 0, rgba(120,210,255,.4) 0 62%, transparent 66%) 0 0 / 60px 22px repeat-x, linear-gradient(180deg, rgba(40,150,230,.32), rgba(10,60,140,.5) 70%) 0 11px / 100% 100% no-repeat;
+    animation: sbgWave calc(5s * var(--sp)) linear infinite; }
+.seat.sbg[data-bg="water"] .sbg-fx::after { height: 30%; opacity: .75; background: radial-gradient(ellipse 30px 9px at 30px 0, rgba(190,240,255,.42) 0 62%, transparent 66%) 0 0 / 60px 18px repeat-x, linear-gradient(180deg, rgba(60,180,255,.32), rgba(10,70,160,.6) 70%) 0 9px / 100% 100% no-repeat; animation-duration: calc(3.4s * var(--sp)); animation-direction: reverse; }
+
+/* TRANSCENDENT: a starfield, a drifting aurora, a glowing aura behind the picture */
+.seat.sbg[data-bg="transcendent"] { --sp: var(--sp-transcendent, 1); --sbg-edge: #ffe9a8; --sbg-stripe: rgba(255,245,210,.05);
+    background: radial-gradient(circle at 12% 18%, #fff 0 1px, transparent 1.5px) 0 0 / 46px 52px, radial-gradient(circle at 70% 60%, rgba(255,250,230,.8) 0 .8px, transparent 1.4px) 0 0 / 34px 40px,
+        radial-gradient(ellipse at 50% 35%, #2a2352, #0b0a1f 72%) !important; }
+.seat.sbg[data-bg="transcendent"] .sbg-fx::before { inset: -20% -40%; background: linear-gradient(100deg, transparent 22%, rgba(110,255,200,.32) 36%, rgba(150,120,255,.34) 52%, rgba(255,200,240,.2) 62%, transparent 76%); filter: blur(10px); animation: sbgAurora calc(10s * var(--sp)) ease-in-out infinite alternate; }
+.seat.sbg[data-bg="transcendent"] .sbg-fx::after { background: radial-gradient(circle 64px at 50% 72px, rgba(255,240,190,.55), transparent 70%); opacity: .6; animation: avPulse calc(3.2s * var(--sp)) ease-in-out infinite; }
+
+/* PRISMATIC: shifting holo diagonals */
+.seat.sbg[data-bg="prismatic"] { --sp: var(--sp-prismatic, 1); --sbg-edge: #e39bff; --sbg-stripe: rgba(255,255,255,.06);
+    background: radial-gradient(ellipse 80% 55% at 50% 38%, rgba(255,255,255,.08), transparent 75%), linear-gradient(160deg, #1a0f2e, #0c0716) !important; }
+.seat.sbg[data-bg="prismatic"] .sbg-fx::before { inset: -10px auto auto -10px; width: calc(100% + 100px); height: calc(100% + 100px); opacity: .55;
+    background: repeating-linear-gradient(135deg, rgba(255,90,209,.42) 0 10px, rgba(240,200,105,.42) 10px 20px, rgba(77,255,184,.42) 20px 30px, rgba(77,195,255,.42) 30px 40px, rgba(180,77,255,.42) 40px 50px);
+    animation: sbgHolo calc(3s * var(--sp)) linear infinite; }
+.seat.sbg[data-bg="prismatic"] .sbg-fx::after { inset: -30%; background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.3) 50%, transparent 60%); transform: translateX(-90%); animation: sbgSweepFast calc(4s * var(--sp)) ease-in-out infinite; }
+
+@keyframes sbgSweep { 0%, 55% { transform: translateX(-80%); } 100% { transform: translateX(80%); } }
+@keyframes sbgSweepFast { 0%, 40% { transform: translateX(-90%); } 100% { transform: translateX(90%); } }
+@keyframes sbgSlide { to { transform: translateX(-33.3333%); } }
+@keyframes sbgRise { to { transform: translateY(-90px); } }
+@keyframes sbgWave { to { transform: translateX(-60px); } }
+@keyframes sbgAurora { 0% { transform: translateX(-12%) skewX(-8deg); } 100% { transform: translateX(12%) skewX(8deg); } }
+@keyframes sbgHolo { to { transform: translate(-70.71px, 0); } }
+
+/* paused off-screen; static under Reduced effects and reduced motion (the resting look stays: rivets, facets, stripes, glow) */
+.fx-off, .fx-off::before, .fx-off::after, .fx-off *, .fx-off *::before, .fx-off *::after { animation-play-state: paused !important; }
+body.fx-lite :is(.ava-ring, .ava-fx, .sbg-fx), body.fx-lite :is(.ava-ring, .ava-fx, .sbg-fx)::before, body.fx-lite :is(.ava-ring, .ava-fx, .sbg-fx)::after { animation: none !important; }
+body.fx-lite :is(.sf-iron, .sf-silver) .ava-ring::after, body.fx-lite .sbg-fx::before { opacity: 0; }
+body.fx-lite .seat.sbg[data-bg] .sbg-fx::before { opacity: .0; }
+body.fx-lite .seat.sbg:is([data-bg="platinum"], [data-bg="emerald"], [data-bg="transcendent"], [data-bg="prismatic"], [data-bg="flame"], [data-bg="water"]) .sbg-fx::before { opacity: .55; transform: none; }
+body.fx-lite :is(.sf-gold, .sf-diamond) .ava-fx::before { transform: scale(.75); opacity: .9; }
+body.fx-lite :is(.sf-gold, .sf-diamond) .ava-fx::after { transform: scale(.5); opacity: .7; }
+body.fx-lite .sf-water .ava-fx::before, body.fx-lite .sf-water .ava-fx::after { transform: translateY(calc(var(--ava) * -.12)); opacity: .7; }
+@media (prefers-reduced-motion: reduce) {
+    :is(.ava-ring, .ava-fx, .sbg-fx), :is(.ava-ring, .ava-fx, .sbg-fx)::before, :is(.ava-ring, .ava-fx, .sbg-fx)::after { animation: none !important; }
+    :is(.sf-gold, .sf-diamond) .ava-fx::before { transform: scale(.75); opacity: .9; }
+}
+
 /* username styles */
 .uc-crimson { color: #ff4d5e !important; } .uc-azure { color: #4db2ff !important; } .uc-lime { color: #9dff57 !important; } .uc-violet { color: #b98bff !important; }
 .uc-amber { color: #ffb627 !important; } .uc-rose { color: #ff7ab6 !important; } .uc-teal { color: #2fe0c8 !important; } .uc-silver { color: #d9dee6 !important; }
@@ -193,18 +367,8 @@ body.fx-lite .uc, body.fx-lite .ts { animation: none !important; }
 .vt-sel { min-height: 34px; padding: 4px 8px; border-radius: 8px; border: 0; background: rgba(255,255,255,.08); color: var(--paper); box-shadow: inset 0 0 0 1px var(--line); font: 600 13px/1 var(--f-ui); max-width: 100%; }
 .vt-sel option { background: #1a1214; }
 /* shop */
-.vt-skintop { display: grid; gap: 8px; justify-items: center; margin-bottom: 12px; }
-.vt-seatwrap { display: grid; justify-items: center; gap: 6px; padding: 12px; border-radius: 12px; background: radial-gradient(ellipse at 50% 30%, rgba(225,27,27,.12), transparent 70%), rgba(0,0,0,.35); box-shadow: inset 0 0 0 1px var(--line); }
-.vt-seat { width: 170px; min-height: 186px; }
-.vt-seatcap { max-width: 280px; text-align: center; font-size: 12px; color: var(--muted); }
-.vt-pk { display: flex; gap: 6px; }
-.vt-tiers { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 10px; }
-.vt-tier { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; padding: 12px; border-radius: 12px; background: rgba(0,0,0,.3); box-shadow: inset 0 0 0 1px var(--line); }
-.vt-tier.on { box-shadow: inset 0 0 0 2px #d9a441, 0 0 18px rgba(240,200,105,.2); }
-.vt-tprev { grid-row: span 2; border: 0; background: none; padding: 4px; cursor: pointer; border-radius: 50%; }
 .vt-tier header b { display: block; font: 600 20px/1 var(--f-head); letter-spacing: .05em; text-transform: uppercase; color: #fff; }
 .vt-tier header small { font-size: 11px; color: var(--muted); }
-.vt-tbuy { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
 .vt-tbuy .btn { flex: 1 1 auto; min-height: 44px; padding: 4px 10px; font-size: 14px; flex-direction: column; gap: 2px; }
 .vt-tbuy .btn small { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
 .vt-owned { flex: 1 1 auto; display: grid; place-items: center; min-height: 44px; padding: 4px 8px; border-radius: 8px; background: rgba(61,220,132,.1); color: #7dff9a; font: 700 12px/1.2 var(--f-ui); text-align: center; }
@@ -283,3 +447,138 @@ body.fx-lite .uc, body.fx-lite .ts { animation: none !important; }
 .vt-tcols { display: grid; gap: 10px; }
 @media (min-width: 720px) { .vt-tcols { grid-template-columns: 1fr 1fr; } .vt-dkslots { grid-template-columns: repeat(10, minmax(0, 1fr)); } }
 .vt-tcol .vt-cgrid { max-height: 300px; overflow: auto; justify-content: flex-start; }
+
+/* =====================================================================
+   THE ARCADE VAULT PAGE (#arcadeVault): every player's own page while the lobby is on ARCADE VAULT.
+   A vault-cabinet look of its own: a neon marquee, an LED credits counter, chunky cabinet buttons for the tabs,
+   a synthwave floor and scanlines behind everything. Mobile first; static under Reduced effects.
+   ===================================================================== */
+.av-page { --av: #b38bff; --av2: #ffd76a; --av3: #4dd9ff; isolation: isolate; padding-top: calc(14px + env(safe-area-inset-top, 0px)); background: #07040d; }
+.av-bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+    background: radial-gradient(ellipse 90% 50% at 50% -10%, rgba(179,139,255,.28), transparent 70%), radial-gradient(ellipse 70% 40% at 50% 110%, rgba(255,90,180,.2), transparent 70%), linear-gradient(180deg, #0b0614, #07040d 60%, #10061a); }
+.av-grid { position: absolute; left: -50%; right: -50%; bottom: 0; height: 46vh; transform-origin: 50% 100%; transform: perspective(320px) rotateX(62deg);
+    background: linear-gradient(rgba(179,139,255,.5) 1px, transparent 1px) 0 0 / 100% 46px, linear-gradient(90deg, rgba(179,139,255,.38) 1px, transparent 1px) 0 0 / 46px 100%;
+    -webkit-mask: linear-gradient(180deg, transparent, #000 45%); mask: linear-gradient(180deg, transparent, #000 45%); animation: avFloor 2.6s linear infinite; opacity: .55; }
+@keyframes avFloor { to { background-position: 0 46px, 0 0; } }
+.av-scan { position: absolute; inset: 0; background: repeating-linear-gradient(180deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px); mix-blend-mode: overlay; }
+.av-top { position: relative; display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "back . rw" "marquee marquee marquee" "credits credits credits"; gap: 10px 12px; align-items: center; max-width: 1180px; margin: 0 auto 12px; }
+.av-back { grid-area: back; }
+.av-marquee { grid-area: marquee; min-width: 0; text-align: center; }
+.av-marquee small { display: block; font: 400 9px/1 'Press Start 2P', var(--f-mono); letter-spacing: .14em; color: var(--av3); text-shadow: 0 0 8px rgba(77,217,255,.7); min-height: 9px; }
+.av-marquee h1 { margin: 4px 0 0; font: 400 clamp(24px, 8.4vw, 54px)/1 var(--f-title); letter-spacing: .03em; color: #fff; white-space: nowrap;
+    text-shadow: 0 0 6px #fff, 0 0 18px var(--av), 0 0 36px var(--av), 3px 3px 0 #2a0d4a; }
+.av-marquee h1 em { font-style: normal; color: var(--av2); text-shadow: 0 0 6px #fff4c2, 0 0 18px #ffb627, 0 0 34px #ff8a00, 3px 3px 0 #3a1d00; }
+.av-page .av-marquee h1 { animation: avNeon 6s steps(1) infinite; }
+@keyframes avNeon { 0%, 96%, 98% { opacity: 1; } 97% { opacity: .55; } }
+.av-credits { grid-area: credits; justify-self: center; display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 12px; border-radius: 8px; background: #050208;
+    box-shadow: inset 0 0 0 2px #2b1844, inset 0 0 0 3px #000, inset 0 0 22px rgba(255,64,64,.12), 0 6px 18px rgba(0,0,0,.5); }
+.av-credits small { font: 400 9px/1 'Press Start 2P', var(--f-mono); color: #ff6262; letter-spacing: .1em; }
+.av-credits span { display: inline-flex; align-items: center; gap: 8px; }
+.av-credits .coin-ico { --cs: 24px; }
+.av-credits b { font: 700 26px/1 var(--f-mono); color: #ff4d4d; letter-spacing: .08em; text-shadow: 0 0 8px rgba(255,60,60,.8); font-variant-numeric: tabular-nums; }
+.av-rw { grid-area: rw; position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 6px 12px; border: 0; border-radius: 8px; cursor: pointer; color: #1a1205;
+    font: 700 13px/1 var(--f-ui); letter-spacing: .08em; text-transform: uppercase; background: linear-gradient(180deg, #ffe08a, #d39a2c); box-shadow: 0 3px 0 #7a4f0e, 0 6px 14px rgba(0,0,0,.4); }
+.av-rw:active { transform: translateY(2px); box-shadow: 0 1px 0 #7a4f0e; }
+.av-dot { position: absolute; right: -3px; top: -3px; width: 10px; height: 10px; border-radius: 50%; background: #ff3b3b; box-shadow: 0 0 0 2px #07040d, 0 0 10px #ff3b3b; }
+/* tabs: chunky cabinet buttons */
+.av-tabs { position: relative; z-index: 20; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; max-width: 1180px; margin: 0 auto 14px; padding: 8px 0;
+    background: linear-gradient(180deg, #07040d 70%, rgba(7,4,13,0)); }
+.av-tab { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 54px; padding: 6px 4px 8px; border: 0; border-radius: 10px; cursor: pointer;
+    color: #d9c9ff; font: 700 12px/1.05 var(--f-ui); letter-spacing: .06em; text-transform: uppercase; background: linear-gradient(180deg, #2a1846, #160c26);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 0 0 1px rgba(179,139,255,.35), 0 4px 0 #0b0514, 0 8px 14px rgba(0,0,0,.4); transition: transform .12s, box-shadow .12s, background .2s, color .2s; }
+.av-tab:active { transform: translateY(3px); box-shadow: inset 0 0 0 1px rgba(179,139,255,.35), 0 1px 0 #0b0514; }
+.av-tico { font-style: normal; font-size: 17px; line-height: 1; color: var(--av); text-shadow: 0 0 8px rgba(179,139,255,.8); }
+.av-tab.on { color: #12081f; background: linear-gradient(180deg, #e9dcff, #b38bff 55%, #8a5ce6); box-shadow: inset 0 1px 0 #fff, 0 4px 0 #4b2a86, 0 0 22px rgba(179,139,255,.55); }
+.av-tab.on .av-tico { color: #12081f; text-shadow: none; }
+.av-tab:focus-visible { outline: 3px solid var(--av2); outline-offset: 2px; }
+.av-body { position: relative; max-width: 1180px; margin: 0 auto; min-height: 50vh; }
+@media (min-width: 720px) {
+    .av-top { grid-template-columns: auto 1fr auto auto; grid-template-areas: "back marquee credits rw"; }
+    .av-marquee h1 { font-size: clamp(30px, 4.6vw, 54px); }
+    .av-credits { justify-self: end; }
+    .av-tabs { position: sticky; top: 0; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .av-tab { flex-direction: row; gap: 8px; min-height: 48px; font-size: 14px; }
+}
+/* cards on the page share the Vault sheet styles; a touch more contrast on the dark cabinet */
+.av-page .vt-card, .av-page .vt-tier, .av-page .vt-sct { background: rgba(18,10,30,.82); box-shadow: inset 0 0 0 1px rgba(179,139,255,.22); }
+.av-page .vt-subtab.on, .av-page .chip-btn.on { background: rgba(179,139,255,.2); color: #e9dcff; box-shadow: inset 0 0 0 1px var(--av); }
+/* the lobby seat inside the Vault (shop try-on, Battle tab) wears the ARCADE VAULT lobby theme, like the lobby itself */
+#arcadeVault .seat { clip-path: none; border-radius: 10px; background: radial-gradient(ellipse 80% 55% at 50% 38%, color-mix(in srgb, var(--pc) 28%, transparent), transparent 75%), linear-gradient(180deg, #160e24, #07050c); box-shadow: inset 0 0 0 1px rgba(179,139,255,.35), 0 10px 22px rgba(0,0,0,.45); }
+#arcadeVault .seat .seat-no { color: #12081f; background: linear-gradient(135deg, #e6d6ff, #b38bff); }
+#arcadeVault .seat.me:not(.sbg) { box-shadow: inset 0 0 0 3px var(--pc), 0 0 24px color-mix(in srgb, var(--pc) 40%, transparent); }
+
+/* ---------- shop: try-on + tiers ---------- */
+.vt-tryon { display: grid; gap: 14px; justify-items: center; margin-bottom: 14px; padding: 16px 12px; border-radius: 14px;
+    background: radial-gradient(ellipse at 50% 20%, rgba(179,139,255,.2), transparent 70%), rgba(10,6,18,.85); box-shadow: inset 0 0 0 1px rgba(179,139,255,.3); }
+.vt-seatwrap { display: grid; justify-items: center; gap: 8px; width: 100%; min-width: 0; padding: 0; background: none; box-shadow: none; }
+.vt-seat { width: 180px; max-width: 100%; min-height: 196px; flex: none; }
+.vt-seatcap { max-width: 34ch; margin: 0; text-align: center; font-size: 12px; line-height: 1.45; color: var(--muted); overflow-wrap: anywhere; }
+.vt-tryside { display: grid; gap: 8px; width: 100%; max-width: 420px; min-width: 0; }
+.vt-trytitle { font: 400 22px/1 var(--f-title); color: #fff; text-shadow: 0 0 12px rgba(179,139,255,.7); text-align: center; }
+.vt-tryrow { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "k act" "n act"; gap: 2px 10px; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.04); box-shadow: inset 0 0 0 1px rgba(179,139,255,.2); }
+.vt-tryrow > small { grid-area: k; font: 400 8px/1 'Press Start 2P', var(--f-mono); color: var(--av3); letter-spacing: .08em; }
+.vt-tryrow > b { grid-area: n; min-width: 0; font: 600 17px/1.1 var(--f-head); letter-spacing: .04em; text-transform: uppercase; color: #fff; overflow-wrap: anywhere; }
+.vt-tryact { grid-area: act; display: flex; gap: 6px; }
+.vt-tryact .btn, .vt-tryside > .btn { min-height: 40px; flex-direction: column; gap: 2px; font-size: 14px; }
+.vt-tryact .btn small, .vt-tryside > .btn small { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+@media (min-width: 640px) { .vt-tryon { grid-template-columns: auto minmax(0, 440px); justify-content: center; justify-items: stretch; align-items: center; column-gap: 28px; padding: 20px; } .vt-tryon .vt-seatwrap { width: auto; } .vt-trytitle { text-align: left; } .vt-tryside .vt-seatcap { text-align: left; } }
+.vt-tiers { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 10px; }
+.vt-tier { display: grid; grid-template-columns: none; gap: 10px; padding: 12px; border-radius: 12px; }
+.vt-tier header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.vt-tier.on { box-shadow: inset 0 0 0 2px var(--av, #b38bff), 0 0 18px rgba(179,139,255,.25); }
+.vt-ttiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.vt-ttile { position: relative; display: grid; justify-items: center; align-content: center; gap: 6px; min-height: 118px; padding: 12px 4px 8px; border: 0; border-radius: 10px; cursor: pointer; overflow: hidden; color: var(--muted);
+    background: rgba(255,255,255,.035); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); font: 700 10px/1 var(--f-ui); letter-spacing: .1em; text-transform: uppercase; transition: box-shadow .2s, background .2s; }
+.vt-ttile:hover { background: rgba(179,139,255,.08); }
+.vt-ttile.on { color: #fff; box-shadow: inset 0 0 0 2px var(--av2, #ffd76a), 0 0 14px rgba(255,215,106,.25); }
+.vt-ttile small { position: relative; z-index: 2; }
+.vt-mini { position: relative; width: 82px; height: 89px; overflow: hidden; pointer-events: none; }
+.vt-minis { position: absolute; left: 0; top: 0; width: 180px; transform: scale(.4556); transform-origin: 0 0; }
+.vt-minis .seat { width: 180px; min-height: 196px; }
+.vt-mini .seat.me::after { display: none; }
+.vt-tbuy { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ---------- battle tab ---------- */
+.vt-bhero { display: grid; gap: 8px; }
+.vt-bdeck { display: grid; gap: 4px; padding-top: 8px; box-shadow: 0 -1px 0 rgba(179,139,255,.2); }
+.vt-bdeck small { color: var(--muted); }
+.vt-bdeck .btn { justify-self: start; }
+.vt-bmine { display: grid; gap: 8px; box-shadow: inset 0 0 0 2px #ffd76a !important; }
+.vt-bplayers { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.vt-bpl { position: relative; display: block; padding: 0; border: 0; border-radius: 12px; background: none; cursor: pointer; text-align: center; transition: transform .15s; min-width: 0; }
+.vt-bpl .seat { width: 100%; min-height: 200px; }
+.vt-bpl.me { cursor: default; opacity: .9; }
+.vt-bpl:not(.me):hover { transform: translateY(-2px); }
+.vt-bpl.on::after { content: "✔ PICKED"; position: absolute; left: 50%; bottom: -8px; z-index: 5; transform: translateX(-50%); padding: 4px 10px; border-radius: 99px; background: #ffd76a; color: #1a1205; font: 400 9px/1 'Press Start 2P', var(--f-mono); box-shadow: 0 4px 10px rgba(0,0,0,.5); }
+.vt-bpl.on { box-shadow: 0 0 0 3px #ffd76a, 0 0 22px rgba(255,215,106,.35); }
+.vt-bpl.busy { cursor: not-allowed; opacity: .55; }
+.vt-bpl:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.tag.vt-loc { background: rgba(77,217,255,.14); color: #9fe7ff; box-shadow: inset 0 0 0 1px rgba(77,217,255,.4); }
+.tag.vt-loc.loc-b { background: rgba(255,90,90,.18); color: #ffb3b3; box-shadow: inset 0 0 0 1px rgba(255,90,90,.5); }
+.tag.vt-loc.loc-l { background: rgba(255,255,255,.06); color: var(--muted); box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
+.vt-bgo { justify-content: center; margin-top: 14px; }
+.vt-chal { min-width: min(100%, 320px); }
+.vt-blrow { display: flex; align-items: center; gap: 10px; padding: 8px 0; box-shadow: 0 -1px 0 rgba(179,139,255,.18); }
+.vt-blrow span { flex: 1; min-width: 0; font: 600 14px/1.3 var(--f-ui); overflow-wrap: anywhere; }
+.vt-blwho { display: flex; } .vt-blwho .ava { margin-left: -6px; box-shadow: 0 0 0 2px #000; } .vt-blwho .ava:first-child { margin-left: 0; }
+
+/* ---------- the challenge strip (lobby and Vault page) ---------- */
+.cv-inv { position: fixed; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 240; display: grid; gap: 8px; width: min(560px, calc(100vw - 24px)); transform: translateX(-50%); }
+.cv-invrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border-radius: 12px; background: linear-gradient(180deg, rgba(44,22,74,.97), rgba(18,9,30,.97));
+    box-shadow: inset 0 0 0 2px #b38bff, 0 14px 34px rgba(0,0,0,.6), 0 0 26px rgba(179,139,255,.35); animation: invIn .35s var(--e-pop) both; }
+@keyframes invIn { from { opacity: 0; transform: translateY(20px) scale(.96); } }
+.cv-invtxt { flex: 1 1 200px; min-width: 0; display: grid; gap: 2px; }
+.cv-invtxt b { font: 600 17px/1.15 var(--f-head); letter-spacing: .04em; text-transform: uppercase; color: #fff; }
+.cv-invtxt small { font: 600 12px/1.35 var(--f-ui); color: #d9c9ff; overflow-wrap: anywhere; }
+
+/* ---------- lobby panel + Enter button ---------- */
+.av-lobby-hero { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: center; margin-bottom: 14px; padding: 14px; border-radius: 12px; overflow: hidden;
+    background: radial-gradient(ellipse at 0 0, rgba(179,139,255,.3), transparent 70%), linear-gradient(135deg, #1b0f30, #0b0614); box-shadow: inset 0 0 0 1px rgba(179,139,255,.45); }
+.av-lobby-k { font: 400 46px/1 var(--f-title); color: #b38bff; text-shadow: 0 0 16px rgba(179,139,255,.8); }
+.av-lobby-hero b { display: block; font: 400 24px/1 var(--f-title); color: #fff; text-shadow: 0 0 12px rgba(179,139,255,.9); }
+.av-lobby-hero p { margin: 6px 0 0; font: 600 13px/1.45 var(--f-ui); color: var(--paper); }
+.av-enter { grid-column: 1 / -1; justify-self: start; }
+.av-enterbtn { --mc: #b38bff; }
+
+body.fx-lite .av-grid, body.fx-lite .av-page .av-marquee h1, body.fx-lite .cv-invrow { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .av-grid, .av-page .av-marquee h1, .cv-invrow { animation: none !important; } }

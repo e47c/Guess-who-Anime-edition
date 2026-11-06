@@ -1,11 +1,13 @@
 /* =====================================================================
-   ARCADE VAULT · TABS: Shop (skins, scratch cards, wardrobe), Packs, Collection (book + trades), Deck, Battle.
+   ARCADE VAULT · PAGE TABS: Shop (Season 1 skins + wardrobe), Scratch Cards, Packs, Collection (book + trades),
+   Decks, Battle (everyone in the room, challenges, live battles).
    Every action is an intent sent to the bank (bank.apply with an operation id), so a double click or a second tab
    can never pay twice; the button's operation id only changes after the action went through.
    ===================================================================== */
-import { SKINS, SCRATCH, PACKS, SHARDS, RARITY_ORDER, DECK, TRADE, BATTLE } from "./config.js?v=3";
-import { SKIN_ITEMS, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=1";
-import { rollPack, unopened, markOpened, owned, isHolo, ownedIds, seriesDone, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem } from "./packs.js?v=1";
+import { SKINS, SCRATCH, PACKS, SHARDS, RARITY_ORDER, DECK, TRADE, BATTLE } from "./config.js?v=4";
+import { SKIN_ITEMS, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=2";
+import { rollPack, unopened, markOpened, owned, isHolo, ownedIds, seriesDone, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem } from "./packs.js?v=2";
+import { cvChallenge, cvBattles, busyIn, seatsOf, cvWatch, cvReturn, cvDeckOf, locOf } from "../cardvault/cardvault.js?v=2";
 import { CARDS, BY_SERIES, CARD_SERIES, CARD_COUNT, RARITY_NAMES, ARCHETYPES, TOTAL_CARDS } from "./carddb.js?v=1";
 import { cardEl, packEl, theme } from "./cardui.js?v=1";
 import { openPack, inspect, holdToInspect } from "./opening.js?v=1";
@@ -28,7 +30,7 @@ export function initTabs(h) { H = h; }
 
 export function renderTab(id, body, h) {
     H = h || H;
-    const f = { shop: shopTab, packs: packsTab, collection: collectionTab, deck: deckTab, battle: battleTab }[id];
+    const f = { shop: shopTab, scratch: scratchView, packs: packsTab, collection: collectionTab, decks: deckTab, battle: battleTab }[id];
     if (f) body.appendChild(f());
 }
 const sub = (name, list, cur, onPick) => {
@@ -38,46 +40,69 @@ const sub = (name, list, cur, onPick) => {
 };
 
 /* =========================== SHOP =========================== */
-let shopView = "skins", previewTier = "", previewKind = "both";
+/* Season 1 skins: a FRAME (the animated ring around your picture) and a BACKGROUND (your whole player card in the
+   lobby) per tier. The try-on shows your real lobby card with any frame + any background together, before buying. */
+let shopView = "skins";
+const pv = { sf: null, bg: null };          // what's being tried on (null = what you wear now, "" = none)
 function lookWith(over) {
     const pub = Object.assign({}, X().profilePub ? X().profilePub() : {}), look = publicLook(W());
     return Object.assign(pub, look, over || {});
 }
-/* the exact lobby seat: same avatarEl, size, name plate and title as the lobby draws */
+/* the exact lobby card (profile.js seatCard: same markup and classes as the lobby seat), with the YOU tag */
 function seatPreview(p, label) {
-    const wrap = mk("div", "vt-seatwrap"), s = mk("div", "seat me vt-seat"); s.style.setProperty("--pc", p.col || "#e11b1b");
-    s.append(mk("span", "seat-no", "1P"), X().avatarEl(p, { size: 72, badge: true }));
-    const id = mk("div", "seat-id"), b = mk("b", null, p.name || "Player"), sm = mk("small"), t = mk("span", null, p.ttl || "Rookie");
-    X().styleName && X().styleName(b, p); X().styleTitle && X().styleTitle(t, p);
-    sm.append(t, document.createTextNode(p.lvl ? " · LV " + p.lvl : "")); id.append(b, sm); s.appendChild(id);
-    wrap.append(s, mk("small", "vt-seatcap", label || "This is exactly how you look in the lobby."));
+    const wrap = mk("div", "vt-seatwrap"), slot = X().me && X().inRoom && X().inRoom() ? X().me() : 1;
+    const s = X().seatCard(p, { slot, me: true, cls: "vt-seat" });
+    const tags = mk("div", "seat-tags"); tags.appendChild(mk("span", "tag you", "YOU")); s.appendChild(tags);
+    wrap.appendChild(s);
+    if (label) wrap.appendChild(mk("p", "vt-seatcap", label));
     return wrap;
 }
+const tierOf = id => SKINS.tiers.find(t => t.id === id);
+const nameOf = (slot, tier) => tier ? tierOf(tier).name + (slot === "sf" ? " Frame" : " Background") : (slot === "sf" ? "No frame" : "No background");
 function shopTab() {
     const box = mk("div", "vt-shop");
-    box.appendChild(sub("Shop", [["skins", "Season 1 skins"], ["scratch", "Scratch cards"], ["wardrobe", "Wardrobe"]], shopView, k => { shopView = k; H.rerender(); }));
-    if (shopView === "skins") box.appendChild(skinsView());
-    if (shopView === "scratch") box.appendChild(scratchView());
-    if (shopView === "wardrobe") box.appendChild(wardrobeView());
+    box.appendChild(sub("Shop", [["skins", "Season 1 skins"], ["wardrobe", "Wardrobe"]], shopView, k => { shopView = k; H.rerender(); }));
+    box.appendChild(shopView === "wardrobe" ? wardrobeView() : skinsView());
     return box;
 }
 function skinsView() {
-    const w = W(), v = mk("div", "vt-skins"), T = SKINS.tiers;
-    if (!previewTier) previewTier = (T.find(t => !owns(w, "sf_" + t.id)) || T[0]).id;
-    const t0 = T.find(t => t.id === previewTier);
-    const over = previewKind === "frame" ? { sf: t0.id } : previewKind === "bg" ? { bg: t0.id } : { sf: t0.id, bg: t0.id };
-    const top = mk("div", "vt-skintop");
-    top.appendChild(seatPreview(lookWith(over), "Preview: " + t0.name + (previewKind === "frame" ? " Frame" : previewKind === "bg" ? " Background" : " Frame + Background") + ", exactly as it looks in the lobby."));
-    const pk = mk("div", "vt-pk"); [["both", "Both"], ["frame", "Frame"], ["bg", "Background"]].forEach(([k, l]) => { const b = mk("button", "chip-btn" + (previewKind === k ? " on" : ""), l); b.type = "button"; b.onclick = () => { previewKind = k; H.rerender(); }; pk.appendChild(b); });
-    top.appendChild(pk);
+    const w = W(), v = mk("div", "vt-skins"), T = SKINS.tiers, cur = publicLook(w);
+    const tf = pv.sf == null ? cur.sf : pv.sf, tb = pv.bg == null ? cur.bg : pv.bg;
+    // try-on: the real lobby card with the picked frame + background
+    const top = mk("section", "vt-tryon");
+    top.appendChild(seatPreview(lookWith({ sf: tf, bg: tb }), null));
+    const side = mk("div", "vt-tryside");
+    side.appendChild(mk("b", "vt-trytitle", "Try-on"));
+    side.appendChild(mk("p", "vt-seatcap", "Your lobby card exactly as everyone in the room sees it. Tap Frame or Background on any tier to try it; mix them freely."));
+    [["sf", tf], ["bg", tb]].forEach(([slot, tier]) => {
+        const row = mk("div", "vt-tryrow"), id = (slot === "sf" ? "sf_" : "bg_") + tier, own = !tier || owns(w, id), worn = (slot === "sf" ? cur.sf : cur.bg) === tier;
+        row.append(mk("small", null, slot === "sf" ? "FRAME" : "BACKGROUND"), mk("b", null, nameOf(slot, tier)));
+        const act = mk("div", "vt-tryact");
+        if (tier && !own) { if (SKINS.earnOnly.includes(tier)) act.appendChild(mk("span", "vt-owned", "Earn only")); else { const b = btn("", "alt sm", () => doBuySkin(id)); b.append(mk("small", null, "Buy"), coin(tierOf(tier).price)); act.appendChild(b); } }
+        else if (!worn) act.appendChild(btn(tier ? "Equip" : "Take off", "sm", () => doEquip(slot, tier ? id : "")));
+        else if (tier) act.appendChild(mk("span", "vt-owned", "Wearing ✓"));
+        row.appendChild(act); side.appendChild(row);
+    });
+    if (tf && tf === tb && !owns(w, "sf_" + tf) && !owns(w, "bg_" + tf) && !SKINS.earnOnly.includes(tf)) {
+        const b = btn("", "alt", () => doBundle(tf)); b.append(mk("small", null, tierOf(tf).name + " bundle −" + Math.round(SKINS.bundleOff * 100) + "%"), coin(bundlePrice(tf))); side.appendChild(b);
+    }
+    if (pv.sf != null || pv.bg != null) side.appendChild(btn("Back to my look", "ghost sm", () => { pv.sf = pv.bg = null; sfx("close"); H.rerender(); }));
+    top.appendChild(side);
     v.appendChild(top);
+    // the tiers
     const grid = mk("div", "vt-tiers");
     T.forEach(t => {
         const fId = "sf_" + t.id, bId = "bg_" + t.id, of = owns(w, fId), ob = owns(w, bId), earn = SKINS.earnOnly.includes(t.id);
-        const c = mk("article", "vt-tier tier-" + t.id + (t.id === previewTier ? " on" : ""));
-        const prev = mk("button", "vt-tprev"); prev.type = "button"; prev.setAttribute("aria-label", "Preview " + t.name);
-        prev.appendChild(X().avatarEl(lookWith({ sf: t.id, bg: t.id }), { size: 58 })); prev.onclick = () => { previewTier = t.id; sfx("pick"); H.rerender(); };
-        const h = mk("header"); h.append(mk("b", null, t.name), mk("small", null, (t.animated ? "Animated · " : "Static shine · ") + "Season " + SKINS.season));
+        const c = mk("article", "vt-tier tier-" + t.id + (tf === t.id || tb === t.id ? " on" : ""));
+        const h = mk("header"); h.append(mk("b", null, t.name), mk("small", null, "Season " + SKINS.season)); c.appendChild(h);
+        const tiles = mk("div", "vt-ttiles");
+        const fTile = mk("button", "vt-ttile" + (tf === t.id ? " on" : "")); fTile.type = "button"; fTile.setAttribute("aria-label", "Try the " + t.name + " Frame");
+        fTile.append(X().avatarEl(lookWith({ sf: t.id }), { size: 64 }), mk("small", null, "Frame"));
+        fTile.onclick = () => { pv.sf = tf === t.id ? (cur.sf === t.id ? "" : null) : t.id; sfx("pick"); H.rerender(); };
+        const bTile = mk("button", "vt-ttile vt-tbg" + (tb === t.id ? " on" : "")); bTile.type = "button"; bTile.setAttribute("aria-label", "Try the " + t.name + " Background");
+        const mini = mk("div", "vt-mini"), sc = mk("div", "vt-minis"); sc.appendChild(X().seatCard(lookWith({ bg: t.id, sf: "" }), { slot: 1, size: 72 })); mini.appendChild(sc); bTile.append(mini, mk("small", null, "Background"));
+        bTile.onclick = () => { pv.bg = tb === t.id ? (cur.bg === t.id ? "" : null) : t.id; sfx("pick"); H.rerender(); };
+        tiles.append(fTile, bTile); c.appendChild(tiles);
         const row = mk("div", "vt-tbuy");
         const buyOne = (id, label, price, own) => {
             if (own) return mk("span", "vt-owned", label + " ✓");
@@ -85,11 +110,11 @@ function skinsView() {
             const b = btn("", "ghost sm", () => doBuySkin(id)); b.append(mk("small", null, label), coin(price)); return b;
         };
         row.append(buyOne(fId, "Frame", t.price, of), buyOne(bId, "Background", t.price, ob));
-        if (!of && !ob && !earn) { const b = btn("", "alt sm", () => doBundle(t.id)); b.append(mk("small", null, "Bundle −" + Math.round(SKINS.bundleOff * 100) + "%"), coin(bundlePrice(t.id))); row.appendChild(b); }
-        c.append(prev, h, row); grid.appendChild(c);
+        if (!of && !ob && !earn) { const b = btn("", "alt sm", () => doBundle(t.id)); b.append(mk("small", null, "Both −" + Math.round(SKINS.bundleOff * 100) + "%"), coin(bundlePrice(t.id))); row.appendChild(b); }
+        c.appendChild(row); grid.appendChild(c);
     });
     v.appendChild(grid);
-    v.appendChild(mk("p", "vt-rule", "Each tier comes as a Frame (the ring around your picture) and a Background (inside the circle, behind your picture). Buying both together is " + Math.round(SKINS.bundleOff * 100) + "% off. Cosmetics can't be traded or gifted; if you ever get one twice (future rewards), it refunds " + Math.round(SKINS.dupRefund * 100) + "% of its price."));
+    v.appendChild(mk("p", "vt-rule", "Each tier comes as a Frame (the animated ring around your picture) and a Background (your whole player card: the panel with the stripes and the 1P tag). Wear any frame with any background; everyone in the room sees both. Buying both of a tier together is " + Math.round(SKINS.bundleOff * 100) + "% off. Cosmetics can't be traded or gifted; if you ever get one twice (future rewards), it refunds " + Math.round(SKINS.dupRefund * 100) + "% of its price. Reduced effects shows them still."));
     return v;
 }
 async function doBuySkin(id) {
@@ -111,11 +136,12 @@ async function offerEquip(ids) {
 async function doEquip(slot, id) {
     const r = await H.act("equip:" + slot + ":" + (id || "none") + ":" + Date.now(), "equip", w => equip(w, slot, id));
     if (!r.ok) { toast(r.error); return; }
+    if (slot === "sf" || slot === "bg") pv[slot] = null;
     H.setLook(); sfx("pick"); H.rerender();
 }
 function wardrobeView() {
     const w = W(), v = mk("div", "vt-ward");
-    v.appendChild(seatPreview(lookWith({}), "Your current look in the lobby."));
+    v.appendChild(seatPreview(lookWith({}), "Your look right now, exactly as the lobby shows it."));
     const groups = [["sf", "Frames", SKIN_ITEMS.filter(i => i.kind === "frame")], ["bg", "Backgrounds", SKIN_ITEMS.filter(i => i.kind === "bg")], ["title", "Titles", SCRATCH_ITEMS.filter(i => i.kind === "title")],
         ["ts", "Title skins", SCRATCH_ITEMS.filter(i => i.kind === "tskin")], ["uc", "Username styles", SCRATCH_ITEMS.filter(i => i.kind === "ucol")], ["sleeve", "Card sleeves", CARD_SERIES.map(s => itemById("sl_" + s))]];
     groups.forEach(([slot, name, list]) => {
@@ -131,13 +157,13 @@ function wardrobeView() {
             b.appendChild(label); if (i.rarity) b.title = i.rarity; b.onclick = () => doEquip(slot, i.id); row.appendChild(b);
         });
         sec.appendChild(row);
-        if (!have.length) sec.appendChild(mk("p", "vt-rule", slot === "sleeve" ? "Complete a series in your collection to unlock its sleeve: it reskins the back of all your cards." : slot === "sf" || slot === "bg" ? "Buy them in Season 1 skins." : "Win them from scratch cards."));
+        if (!have.length) sec.appendChild(mk("p", "vt-rule", slot === "sleeve" ? "Complete a series in your collection to unlock its sleeve: it reskins the back of all your cards." : slot === "sf" || slot === "bg" ? "Buy them in the Shop's Season 1 skins." : "Win them from scratch cards."));
         v.appendChild(sec);
     });
     return v;
 }
 
-/* ---------- scratch cards ---------- */
+/* =========================== SCRATCH CARDS =========================== */
 function scratchView() {
     const v = mk("div", "vt-scratch");
     Object.entries(SCRATCH.tiers).forEach(([k, T]) => {
@@ -250,9 +276,8 @@ async function doPack(series, kind, via) {
     reveal(r.result);
 }
 function reveal(res) {
-    X().closeOverlay && X().closeOverlay("vault");
     openPack(res, {
-        onDone: () => { H.act("opened:" + res.seed, "opened", w => markOpened(w, res.seed)).then(() => { X().openOverlay && X().openOverlay("vault"); H.rerender(); }); },
+        onDone: () => { H.act("opened:" + res.seed, "opened", w => markOpened(w, res.seed)).then(() => H.rerender()); },
         onNext: W().coins >= PACKS[res.kind].price ? { label: "Open another (" + PACKS[res.kind].price + " coins)", fn: () => { H.act("opened:" + res.seed, "opened", w => markOpened(w, res.seed)).then(() => doPack(res.series, res.kind, "coins")); } } : null
     });
 }
@@ -318,7 +343,7 @@ function deckTab() {
         c.append(h, row, btns); v.appendChild(c);
     });
     if ((w.decks || []).length < DECK.maxDecks) v.appendChild(btn("+ New deck", "alt", () => { editing = { id: "", name: "Deck " + ((w.decks || []).length + 1), cards: [] }; H.rerender(); }));
-    v.appendChild(mk("p", "vt-rule", "A deck is exactly " + DECK.size + " different cards. Everyone starts with a free Starter Deck; open packs for more. Your active deck is the one you bring to Anime Card Vault battles."));
+    v.appendChild(mk("p", "vt-rule", "A deck is exactly " + DECK.size + " different cards. Everyone starts with a free Starter Deck; open packs for more. Your active deck is the one you bring to battles (Battle tab)."));
     return v;
 }
 function deckEditor() {
@@ -372,28 +397,95 @@ function deckEditor() {
 }
 
 /* =========================== BATTLE =========================== */
+/* Everyone in the room, on their own lobby card: pick one (1v1) or several (free-for-all) and challenge them.
+   Live battles in the room can be watched; yours can be re-entered. Practice vs CPU never pays. */
+const chal = new Set();
+const LOC = { v: "In the Vault", l: "In the lobby", b: "In a battle" };
 function battleTab() {
-    const w = W(), v = mk("div", "vt-battle"), d = activeDeck(w), bad = d ? deckProblem(w, d.cards) : "No deck";
+    const w = W(), v = mk("div", "vt-battle"), d = activeDeck(w), bad = d ? deckProblem(w, d.cards) : "No deck", x = X(), rd = roomData, me = x.me ? x.me() : 0;
     const hero = mk("section", "vt-card vt-bhero");
-    hero.append(mk("b", "vt-btitle", "Anime Card Vault"), mk("p", "vt-rule", "Pick a card in secret, reveal together, clash: damage = your Power minus their Defense, then the abilities. 1v1: 20 life, 10 cards, hand of 4. Free-for-all (3-8): 25 life, pick a target too. Last one standing wins; if every card is played, the higher life wins."));
+    hero.append(mk("b", "vt-btitle", "Card Battles"), mk("p", "vt-rule", "Pick a card in secret, reveal together, clash: damage = your Power minus their Defense, then the abilities. 1v1: " + BATTLE.duel.life + " life, 10 cards, hand of " + BATTLE.duel.hand + ". Challenge 2 or more for a free-for-all (" + BATTLE.ffa.life + " life, pick a target too). Last one standing wins."));
     const rec = w.battles || { p: 0, w: 0 }; hero.appendChild(mk("small", "vt-brec", "Your record: " + rec.w + " wins / " + rec.p + " battles"));
-    v.appendChild(hero);
-    const dk = mk("section", "vt-card"); const h = mk("header", "vt-ch"); h.append(mk("b", null, "Your deck: " + (d ? d.name : "none")), mk("small", null, bad || "Ready"));
-    dk.appendChild(h);
+    const dk = mk("div", "vt-bdeck"); dk.append(mk("b", null, "Your deck: " + (d ? d.name : "none")), mk("small", null, bad || "Ready"));
     if (d) { const row = mk("div", "vt-dkrow"); d.cards.forEach(id => row.appendChild(cardEl(id, { size: "xs", holo: isHolo(w, id) }))); dk.appendChild(row); }
-    dk.appendChild(btn("Change deck", "ghost sm", () => H.open("deck")));
-    v.appendChild(dk);
+    dk.appendChild(btn("Change deck", "ghost sm", () => H.open("decks")));
+    hero.appendChild(dk);
+    v.appendChild(hero);
+    if (!rd || !x.activeSlots) { v.appendChild(mk("p", "vt-rule", "Battles happen between players in the same room.")); return v; }
+    const all = cvBattles(rd), mine = busyIn(rd, me), others = x.activeSlots(rd).filter(p => p !== me);
+    // my own battle / challenge
+    if (mine) {
+        const sec = mk("section", "vt-card vt-bmine");
+        const opp = seatsOf(mine).filter(p => p !== me).map(p => x.pName(rd, p)).join(", ");
+        if (mine.st === "live") { sec.append(mk("b", null, "⚔ You're battling " + opp), btn("Return to the battle", "alt", () => cvReturn(mine.bid))); }
+        else sec.append(mk("b", null, mine.from === me ? "Challenge sent to " + opp : "Challenge from " + x.pName(rd, mine.from)), mk("small", "vt-rule", "Answer it in the strip at the bottom of the screen."));
+        v.appendChild(sec);
+    }
+    // the room
+    const sec = mk("section", "vt-card vt-broom");
+    const hh = mk("header", "vt-ch"); hh.append(mk("b", null, "Players in this room"), mk("small", null, others.length ? "Tap players to pick them, then challenge" : "Nobody else yet"));
+    sec.appendChild(hh);
+    [...chal].forEach(p => { if (!others.includes(p) || busyIn(rd, p)) chal.delete(p); });
+    if (!others.length) sec.appendChild(mk("p", "vt-rule", "Share the room code" + (x.roomCode ? " (" + x.roomCode() + ")" : "") + " so friends can join. Until then, practice against the CPU."));
+    const grid = mk("div", "vt-bplayers");
+    x.activeSlots(rd).forEach(p => {
+        const n = rd["player" + p] || {}, isMe = p === me, busy = busyIn(rd, p), deck = cvDeckOf(rd, p), loc = locOf(rd, p);
+        const cell = mk(isMe ? "div" : "button", "vt-bpl" + (chal.has(p) ? " on" : "") + (isMe ? " me" : "") + (busy ? " busy" : "")); if (!isMe) cell.type = "button";
+        const card = x.seatCard(n, { slot: p, me: isMe, col: n.col });
+        const tags = mk("div", "seat-tags");
+        if (isMe) tags.appendChild(mk("span", "tag you", "YOU"));
+        tags.appendChild(mk("span", "tag vt-loc loc-" + (busy && busy.st === "live" ? "b" : loc), busy && busy.st === "live" ? "⚔ In a battle" : busy ? "Challenge pending" : LOC[loc] || LOC.l));
+        if (!deck) tags.appendChild(mk("span", "tag off", "No deck yet"));
+        card.appendChild(tags); cell.appendChild(card);
+        if (!isMe) {
+            cell.setAttribute("aria-pressed", String(chal.has(p))); cell.setAttribute("aria-label", (chal.has(p) ? "Picked: " : "Pick ") + (n.name || "Player " + p));
+            cell.disabled = !!busy;
+            cell.onclick = () => { if (chal.has(p)) chal.delete(p); else if (chal.size + 2 > BATTLE.ffa.max) { toast("A battle holds up to " + BATTLE.ffa.max + " players."); return; } else chal.add(p); sfx("toggle"); H.rerender(); };
+        }
+        grid.appendChild(cell);
+    });
+    sec.appendChild(grid);
     const go = mk("div", "vt-row vt-bgo");
-    const prac = btn("Practice vs CPU", "alt", () => { if (bad) { toast(bad); return; } X().closeOverlay("vault"); X().startPractice && X().startPractice(); });
-    go.appendChild(prac);
-    const x = X();
-    if (x.inRoom && x.inRoom()) {
-        if (x.amHost && x.amHost()) go.appendChild(btn("Switch this room to Anime Card Vault", "", () => { x.closeOverlay("vault"); x.setGameType("cv"); }));
-        else go.appendChild(mk("small", "vt-rule", "In a room: ask the host to pick Anime Card Vault in the lobby."));
-    } else go.appendChild(btn("Challenge a friend", "", () => { x.closeOverlay("vault"); x.hostMode && x.hostMode("cardvault"); }));
-    v.appendChild(go);
-    v.appendChild(mk("p", "vt-rule", "Practice battles never pay coins. Room battles with 2+ players pay like every other mode (placement coins), the cards you played count toward their Veteran mark (" + DECK.veteranWins + " wins), and the host can turn on \"Winner picks a free pack\"."));
+    const names = [...chal].map(p => x.pName(rd, p));
+    const cb = btn(chal.size === 0 ? "Pick someone to challenge" : chal.size === 1 ? "Challenge " + names[0] + " · 1v1" : "Challenge " + chal.size + " players · free-for-all", "xl", async () => {
+        if (bad) { toast(bad === "No deck" ? "Build a 10-card deck first (Decks tab)." : bad); return; }
+        if (await cvChallenge([...chal])) { chal.clear(); H.rerender(); }
+    });
+    cb.disabled = !chal.size || !!mine; cb.classList.add("vt-chal");
+    go.appendChild(cb);
+    sec.appendChild(go);
+    if (mine) sec.appendChild(mk("small", "vt-rule", "One battle at a time: finish or cancel yours first."));
+    v.appendChild(sec);
+    // live battles in the room
+    const live = all.filter(b => b.st === "live" && b.s);
+    const ls = mk("section", "vt-card vt-blive"); ls.appendChild(mk("header", "vt-ch")).append(mk("b", null, "Live battles"), mk("small", null, live.length ? live.length + " running" : "none right now"));
+    live.forEach(b => {
+        const r = mk("div", "vt-blrow"), ps = seatsOf(b), s = b.s;
+        const who = mk("div", "vt-blwho"); ps.forEach(p => who.appendChild(x.avatarEl(rd["player" + p] || { name: (s.names || {})["p" + p] }, { size: 30 })));
+        r.append(who, mk("span", null, ps.map(p => x.pName(rd, p)).join(" vs ") + " · round " + (s.round || 1)));
+        r.appendChild(ps.includes(me) ? btn("Return", "alt sm", () => cvReturn(b.bid)) : btn("Watch", "ghost sm", () => cvWatch(b.bid)));
+        ls.appendChild(r);
+    });
+    v.appendChild(ls);
+    // practice
+    const pr = mk("div", "vt-row vt-bgo");
+    pr.appendChild(btn("Practice vs CPU", "ghost", () => { if (bad) { toast(bad === "No deck" ? "Build a 10-card deck first (Decks tab)." : bad); return; } x.startPractice && x.startPractice(); }));
+    v.appendChild(pr);
+    v.appendChild(mk("p", "vt-rule", "Challenges expire after " + ((BATTLE.challenge || {}).expireSeconds || 60) + " s. The host's lobby settings set the pick timer (" + (Number(rd.cvTimer) || BATTLE.pickSeconds) + " s) and \"winner picks a free pack\" (" + (rd.cvPack ? "on" : "off") + "). Battles pay placement coins like every mode (1 minute or longer); the cards you played count toward their Veteran mark (" + DECK.veteranWins + " wins). Practice never pays. You can go back to the lobby at any time."));
     return v;
+}
+/* what each tab reads from the room: the page only redraws a tab when this changes */
+export function roomSig(tab, d) {
+    if (!d) return "";
+    const x = X ? (H ? X() : null) : null;
+    if (tab === "battle") {
+        const slots = x && x.activeSlots ? x.activeSlots(d) : [];
+        return JSON.stringify([slots.map(p => { const n = d["player" + p] || {}; return [p, n.name, n.col, n.sf, n.bg, n.ttl, n.lvl, n.uc, n.ts, n.av && (n.av.u || n.av.g || (n.av.d || "").length)]; }),
+            d.vloc || {}, Object.keys(d.cvDeck || {}).filter(k => arrv((d.cvDeck[k] || {}).cards).length === 10), d.cvTimer, d.cvPack,
+            Object.entries(d.cvb || {}).map(([k, b]) => [k, b && b.st, Object.keys((b && b.acc) || {}).length, b && b.s && b.s.round])]);
+    }
+    if (tab === "collection") return JSON.stringify([colView, Object.entries(d.trades || {}).map(([k, t]) => [k, t && t.st]), colView === "trade" ? Object.values(d.binder || {}).map(b => String(b).length) : 0, x && x.activeSlots ? x.activeSlots(d) : []]);
+    return "";
 }
 
 /* =========================== TRADES (cards only, friends in the same room) =========================== */
@@ -479,7 +571,7 @@ export function roomSync(d) {
     if (binderSent !== key && (d.binder || {})[pk(me)] !== binder) { clearTimeout(binderT); binderT = setTimeout(() => { binderSent = key; x.update(x.ref(x.db, "rooms/" + x.room() + "/binder"), { [pk(me)]: binder }).catch(() => {}); }, 800); }
     trades().forEach(t => {
         const from = Number(t.from), to = Number(t.to), k = t.tid + ":" + t.st;
-        if (to === me && t.st === "open" && !tradeSeen.has(k)) { tradeSeen.add(k); x.toast(x.pName(d, from) + " sent you a card trade offer: Vault › Collection › Trade"); }
+        if (to === me && t.st === "open" && !tradeSeen.has(k)) { tradeSeen.add(k); x.toast(x.pName(d, from) + " sent you a card trade offer: Collection › Trade with friends"); }
         if (from === me && t.st === "accepted" && !tradeSeen.has(k)) {
             tradeSeen.add(k);
             setTimeout(async () => {

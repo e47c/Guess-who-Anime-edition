@@ -1,5 +1,5 @@
 /* =====================================================================
-   CARD DESIGN SYSTEM (Arcade Vault + Anime Card Vault)
+   CARD DESIGN SYSTEM (ARCADE VAULT: packs, collection, decks, battles)
    Rarity = frame material, shape and effects. Series = colours, ornaments, holo pattern, back, pack art.
    Sizes scale everything through --cw (card width); text uses em of a font-size derived from --cw.
    Heavy effects only on Legendary / Mythic; everything stops under Reduced effects (body.fx-lite).

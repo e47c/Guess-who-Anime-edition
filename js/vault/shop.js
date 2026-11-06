@@ -1,18 +1,19 @@
 /* =====================================================================
    ARCADE VAULT · SHOP RULES (pure; tested in tools/vault-test.mjs)
-   Season 1 skins (each tier as a Frame and as a profile-picture Background, bundle -20%), scratch cards,
+   Season 1 skins (each tier as a Frame = the ring around the picture, and a Background = the whole player card;
+   bundle -20%), scratch cards,
    the wardrobe (what's equipped) and duplicate refunds. Cosmetics can't be traded or gifted.
    Inventory: w.inv[itemId] = 1. Equipped: w.equip = { sf, bg, title, ts, uc, sleeve } (item ids, "" = none).
    ===================================================================== */
-import { SKINS, SCRATCH } from "./config.js?v=3";
+import { SKINS, SCRATCH } from "./config.js?v=4";
 import { rngFrom, pickWeighted, pickInt } from "./rng.js?v=1";
 
 /* ---------- the catalogue ---------- */
 export const SKIN_ITEMS = [];
 SKINS.tiers.forEach(t => {
     const earnOnly = SKINS.earnOnly.includes(t.id);
-    SKIN_ITEMS.push({ id: "sf_" + t.id, kind: "frame", slot: "sf", tier: t.id, name: t.name + " Frame - Season " + SKINS.season, price: t.price, animated: !!t.animated, earnOnly });
-    SKIN_ITEMS.push({ id: "bg_" + t.id, kind: "bg", slot: "bg", tier: t.id, name: t.name + " Background - Season " + SKINS.season, price: t.price, animated: !!t.animated, earnOnly });
+    SKIN_ITEMS.push({ id: "sf_" + t.id, kind: "frame", slot: "sf", tier: t.id, name: t.name + " Frame - Season " + SKINS.season, price: t.price, earnOnly });
+    SKIN_ITEMS.push({ id: "bg_" + t.id, kind: "bg", slot: "bg", tier: t.id, name: t.name + " Background - Season " + SKINS.season, price: t.price, earnOnly });
 });
 const mkList = (kind, slot, rarity, names) => names.map(n => ({ id: (kind === "title" ? "t_" : kind === "tskin" ? "ts_" : "uc_") + n.toLowerCase().replace(/[^a-z0-9]+/g, ""), kind, slot, rarity, name: n }));
 export const SCRATCH_ITEMS = [

@@ -2,19 +2,21 @@
    ARCADE VAULT · hub module
    Owns the player's bank (storage layer, store.js), pays finished matches (the standard result from
    result.js, reported by game.js), the daily login bonus and daily missions (economy.js), and draws the
-   Vault sheet (tabs: Rewards, Shop, Packs, Collection, Deck, Battle), the coin chips on the home screen
-   and in the lobby, the daily-bonus sheet and the coin pop-up after a match.
+   ARCADE VAULT page: the ninth lobby mode. Picking it in the lobby gives every player their own Vault page
+   (#arcadeVault, tabs: Shop, Scratch Cards, Packs, Collection, Decks, Battle); it is reachable from nowhere
+   else. Also: the coin chips (balance only), the daily-bonus sheet, the rewards drawer (streak, missions,
+   coin history) and the coin pop-up after a match.
    Every coin change goes through bank.apply(opId, ...), so a reload, a reconnect or a double click
    never pays twice.
    ===================================================================== */
-import { createBank, localBackend } from "./store.js?v=3";
-import { MODE_META, DAILY_LOGIN, EARN, VAULT as VCFG } from "./config.js?v=3";
-import { applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, FEATURES } from "./economy.js?v=2";
+import { createBank, localBackend } from "./store.js?v=4";
+import { MODE_META, DAILY_LOGIN, EARN, VAULT as VCFG } from "./config.js?v=4";
+import { applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, FEATURES } from "./economy.js?v=3";
 import { newSeed } from "./rng.js?v=1";
-import { grantStarter, recordBattle, grantToken, activeDeck, deckProblem } from "./packs.js?v=1";
-import { publicLook } from "./shop.js?v=1";
+import { grantStarter, recordBattle, grantToken, activeDeck, deckProblem } from "./packs.js?v=2";
+import { publicLook } from "./shop.js?v=2";
 import { initOpening } from "./opening.js?v=1";
-import { renderTab, initTabs, roomSync as tabsRoomSync } from "./tabs.js?v=1";
+import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=2";
 import { motionOK } from "../fx.js";
 
 export const bank = createBank(localBackend());
@@ -68,7 +70,7 @@ function coinPop(o) {
     el.appendChild(mk("small", "cp-l", line));
     if (o.why) el.appendChild(mk("small", "cp-why", (o.coins ? "Cut: " : "No coins: ") + o.why));
     (o.missions || []).forEach(m => el.appendChild(mk("small", "cp-m", "✔ " + m.text + "  +" + m.coins)));
-    if (o.token) el.appendChild(mk("small", "cp-m", "🎁 Free pack of any series: open it in the Vault"));
+    if (o.token) el.appendChild(mk("small", "cp-m", "🎁 Free pack of any series: open it in the Vault's Packs tab"));
     el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
     if (o.coins) X.sfx("coin"); else X.sfx("tick");
     clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("show"), 5200 + (o.missions || []).length * 900);
@@ -89,31 +91,56 @@ function renderChips(animate) {
     const vb = $("vtBal"); if (vb) vb.textContent = fmt(to);
 }
 
-/* ---------- the Vault sheet ---------- */
-const TABS = [{ id: "rewards", name: "Rewards" }, { id: "shop", name: "Shop" }, { id: "packs", name: "Packs" }, { id: "collection", name: "Collection" }, { id: "deck", name: "Deck" }, { id: "battle", name: "Battle" }];
-let tab = "rewards";
+/* ---------- the Vault page (ARCADE VAULT mode only) ---------- */
+const TABS = [{ id: "shop", name: "Shop", ico: "◆" }, { id: "scratch", name: "Scratch Cards", ico: "✦" }, { id: "packs", name: "Packs", ico: "▣" },
+    { id: "collection", name: "Collection", ico: "❖" }, { id: "decks", name: "Decks", ico: "≡" }, { id: "battle", name: "Battle", ico: "⚔" }];
+let tab = "shop", pageOn = false, pageDismissed = false, roomD = null, bodySig = "";
 try { const t = localStorage.getItem("aap_vault_tab"); if (TABS.some(x => x.id === t)) tab = t; } catch (e) {}
+const vaultRoom = d => !!d && d.gameType === "cardvault" && (!d.status || d.status === "waiting");
+/* game.js asks on every room update while the room is in the lobby: should this player see their Vault page?
+   Yes as soon as the lobby is on ARCADE VAULT, until they go back to the lobby (then: the lobby's Enter button). */
+export function vaultWanted(d) {
+    if (!vaultRoom(d)) { pageOn = false; pageDismissed = false; return false; }
+    if (!pageOn && !pageDismissed) { pageOn = true; bodySig = ""; }
+    return pageOn;
+}
 export function openVault(which) {
     if (which && TABS.some(t => t.id === which)) tab = which;
-    rollToday();
-    renderVault(); X.openOverlay("vault");
+    if (!vaultRoom(X.roomData ? X.roomData() : null)) { X.toast("The Arcade Vault opens when the lobby picks the ARCADE VAULT mode."); return; }
+    pageOn = true; pageDismissed = false; bodySig = ""; X.sfx("start"); X.refresh();
+}
+export function vaultBack() { pageOn = false; pageDismissed = true; X.sfx("close"); X.refresh(); }
+/* draw the page; on room updates only a tab that reads the room is redrawn (Battle, trades) */
+export function renderPage(d) {
+    roomD = d || roomD;
+    const sig = tab + "|" + roomSig(tab, roomD);
+    if (sig === bodySig && $("vtBody").childElementCount) { renderChips(false); return; }
+    renderVault();
 }
 function renderVault() {
     const nav = $("vtTabs"), body = $("vtBody"); if (!nav || !body) return;
+    bodySig = tab + "|" + roomSig(tab, roomD);
     nav.innerHTML = "";
     TABS.forEach(t => {
-        const b = mk("button", "vt-tab" + (t.id === tab ? " on" : ""), t.name); b.type = "button";
-        b.setAttribute("role", "tab"); b.setAttribute("aria-selected", t.id === tab);
-        if (t.id === "rewards" && !loginState(bank.get(), Date.now()).claimed) b.appendChild(mk("i", "vt-dot"));
-        b.onclick = () => { tab = t.id; try { localStorage.setItem("aap_vault_tab", tab); } catch (e) {} X.sfx("toggle"); renderVault(); };
+        const b = mk("button", "av-tab" + (t.id === tab ? " on" : "")); b.type = "button";
+        b.append(mk("i", "av-tico", t.ico), mk("span", null, t.name)); b.dataset.tab = t.id;
+        b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(t.id === tab));
+        b.onclick = () => { if (tab === t.id) return; tab = t.id; try { localStorage.setItem("aap_vault_tab", tab); } catch (e) {} X.sfx("toggle"); renderVault(); window.scrollTo(0, 0); };
         nav.appendChild(b);
     });
+    const y = window.scrollY;
     body.innerHTML = "";
-    const T = TABS.find(t => t.id === tab);
-    if (tab === "rewards") body.appendChild(rewardsTab());
-    else renderTab(tab, body, H);
+    renderTab(tab, body, H);
+    body.dataset.tab = tab;
+    if (Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y);
+    const dot = $("avRwDot"); if (dot) dot.classList.toggle("hidden", loginState(bank.get(), Date.now()).claimed);
+    const rt = $("avRoom"); if (rt) rt.textContent = X.roomCode && X.roomCode() ? "ROOM " + X.roomCode() : "";
     renderChips(false);
 }
+const pageVisible = () => !!$("arcadeVault") && !$("arcadeVault").classList.contains("hidden");
+/* rewards drawer: daily streak, missions, coins from games today, coin history */
+function fillRewards() { const b = $("vaultRwBody"); if (b) { b.innerHTML = ""; b.appendChild(rewardsTab()); } }
+export function openRewards() { rollToday(); fillRewards(); X.openOverlay("vaultRw"); }
 function streakTrack(st, big) {
     const row = mk("div", "vt-streak" + (big ? " big" : ""));
     DAILY_LOGIN.forEach((c, i) => {
@@ -176,10 +203,12 @@ async function doClaim(btn) {
     const res = await bank.apply("daily:" + dayKey(), "daily", (w, x) => claimDaily(w, x.now, x.log));
     if (res.ok && !res.dup) { X.sfx("coin"); X.toast("Daily bonus: +" + res.result.coins + " AAP Coins (day " + res.result.streak + ")"); }
     else if (!res.ok && btn) btn.disabled = false;
-    renderVault(); renderDaily();
+    if (pageVisible()) renderVault();
+    if ($("vaultRw") && !$("vaultRw").classList.contains("hidden")) fillRewards();
+    renderDaily();
     return res;
 }
-function rollToday() { const day = dayKey(); if (!(bank.get().missions && bank.get().missions.day === day)) bank.apply("missions:" + day, "missions", (w, x) => { ensureMissions(w, x.now, newSeed(), x.log); }, { silent: true }).then(() => { if (!$("vault").classList.contains("hidden")) renderVault(); }); }
+function rollToday() { const day = dayKey(); if (!(bank.get().missions && bank.get().missions.day === day)) bank.apply("missions:" + day, "missions", (w, x) => { ensureMissions(w, x.now, newSeed(), x.log); }, { silent: true }).then(() => { if (pageVisible()) renderVault(); }); }
 
 /* ---------- the daily-bonus sheet (once a day, on the home screen) ---------- */
 function renderDaily() {
@@ -199,9 +228,9 @@ export function maybeShowDaily() {
 /* what the tabs get (tabs.js) */
 const H = {
     bank, act: (opId, kind, fn) => bank.apply(opId, kind, fn), rerender: () => renderVault(), event: (k, op) => vaultEvent(k, op), x: () => X,
-    setLook() { X.setLook && X.setLook(publicLook(bank.get())); }, newSeed, open: id => openVault(id)
+    setLook() { X.setLook && X.setLook(publicLook(bank.get())); }, newSeed, open: id => { tab = id; renderVault(); window.scrollTo(0, 0); },
+    room: () => roomD
 };
-export const vaultTabs = id => openVault(id);
 export function roomSync(d) { tabsRoomSync(d); }
 export function activeDeckCards() { const w = bank.get(), d = activeDeck(w); return d && !deckProblem(w, d.cards) ? { name: d.name, cards: d.cards.slice() } : null; }
 export function initVault(ctx) {
@@ -210,10 +239,12 @@ export function initVault(ctx) {
     initTabs(H);
     if (!bank.get().starter) bank.apply("starter", "starter", (w, x) => grantStarter(w, newSeed(), "Starter deck", x.now));   // every new player: a free 10-card starter deck
     if (X.setLook) { const look = publicLook(bank.get()); X.setLook(look); }
-    window.openVault = openVault;
+    window.openVault = openVault; window.vaultBack = vaultBack; window.vaultRewards = openRewards;
+    /* the coin chips only show the balance; in a lobby on ARCADE VAULT the chip also opens the Vault */
+    window.vaultChip = () => { if (vaultRoom(X.roomData ? X.roomData() : null)) openVault(); else X.toast("Your AAP Coins. Spend them in the ARCADE VAULT: pick that mode in a room's lobby."); };
     window.vaultClaimDaily = async () => { const r = await doClaim(); if (r.ok) setTimeout(() => X.closeOverlay("daily"), motionOK() ? 900 : 200); };
-    ["vault", "daily"].forEach(id => { const o = $(id); if (o) o.addEventListener("click", e => { if (e.target === o) X.closeOverlay(id); }); });
-    bank.onChange(() => { renderChips(true); if ($("vault") && !$("vault").classList.contains("hidden")) renderVault(); });
+    ["vaultRw", "daily"].forEach(id => { const o = $(id); if (o) o.addEventListener("click", e => { if (e.target === o) X.closeOverlay(id); }); });
+    bank.onChange(() => { renderChips(true); if (pageVisible()) renderVault(); });
     renderChips(false); rollToday();
 }
 export const vaultConfig = VCFG;

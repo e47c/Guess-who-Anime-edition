@@ -120,6 +120,25 @@ export function resultOf(d, x, now = Date.now()) {
     return out;
 }
 
+/* ARCADE VAULT card battles are challenges between some of the players in a room (rooms/<code>/cvb/<bid>), not a
+   room-wide match, so they report one standard result per battle: key "cardvault:<bid>". b = the battle node
+   ({ s: engine state, uids, t0, end, timer, pack }), d = the room (for uids of older nodes). Pure. */
+export function battleResultOf(b, d, bid, now = Date.now()) {
+    const s = b && b.s; if (!s || s.phase !== "over" || !bid) return null;
+    const rows = arr(s.places).map(r => ({ p: num(r.p), score: num(r.life), place: num(r.place) }));
+    if (!rows.length) return null;
+    const uids = b.uids || {};
+    const players = rows.map(r => { const n = (d && d["player" + r.p]) || {}; return { slot: r.p, uid: String(uids["p" + r.p] || n.uid || ""), name: String((s.names || {})["p" + r.p] || n.name || "Player " + r.p) }; });
+    const endedAt = num(b.end) || now, startedAt = num(b.t0) || num(b.at) || endedAt;
+    return {
+        v: 1, key: "cardvault:" + bid, mode: "cardvault", players,
+        placements: rows.map(r => ({ slot: r.p, place: r.place })).sort((a, c) => a.place - c.place || a.slot - c.slot),
+        scores: Object.fromEntries(rows.map(r => [r.p, r.score])),
+        duration: Math.max(0, Math.round((endedAt - startedAt) / 1000)), startedAt, endedAt,
+        settings: { cvFormat: rows.length > 2 ? "ffa" : "duel", cvTimer: num(b.timer), cvPack: b.pack ? 1 : 0 }
+    };
+}
+
 /* a result as Firebase can store it and back. RTDB turns {1:…, 2:…} into an array, so scores are keyed "p1" there. */
 export function resultToDb(r) {
     const o = JSON.parse(JSON.stringify(r));

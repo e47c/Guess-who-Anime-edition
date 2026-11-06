@@ -2,7 +2,7 @@
 
 *(formerly Guess Who: Anime Edition)*
 
-A browser party game for a squad of up to 8 friends with nine anime modes in one room, plus the Arcade Vault (coins, shop, card packs, collection):
+A browser party game for a squad of up to 8 friends with nine anime modes in one room; the ninth, ARCADE VAULT, is the economy (coins, shop, card packs, collection, card battles):
 
 | Mode | Players | Identity |
 |---|---|---|
@@ -14,7 +14,7 @@ A browser party game for a squad of up to 8 friends with nine anime modes in one
 | **Anime Feud** | 2–8 (Team vs Team) | *Game Show*: a classic blue TV studio, buzzer podiums, a marquee-bulb board; game-show sounds (answer ding, wrong-answer buzzer, applause, fanfare) and bouncy show music |
 | **Most Likely** | 2–8 (Team vs Team or Free For All) | *Hot Takes*: a dark, fiery argument (smoky glass, embers, two burning cards around a VS crest); fire crackle, clash hits, taiko and an aggressive drum-and-bass theme |
 | **Anime Sketch** | 2–8 (everyone draws in turn) | *Draw & Guess*: the art room after hours (a white sheet taped to a dark desk, sticky-note round counter, lined-paper word strip, marker lettering); pencil scribbles, a marimba "got it!", soft pops, a light lo-fi groove |
-| **Anime Card Vault** | 1v1 (2–8 in the room) or free-for-all 3–8 | *Card Battle*: your Vault deck; pick in secret, flip together, clash Power against Defense with rarity-styled cards, ability banners and a battle log |
+| **Arcade Vault** | 1–8, everyone at their own pace | *Vault cabinet*: picking it in the lobby gives every player their own Vault page (Shop, Scratch Cards, Packs, Collection, Decks, Battle); card battles are challenges between players in the room, 1v1 or free-for-all, watchable by the rest |
 
 ## How the modes scale
 
@@ -261,12 +261,16 @@ Picked under **Game type** in the lobby (Classic / Contest; default Classic). Ev
 - **Firebase:** the same three nodes. In `sketch` a contest holds the public word, the round's artists (`ent`), who is done, the ratings (`rt`, rater → drawing → stars), the gallery order and a round log with every drawing's stars. Every move (done, rate, timeout, check, next, join) is a transaction checked against the round number. Moves that end a phase name it, and the rating moves name the drawing on screen (`gi`), so a late duplicate can't skip one. In `sketchInk` each stroke also carries its owner (`o`). The previous round's strokes are deleted when the next round starts.
 - **Honest limit:** the strokes and ratings are in the shared room, so someone using the developer tools could peek at other sheets while drawing, or see who gave which stars. Normal players can't.
 
-## Arcade Vault (economy) and Anime Card Vault (mode 9)
+## ARCADE VAULT (mode 9: the economy and card battles)
 
-The coin chip on the home screen, the player card and the lobby opens the **Arcade Vault**: one sheet with the tabs
-Rewards, Shop, Packs, Collection, Deck and Battle. **Every number** (prices, odds, rewards, pity, life totals, timers,
-mode lengths) is in one file: `js/vault/config.js`. The full card list with rarity, stats and abilities is
-`docs/cards.md` (generated).
+The **Arcade Vault** opens only one way: the host picks the **ARCADE VAULT** mode in the lobby. There is no shared
+screen: every player gets their own Vault page (`#arcadeVault`, `js/vault/vault.js` + `tabs.js`) with the tabs Shop,
+Scratch Cards, Packs, Collection, Decks and Battle, and anyone can go back to the lobby at any time (the lobby then
+shows ENTER THE VAULT; the host keeps the normal mode controls). The coin chips on the home screen and in the lobby
+only show the balance; the ★ Daily button on the Vault page opens the login streak, missions and coin history.
+**Every number** (prices, odds, rewards, pity, life totals, timers, mode lengths, challenge expiry, skin animation
+speeds) is in one file: `js/vault/config.js`. The full card list with rarity, stats and abilities is `docs/cards.md`
+(generated).
 
 **Storage and fairness.** The site has no server of its own and the Firebase rules only allow writes under `rooms/`,
 so coins, cards, decks, cosmetics, pity counters, missions and streaks are kept in this browser (localStorage
@@ -285,9 +289,15 @@ hidden by the interface, as in the other modes.
   accounts, only past the mode's minimum length, at most 600 a day from games. Daily login 30, 30, 40, 40, 50, 50, 100
   (a missed day resets it). 3 daily missions, one always "play a mode you haven't played in 7 days". Night Party bonus:
   hook only (`nightPartyCoins`).
-- **Shop.** Season 1 skins: each tier (Iron 150 ... Prismatic 3000; Flame and Water animated) as a Frame and a
-  Background, bundle -20%, previewed on the exact lobby seat. Frames, backgrounds and pictures are all clipped to the same
-  circle (no square corners). Scratch cards (Basic 60, Silver 150, Gold 350): the prize (title, title skin, username
+- **Shop.** Season 1 skins: each tier (Iron 150 ... Prismatic 3000) as a **Frame** ("Iron Frame - Season 1") and a
+  **Background** ("Iron Background - Season 1"), bundle -20%. Two separate slots, both seen by everyone in the room:
+  the Frame is the animated ring around the circular picture (`.ava.sf-<tier>`: the ring's metal or gem, a layer masked
+  to the ring for glints / facets / ripples, and a layer just outside it for sparkles, flames, bubbles, orbiting lights);
+  the Background restyles the whole player card, the lobby seat with its stripes, 1P tag and angled corners
+  (`.seat.sbg[data-bg=<tier>]`, its animated layer runs under the diagonal-stripe base motif). Both are CSS only
+  (transforms and opacity), pause while scrolled off-screen, and fall back to a still version under Reduced effects.
+  The try-on shows your real lobby card (`seatCard` in `js/profile.js`, the same builder the lobby uses) with any frame
+  and any background together before you buy. Scratch Cards (Basic 60, Silver 150, Gold 350): the prize (title, title skin, username
   colour / effect) is rolled when you buy, scratching only reveals it; duplicates refund 20 / 60 / 150 / 400. The
   Wardrobe equips everything. Cosmetics can't be traded; a duplicate from any future source refunds 50%.
 - **Cards.** One card per Anime Draft character (831, all 18 series), generated by `node tools/cards-build.mjs`: rarity
@@ -304,10 +314,17 @@ hidden by the interface, as in the other modes.
 - **Collection and decks.** A book per series with completion (a finished series gets a gold edge and unlocks its card
   sleeve). Decks of exactly 10 different cards (up to 8 decks); everyone starts with a free Starter Deck (10
   Common/Uncommon cards, 5+ series, all 7 archetypes) and 100 coins. Cards in 10 winning battles get a Veteran mark.
-- **Anime Card Vault (mode 9).** Pick in secret, flip together, clash: damage = Power - Defense, then abilities, in the
-  order written at the top of `js/cardvault/engine.js`. 1v1: 20 life, hand 4, draw 1; free-for-all (3-8): 25 life and a
-  target. Pick timer with auto-pick, one grace pause for a disconnect, spectators, battle log. The host can turn on
-  "winner picks a free pack". Practice vs CPU from the Vault's Battle tab (no coins).
+- **Card battles (Battle tab).** The tab lists everyone in the room on their own lobby card (where they are, whether
+  they have a deck). Pick one player for a 1v1 or several for a free-for-all and challenge them; they accept or decline
+  in a strip at the bottom of the screen (60 s). Each challenge is its own battle in `rooms/<code>/cvb/<id>`, several can
+  run at once, and anyone else can watch. The room host builds each battle (seeded, the seed kept in the node), resolves
+  every round and stores one standard result per battle (`battleResultOf`, key `cardvault:<id>`). Pick in secret, flip
+  together, clash: damage = Power - Defense, then abilities, in the order written at the top of
+  `js/cardvault/engine.js`. 1v1: 20 life, hand 4, draw 1; free-for-all (3-8): 25 life and a target. Pick timer with
+  auto-pick, one grace pause for a disconnect, battle log. A player can leave the battle screen (their cards are then
+  auto-picked) and return from the Battle tab. The host's lobby settings set the pick timer and "winner picks a free
+  pack". Switching the lobby to another mode stops unfinished battles (no coins; the host is asked first). Practice
+  vs CPU from the Battle tab (no coins).
 - **Trades.** In a room, Collection › Trade with friends: up to 5 cards each way; the cards are locked while the offer is
   open and each side swaps its own cards exactly once. Cards only.
 - **Balance.** `node tools/cardvault-test.mjs` simulates thousands of battles: in mixed decks a deck holding a given

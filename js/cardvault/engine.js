@@ -1,5 +1,5 @@
 /* =====================================================================
-   ANIME CARD VAULT · BATTLE ENGINE (pure: no DOM, no Firebase; tested in tools/cardvault-test.mjs)
+   ARCADE VAULT · CARD BATTLE ENGINE (pure: no DOM, no Firebase; tested in tools/cardvault-test.mjs)
    1v1 ("duel"): 10-card decks, 20 life, opening hand 4, draw 1 per round.
    Free-for-all ("ffa", 3-8 players): 25 life; every player also picks a target.
    The host runs every change inside a Firebase transaction; clients only send their pick.
@@ -24,7 +24,7 @@
    ===================================================================== */
 import { ABILITIES } from "./abilities.js?v=1";
 import { CARDS } from "../vault/carddb.js?v=1";
-import { BATTLE } from "../vault/config.js?v=3";
+import { BATTLE } from "../vault/config.js?v=4";
 import { rngFrom, shuffleWith } from "../vault/rng.js?v=1";
 
 export const arr = v => Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : [];

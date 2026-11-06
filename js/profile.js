@@ -5,6 +5,8 @@
    player node so everybody sees the same card in every mode.
    ===================================================================== */
 
+import { SKINS } from "./vault/config.js?v=4";
+
 const KEY = "gw_profile_v1";
 export const COLORS = ["#e11b1b", "#ff6a1a", "#f2c200", "#2ec4a6", "#3ea6ff", "#7a5cff", "#ff4fa8", "#e8e8f4"];
 const GLYPHS = ["火", "雷", "風", "影", "龍", "鬼", "侍", "忍", "夢", "星", "魂", "刃"];
@@ -112,17 +114,18 @@ export function cleanAvatar(av) {
     if (av.t === "g") return { t: "g", g: String(av.g || "?").slice(0, 2), c: /^#[0-9a-f]{3,8}$/i.test(av.c || "") ? av.c : "#e11b1b" };
     return null;
 }
-/* p = a player node / profile.public(): { name, av, col, fr, lvl }. Returns a .ava element. */
-/* Layers, all clipped to the same circle (no square corners anywhere): the ring (level frame, or a Season frame),
-   an optional Season background inside it, the picture on top (inset when a background shows), the frame's shine. */
+/* p = a player node / profile.public(): { name, av, col, fr, lvl, sf, bg }. Returns a .ava element.
+   Season frame (p.sf) = the ring around the picture: the ring's base colours, a ring-shaped layer for effects that run
+   along the ring (.ava-ring, masked to the ring) and a free layer just outside it for particles (.ava-fx: sparkles,
+   flames, bubbles, orbiting lights). All CSS (css/vault.css); paused while off-screen, static under Reduced effects.
+   The Season background (p.bg) is NOT drawn here: it restyles the whole player card (seatCard below). */
 const COSM = /^[a-z0-9]{1,24}$/;
 export function avatarEl(p, { size = 48, cls = "", badge = false } = {}) {
     p = p || {};
     const el = document.createElement("div"), av = cleanAvatar(p.av), col = /^#[0-9a-f]{3,8}$/i.test(p.col || "") ? p.col : "#e11b1b";
-    const sf = COSM.test(p.sf || "") ? p.sf : "", bg = COSM.test(p.bg || "") ? p.bg : "";
-    el.className = "ava fr-" + (sf ? "none" : FRAMES.some(f => f.id === p.fr) ? p.fr : "none") + (sf ? " sf sf-" + sf : "") + (bg ? " has-bg" : "") + (cls ? " " + cls : "");
+    const sf = COSM.test(p.sf || "") ? p.sf : "";
+    el.className = "ava fr-" + (sf ? "none" : FRAMES.some(f => f.id === p.fr) ? p.fr : "none") + (sf ? " sf sf-" + sf : "") + (cls ? " " + cls : "");
     el.style.setProperty("--ava", size + "px"); el.style.setProperty("--ac", col);
-    if (bg) { const b = document.createElement("div"); b.className = "ava-bg bg-" + bg; el.appendChild(b); }
     const inner = document.createElement("div"); inner.className = "ava-in";
     if (av && (av.t === "c" || av.t === "i")) {
         const img = new Image(); img.alt = ""; img.decoding = "async"; img.draggable = false; img.referrerPolicy = "no-referrer";
@@ -133,9 +136,41 @@ export function avatarEl(p, { size = 48, cls = "", badge = false } = {}) {
         inner.style.setProperty("--gc", av && av.c ? av.c : col);
     }
     el.appendChild(inner);
-    if (sf) { const s = document.createElement("i"); s.className = "ava-sheen"; el.appendChild(s); }
+    if (sf) { ["ava-ring", "ava-fx"].forEach(c => { const i = document.createElement("i"); i.className = c; i.setAttribute("aria-hidden", "true"); el.appendChild(i); }); fxWatch(el); }
     if (badge && p.lvl) { const b = document.createElement("span"); b.className = "ava-lvl"; b.textContent = p.lvl; el.appendChild(b); }
     return el;
+}
+/* The player card exactly as the lobby draws it: the "1P" tag, the picture (with its frame), name, title and level.
+   p.bg (Season background) restyles the whole panel: .sbg[data-bg] in css/vault.css, over the lobby's stripes.
+   Used by the lobby seats (game.js), the Vault's shop preview and the Battle tab, so they always match. */
+export function seatCard(p, { slot = 1, me = false, col = "", cls = "", size = 72 } = {}) {
+    p = p || {};
+    const s = document.createElement("div"), bg = COSM.test(p.bg || "") ? p.bg : "";
+    s.className = "seat" + (me ? " me" : "") + (bg ? " sbg" : "") + (cls ? " " + cls : "");
+    s.style.setProperty("--pc", col || (/^#[0-9a-f]{3,8}$/i.test(p.col || "") ? p.col : "#e11b1b"));
+    if (bg) { s.dataset.bg = bg; const f = document.createElement("i"); f.className = "sbg-fx"; f.setAttribute("aria-hidden", "true"); s.appendChild(f); fxWatch(s); }
+    const no = document.createElement("span"); no.className = "seat-no"; no.textContent = slot + "P";
+    const id = document.createElement("div"); id.className = "seat-id";
+    const nm = document.createElement("b"); nm.textContent = p.name || "Player " + slot; styleName(nm, p);
+    const sm = document.createElement("small"), tt = document.createElement("span"); tt.textContent = p.ttl || "Rookie"; styleTitle(tt, p);
+    sm.append(tt, document.createTextNode(p.lvl ? " · LV " + p.lvl : "")); id.append(nm, sm);
+    s.append(no, avatarEl(p, { size, badge: true }), id);
+    return s;
+}
+/* animated frames and backgrounds pause while scrolled out of view (class fx-off; css/vault.css) */
+let fxIO = null; const fxSeen = new Set();
+const FX_PAUSE = !(SKINS && SKINS.pauseOffscreen === false);
+export function fxWatch(el) {
+    if (!FX_PAUSE || typeof IntersectionObserver === "undefined") return;
+    if (!fxIO) fxIO = new IntersectionObserver(list => list.forEach(e => { e.target.classList.toggle("fx-off", !e.isIntersecting); if (!e.target.isConnected) { fxIO.unobserve(e.target); fxSeen.delete(e.target); } }), { rootMargin: "80px" });
+    if (fxSeen.size > 150) fxSeen.forEach(x => { if (!x.isConnected) { fxIO.unobserve(x); fxSeen.delete(x); } });
+    fxSeen.add(el); fxIO.observe(el);
+}
+/* per-tier animation speed + ring width from the Vault config, once, as CSS variables */
+if (typeof document !== "undefined" && SKINS) {
+    const r = document.documentElement.style;
+    (SKINS.tiers || []).forEach(t => r.setProperty("--sp-" + t.id, String(Number(t.speed) > 0 ? Number(t.speed) : 1)));
+    if (Number(SKINS.ringWidth) > 0) r.setProperty("--ring", String(SKINS.ringWidth));
 }
 /* username style + title skin (Arcade Vault scratch-card rewards) on any element showing a name / title */
 export function styleName(elm, p) { if (elm && p && COSM.test(p.uc || "")) elm.classList.add("uc", "uc-" + p.uc); return elm; }
@@ -173,7 +208,7 @@ export function openProfileEditor() {
 function renderEditor() {
     const pv = $("profPreview"); pv.innerHTML = "";
     const card = mk("div", "prof-card"); card.style.setProperty("--ac", draft.col);
-    card.appendChild(avatarEl({ name: draft.name, av: draft.av, col: draft.col, fr: draft.fr, lvl: levelOf(P.xp).lvl, sf: P.sf, bg: P.bg }, { size: 112, badge: true }));
+    card.appendChild(avatarEl({ name: draft.name, av: draft.av, col: draft.col, fr: draft.fr, lvl: levelOf(P.xp).lvl, sf: P.sf }, { size: 112, badge: true }));
     const id = mk("div", "prof-card-id"); id.append(mk("b", null, draft.name || "Your name"), mk("small", null, titleName(draft.ttl)));
     card.appendChild(id); pv.appendChild(card);
     const sw = $("profColors"); sw.innerHTML = "";

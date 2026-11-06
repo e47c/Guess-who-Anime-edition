@@ -1,35 +1,43 @@
 /* =====================================================================
-   ANIME CARD VAULT (ninth mode): card battles with the decks from the Arcade Vault.
+   ARCADE VAULT · CARD BATTLES (the ninth lobby mode; internal id "cardvault", kept for saved data)
+   Picking ARCADE VAULT in the lobby doesn't start a shared match: every player gets their own Vault page
+   (js/vault/vault.js) and challenges others in the room from its Battle tab. Each challenge is its own battle,
+   several can run at once, and anyone not in one keeps shopping, opening packs or watching.
    Rules: engine.js (pure, tested in tools/cardvault-test.mjs). Card faces: ../vault/cardui.js.
 
    Firebase (rooms/<code>):
-     cv          the battle (engine state): players, life, hands, decks, picks, round, deadline, log, placements.
-                 Every change is a transaction: a player only ever sends their own pick; the host resolves the
-                 round (all picked, or the timer ran out: auto-picks), with one grace pause for a disconnect.
-     cvDeck/pN   each player's chosen deck ({name, cards}), published from their Vault while the lobby is on
-                 Anime Card Vault.
-     cvDuel      the two duelists the host picked (1v1 with more than 2 people in the room; the rest spectate).
+     cvb/<bid>   one challenge / battle: { from, to:[slots], acc:{pN: deck}, st, at, timer, pack, s, t0, end, uids, res }
+                 st: invite -> live -> over, or declined / cancelled / expired / void.
+                 The challenger writes the invite with their deck; each opponent accepts with theirs. The room HOST
+                 builds the battle once everyone accepted (seeded: the seed is kept in the node and in s.seed),
+                 resolves every round (all picked, or the timer ran out: auto-picks; one grace pause for a disconnect),
+                 and stores the standard result when it ends. A player only ever writes their own pick.
+     cvDeck/pN   each player's active deck ({name, cards}) while the lobby is on ARCADE VAULT (the Battle tab shows it).
+     vloc/pN     where each player is: "v" Vault page, "b" a battle, "l" the lobby.
    Hidden information is hidden by the interface (opponents' hands and picks are never drawn), like every other
    mode here: the site has no server to keep secrets from a player reading the database.
    Practice vs CPU runs the same engine locally (no coins).
    ===================================================================== */
-import { newBattle, act, resolveRound, alive, handOf, lifeOf, due, applyDue, normalize, cpuPick, autoPick, REVEAL_MS, arr } from "./engine.js?v=1";
+import { newBattle, act, resolveRound, alive, handOf, lifeOf, due, applyDue, normalize, cpuPick, autoPick, REVEAL_MS, arr } from "./engine.js?v=2";
 import { ABILITIES } from "./abilities.js?v=1";
-import { BATTLE } from "../vault/config.js?v=3";
+import { BATTLE } from "../vault/config.js?v=4";
 import { CARDS } from "../vault/carddb.js?v=1";
-import { cardEl, backCard } from "../vault/cardui.js?v=1";
+import { cardEl } from "../vault/cardui.js?v=1";
 import { inspect } from "../vault/opening.js?v=1";
 import { rngFrom, newSeed, shuffleWith } from "../vault/rng.js?v=1";
+import { battleResultOf, resultToDb, resultFromDb } from "../vault/result.js?v=2";
 import { el, srvNow, presentIn, optButtons } from "../feud/common.js?v=3";
 
 const GT = "cardvault";
 const $ = id => document.getElementById(id);
 const pk = p => "p" + p;
 let X = null;
-const fmtOf = d => d && d.cvFormat === "ffa" ? "ffa" : "duel";
+const CH = () => Object.assign({ expireSeconds: 60, keepOverMinutes: 10 }, BATTLE.challenge || {});
 const timerOf = d => [20, 30, 45].includes(Number(d && d.cvTimer)) ? Number(d.cvTimer) : BATTLE.pickSeconds;
-export const cvPrefs = p => ({ cvFormat: p.cvFormat === "ffa" ? "ffa" : "duel", cvTimer: [20, 30, 45].includes(Number(p.cvTimer)) ? Number(p.cvTimer) : BATTLE.pickSeconds, cvPack: p.cvPack ? 1 : 0 });
-export const cvPrefsOf = d => ({ cvFormat: fmtOf(d), cvTimer: timerOf(d), cvPack: d && d.cvPack ? 1 : 0 });
+export const cvPrefs = p => ({ cvTimer: [20, 30, 45].includes(Number(p.cvTimer)) ? Number(p.cvTimer) : BATTLE.pickSeconds, cvPack: p.cvPack ? 1 : 0 });
+export const cvPrefsOf = d => ({ cvTimer: timerOf(d), cvPack: d && d.cvPack ? 1 : 0 });
+const vaultOn = d => !!d && d.gameType === GT && (!d.status || d.status === "waiting");
+const ss = { get(k) { try { return JSON.parse(sessionStorage.getItem(k) || "[]"); } catch (e) { return []; } }, set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
 
 export function initCardVault(ctx) {
     X = ctx;
@@ -37,114 +45,228 @@ export function initCardVault(ctx) {
         setCvOpt(k, v) {
             const d = X.data(); if (!d || !X.amHost() || d.status !== "waiting") return;
             X.sfx("pick");
-            if (k === "fmt") X.lobbySet({ cvFormat: v === "ffa" ? "ffa" : "duel" });
             if (k === "timer") X.lobbySet({ cvTimer: Number(v) });
             if (k === "pack") X.lobbySet({ cvPack: d.cvPack ? 0 : 1 });
         },
-        cvDuelPick(p) {
-            const d = X.data(); if (!d || !X.amHost() || d.status !== "waiting") return;
-            let cur = duelists(d).slice(); const i = cur.indexOf(p);
-            if (i >= 0) cur.splice(i, 1); else { if (cur.length >= 2) cur.shift(); cur.push(p); }
-            X.sfx("toggle"); X.lobbySet({ cvDuel: cur.length ? cur : [-1] });
-        },
-        cvAgain: () => cvStart(true),
-        cvLobby: () => X.backToLobby(true)
+        cvEnterVault: () => X.openVault()
     });
+    closed = new Set(ss.get("aap_cv_closed"));
+    setInterval(() => { if (invBox && !invBox.classList.contains("hidden")) renderInvites(X.data()); }, 1000);
 }
 
-/* ---------------- lobby ---------------- */
-function duelists(d) {
-    const act = X.activeSlots(d);
-    if (act.length <= 2) return act.slice();
-    if (!d.cvDuel) return [X.hostSlot(d), act.find(i => i !== X.hostSlot(d))];
-    return arr(d.cvDuel).map(Number).filter((x, i, a) => act.includes(x) && a.indexOf(x) === i).slice(0, 2);
-}
-const seatsFor = d => fmtOf(d) === "ffa" ? X.activeSlots(d) : duelists(d);
+/* ---------------- challenges / battles in the room ---------------- */
+const nodes = d => Object.entries((d && d.cvb) || {}).filter(([, b]) => b && typeof b === "object").map(([bid, b]) => Object.assign({}, b, { bid, from: Number(b.from), to: arr(b.to).map(Number), acc: b.acc || {} }));
+export const seatsOf = b => [b.from].concat(b.to);
+const OPEN = ["invite", "live"];
+export const cvBattles = d => nodes(d);
+export const busyIn = (d, p) => nodes(d).find(b => OPEN.includes(b.st) && seatsOf(b).includes(Number(p))) || null;
 const deckOf = (d, p) => { const v = (d.cvDeck || {})[pk(p)]; return v && arr(v.cards).length === 10 ? { name: String(v.name || "Deck"), cards: arr(v.cards).map(Number).filter(id => CARDS[id]) } : null; };
-export function cvHint(d) { return fmtOf(d) === "ffa" ? "Free-for-all: everyone battles at once with their own deck, picking a card AND a target each round." : "1v1 duel with your Vault decks. Everyone else spectates."; }
-export function cvReq(d) {
-    const n = X.activeSlots(d).length, seats = seatsFor(d);
-    if (fmtOf(d) === "ffa" && (n < BATTLE.ffa.min || n > BATTLE.ffa.max)) return { ok: false, msg: "Free-for-all needs " + BATTLE.ffa.min + " to " + BATTLE.ffa.max + " players (" + n + " here). Pick 1v1 for two." };
-    if (fmtOf(d) === "duel" && seats.length !== 2) return { ok: false, msg: "Pick the 2 duelists (" + seats.length + "/2). Everyone else spectates." };
-    const missing = seats.filter(p => !deckOf(d, p));
-    if (missing.length) return { ok: false, wait: true, msg: "Waiting for a 10-card deck from " + missing.map(p => X.pName(d, p)).join(", ") + " (Vault › Deck)." };
-    return { ok: true, msg: "Anime Card Vault · " + (fmtOf(d) === "ffa" ? "Free-for-all, " + seats.length + " players, " + BATTLE.ffa.life + " life" : seats.map(p => X.pName(d, p)).join(" vs ") + ", " + BATTLE.duel.life + " life") + " · " + timerOf(d) + " s picks" + (d.cvPack ? " · winner gets a free pack" : "") };
-}
-let deckSent = "";
-export function cvLobby(d, lock) {
-    // my deck rides along in the room while the lobby is on this mode
-    const mine = X.activeDeck(), me = X.me(), cur = (d.cvDeck || {})[pk(me)], want = mine ? JSON.stringify(mine) : "";
-    if (want && want !== deckSent && JSON.stringify({ name: cur && cur.name, cards: cur && arr(cur.cards).map(Number) }) !== want) { deckSent = want; X.update(X.ref(X.db, "rooms/" + X.room() + "/cvDeck/" + pk(me)), mine).catch(() => { deckSent = ""; }); }
-    optButtons($("cvFmtBtns"), ["duel", "ffa"], fmtOf(d), lock, v => v === "ffa" ? "Free-for-all" : "1v1 Duel", v => window.setCvOpt("fmt", v));
-    optButtons($("cvTimerBtns"), [20, 30, 45], timerOf(d), lock, v => v + " s", v => window.setCvOpt("timer", v));
-    const pb = $("cvPackBtn"); pb.textContent = d.cvPack ? "On: the winner picks a free pack" : "Off"; pb.classList.toggle("selected", !!d.cvPack); pb.disabled = lock;
-    const dp = $("cvDuelBox"), act = X.activeSlots(d);
-    dp.classList.toggle("hidden", fmtOf(d) !== "duel" || act.length <= 2);
-    if (fmtOf(d) === "duel" && act.length > 2) {
-        const box = $("cvDuelPick"); box.innerHTML = ""; const sel = duelists(d);
-        act.forEach(p => { const b = el("button", "duel-opt" + (sel.includes(p) ? " on" : "")); b.type = "button"; b.style.setProperty("--pc", (X.pPub(d, p) || {}).col || "#e11b1b"); b.append(X.avatarEl(X.pPub(d, p), { size: 30 }), el("b", null, X.pName(d, p))); b.disabled = lock; b.onclick = () => window.cvDuelPick(p); box.appendChild(b); });
-    }
-    const list = $("cvDecks"); list.innerHTML = "";
-    seatsFor(d).forEach(p => { const dk = deckOf(d, p), r = el("div", "cv-dkst" + (dk ? " ok" : "")); r.append(X.avatarEl(X.pPub(d, p), { size: 26 }), el("b", null, X.pName(d, p)), el("small", null, dk ? dk.name + " ✓" : "no deck yet")); list.appendChild(r); });
-    const mineOk = !!mine;
-    $("cvMyDeck").textContent = mineOk ? "Your deck: " + mine.name + " (change it in Vault › Deck)" : "You need a 10-card deck: open Vault › Deck.";
-    $("cvHint").textContent = "Each round everyone picks a card in secret" + (fmtOf(d) === "ffa" ? " and a target" : "") + ", then all cards flip at once: damage = Power minus the opposing Defense, then abilities. " + (fmtOf(d) === "ffa" ? BATTLE.ffa.life : BATTLE.duel.life) + " life; last one standing wins.";
-}
-
-/* ---------------- start (host) ---------------- */
-export async function cvStart(again) {
-    const d = X.data(); if (!d || !X.amHost()) return;
-    if (again && d.cv && d.cv.phase !== "over" && !(await X.uiConfirm({ title: "Restart the battle?", text: "The current battle is thrown away.", ok: "Restart" }))) return;
-    const req = cvReq(d); if (!req.ok) { X.toast(req.msg); return; }
-    const players = seatsFor(d), decks = {}, names = {};
-    players.forEach(p => { decks[pk(p)] = deckOf(d, p).cards; names[pk(p)] = X.pName(d, p); });
-    const mid = Date.now(), s = newBattle({ mid, fmt: fmtOf(d), players, decks, names, now: srvNow(), seed: newSeed(), pickMs: timerOf(d) * 1000 });
-    try { await X.update(X.ref(X.db, "rooms/" + X.room()), { status: "playing", matchId: mid, cv: JSON.parse(JSON.stringify(s)) }); }
-    catch (e) { console.error(e); X.toast("Could not start: " + (e.message || e)); }
-}
-export const cvSeats = d => { const s = d && d.cv; return s ? arr(s.players).map(Number) : []; };
-export const cvOver = d => !d.cv || d.cv.phase === "over";
-async function tx(fn) {
+export const cvDeckOf = deckOf;
+export const locOf = (d, p) => ((d && d.vloc) || {})[pk(p)] || "l";
+const inRoom = (d, p) => { const n = d && d["player" + p]; return !!n && !n.left; };
+async function nodeTx(bid, fn) {
     try {
-        await X.runTransaction(X.ref(X.db, "rooms/" + X.room() + "/cv"), cur => {
+        await X.runTransaction(X.ref(X.db, "rooms/" + X.room() + "/cvb/" + bid), cur => {
             if (!cur) return;
-            const s = normalize(JSON.parse(JSON.stringify(cur)));
-            if (fn(s) === false) return;
-            return JSON.parse(JSON.stringify(s));
+            const b = JSON.parse(JSON.stringify(cur));
+            if (fn(b) === false) return;
+            return b;
         });
     } catch (e) { console.error(e); X.toast("Could not send that. Try again."); }
 }
-
-/* ---------------- host duties: resolve when everyone picked or time is up ---------------- */
-let dutyT = 0, dutyKey = "";
-export function cvDuties(d) {
-    const s = d.cv; if (!s || s.phase !== "pick" || !X.amHost()) { clearInterval(dutyT); dutyT = 0; return; }
-    const check = () => {
-        const d2 = X.data(); if (!d2 || !d2.cv || d2.cv.phase !== "pick" || !X.amHost() || d2.gameType !== GT) { clearInterval(dutyT); dutyT = 0; return; }
-        const s2 = normalize(JSON.parse(JSON.stringify(d2.cv))), pres = presentIn(d2), kind = due(s2, srvNow(), pres);
-        if (!kind) return;
-        const k = s2.n + ":" + s2.round + ":" + kind + ":" + s2.ext; if (dutyKey === k) return; dutyKey = k;
-        setTimeout(() => tx(st => { const kk = due(st, srvNow(), presentIn(X.data())); if (!kk) return false; applyDue(st, kk, srvNow(), presentIn(X.data())); }), 0);
-    };
-    if (!dutyT) dutyT = setInterval(check, 400);
-    check();
+export async function cvChallenge(opps) {
+    const d = X.data(), me = X.me(); if (!vaultOn(d)) return false;
+    const deck = X.activeDeck(); if (!deck) { X.toast("You need a 10-card deck first: open the Decks tab."); return false; }
+    opps = [...new Set(opps.map(Number))].filter(p => p !== me && X.activeSlots(d).includes(p));
+    if (!opps.length) { X.toast("Pick who to challenge."); return false; }
+    if (opps.length + 1 > BATTLE.ffa.max) { X.toast("A battle holds up to " + BATTLE.ffa.max + " players."); return false; }
+    if (busyIn(d, me)) { X.toast("You're already in a challenge or a battle."); return false; }
+    const busy = opps.filter(p => busyIn(d, p)); if (busy.length) { X.toast(busy.map(p => X.pName(d, p)).join(", ") + (busy.length > 1 ? " are" : " is") + " already in a battle."); return false; }
+    const bid = "b" + srvNow().toString(36) + me;
+    try { await X.update(X.ref(X.db, "rooms/" + X.room() + "/cvb/" + bid), { from: me, to: opps, acc: { [pk(me)]: deck }, st: "invite", at: srvNow(), timer: timerOf(d), pack: d.cvPack ? 1 : 0 }); }
+    catch (e) { console.error(e); X.toast("Could not send the challenge."); return false; }
+    X.sfx("ready"); return true;
 }
-export function cvReset() { clearInterval(dutyT); dutyT = 0; dutyKey = ""; view = null; picked = { c: 0, t: 0 }; lastN = -1; const o = $("cvOver"); if (o) o.remove(); }
+export async function cvAccept(bid) {
+    const deck = X.activeDeck(), me = X.me();
+    if (!deck) { X.toast("You need a 10-card deck to accept: open the Decks tab."); X.openVault("decks"); return; }
+    X.sfx("ready");
+    await nodeTx(bid, b => { if (b.st !== "invite" || !arr(b.to).map(Number).includes(me)) return false; b.acc = Object.assign({}, b.acc, { [pk(me)]: deck }); });
+}
+export const cvDecline = bid => { X.sfx("close"); return nodeTx(bid, b => { if (b.st !== "invite") return false; b.st = "declined"; b.by = X.me(); b.fin = srvNow(); }); };
+export const cvCancel = bid => { X.sfx("close"); return nodeTx(bid, b => { if (b.st !== "invite" || Number(b.from) !== X.me()) return false; b.st = "cancelled"; b.by = X.me(); b.fin = srvNow(); }); };
+
+/* ---------------- host duties: start accepted challenges, resolve rounds, expire, clean up ---------------- */
+let dutyT = 0;
+const dutyKeys = new Map();
+export function cvDuties(d) {
+    if (!X.amHost() || !d || !d.cvb) { clearInterval(dutyT); dutyT = 0; return; }
+    if (!dutyT) dutyT = setInterval(dutyCheck, 400);
+    dutyCheck();
+}
+function dutyCheck() {
+    const d = X.data();
+    if (!d || !X.amHost() || !d.cvb) { clearInterval(dutyT); dutyT = 0; return; }
+    const now = srvNow(), pres = presentIn(d), on = vaultOn(d), C = CH();
+    nodes(d).forEach(b => {
+        const seats = seatsOf(b); let kind = "";
+        if (b.st === "invite") {
+            if (!on || seats.some(p => !inRoom(d, p))) kind = "cancel";
+            else if (seats.every(p => b.acc[pk(p)])) kind = "build";
+            else if (now - Number(b.at) > C.expireSeconds * 1000) kind = "expire";
+        } else if (b.st === "live") {
+            if (!on || seats.every(p => !inRoom(d, p))) kind = "void";
+            else if (b.s && b.s.phase === "over") kind = "finish";
+            else if (b.s && b.s.phase === "pick") { const k = due(normalize(JSON.parse(JSON.stringify(b.s))), now, pres); if (k) kind = "due"; }
+        } else if (now - Number(b.fin || b.end || b.at || 0) > C.keepOverMinutes * 60000) kind = "prune";
+        if (!kind) return;
+        const key = kind + ":" + (b.s ? [b.s.n, b.s.round, b.s.ext, b.s.dl].join(":") : b.st);
+        if (dutyKeys.get(b.bid) === key) return; dutyKeys.set(b.bid, key);
+        setTimeout(() => hostTx(b.bid, kind), 0);        // (deferred: a transaction inside the room listener re-fires it with an older snapshot)
+    });
+}
+function hostTx(bid, kind) {
+    if (kind === "prune") return X.update(X.ref(X.db, "rooms/" + X.room() + "/cvb"), { [bid]: null }).catch(() => {});
+    return nodeTx(bid, b => {
+        const d = X.data(), now = srvNow(), pres = presentIn(d), seats = [Number(b.from)].concat(arr(b.to).map(Number));
+        if (kind === "cancel" || kind === "expire") { if (b.st !== "invite") return false; b.st = kind === "cancel" ? "cancelled" : "expired"; b.fin = now; return; }
+        if (kind === "void") { if (b.st !== "live") return false; b.st = "void"; b.fin = now; return; }
+        if (kind === "build") {
+            const acc = b.acc || {};
+            if (b.st !== "invite" || !seats.every(p => acc[pk(p)])) return false;
+            const decks = {}, names = {}, uids = {};
+            seats.forEach(p => { decks[pk(p)] = arr(acc[pk(p)].cards).map(Number).filter(id => CARDS[id]); names[pk(p)] = X.pName(d, p); uids[pk(p)] = String((d["player" + p] || {}).uid || ""); });
+            if (seats.some(p => new Set(decks[pk(p)]).size !== 10)) { b.st = "cancelled"; b.why = "deck"; b.fin = now; return; }
+            const seed = newSeed();
+            b.s = JSON.parse(JSON.stringify(newBattle({ mid: now, fmt: seats.length > 2 ? "ffa" : "duel", players: seats, decks, names, now, seed, pickMs: (Number(b.timer) || BATTLE.pickSeconds) * 1000 })));
+            b.st = "live"; b.t0 = now; b.uids = uids; b.seed = seed;
+            return;
+        }
+        if (kind === "due" || kind === "finish") {
+            if (b.st !== "live" || !b.s) return false;
+            const s = normalize(b.s);
+            if (kind === "due") { const k = due(s, now, pres); if (!k) return false; applyDue(s, k, now, pres); }
+            b.s = JSON.parse(JSON.stringify(s));
+            if (s.phase === "over") { b.st = "over"; b.end = now; b.fin = now; const r = battleResultOf(b, d, bid, now); if (r) b.res = resultToDb(r); }
+        }
+    });
+}
+
+/* ---------------- every room update: my deck, my coins, invitations ---------------- */
+let deckSent = "", locSent = "";
+const paid = new Set();
+export function cvSync(d) {
+    if (!X || !d) return;
+    const me = X.me(), on = vaultOn(d);
+    if (on) {
+        const mine = X.activeDeck(), cur = (d.cvDeck || {})[pk(me)], want = mine ? JSON.stringify(mine) : "";
+        if (want && want !== deckSent && JSON.stringify({ name: cur && cur.name, cards: cur && arr(cur.cards).map(Number) }) !== want) { deckSent = want; X.update(X.ref(X.db, "rooms/" + X.room() + "/cvDeck/" + pk(me)), mine).catch(() => { deckSent = ""; }); }
+    }
+    nodes(d).forEach(b => {
+        if (b.st !== "over" || !b.res || !seatsOf(b).includes(me) || paid.has(b.bid)) return;
+        paid.add(b.bid);
+        const r = resultFromDb(b.res); if (r) X.report(r, arr(((b.s || {}).used || {})[pk(me)]).map(Number));
+    });
+    renderInvites(d);
+}
+/* where I am (the Battle tab and the lobby seats show it) */
+export function cvLoc(d, loc) {
+    if (!vaultOn(d)) { locSent = ""; return; }
+    const me = X.me(), k = X.room() + ":" + me + ":" + loc;
+    if (locSent === k) return;
+    locSent = k; if (locOf(d, me) === loc) return;
+    X.update(X.ref(X.db, "rooms/" + X.room() + "/vloc"), { [pk(me)]: loc }).catch(() => { locSent = ""; });
+}
+
+/* the invitation strip: on the lobby and on the Vault page (never over a battle) */
+let invBox = null;
+function renderInvites(d) {
+    if (!invBox) { invBox = el("div", "cv-inv hidden"); invBox.id = "cvInvite"; invBox.setAttribute("role", "region"); invBox.setAttribute("aria-label", "Battle challenges"); invBox.setAttribute("aria-live", "polite"); document.body.appendChild(invBox); }
+    const show = vaultOn(d) && X.screen() !== "cardvault" && X.inRoom();
+    const me = show ? X.me() : 0, now = srvNow(), C = CH();
+    const list = show ? nodes(d).filter(b => seatsOf(b).includes(me) && (b.st === "invite" || (b.st === "live" && closed.has(b.bid)))) : [];
+    const sig = list.map(b => b.bid + b.st + Object.keys(b.acc).join() + Math.max(0, Math.ceil((C.expireSeconds * 1000 - (now - Number(b.at))) / 1000))).join("|");
+    invBox.classList.toggle("hidden", !list.length);
+    if (invBox.dataset.sig === sig) return; invBox.dataset.sig = sig; invBox.innerHTML = "";
+    list.forEach(b => {
+        const row = el("div", "cv-invrow"), who = seatsOf(b).filter(p => p !== me), mineAcc = !!b.acc[pk(me)];
+        const left = Math.max(0, Math.ceil((C.expireSeconds * 1000 - (now - Number(b.at))) / 1000));
+        const fmt = seatsOf(b).length > 2 ? "free-for-all (" + seatsOf(b).length + ")" : "1v1";
+        const txt = el("div", "cv-invtxt");
+        if (b.st === "live") { txt.append(el("b", null, "⚔ Your battle is still on"), el("small", null, "vs " + who.map(p => X.pName(d, p)).join(", ") + " · your cards are auto-picked when the timer runs out")); row.append(txt, btnEl("Return", "alt sm", () => cvReturn(b.bid))); }
+        else if (b.from !== me && !mineAcc) {
+            txt.append(el("b", null, "⚔ " + X.pName(d, b.from) + " challenges you"), el("small", null, fmt + (who.length > 1 ? " with " + who.filter(p => p !== b.from).map(p => X.pName(d, p)).join(", ") : "") + " · " + (Number(b.timer) || BATTLE.pickSeconds) + " s picks" + (b.pack ? " · winner gets a free pack" : "") + " · " + left + " s"));
+            row.append(txt, btnEl("Accept", "alt sm", () => cvAccept(b.bid)), btnEl("Decline", "ghost sm", () => cvDecline(b.bid)));
+        } else {
+            const wait = seatsOf(b).filter(p => !b.acc[pk(p)]);
+            txt.append(el("b", null, b.from === me ? "Challenge sent" : "Accepted"), el("small", null, "Waiting for " + wait.map(p => X.pName(d, p)).join(", ") + " · " + left + " s"));
+            row.append(txt, b.from === me ? btnEl("Cancel", "ghost sm", () => cvCancel(b.bid)) : btnEl("Decline", "ghost sm", () => cvDecline(b.bid)));
+        }
+        invBox.appendChild(row);
+    });
+}
+const btnEl = (t, cls, fn) => { const b = el("button", "btn " + cls, t); b.type = "button"; b.onclick = fn; return b; };
+
+/* ---------------- lobby panel (host settings for every challenge in the room) ---------------- */
+export function cvHint() { return "Everyone gets their own Vault page: shop, scratch cards, packs, collection and decks. Challenge anyone in the room from its Battle tab."; }
+export function cvReq(d) { return { ok: true, msg: "ARCADE VAULT is open: everyone has their own Vault. Battles are challenges from the Battle tab" }; }
+export function cvLobby(d, lock) {
+    optButtons($("cvTimerBtns"), [20, 30, 45], timerOf(d), lock, v => v + " s", v => window.setCvOpt("timer", v));
+    const pb = $("cvPackBtn"); pb.textContent = d.cvPack ? "On: the winner picks a free pack" : "Off"; pb.classList.toggle("selected", !!d.cvPack); pb.disabled = lock;
+    const mine = X.activeDeck();
+    $("cvMyDeck").textContent = mine ? "Your battle deck: " + mine.name : "You need a 10-card deck to battle: build one in the Vault's Decks tab.";
+    $("cvHint").textContent = "Battles: pick a card in secret, everyone flips together, damage = Power minus the opposing Defense, then abilities. 1v1: " + BATTLE.duel.life + " life. Challenge 2+ players for a free-for-all (" + BATTLE.ffa.life + " life, pick a target too).";
+}
+
+/* ---------------- which battle this player looks at ---------------- */
+let closed = new Set(), watching = "", viewing = "";
+const saveClosed = () => ss.set("aap_cv_closed", [...closed].slice(-40));
+export function battleWanted(d) {
+    if (!vaultOn(d)) { watching = ""; return null; }
+    const me = X.me(), list = nodes(d).filter(b => b.s);
+    const mine = list.filter(b => seatsOf(b).includes(me) && (b.st === "live" || b.st === "over") && !closed.has(b.bid)).sort((a, b) => Number(b.t0 || 0) - Number(a.t0 || 0))[0];
+    if (mine) return mine.bid;
+    if (watching && list.some(b => b.bid === watching)) return watching;
+    watching = ""; return null;
+}
+export function cvWatch(bid) { watching = bid; closed.delete(bid); X.sfx("pick"); X.refresh(); }
+export function cvReturn(bid) { closed.delete(bid); saveClosed(); X.sfx("pick"); X.refresh(); }
+async function closeBattle(bid, live) {
+    if (live && !(await X.uiConfirm({ title: "Leave the battle screen?", text: "The battle goes on: when your timer runs out a card is picked for you. Come back any time from the Battle tab.", ok: "Leave" }))) return;
+    closed.add(bid); saveClosed(); if (watching === bid) watching = ""; viewing = "";
+    X.sfx("close"); X.refresh();
+}
+export function showBattle(d, bid) {
+    X.showOnly("cardvault");
+    const b = nodes(d).find(x => x.bid === bid); if (!b || !b.s) return;
+    const s = normalize(JSON.parse(JSON.stringify(b.s)));
+    const me = X.me(), playing = arr(s.players).includes(me);
+    if (viewing !== bid) { viewing = bid; picked = { c: 0, t: 0 }; lastN = -1; }
+    const others = arr(s.players).filter(p => p !== me);
+    render($("cvWrap"), s, {
+        me: playing ? me : 0, pub: p => X.pPub(d, p), present: presentIn(d), room: true, holo: id => X.isHolo(id),
+        pick: (c, t) => pickTx(bid, c, t),
+        again: playing && b.st === "over" && others.every(p => inRoom(d, p)) ? async () => { if (await cvChallenge(others)) closeBattle(bid); } : null,
+        back: () => closeBattle(bid, playing && b.st === "live"), backLabel: playing && b.st === "live" ? "Leave battle screen" : "Back to the Vault"
+    });
+    $("cvTurnT").textContent = b.st === "void" ? "BATTLE STOPPED" : s.phase === "over" ? "BATTLE OVER" : "ROUND " + s.round + (s.fmt === "ffa" ? " · FREE-FOR-ALL" : " · 1V1");
+    $("cvStatus").textContent = !playing ? "Watching " + arr(s.players).map(p => s.names[pk(p)]).join(" vs ") : !alive(s).includes(me) ? "Knocked out: watching" : s.phase === "over" ? "" : (s.picks || {})[pk(me)] ? "Card locked in. Waiting for the others…" : "Pick a card" + (s.fmt === "ffa" ? " and a target" : "");
+}
+async function pickTx(bid, c, t) {
+    const me = X.me();
+    try {
+        await X.runTransaction(X.ref(X.db, "rooms/" + X.room() + "/cvb/" + bid + "/s"), cur => {
+            if (!cur) return;
+            const st = normalize(JSON.parse(JSON.stringify(cur)));
+            if (act(st, { p: me, c, t })) return;
+            return JSON.parse(JSON.stringify(st));
+        });
+    } catch (e) { console.error(e); X.toast("Could not send that. Try again."); }
+}
+export function cvReset() { const o = $("cvOver"); if (o) o.remove(); }
 
 /* ---------------- the battle view (rooms and practice share it) ---------------- */
-let view = null, picked = { c: 0, t: 0 }, lastN = -1, tickT = 0;
-export function showCV(d) {
-    X.showOnly("cardvault");
-    const s = normalize(JSON.parse(JSON.stringify(d.cv)));
-    const me = X.me(), playing = arr(s.players).includes(me);
-    render($("cvWrap"), s, {
-        me: playing ? me : 0, pub: p => X.pPub(d, p), present: presentIn(d), room: true, host: X.amHost(),
-        pick: (c, t) => tx(st => { if (act(st, { p: me, c, t })) return false; }),
-        again: () => cvStart(true), lobby: () => X.backToLobby(true)
-    });
-    $("cvTurnT").textContent = s.phase === "over" ? "BATTLE OVER" : "ROUND " + s.round + (s.fmt === "ffa" ? " · FREE-FOR-ALL" : " · 1V1");
-    $("cvStatus").textContent = !playing ? "Spectating" : !alive(s).includes(me) ? "Knocked out: spectating" : s.phase === "over" ? "" : (s.picks || {})[pk(me)] ? "Card locked in. Waiting for the others…" : "Pick a card" + (s.fmt === "ffa" ? " and a target" : "");
-}
+let picked = { c: 0, t: 0 }, lastN = -1, tickT = 0;
 function lifeBar(s, p) {
     const w = el("div", "cv-life"), v = Math.max(0, lifeOf(s, p)), f = el("i"); f.style.width = Math.max(0, Math.min(100, v / s.max * 100)) + "%";
     w.classList.toggle("low", v <= s.max * .3); w.append(f, el("b", null, v + " / " + s.max)); w.setAttribute("aria-label", v + " of " + s.max + " life");
@@ -211,6 +333,7 @@ function render(root, s, o) {
     const tools = el("div", "cv-tools");
     const logB = el("button", "btn ghost sm", "Battle log"); logB.type = "button"; logB.onclick = () => showLog(s); tools.appendChild(logB);
     if (o.exit) { const ex = el("button", "btn ghost sm", "Leave practice"); ex.type = "button"; ex.onclick = o.exit; tools.appendChild(ex); }
+    if (o.back && s.phase !== "over") { const bk = el("button", "btn ghost sm", "‹ " + (o.backLabel || "Back to the Vault")); bk.type = "button"; bk.onclick = o.back; tools.appendChild(bk); }
     root.appendChild(tools);
     if (s.phase === "over") showOverPanel(root, s, o);
     function play() {
@@ -264,11 +387,13 @@ function showOverPanel(root, s, o) {
     arr(s.places).forEach(r => { const li = el("li", "cv-pl" + (r.p === o.me ? " me" : "")); li.append(el("b", null, "#" + r.place), X.avatarEl(o.pub(r.p) || { name: s.names[pk(r.p)] }, { size: 28 }), el("span", null, s.names[pk(r.p)]), el("small", null, Math.max(0, r.life) + " life")); list.appendChild(li); });
     p.appendChild(list);
     const b = el("div", "vt-row");
-    if (o.room && o.host) { const a = el("button", "btn alt", "Rematch"); a.type = "button"; a.onclick = o.again; const l = el("button", "btn ghost", "Back to lobby"); l.type = "button"; l.onclick = o.lobby; b.append(a, l); }
-    else if (o.room) b.appendChild(el("small", "vt-rule", "Waiting for the host…"));
+    if (o.room) {
+        if (o.again) { const a = el("button", "btn alt", "Rematch"); a.type = "button"; a.onclick = o.again; b.appendChild(a); }
+        const l = el("button", "btn ghost", "Back to the Vault"); l.type = "button"; l.onclick = o.back; b.appendChild(l);
+    }
     if (o.exit) { const a = el("button", "btn alt", "Play again"); a.type = "button"; a.onclick = o.again; const l = el("button", "btn ghost", "Leave"); l.type = "button"; l.onclick = o.exit; b.append(a, l); }
     p.appendChild(b);
-    if (o.room) p.appendChild(el("small", "vt-rule", "Coins for placements arrive as a pop-up (2+ players, like every mode)."));
+    if (o.room && o.me) p.appendChild(el("small", "vt-rule", "Coins for your placement arrive as a pop-up (battles of 1 minute or more)."));
     root.prepend(p);
     if (o.fresh !== false && !overSeen.has(s.mid + ":" + (s.n || 0))) { overSeen.add(s.mid + ":" + (s.n || 0)); try { p.scrollIntoView({ block: "start", behavior: "smooth" }); } catch (e) {} }
     if (!p.dataset.sfx) { p.dataset.sfx = 1; X.sfx(win.includes(o.me) && !draw ? "win" : "reveal"); }
@@ -277,7 +402,7 @@ function showOverPanel(root, s, o) {
 /* ---------------- practice vs CPU (local, no coins) ---------------- */
 let practice = null;
 export function startPractice() {
-    const deck = X.activeDeck(); if (!deck) { X.toast("Build a 10-card deck first (Vault › Deck)."); return; }
+    const deck = X.activeDeck(); if (!deck) { X.toast("Build a 10-card deck first (Decks tab)."); return; }
     const seed = newSeed(), rng = rngFrom(seed), pool = Object.values(CARDS).filter(c => c.r <= 2).map(c => c.id);
     const cpuDeck = shuffleWith(rng, pool).slice(0, 10);
     const host = el("div", "cv-solo"); host.id = "cvSolo"; host.setAttribute("role", "dialog"); host.setAttribute("aria-label", "Practice battle");

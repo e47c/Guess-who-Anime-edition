@@ -5,7 +5,7 @@
    XP bar (+ level up) -> achievements -> action buttons.
    It owns one canvas loop that stops by itself; call the returned close().
    ===================================================================== */
-import { avatarEl, styleName, styleTitle } from "./profile.js?v=2";
+import { avatarEl, styleName, styleTitle } from "./profile.js?v=3";
 import { audio } from "./audio.js";
 import { motionOK, countUp } from "./fx.js";
 
