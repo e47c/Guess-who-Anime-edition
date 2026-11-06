@@ -1,5 +1,5 @@
 /* =====================================================================
-   ARCADE VAULT · CARD BATTLE ENGINE (pure: no DOM, no Firebase; tested in tools/cardvault-test.mjs)
+   ANIME TCG · CARD BATTLE ENGINE (pure: no DOM, no Firebase; tested in tools/cardvault-test.mjs)
    1v1 ("duel"): 10-card decks, 20 life, opening hand 4, draw 1 per round.
    Free-for-all ("ffa", 3-8 players): 25 life; every player also picks a target.
    The host runs every change inside a Firebase transaction; clients only send their pick.
@@ -22,9 +22,9 @@
    3. The game ends when one player is left, or every hand and deck is empty: then the higher life wins. A tie on
       life plays one sudden-death clash with each player's best card (no abilities); still tied = a draw.
    ===================================================================== */
-import { ABILITIES } from "./abilities.js?v=1";
-import { CARDS } from "../vault/carddb.js?v=2";
-import { BATTLE } from "../vault/config.js?v=7";
+import { ABILITIES } from "./abilities.js?v=2";
+import { CARDS } from "../vault/carddb.js?v=3";
+import { BATTLE } from "../vault/config.js?v=8";
 import { rngFrom, shuffleWith } from "../vault/rng.js?v=1";
 
 export const arr = v => Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : [];

@@ -1,6 +1,6 @@
 /* =====================================================================
-   ARCADE VAULT · CARD BATTLES (the ninth lobby mode; internal id "cardvault", kept for saved data)
-   Picking ARCADE VAULT in the lobby doesn't start a shared match: every player gets their own Vault page
+   ANIME TCG · CARD BATTLES (the ninth lobby mode; internal id "cardvault", kept for saved data)
+   Picking ANIME TCG in the lobby doesn't start a shared match: every player gets their own Anime TCG page
    (js/vault/vault.js) and challenges others in the room from its Battle tab. Each challenge is its own battle,
    several can run at once, and anyone not in one keeps shopping, opening packs or watching.
    Rules: engine.js (pure, tested in tools/cardvault-test.mjs). Card faces: ../vault/cardui.js.
@@ -12,20 +12,20 @@
                  builds the battle once everyone accepted (seeded: the seed is kept in the node and in s.seed),
                  resolves every round (all picked, or the timer ran out: auto-picks; one grace pause for a disconnect),
                  and stores the standard result when it ends. A player only ever writes their own pick.
-     cvDeck/pN   each player's active deck ({name, cards}) while the lobby is on ARCADE VAULT (the Battle tab shows it).
-     vloc/pN     where each player is: "v" Vault page, "b" a battle, "l" the lobby.
+     cvDeck/pN   each player's active deck ({name, cards}) while the lobby is on ANIME TCG (the Battle tab shows it).
+     vloc/pN     where each player is: "v" Anime TCG page, "b" a battle, "l" the lobby.
    Hidden information is hidden by the interface (opponents' hands and picks are never drawn), like every other
    mode here: the site has no server to keep secrets from a player reading the database.
    Practice vs CPU runs the same engine locally (no coins).
    ===================================================================== */
-import { newBattle, act, resolveRound, alive, handOf, lifeOf, due, applyDue, normalize, cpuPick, autoPick, REVEAL_MS, arr } from "./engine.js?v=5";
-import { ABILITIES } from "./abilities.js?v=1";
-import { BATTLE } from "../vault/config.js?v=7";
-import { CARDS } from "../vault/carddb.js?v=2";
-import { cardEl } from "../vault/cardui.js?v=4";
-import { inspect } from "../vault/opening.js?v=4";
+import { newBattle, act, resolveRound, alive, handOf, lifeOf, due, applyDue, normalize, cpuPick, autoPick, REVEAL_MS, arr } from "./engine.js?v=6";
+import { ABILITIES } from "./abilities.js?v=2";
+import { BATTLE } from "../vault/config.js?v=8";
+import { CARDS } from "../vault/carddb.js?v=3";
+import { cardEl } from "../vault/cardui.js?v=5";
+import { inspect } from "../vault/opening.js?v=5";
 import { rngFrom, newSeed, shuffleWith } from "../vault/rng.js?v=1";
-import { battleResultOf, resultToDb, resultFromDb } from "../vault/result.js?v=3";
+import { battleResultOf, resultToDb, resultFromDb } from "../vault/result.js?v=4";
 import { el, srvNow, presentIn, optButtons } from "../feud/common.js?v=4";
 
 const GT = "cardvault";
@@ -179,7 +179,7 @@ export function cvLoc(d, loc) {
     X.update(X.ref(X.db, "rooms/" + X.room() + "/vloc"), { [pk(me)]: loc }).catch(() => { locSent = ""; });
 }
 
-/* the invitation strip: on the lobby and on the Vault page (never over a battle) */
+/* the invitation strip: on the lobby and on the Anime TCG page (never over a battle) */
 let invBox = null;
 function renderInvites(d) {
     if (!invBox) { invBox = el("div", "cv-inv hidden"); invBox.id = "cvInvite"; invBox.setAttribute("role", "region"); invBox.setAttribute("aria-label", "Battle challenges"); invBox.setAttribute("aria-live", "polite"); document.body.appendChild(invBox); }
@@ -209,13 +209,13 @@ function renderInvites(d) {
 const btnEl = (t, cls, fn) => { const b = el("button", "btn " + cls, t); b.type = "button"; b.onclick = fn; return b; };
 
 /* ---------------- lobby panel (host settings for every challenge in the room) ---------------- */
-export function cvHint() { return "Everyone gets their own Vault page: shop, scratch cards, packs, collection and decks. Challenge anyone in the room from its Battle tab."; }
-export function cvReq(d) { return { ok: true, msg: "ARCADE VAULT is open: everyone has their own Vault. Battles are challenges from the Battle tab" }; }
+export function cvHint() { return "Everyone gets their own Anime TCG page: Packs Store, Collection, Decks and Battle. Challenge anyone in the room from its Battle tab. Skins and scratch cards are in the Shop."; }
+export function cvReq(d) { return { ok: true, msg: "ANIME TCG is open: everyone has their own Anime TCG page. Battles are challenges from the Battle tab" }; }
 export function cvLobby(d, lock) {
     optButtons($("cvTimerBtns"), [20, 30, 45], timerOf(d), lock, v => v + " s", v => window.setCvOpt("timer", v));
     const pb = $("cvPackBtn"); pb.textContent = d.cvPack ? "On: the winner picks a free pack" : "Off"; pb.classList.toggle("selected", !!d.cvPack); pb.disabled = lock;
     const mine = X.activeDeck();
-    $("cvMyDeck").textContent = mine ? "Your battle deck: " + mine.name : "You need a 10-card deck to battle: build one in the Vault's Decks tab.";
+    $("cvMyDeck").textContent = mine ? "Your battle deck: " + mine.name : "You need a 10-card deck to battle: build one in Anime TCG's Decks tab.";
     $("cvHint").textContent = "Battles: pick a card in secret, everyone flips together, damage = Power minus the opposing Defense, then abilities. 1v1: " + BATTLE.duel.life + " life. Challenge 2+ players for a free-for-all (" + BATTLE.ffa.life + " life, pick a target too).";
 }
 
@@ -248,7 +248,7 @@ export function showBattle(d, bid) {
         me: playing ? me : 0, pub: p => X.pPub(d, p), present: presentIn(d), room: true, holo: id => X.isHolo(id),
         pick: (c, t) => pickTx(bid, c, t),
         again: playing && b.st === "over" && others.every(p => inRoom(d, p)) ? async () => { if (await cvChallenge(others)) closeBattle(bid); } : null,
-        back: () => closeBattle(bid, playing && b.st === "live"), backLabel: playing && b.st === "live" ? "Leave battle screen" : "Back to the Vault"
+        back: () => closeBattle(bid, playing && b.st === "live"), backLabel: playing && b.st === "live" ? "Leave battle screen" : "Back to Anime TCG"
     });
     $("cvTurnT").textContent = b.st === "void" ? "BATTLE STOPPED" : s.phase === "over" ? "BATTLE OVER" : "ROUND " + s.round + (s.fmt === "ffa" ? " · FREE-FOR-ALL" : " · 1V1");
     $("cvStatus").textContent = !playing ? "Watching " + arr(s.players).map(p => s.names[pk(p)]).join(" vs ") : !alive(s).includes(me) ? "Knocked out: watching" : s.phase === "over" ? "" : (s.picks || {})[pk(me)] ? "Card locked in. Waiting for the others…" : "Pick a card" + (s.fmt === "ffa" ? " and a target" : "");
@@ -334,7 +334,7 @@ function render(root, s, o) {
     const tools = el("div", "cv-tools");
     const logB = el("button", "btn ghost sm", "Battle log"); logB.type = "button"; logB.onclick = () => showLog(s); tools.appendChild(logB);
     if (o.exit) { const ex = el("button", "btn ghost sm", "Leave practice"); ex.type = "button"; ex.onclick = o.exit; tools.appendChild(ex); }
-    if (o.back && s.phase !== "over") { const bk = el("button", "btn ghost sm", "‹ " + (o.backLabel || "Back to the Vault")); bk.type = "button"; bk.onclick = o.back; tools.appendChild(bk); }
+    if (o.back && s.phase !== "over") { const bk = el("button", "btn ghost sm", "‹ " + (o.backLabel || "Back to Anime TCG")); bk.type = "button"; bk.onclick = o.back; tools.appendChild(bk); }
     root.appendChild(tools);
     if (s.phase === "over") showOverPanel(root, s, o);
     function play() {
@@ -390,7 +390,7 @@ function showOverPanel(root, s, o) {
     const b = el("div", "vt-row");
     if (o.room) {
         if (o.again) { const a = el("button", "btn alt", "Rematch"); a.type = "button"; a.onclick = o.again; b.appendChild(a); }
-        const l = el("button", "btn ghost", "Back to the Vault"); l.type = "button"; l.onclick = o.back; b.appendChild(l);
+        const l = el("button", "btn ghost", "Back to Anime TCG"); l.type = "button"; l.onclick = o.back; b.appendChild(l);
     }
     if (o.exit) { const a = el("button", "btn alt", "Play again"); a.type = "button"; a.onclick = o.again; const l = el("button", "btn ghost", "Leave"); l.type = "button"; l.onclick = o.exit; b.append(a, l); }
     p.appendChild(b);

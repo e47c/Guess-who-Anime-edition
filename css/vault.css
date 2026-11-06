@@ -121,7 +121,7 @@ body.fx-lite .coin-pop { transition: opacity .2s; transform: translate(-50%, 0);
      .ava background  -> the ring's base metal / gem
      .ava-ring        -> a layer masked to the ring: glints, sweeps, facets, ripples that run along it
      .ava-fx          -> a free layer just outside the ring: sparkles, flames, bubbles, orbiting lights
-   BACKGROUND (.seat.sbg[data-bg=<tier>]) = the whole player-card panel (the lobby seat), on top of the lobby's
+   BACKGROUND (.sbg[data-bg=<tier>]) = the whole player-card panel (the lobby seat and the Arcade Pass), on top of the lobby's
      diagonal-stripe base motif and its angled corner cuts. .sbg-fx is its animated layer (under the stripes).
    Everything is CSS (transforms + opacity, so it stays on the compositor); --sp-<tier> (from config.js SKINS speed)
    scales each tier's timing. .fx-off (off-screen) pauses; Reduced effects / reduced motion = the static look.
@@ -236,80 +236,80 @@ body.fx-lite .coin-pop { transition: opacity .2s; transform: translate(-50%, 0);
 .sbg-fx::before, .sbg-fx::after { content: ""; position: absolute; inset: 0; }
 
 /* IRON: steel plates, brushed diagonal lines, rivets at the plate corners */
-.seat.sbg[data-bg="iron"] { --sp: var(--sp-iron, 1); --sbg-edge: #6b737d; --sbg-stripe: rgba(200,212,224,.05);
+.sbg[data-bg="iron"] { --sp: var(--sp-iron, 1); --sbg-edge: #6b737d; --sbg-stripe: rgba(200,212,224,.05);
     background: radial-gradient(circle at 9px 9px, #9aa2ac 0 2px, #1a1c20 3px, transparent 3.5px), radial-gradient(circle at calc(100% - 9px) calc(100% - 9px), #9aa2ac 0 2px, #1a1c20 3px, transparent 3.5px),
         linear-gradient(180deg, transparent calc(50% - 1px), rgba(0,0,0,.6) calc(50% - 1px) 50%, rgba(255,255,255,.08) 50% calc(50% + 1px), transparent calc(50% + 1px)),
         repeating-linear-gradient(135deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px), linear-gradient(160deg, #4b525b, #262a30 55%, #181a1e) !important; }
-.seat.sbg[data-bg="iron"] .sbg-fx::before { inset: -20%; background: linear-gradient(115deg, transparent 42%, rgba(220,230,240,.12) 50%, transparent 58%); transform: translateX(-80%); animation: sbgSweep calc(11s * var(--sp)) ease-in-out infinite; }
+.sbg[data-bg="iron"] .sbg-fx::before { inset: -20%; background: linear-gradient(115deg, transparent 42%, rgba(220,230,240,.12) 50%, transparent 58%); transform: translateX(-80%); animation: sbgSweep calc(11s * var(--sp)) ease-in-out infinite; }
 
 /* BRONZE: etched copper, worn edges */
-.seat.sbg[data-bg="bronze"] { --sp: var(--sp-bronze, 1); --sbg-edge: #c98a4b; --sbg-stripe: rgba(255,190,130,.06);
+.sbg[data-bg="bronze"] { --sp: var(--sp-bronze, 1); --sbg-edge: #c98a4b; --sbg-stripe: rgba(255,190,130,.06);
     background: radial-gradient(ellipse 60% 40% at 0 0, rgba(255,214,170,.18), transparent 70%), radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255,214,170,.14), transparent 70%),
         repeating-linear-gradient(45deg, rgba(0,0,0,.14) 0 1px, transparent 1px 7px), repeating-linear-gradient(-45deg, rgba(255,210,160,.06) 0 1px, transparent 1px 7px),
         radial-gradient(ellipse at 30% 22%, #a8672c, #5e3413 58%, #2c1606) !important; }
-.seat.sbg[data-bg="bronze"] .sbg-fx { box-shadow: inset 0 0 22px rgba(20,8,0,.9); }
-.seat.sbg[data-bg="bronze"] .sbg-fx::before { inset: -20%; background: linear-gradient(115deg, transparent 44%, rgba(255,214,170,.18) 50%, transparent 56%); transform: translateX(-80%); animation: sbgSweep calc(9s * var(--sp)) ease-in-out infinite; }
+.sbg[data-bg="bronze"] .sbg-fx { box-shadow: inset 0 0 22px rgba(20,8,0,.9); }
+.sbg[data-bg="bronze"] .sbg-fx::before { inset: -20%; background: linear-gradient(115deg, transparent 44%, rgba(255,214,170,.18) 50%, transparent 56%); transform: translateX(-80%); animation: sbgSweep calc(9s * var(--sp)) ease-in-out infinite; }
 
 /* SILVER: chrome diagonals with a sweeping shine */
-.seat.sbg[data-bg="silver"] { --sp: var(--sp-silver, 1); --sbg-edge: #c9d0d8; --sbg-stripe: rgba(255,255,255,.08);
+.sbg[data-bg="silver"] { --sp: var(--sp-silver, 1); --sbg-edge: #c9d0d8; --sbg-stripe: rgba(255,255,255,.08);
     background: linear-gradient(rgba(10,12,16,.42), rgba(10,12,16,.42)), linear-gradient(135deg, #3b4148, #a1aab5 22%, #2a2f35 44%, #c3cad3 66%, #343a41 88%) !important; }
-.seat.sbg[data-bg="silver"] .sbg-fx::before { inset: -30%; background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.5) 50%, transparent 60%); transform: translateX(-90%); animation: sbgSweepFast calc(4.5s * var(--sp)) ease-in-out infinite; }
+.sbg[data-bg="silver"] .sbg-fx::before { inset: -30%; background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.5) 50%, transparent 60%); transform: translateX(-90%); animation: sbgSweepFast calc(4.5s * var(--sp)) ease-in-out infinite; }
 
 /* GOLD: gold-foil stripes with a moving shine */
-.seat.sbg[data-bg="gold"] { --sp: var(--sp-gold, 1); --sbg-edge: #e7b84a; --sbg-stripe: rgba(255,215,106,.2);
+.sbg[data-bg="gold"] { --sp: var(--sp-gold, 1); --sbg-edge: #e7b84a; --sbg-stripe: rgba(255,215,106,.2);
     background: radial-gradient(ellipse 80% 55% at 50% 38%, rgba(255,214,106,.25), transparent 75%), linear-gradient(135deg, #3b2705, #7a4f0e 25%, #2a1b03 50%, #8c5f10 75%, #3b2705) !important; }
-.seat.sbg[data-bg="gold"] .sbg-fx::before { inset: 0 auto 0 0; width: 300%; background: linear-gradient(115deg, transparent 36%, rgba(255,240,180,.42) 50%, transparent 64%) 0 0 / 33.3333% 100% repeat-x; animation: sbgSlide calc(5s * var(--sp)) linear infinite; }
+.sbg[data-bg="gold"] .sbg-fx::before { inset: 0 auto 0 0; width: 300%; background: linear-gradient(115deg, transparent 36%, rgba(255,240,180,.42) 50%, transparent 64%) 0 0 / 33.3333% 100% repeat-x; animation: sbgSlide calc(5s * var(--sp)) linear infinite; }
 
 /* PLATINUM: brushed platinum with a faint glow */
-.seat.sbg[data-bg="platinum"] { --sp: var(--sp-platinum, 1); --sbg-edge: #cfe4f4; --sbg-stripe: rgba(220,240,255,.06);
+.sbg[data-bg="platinum"] { --sp: var(--sp-platinum, 1); --sbg-edge: #cfe4f4; --sbg-stripe: rgba(220,240,255,.06);
     background: repeating-linear-gradient(0deg, rgba(255,255,255,.045) 0 1px, transparent 1px 2px), linear-gradient(160deg, #5a6773, #2f3842 52%, #46525e) !important; }
-.seat.sbg[data-bg="platinum"] .sbg-fx::before { background: radial-gradient(ellipse 70% 45% at 50% 36%, rgba(200,232,255,.38), transparent 72%); opacity: .5; animation: avPulse calc(3.4s * var(--sp)) ease-in-out infinite; }
+.sbg[data-bg="platinum"] .sbg-fx::before { background: radial-gradient(ellipse 70% 45% at 50% 36%, rgba(200,232,255,.38), transparent 72%); opacity: .5; animation: avPulse calc(3.4s * var(--sp)) ease-in-out infinite; }
 
 /* EMERALD: crystal shards with a green pulse */
-.seat.sbg[data-bg="emerald"] { --sp: var(--sp-emerald, 1); --sbg-edge: #2ee88a; --sbg-stripe: rgba(120,255,190,.05);
+.sbg[data-bg="emerald"] { --sp: var(--sp-emerald, 1); --sbg-edge: #2ee88a; --sbg-stripe: rgba(120,255,190,.05);
     background: conic-gradient(from 200deg at 82% 100%, rgba(46,232,138,.42) 0 22deg, transparent 22deg), conic-gradient(from 110deg at 8% 0%, rgba(46,232,138,.32) 0 28deg, transparent 28deg),
         conic-gradient(from 300deg at 0% 78%, rgba(150,255,205,.22) 0 18deg, transparent 18deg), conic-gradient(from 20deg at 100% 30%, rgba(20,170,95,.4) 0 24deg, transparent 24deg),
         linear-gradient(115deg, transparent 58%, rgba(61,220,132,.2) 58% 66%, transparent 66%), linear-gradient(160deg, #053a21, #021a0f 70%) !important; }
-.seat.sbg[data-bg="emerald"] .sbg-fx::before { background: radial-gradient(ellipse 75% 50% at 50% 38%, rgba(61,220,132,.45), transparent 72%); opacity: .3; animation: avPulse calc(2.6s * var(--sp)) ease-in-out infinite; }
+.sbg[data-bg="emerald"] .sbg-fx::before { background: radial-gradient(ellipse 75% 50% at 50% 38%, rgba(61,220,132,.45), transparent 72%); opacity: .3; animation: avPulse calc(2.6s * var(--sp)) ease-in-out infinite; }
 
 /* DIAMOND: glassy facets that refract light */
-.seat.sbg[data-bg="diamond"] { --sp: var(--sp-diamond, 1); --sbg-edge: #9fe2ff; --sbg-stripe: rgba(200,240,255,.06);
+.sbg[data-bg="diamond"] { --sp: var(--sp-diamond, 1); --sbg-edge: #9fe2ff; --sbg-stripe: rgba(200,240,255,.06);
     background: conic-gradient(from 0deg at 28% 30%, rgba(190,238,255,.2) 0 40deg, transparent 40deg 95deg, rgba(120,210,255,.14) 95deg 150deg, transparent 150deg 215deg, rgba(225,250,255,.17) 215deg 260deg, transparent 260deg),
         conic-gradient(from 30deg at 74% 72%, rgba(150,225,255,.16) 0 50deg, transparent 50deg 140deg, rgba(225,250,255,.12) 140deg 190deg, transparent 190deg 290deg, rgba(110,200,255,.18) 290deg),
         linear-gradient(160deg, #0d2538, #06111d) !important; }
-.seat.sbg[data-bg="diamond"] .sbg-fx::before { inset: -40%; background: linear-gradient(115deg, transparent 38%, rgba(255,80,160,.22) 44%, rgba(255,230,120,.22) 47%, rgba(80,255,200,.22) 50%, rgba(80,170,255,.24) 53%, rgba(190,100,255,.2) 56%, transparent 62%); mix-blend-mode: screen; transform: translateX(-70%); animation: sbgSweep calc(6s * var(--sp)) ease-in-out infinite; }
-.seat.sbg[data-bg="diamond"] .sbg-fx::after { background: radial-gradient(circle at 22% 26%, #fff 0 1.5px, transparent 2.5px), radial-gradient(circle at 78% 64%, #fff 0 1.5px, transparent 2.5px), radial-gradient(circle at 62% 14%, #e6faff 0 1px, transparent 2px); animation: avPulse calc(1.8s * var(--sp)) ease-in-out infinite; }
+.sbg[data-bg="diamond"] .sbg-fx::before { inset: -40%; background: linear-gradient(115deg, transparent 38%, rgba(255,80,160,.22) 44%, rgba(255,230,120,.22) 47%, rgba(80,255,200,.22) 50%, rgba(80,170,255,.24) 53%, rgba(190,100,255,.2) 56%, transparent 62%); mix-blend-mode: screen; transform: translateX(-70%); animation: sbgSweep calc(6s * var(--sp)) ease-in-out infinite; }
+.sbg[data-bg="diamond"] .sbg-fx::after { background: radial-gradient(circle at 22% 26%, #fff 0 1.5px, transparent 2.5px), radial-gradient(circle at 78% 64%, #fff 0 1.5px, transparent 2.5px), radial-gradient(circle at 62% 14%, #e6faff 0 1px, transparent 2px); animation: avPulse calc(1.8s * var(--sp)) ease-in-out infinite; }
 
 /* FLAME: embers rising through the stripes */
-.seat.sbg[data-bg="flame"] { --sp: var(--sp-flame, 1); --sbg-edge: #ff7a1a; --sbg-stripe: rgba(255,140,60,.07);
+.sbg[data-bg="flame"] { --sp: var(--sp-flame, 1); --sbg-edge: #ff7a1a; --sbg-stripe: rgba(255,140,60,.07);
     background: radial-gradient(ellipse 95% 48% at 50% 106%, rgba(255,128,24,.7), rgba(196,26,0,.35) 50%, transparent 75%), linear-gradient(180deg, #170402, #360a02 60%, #6a1902) !important; }
-.seat.sbg[data-bg="flame"] .sbg-fx::before, .seat.sbg[data-bg="flame"] .sbg-fx::after { inset: 0 0 auto 0; height: calc(100% + 90px);
+.sbg[data-bg="flame"] .sbg-fx::before, .sbg[data-bg="flame"] .sbg-fx::after { inset: 0 0 auto 0; height: calc(100% + 90px);
     background: radial-gradient(circle at 20% 30%, #ffd36a 0 1.5px, rgba(255,120,20,.5) 2.5px, transparent 4px), radial-gradient(circle at 70% 70%, #ffb347 0 1.2px, rgba(255,90,0,.45) 2.2px, transparent 3.5px), radial-gradient(circle at 45% 85%, #fff0b0 0 1px, transparent 2.5px);
     background-size: 64px 90px; animation: sbgRise calc(4.5s * var(--sp)) linear infinite; }
-.seat.sbg[data-bg="flame"] .sbg-fx::after { background-size: 48px 90px; background-position: 20px 30px; opacity: .7; animation-duration: calc(7s * var(--sp)); }
+.sbg[data-bg="flame"] .sbg-fx::after { background-size: 48px 90px; background-position: 20px 30px; opacity: .7; animation-duration: calc(7s * var(--sp)); }
 
 /* WATER: rolling waves under the stripes */
-.seat.sbg[data-bg="water"] { --sp: var(--sp-water, 1); --sbg-edge: #3ec6ff; --sbg-stripe: rgba(170,230,255,.06);
+.sbg[data-bg="water"] { --sp: var(--sp-water, 1); --sbg-edge: #3ec6ff; --sbg-stripe: rgba(170,230,255,.06);
     background: radial-gradient(ellipse 80% 40% at 50% 30%, rgba(62,198,255,.22), transparent 75%), linear-gradient(180deg, #03203f, #021228 60%, #010a18) !important; }
-.seat.sbg[data-bg="water"] .sbg-fx::before, .seat.sbg[data-bg="water"] .sbg-fx::after { inset: auto 0 0 0; height: 46%; width: calc(100% + 60px);
+.sbg[data-bg="water"] .sbg-fx::before, .sbg[data-bg="water"] .sbg-fx::after { inset: auto 0 0 0; height: 46%; width: calc(100% + 60px);
     background: radial-gradient(ellipse 30px 11px at 30px 0, rgba(120,210,255,.4) 0 62%, transparent 66%) 0 0 / 60px 22px repeat-x, linear-gradient(180deg, rgba(40,150,230,.32), rgba(10,60,140,.5) 70%) 0 11px / 100% 100% no-repeat;
     animation: sbgWave calc(5s * var(--sp)) linear infinite; }
-.seat.sbg[data-bg="water"] .sbg-fx::after { height: 30%; opacity: .75; background: radial-gradient(ellipse 30px 9px at 30px 0, rgba(190,240,255,.42) 0 62%, transparent 66%) 0 0 / 60px 18px repeat-x, linear-gradient(180deg, rgba(60,180,255,.32), rgba(10,70,160,.6) 70%) 0 9px / 100% 100% no-repeat; animation-duration: calc(3.4s * var(--sp)); animation-direction: reverse; }
+.sbg[data-bg="water"] .sbg-fx::after { height: 30%; opacity: .75; background: radial-gradient(ellipse 30px 9px at 30px 0, rgba(190,240,255,.42) 0 62%, transparent 66%) 0 0 / 60px 18px repeat-x, linear-gradient(180deg, rgba(60,180,255,.32), rgba(10,70,160,.6) 70%) 0 9px / 100% 100% no-repeat; animation-duration: calc(3.4s * var(--sp)); animation-direction: reverse; }
 
 /* TRANSCENDENT: a starfield, a drifting aurora, a glowing aura behind the picture */
-.seat.sbg[data-bg="transcendent"] { --sp: var(--sp-transcendent, 1); --sbg-edge: #ffe9a8; --sbg-stripe: rgba(255,245,210,.05);
+.sbg[data-bg="transcendent"] { --sp: var(--sp-transcendent, 1); --sbg-edge: #ffe9a8; --sbg-stripe: rgba(255,245,210,.05);
     background: radial-gradient(circle at 12% 18%, #fff 0 1px, transparent 1.5px) 0 0 / 46px 52px, radial-gradient(circle at 70% 60%, rgba(255,250,230,.8) 0 .8px, transparent 1.4px) 0 0 / 34px 40px,
         radial-gradient(ellipse at 50% 35%, #2a2352, #0b0a1f 72%) !important; }
-.seat.sbg[data-bg="transcendent"] .sbg-fx::before { inset: -20% -40%; background: linear-gradient(100deg, transparent 22%, rgba(110,255,200,.32) 36%, rgba(150,120,255,.34) 52%, rgba(255,200,240,.2) 62%, transparent 76%); filter: blur(10px); animation: sbgAurora calc(10s * var(--sp)) ease-in-out infinite alternate; }
-.seat.sbg[data-bg="transcendent"] .sbg-fx::after { background: radial-gradient(circle 64px at 50% 72px, rgba(255,240,190,.55), transparent 70%); opacity: .6; animation: avPulse calc(3.2s * var(--sp)) ease-in-out infinite; }
+.sbg[data-bg="transcendent"] .sbg-fx::before { inset: -20% -40%; background: linear-gradient(100deg, transparent 22%, rgba(110,255,200,.32) 36%, rgba(150,120,255,.34) 52%, rgba(255,200,240,.2) 62%, transparent 76%); filter: blur(10px); animation: sbgAurora calc(10s * var(--sp)) ease-in-out infinite alternate; }
+.sbg[data-bg="transcendent"] .sbg-fx::after { background: radial-gradient(circle 64px at 50% 72px, rgba(255,240,190,.55), transparent 70%); opacity: .6; animation: avPulse calc(3.2s * var(--sp)) ease-in-out infinite; }
 
 /* PRISMATIC: shifting holo diagonals */
-.seat.sbg[data-bg="prismatic"] { --sp: var(--sp-prismatic, 1); --sbg-edge: #e39bff; --sbg-stripe: rgba(255,255,255,.06);
+.sbg[data-bg="prismatic"] { --sp: var(--sp-prismatic, 1); --sbg-edge: #e39bff; --sbg-stripe: rgba(255,255,255,.06);
     background: radial-gradient(ellipse 80% 55% at 50% 38%, rgba(255,255,255,.08), transparent 75%), linear-gradient(160deg, #1a0f2e, #0c0716) !important; }
-.seat.sbg[data-bg="prismatic"] .sbg-fx::before { inset: -10px auto auto -10px; width: calc(100% + 100px); height: calc(100% + 100px); opacity: .55;
+.sbg[data-bg="prismatic"] .sbg-fx::before { inset: -10px auto auto -10px; width: calc(100% + 100px); height: calc(100% + 100px); opacity: .55;
     background: repeating-linear-gradient(135deg, rgba(255,90,209,.42) 0 10px, rgba(240,200,105,.42) 10px 20px, rgba(77,255,184,.42) 20px 30px, rgba(77,195,255,.42) 30px 40px, rgba(180,77,255,.42) 40px 50px);
     animation: sbgHolo calc(3s * var(--sp)) linear infinite; }
-.seat.sbg[data-bg="prismatic"] .sbg-fx::after { inset: -30%; background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.3) 50%, transparent 60%); transform: translateX(-90%); animation: sbgSweepFast calc(4s * var(--sp)) ease-in-out infinite; }
+.sbg[data-bg="prismatic"] .sbg-fx::after { inset: -30%; background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.3) 50%, transparent 60%); transform: translateX(-90%); animation: sbgSweepFast calc(4s * var(--sp)) ease-in-out infinite; }
 
 @keyframes sbgSweep { 0%, 55% { transform: translateX(-80%); } 100% { transform: translateX(80%); } }
 @keyframes sbgSweepFast { 0%, 40% { transform: translateX(-90%); } 100% { transform: translateX(90%); } }
@@ -323,8 +323,8 @@ body.fx-lite .coin-pop { transition: opacity .2s; transform: translate(-50%, 0);
 .fx-off, .fx-off::before, .fx-off::after, .fx-off *, .fx-off *::before, .fx-off *::after { animation-play-state: paused !important; }
 body.fx-lite :is(.ava-ring, .ava-fx, .sbg-fx), body.fx-lite :is(.ava-ring, .ava-fx, .sbg-fx)::before, body.fx-lite :is(.ava-ring, .ava-fx, .sbg-fx)::after { animation: none !important; }
 body.fx-lite :is(.sf-iron, .sf-silver) .ava-ring::after, body.fx-lite .sbg-fx::before { opacity: 0; }
-body.fx-lite .seat.sbg[data-bg] .sbg-fx::before { opacity: .0; }
-body.fx-lite .seat.sbg:is([data-bg="platinum"], [data-bg="emerald"], [data-bg="transcendent"], [data-bg="prismatic"], [data-bg="flame"], [data-bg="water"]) .sbg-fx::before { opacity: .55; transform: none; }
+body.fx-lite .sbg[data-bg] .sbg-fx::before { opacity: .0; }
+body.fx-lite .sbg:is([data-bg="platinum"], [data-bg="emerald"], [data-bg="transcendent"], [data-bg="prismatic"], [data-bg="flame"], [data-bg="water"]) .sbg-fx::before { opacity: .55; transform: none; }
 body.fx-lite :is(.sf-gold, .sf-diamond) .ava-fx::before { transform: scale(.75); opacity: .9; }
 body.fx-lite :is(.sf-gold, .sf-diamond) .ava-fx::after { transform: scale(.5); opacity: .7; }
 body.fx-lite .sf-water .ava-fx::before, body.fx-lite .sf-water .ava-fx::after { transform: translateY(calc(var(--ava) * -.12)); opacity: .7; }

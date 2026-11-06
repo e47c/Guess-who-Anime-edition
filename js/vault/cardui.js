@@ -6,9 +6,9 @@
    Layers of a card (moved with CSS transforms): background, character, foreground, frame, effects.
    Rarity is readable without colour: the number and shape of the rarity gems + the rarity word.
    ===================================================================== */
-import { CARDS, RARITY_NAMES } from "./carddb.js?v=2";
-import { CARD_ART } from "./config.js?v=7";
-import { ABILITIES, abilityText } from "../cardvault/abilities.js?v=1";
+import { CARDS, RARITY_NAMES } from "./carddb.js?v=3";
+import { CARD_ART } from "./config.js?v=8";
+import { ABILITIES, abilityText } from "../cardvault/abilities.js?v=2";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 const svg = (paths, vb = "0 0 100 100") => `<svg viewBox="${vb}" aria-hidden="true">${paths}</svg>`;
@@ -149,7 +149,7 @@ export function packEl(series, kind = "normal", o = {}) {
     el.setAttribute("role", "img"); el.setAttribute("aria-label", T.label + " " + (kind === "premium" ? "Premium" : "Normal") + " pack, " + (kind === "premium" ? 6 : 5) + " cards");
     const body = mk("div", "vp-body m-" + T.motif); body.style.clipPath = packClip(kind);
     const big = mk("i", "vp-big"); big.innerHTML = T.emblem;
-    const title = mk("div", "vp-title f-" + T.font + (T.short.length > 9 ? " long" : "")); title.append(mk("small", null, "ARCADE VAULT"), mk("b", null, T.short));
+    const title = mk("div", "vp-title f-" + T.font + (T.short.length > 9 ? " long" : "")); title.append(mk("small", null, "ANIME TCG"), mk("b", null, T.short));
     const strip = mk("div", "vp-strip"); const bars = mk("span", "vp-bars"); RCOL.forEach((c, i) => { const b = mk("i"); b.style.setProperty("--rc", c); b.style.setProperty("--i", i); bars.appendChild(b); }); strip.append(bars, mk("small", null, kind === "premium" ? "RARE OR BETTER INSIDE" : "COMMON → MYTHIC"));
     const label = mk("div", "vp-label"); label.append(mk("b", null, (o.cards || (kind === "premium" ? 6 : 5)) + " CARDS"), mk("small", null, kind === "premium" ? "PREMIUM PACK" : "NORMAL PACK"));
     body.append(mk("i", "vp-base"), big, mk("b", "vp-kanji", T.kanji), title, strip, label,

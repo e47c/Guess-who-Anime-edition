@@ -1,0 +1,79 @@
+/* =====================================================================
+   ANIME TCG (#arcadeVault.tcg-page, internal id cardvault): a trading-card-game table.
+   A dark playmat with a stitched gold edge, card-back patterns, binder-tab navigation, a booster shelf (Packs Store),
+   binder pages with 9-pocket sleeves (Collection), deck boxes and a slot / curve deck builder (Decks), a duel board
+   (Battle tab and the battle screen #cardvault). The cards and the pack opening keep their own design
+   (css/cards.css, css/packs.css): only the table around them changes.
+   ===================================================================== */
+.tcg-page { --tcg: #b38bff; --tcg-gold: #e8c26a; --tcg-felt: #151027; --tcg-felt2: #0c0818;
+    --cardback: radial-gradient(circle at 50% 50%, rgba(232,194,106,.5) 0 6%, transparent 7%), repeating-linear-gradient(45deg, rgba(179,139,255,.16) 0 2px, transparent 2px 12px), repeating-linear-gradient(-45deg, rgba(179,139,255,.16) 0 2px, transparent 2px 12px), linear-gradient(135deg, #2b1856, #160c30);
+    background: var(--tcg-felt2); }
+/* the table: felt, a vignette, the card-back pattern in the corners */
+.tcg-page .av-bg { background: radial-gradient(ellipse 80% 60% at 50% 40%, #1d1636, transparent 75%), radial-gradient(circle at 1px 1px, rgba(255,255,255,.035) 1px, transparent 1.5px) 0 0 / 5px 5px, linear-gradient(180deg, #120c22, #07050f); }
+.tcg-page .av-bg .av-grid, .tcg-page .av-bg .av-scan { display: none; }
+.tcg-page .av-bg::before, .tcg-page .av-bg::after { content: ""; position: absolute; width: 220px; aspect-ratio: 63 / 88; border-radius: 16px; background: var(--cardback); box-shadow: inset 0 0 0 6px #0b0716, inset 0 0 0 8px rgba(232,194,106,.35); opacity: .22; }
+.tcg-page .av-bg::before { left: -70px; top: 18vh; transform: rotate(-16deg); }
+.tcg-page .av-bg::after { right: -80px; bottom: 6vh; transform: rotate(12deg); }
+/* the logo: gold foil lettering */
+.tcg-page .av-marquee h1 { color: transparent; background: linear-gradient(180deg, #fff6d6 0%, #e8c26a 45%, #9a6a1c 55%, #f5dc93 100%); -webkit-background-clip: text; background-clip: text; text-shadow: none; filter: drop-shadow(0 3px 0 #2a1650) drop-shadow(0 0 16px rgba(179,139,255,.45)); animation: none; }
+.tcg-page .av-marquee h1 em { color: transparent; background: linear-gradient(180deg, #f1e6ff, #b38bff 50%, #6c41c4 55%, #d8c4ff); -webkit-background-clip: text; background-clip: text; text-shadow: none; }
+.tcg-page .av-marquee small { color: var(--tcg-gold); text-shadow: none; }
+/* binder-tab navigation: 4 tabs */
+.tcg-page .av-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 8px 0 0; margin-bottom: 0; background: none; border: 0; box-shadow: none; }
+.tcg-page .av-tab { min-height: 52px; border-radius: 12px 12px 0 0; color: rgba(240,230,255,.75); background: linear-gradient(180deg, #2a1d4d, #1a1233); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 0 0 1px rgba(179,139,255,.25); transform: none; }
+.tcg-page .av-tab .av-tico { color: var(--tcg-gold); text-shadow: none; }
+.tcg-page .av-tab.on { color: #1d1206; background: linear-gradient(180deg, #fff1c0, #e8c26a 60%, #c4952f); box-shadow: inset 0 1px 0 #fff, 0 -2px 14px rgba(232,194,106,.35); }
+.tcg-page .av-tab.on .av-tico { color: #1d1206; }
+/* the playmat under every tab: felt, a stitched gold edge */
+.tcg-page .av-body { padding: clamp(12px, 2vw, 22px); border-radius: 0 0 22px 22px; background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(179,139,255,.1), transparent 70%), radial-gradient(circle at 1px 1px, rgba(255,255,255,.04) 1px, transparent 1.5px) 0 0 / 4px 4px, linear-gradient(180deg, var(--tcg-felt), #0e0a1d);
+    box-shadow: inset 0 0 0 2px #241845, inset 0 0 0 7px var(--tcg-felt), inset 0 0 0 8px rgba(232,194,106,.0); outline: 1px dashed rgba(232,194,106,.38); outline-offset: -9px; }
+.tcg-page .vt-card { background: rgba(10,7,22,.72); box-shadow: inset 0 0 0 1px rgba(179,139,255,.22); }
+@media (max-width: 620px) { .tcg-page .av-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); } .tcg-page .av-tab { min-height: 48px; font-size: 11px; } .tcg-page .av-body { border-radius: 0 0 16px 16px; } }
+
+/* ---------- Packs Store: a booster shelf ---------- */
+.tcg-page .vt-pstat { padding: 10px 12px; border-radius: 12px; background: rgba(10,7,22,.7); box-shadow: inset 0 0 0 1px rgba(232,194,106,.25); }
+.tcg-page .vt-pgrid { gap: 18px 12px; padding: 6px 4px 0; }
+.tcg-page .vt-pcell { position: relative; padding: 10px 6px 12px; border-radius: 12px 12px 4px 4px; background: radial-gradient(ellipse 70% 50% at 50% 30%, rgba(179,139,255,.18), transparent 70%), rgba(0,0,0,.25); }
+.tcg-page .vt-pcell::after { content: ""; position: absolute; left: -6px; right: -6px; bottom: -8px; height: 10px; border-radius: 3px; background: linear-gradient(180deg, #6b4a24, #3b2610); box-shadow: 0 6px 10px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,220,160,.35); }
+.tcg-page .vt-pprog { font-family: var(--f-mono); }
+
+/* ---------- Collection: the binder ---------- */
+.tcg-page .vt-colhead { padding: 10px 12px; border-radius: 12px; background: rgba(10,7,22,.7); }
+.tcg-page .vt-book { gap: 6px; }
+.tcg-page .vt-bk { padding-left: 22px; border-radius: 4px 12px 12px 4px; box-shadow: inset 6px 0 0 rgba(0,0,0,.35), 0 3px 8px rgba(0,0,0,.4); }
+.tcg-page .vt-bk::before { content: ""; position: absolute; left: 6px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: #0b0716; box-shadow: 0 -11px 0 #0b0716, 0 11px 0 #0b0716, inset 0 0 0 1.5px rgba(232,194,106,.6); }
+.tcg-page .vt-cgrid:not(.pick) { position: relative; justify-content: flex-start; gap: 10px; padding: 18px 16px 18px 46px; border-radius: 6px 16px 16px 6px;
+    background: linear-gradient(90deg, rgba(0,0,0,.45) 0 34px, rgba(255,255,255,.05) 34px 36px, transparent 36px), linear-gradient(180deg, #221a3c, #19122e); box-shadow: inset 0 0 0 1px rgba(179,139,255,.25), 0 10px 24px rgba(0,0,0,.45); }
+.tcg-page .vt-cgrid:not(.pick)::before { content: ""; position: absolute; left: 11px; top: 18px; bottom: 18px; width: 12px;
+    background: radial-gradient(circle 6px at 6px 6px, #cfd3da 0 4px, #6d727c 5px, transparent 6px) 0 0 / 12px 60px repeat-y; opacity: .85; }
+.tcg-page .vt-cgrid:not(.pick) .vcard { padding: 4px; border-radius: 8px; background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), inset 0 8px 14px rgba(255,255,255,.05); box-sizing: content-box; }
+
+/* ---------- Decks: deck boxes + a builder with slots and a curve ---------- */
+.tcg-page .vt-dk { position: relative; padding-top: 22px; border-radius: 16px 16px 12px 12px; background: linear-gradient(180deg, #2c1d57 0 16px, #1c1338 16px), #1c1338; box-shadow: inset 0 0 0 1px rgba(179,139,255,.4), inset 0 -4px 0 rgba(0,0,0,.35), 0 10px 22px rgba(0,0,0,.45); }
+.tcg-page .vt-dk::before { content: ""; position: absolute; left: 50%; top: 5px; width: 54px; height: 6px; margin-left: -27px; border-radius: 3px; background: rgba(232,194,106,.55); }
+.tcg-page .vt-dk.active { box-shadow: inset 0 0 0 2px #e8c26a, inset 0 -4px 0 rgba(0,0,0,.35), 0 0 22px rgba(232,194,106,.25); }
+.tcg-page .vt-dk .vt-dkrow { gap: 0; padding-left: 14px; }
+.tcg-page .vt-dk .vt-dkrow .vcard { margin-left: -14px; transform: rotate(calc((var(--k, 0) - 4.5) * 1.5deg)); box-shadow: -4px 0 8px rgba(0,0,0,.4); }
+.tcg-page .vt-dkslots { padding: 12px; border-radius: 14px; background: repeating-linear-gradient(45deg, rgba(179,139,255,.16) 0 2px, transparent 2px 12px), repeating-linear-gradient(-45deg, rgba(179,139,255,.16) 0 2px, transparent 2px 12px), linear-gradient(135deg, #2b1856, #160c30); box-shadow: inset 0 0 0 2px #0b0716, inset 0 0 0 3px rgba(232,194,106,.4); }
+.tcg-page .vt-dkempty { border-color: rgba(232,194,106,.4); color: rgba(232,194,106,.7); background: rgba(10,7,22,.65); }
+.vt-curve { display: grid; gap: 6px; margin: 10px 0; padding: 10px 12px; border-radius: 12px; background: rgba(10,7,22,.72); box-shadow: inset 0 0 0 1px rgba(179,139,255,.22); }
+.vt-cvt { font: 700 12px/1 var(--f-mono); letter-spacing: .24em; text-transform: uppercase; color: var(--tcg-gold, #e8c26a); }
+.vt-cvplot { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; height: 96px; align-items: end; }
+.vt-cvcol { position: relative; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr auto; align-items: end; gap: 0 2px; height: 100%; }
+.vt-cvn { grid-column: 1 / -1; text-align: center; font: 700 10px/1 var(--f-mono); color: #fff; min-height: 10px; }
+.vt-cvp, .vt-cvd { display: block; align-self: end; min-height: 2px; border-radius: 3px 3px 0 0; }
+.vt-cvp { background: linear-gradient(180deg, #ff9a5a, #e0482a); } .vt-cvd { background: linear-gradient(180deg, #8fd0ff, #3a7be0); }
+.vt-cvcol small { grid-column: 1 / -1; text-align: center; font: 700 10px/1.4 var(--f-mono); color: var(--muted); border-top: 1px solid rgba(255,255,255,.12); }
+.vt-cvkey { font: 600 11px/1 var(--f-ui); color: var(--muted); }
+
+/* ---------- Battle: a duel board ---------- */
+.tcg-page .vt-bhero { position: relative; overflow: hidden; background: radial-gradient(ellipse 60% 40% at 50% 50%, rgba(179,139,255,.16), transparent 70%), linear-gradient(180deg, #1a1236, #0f0a20); box-shadow: inset 0 0 0 1px rgba(232,194,106,.35); }
+.tcg-page .vt-bhero::before { content: ""; position: absolute; left: 6%; right: 6%; top: 50%; height: 0; border-top: 1px dashed rgba(232,194,106,.35); pointer-events: none; }
+.tcg-page .vt-bdeck { position: relative; padding: 10px; border-radius: 12px; background: rgba(10,7,22,.65); box-shadow: inset 0 0 0 1px rgba(179,139,255,.3); }
+/* the battle screen itself: playmat, a centre line, framed zones */
+#cardvault { background: radial-gradient(ellipse 70% 45% at 50% 50%, rgba(179,139,255,.14), transparent 70%), radial-gradient(circle at 1px 1px, rgba(255,255,255,.035) 1px, transparent 1.5px) 0 0 / 5px 5px, linear-gradient(180deg, #120c22, #07050f) !important; }
+#cardvault .cv-arena { background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(179,139,255,.14), transparent 75%), rgba(12,8,26,.7); box-shadow: inset 0 0 0 2px #241845, inset 0 0 0 3px rgba(232,194,106,.4); outline: 1px dashed rgba(232,194,106,.3); outline-offset: -10px; }
+#cardvault .cv-arena::before { content: ""; position: absolute; left: 4%; right: 4%; top: 50%; border-top: 1px solid rgba(232,194,106,.18); pointer-events: none; }
+#cardvault .cv-plate { box-shadow: inset 0 0 0 1px rgba(232,194,106,.28); }
+#cardvault .cv-plate.me { box-shadow: inset 0 0 0 2px var(--pc), 0 0 16px color-mix(in srgb, var(--pc) 30%, transparent); }
+body.fx-lite .tcg-page .av-bg::before, body.fx-lite .tcg-page .av-bg::after { display: none; }

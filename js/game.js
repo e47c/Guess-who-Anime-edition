@@ -18,20 +18,22 @@ import {
     signInAnonymously
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
-import { audio } from "./audio.js?v=2";
+import { audio } from "./audio.js?v=3";
 import { ambient, titleCard, shake, ring, burstText, countUp, flyClone, motionOK, setReduced, isReduced } from "./fx.js";
-import { profile, avatarEl, seatCard, styleName, styleTitle, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js?v=6";
-import { showResults, closeResults } from "./results.js?v=4";
+import { profile, avatarEl, seatCard, passCard, styleName, styleTitle, initGallery, setProfileHooks, renderProfileCard } from "./profile.js?v=7";
+import * as WARD from "./wardrobe.js?v=1";
+import { showResults, closeResults } from "./results.js?v=5";
 import * as DRAFT from "./draft/draft.js?v=7";
 import * as FEUD from "./feud/feud.js?v=7";
 import * as LIKELY from "./feud/likely.js?v=4";
 import * as SKETCH from "./sketch/sketch.js?v=9";
-import * as VAULT from "./vault/vault.js?v=8";
-import * as CV from "./cardvault/cardvault.js?v=5";
-import * as NP from "./party/party.js?v=1";
-import { resultOf, resultToDb, resultFromDb } from "./vault/result.js?v=3";
-import { stageMeta, normalizeSettings, teamPatch } from "./party/stages.js?v=2";
-import { initCine, cineHook, cineHas } from "./cine/engine.js?v=13";
+import * as VAULT from "./vault/vault.js?v=9";
+import * as SHOP from "./vault/shoppage.js?v=1";
+import * as CV from "./cardvault/cardvault.js?v=6";
+import * as NP from "./party/party.js?v=2";
+import { resultOf, resultToDb, resultFromDb } from "./vault/result.js?v=4";
+import { stageMeta, normalizeSettings, teamPatch } from "./party/stages.js?v=3";
+import { initCine, cineHook, cineHas } from "./cine/engine.js?v=14";
 import { hand as cineHand } from "./cine/hands.js?v=11";
 import * as CK from "./cine/kit.js?v=11";
 import * as HOLD from "./cine/holds.js?v=11";
@@ -1219,7 +1221,7 @@ function applyModeUI(t) {
     $("sketchBox").classList.toggle("hidden", t !== "sk");
     $("cardvaultBox").classList.toggle("hidden", t !== "cv");
     $("partyBox").classList.toggle("hidden", t !== "np");
-    $("animePoll").classList.toggle("hidden", t === "cv" || t === "np");      // Arcade Vault battles use decks, Night Party stages pick their own series      // Arcade Vault battles use decks, not series
+    $("animePoll").classList.toggle("hidden", t === "cv" || t === "np");      // Anime TCG battles use decks, Night Party stages pick their own series      // Anime TCG battles use decks, not series
     const picked = document.querySelectorAll("#animePoll input:checked").length, chaos = unoDeckType(currentRoomData) === "chaos";
     $("modeHint").textContent = {
         gw: "Classic board: characters are drawn from every series you tick.",
@@ -3311,7 +3313,7 @@ const MODES = {
         art: ["images/anime/dragonball/db10.jpg", "images/anime/aot/aot6.jpg", "images/anime/dragonball/db12.jpg"] },
     sketch:   { key: "sk",  name: "Anime Sketch", tag: "DRAW & GUESS", kanji: "描", min: 2, max: 8, seats: "everyone draws in turn", short: "FFA", color: "#38d39f", sub: "Draw it. Guess it. Fast.", blurb: "Take turns drawing while everyone races to guess, or all draw one word and rate each other.",
         art: ["images/anime/naruto/na7.jpg", "images/anime/bleach/bc5.jpg", "images/anime/jjk/jk9.jpg"] },
-    cardvault: { key: "cv", name: "Arcade Vault", tag: "SHOP · PACKS · BATTLES", kanji: "庫", min: 1, max: 8, seats: "everyone, own Vault", short: "Own pace", color: "#b38bff", sub: "Spend. Collect. Challenge.", blurb: "Everyone opens their own Vault: skins, scratch cards, card packs, decks. Challenge anyone in the room to a card battle.",
+    cardvault: { key: "cv", name: "Anime TCG", tag: "CARD DUELS", kanji: "札", min: 1, max: 8, seats: "everyone, own deck", short: "Own pace", color: "#b38bff", sub: "Collect. Build. Duel.", blurb: "Open booster packs, fill your binder, build a 10-card deck and duel anyone in the room.",
         art: ["images/anime/jjk/jk12.jpg", "images/anime/dragonball/db7.jpg", "images/anime/naruto/na23.jpg"] },
     party:    { key: "np", name: "Night Party", tag: "TOURNAMENT", kanji: "宴", min: 2, max: 8, seats: "a tournament of the modes", short: "Tournament", color: "#ff9f43", sub: "Many games. One champion.", blurb: "Chain the other modes into a tournament: placements score points on a live race track, the winner takes the reward.",
         art: ["images/special/onepiece_ultimate.jpg", "images/anime/naruto/na9.jpg", "images/anime/jjk/jk19.jpg"] }
@@ -3326,7 +3328,7 @@ const RULES = {
     feud: ["Two teams (Team Crimson and Team Gold) and a hidden board of 5 to 8 ranked answers. Every round opens with a face-off: one player per team at the buzzers (they rotate), first to buzz answers.", "Top answer = control. Otherwise the other face-off player answers, and the higher answer wins control. The team in control chooses PLAY (answer the rest of the board) or PASS (the other team must play it).", "The playing team answers in turn; a wrong answer or running out of time is a strike. Three strikes and the other team gets ONE answer to steal the whole pot. Clearing the board banks it.", "One series ticked = questions about that series; two or more = an Anime Mix answered only from the ticked series. A tie after the last round plays one sudden-death question. Boards are Anime Arcade curated answers, not real survey results."],
     likely: ["Each duel shows two characters who are close on the question (who is smarter, lazier, more loyal...). Pick the one who is MORE likely.", "Team vs Team: both teams vote at the same moment; a team's pick is its majority (a split team goes with whoever voted first). Free For All: every player votes alone and keeps their own score.", "Everyone who picks the more likely character scores: 30 for a photo finish, 20 for a close call, 10 otherwise. Votes stay hidden until the reveal.", "One series ticked = that series' characters; two or more = an Anime Mix. A tie at the top after the last duel goes to up to three sudden-death duels. The right answer is our editors' pick (Anime Arcade curated rankings), not a survey result."],
     party: ["The host builds the night in the lobby: a tournament name, a reward (\"winner picks the next anime we watch\"), and a path of stages. Each stage is one of the other modes with its own rules and a weight (x1, x1.5, x2 or custom); the same mode can come back with different rules. Templates save a path for later.", "Everyone plays the stages in a row. Free-for-all modes seat everyone; team modes split the room into two balanced teams; 1v1 modes (Guess Who) run as a bracket inside the stage while the others watch.", "Only placements count: 1st gets 10 points down to 1 for last (shared places share their points), times the stage weight. A live race track shows everyone's pool after every stage.", "After the last stage the top pool wins the reward. A tie at the top plays sudden death: only the tied players, one round of a fast mode, until one is left. Every game still pays its normal coins; the winner gets +100 and everyone +10 per stage."],
-    cardvault: ["Pick ARCADE VAULT in the lobby and everyone gets their own Vault page; nobody is locked into one screen, and anyone can go back to the lobby at any time (the host keeps picking modes from there).", "Shop: Season 1 skins. A Frame is the animated ring around your picture, a Background restyles your whole player card; everyone in the room sees both. Scratch Cards win titles, title skins and username styles. Coins come from placements in every mode, the daily login and daily missions.", "Packs and Collection: open per-series card packs (one card per character, Common to Mythic), fill your book, trade cards with friends in the room. Decks: build 10-card decks (everyone starts with a free Starter Deck).", "Battle: pick one player (1v1, 20 life) or several (free-for-all, 25 life) and challenge them. Each round everyone picks a card in secret, all flip at once: damage = Power minus the opposing Defense, then abilities. Last one standing wins; anyone else can watch."],
+    cardvault: ["Pick ANIME TCG in the lobby and everyone gets their own Anime TCG page (Packs Store, Collection, Decks, Battle); nobody is locked into one screen, and anyone can go back to the lobby at any time (the host keeps picking modes from there).", "Packs Store: open per-series booster packs (one card per character, Common to Mythic) with coins, shards or free packs. Collection: your binder, one page per series; complete a series for a gold edge and its card sleeve, and trade cards with friends in the room.", "Decks: build 10-card decks in your deck boxes (everyone starts with a free Starter Deck); the deck builder shows the 10 slots and the Power / Defense curve. Your active deck is the one you bring to battles.", "Battle: pick one player (1v1, 20 life) or several (free-for-all, 25 life) and challenge them. Each round everyone picks a card in secret, all flip at once: damage = Power minus the opposing Defense, then abilities. Last one standing wins; anyone else can watch."],
     sketch: ["Every round, each player draws once. On your turn you privately pick one of 3 random anime words (characters, objects or weapons, in any mix) and draw it; no letters or numbers. Drawer: Ctrl+Z undoes your last stroke.", "Everyone else types guesses in the chat. A right guess (one typo is fine on longer words) is never shown to the others, and neither is a guess that is close: you just score. First right guess +100, second +75, third +50, everyone after +25. The drawer gets +25 for each player who gets it.", "Stuck? After 20 s without a right guess a letter is revealed, then another every 15 s (1 letter for short words, 2 for medium, 3 for long). The turn ends when everyone has it or time runs out.", "One series ticked = words from that series; two or more = an Anime Mix. People who join during a match watch, and can join from the next round. Highest total after the last round wins.", "Contest (pick it under Game type): every round, everyone gets the same word and draws it at the same time on their own sheet; press Done to finish early. Then the drawings are shown big, one at a time and without names (15 s each, sooner once everyone has rated it): give every other drawing 1 to 5 stars (not your own); you can still change a star on an earlier one until rating ends. Names and stars are revealed with the results; the stars you receive are your points, and the highest total after the last round wins."]
 };
 function showRules(t) {
@@ -3463,9 +3465,9 @@ function bindSettings() {
     $("setFx").addEventListener("change", () => setReduced($("setFx").checked));
 }
 let pendingAfterProfile = null;
-window.openProfile = function () { openProfileEditor(); openOverlay("profile"); };
-window.saveProfile = function () {
-    if (!commitProfileEditor()) return;
+window.openProfile = function () { WARD.openWardrobe(); openOverlay("profile"); };
+window.saveProfile = async function () {
+    if (!(await WARD.saveWardrobe())) return;
     closeOverlay("profile"); renderProfileCard(); sfx("ready"); toast("Profile saved");
     const next = pendingAfterProfile; pendingAfterProfile = null; if (next) next();
 };
@@ -3534,8 +3536,8 @@ function busy(sel, on, label) {
     else { if (b.dataset.label) b.innerHTML = b.dataset.label; delete b.dataset.label; b.disabled = false; b.removeAttribute("aria-busy"); }
 }
 let creating = false;
-/* o.vault = HOST PARTY from inside the Arcade Vault (main menu): the room starts on ARCADE VAULT and the player lands on
-   its Vault page. Every other way of hosting (the red Host a party button, the guide) lands in the lobby, whatever mode
+/* o.vault = HOST PARTY from inside the Anime TCG (main menu): the room starts on ANIME TCG and the player lands on
+   its Anime TCG page. Every other way of hosting (the red Host a party button, the guide) lands in the lobby, whatever mode
    the room starts on (the last one used). */
 window.createRoom = async function (o = {}) {
     if (creating) return;
@@ -3587,7 +3589,7 @@ window.joinRoom = async function () {
 
 /* ---------- lobby ---------- */
 function openLobby() {
-    closeOverlay("daily");      // the daily bonus waits in the Vault; it never covers a room
+    closeOverlay("daily");      // the daily bonus waits in the ★ Daily drawer; it never covers a room
     setRoomCode(room);
     try { history.replaceState(null, "", location.pathname + "?room=" + room); } catch (e) {}
     listenToRoom();
@@ -3614,7 +3616,7 @@ function pickMode(t) {
     }
     if (d.gameType === t) return;
     const liveCv = d.gameType === "cardvault" ? CV.cvBattles(d).filter(b => b.st === "live" || b.st === "invite").length : 0;
-    if (liveCv) { uiConfirm({ title: "Close the Arcade Vault?", text: liveCv + " card battle" + (liveCv > 1 ? "s are" : " is") + " still going (or waiting for an answer). Switching the mode stops " + (liveCv > 1 ? "them" : "it") + " with no coins.", ok: "Switch mode" }).then(ok => { if (ok) { sfx("pick"); lobbySet({ gameType: t, animes: fixSeries(t, arr(d.animes), unoDeckType(d)) }); } }); return; }
+    if (liveCv) { uiConfirm({ title: "Close Anime TCG?", text: liveCv + " card battle" + (liveCv > 1 ? "s are" : " is") + " still going (or waiting for an answer). Switching the mode stops " + (liveCv > 1 ? "them" : "it") + " with no coins.", ok: "Switch mode" }).then(ok => { if (ok) { sfx("pick"); lobbySet({ gameType: t, animes: fixSeries(t, arr(d.animes), unoDeckType(d)) }); } }); return; }
     sfx("pick");
     lobbySet({ gameType: t, animes: fixSeries(t, arr(d.animes), unoDeckType(d)) });
 }
@@ -3657,16 +3659,16 @@ function modeReq(d) {
 let modeCardsBuilt = false, seatSig = "";
 const seatSeen = new Set(), readySeen = new Set();
 let lastMode = "";
-const modePlayers = M => (M.min === M.max ? M.min : M.min + "–" + M.max) + " players" + (M.seats ? " · " + M.seats : "");
+const modePlayers = M => (M.min === M.max ? M.min : M.min + "–" + M.max) + " players";
 function buildModeCards() {
     if (modeCardsBuilt) return; modeCardsBuilt = true;
     const box = $("lobbyModes");
     Object.entries(MODES).forEach(([t, M]) => {
-        const b = hbEl("button", "mode-card"); b.dataset.mode = t; b.style.setProperty("--mc", M.color);
-        const art = hbEl("div", "mc-art"); M.art.forEach((src, i) => { const im = makeImg(src); im.style.setProperty("--i", i); art.appendChild(im); });
-        b.append(art, hbEl("div", "mc-kanji", M.kanji), hbEl("div", "mc-tag", M.tag), hbEl("b", "mc-name", M.name), hbEl("p", "mc-blurb", M.blurb));
-        const foot = hbEl("div", "mc-foot"); foot.append(hbEl("span", "mc-players", modePlayers(M)), hbEl("span", "mc-votes"));
-        b.append(foot, hbEl("div", "mc-sel", "SELECTED"), hbEl("div", "mc-brk"), hbEl("div", "mc-curs"));
+        const b = hbEl("button", "mtab lm"); b.type = "button"; b.dataset.mode = t; b.style.setProperty("--i", Object.keys(MODES).indexOf(t));
+        const art = hbEl("span", "mt-art"); (t === "likely" ? [M.art[0], M.art[2]] : [M.art[0]]).forEach(src => art.appendChild(makeImg(src)));
+        b.append(art, hbEl("span", "mt-deco"), hbEl("span", "mt-kanji", M.kanji), hbEl("span", "mt-tag", M.tag), hbEl("b", "mt-name", M.name), hbEl("small", "mt-pl mc-players", modePlayers(M)), hbEl("span", "mc-votes"));
+        b.append(hbEl("span", "mc-sel", "SELECTED"), hbEl("span", "mc-brk"), hbEl("span", "mc-curs"));
+        b.setAttribute("aria-label", M.name);
         b.onclick = () => pickMode(t);
         b.onmouseenter = () => sfx("hover");
         box.appendChild(b);
@@ -3684,7 +3686,7 @@ const GUIDE = {
     likely:   { fmt: "Teams or Free For All", steps: ["Two close picks", "Vote at the same time", "Closer call, bigger score", "Single anime or a Mix"] },
     sketch:   { fmt: "Everyone draws in turn", steps: ["Pick a word, draw it", "Guess fast, score more", "Letters when you're stuck", "Everyone draws each round"] },
     party:    { fmt: "Tournament", steps: ["Build the path", "Play stage by stage", "Placements score points", "The champion takes the reward"] },
-    cardvault: { fmt: "Everyone at their own pace", steps: ["Your own Vault page", "Skins, scratch cards, packs", "Build a 10-card deck", "Challenge anyone in the room"] }
+    cardvault: { fmt: "Collect, build, duel", steps: ["Your own TCG page", "Open booster packs", "Build a 10-card deck", "Duel anyone in the room"] }
 };
 const NUMWORD = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
 const MODE_PICK_KEY = "aap_mode_pick";
@@ -3741,8 +3743,8 @@ function pickGuide(t, animate) {
     });
     const foot = hbEl("div", "g-foot");
     const go = hbEl("button", "btn", "Host " + (/^[aeiou]/i.test(M.name) ? "an " : "a ") + M.name + " party"); go.type = "button"; go.onclick = () => { sfx("click"); window.hostMode(t); };
-    if (t === "cardvault") foot.appendChild(hbEl("small", null, "The Arcade Vault only opens inside a room: host or join a party, then pick ARCADE VAULT in the lobby."));      // reachable only from the lobby
-    else if (t === "party") { go.textContent = "Host a Night Party"; foot.append(go, hbEl("small", null, "Opens a room on Night Party. Build the path in the lobby while your friends join with the room code.")); }
+    if (t === "party") { go.textContent = "Host a Night Party"; foot.append(go, hbEl("small", null, "Opens a room on Night Party. Build the path in the lobby while your friends join with the room code.")); }
+    else if (t === "cardvault") foot.append(go, hbEl("small", null, "Opens a room on Anime TCG: everyone gets their own TCG page, and the Battle tab lists your friends to duel. The ANIME TCG button under Host a party opens it without a room."));
     else foot.append(go, hbEl("small", null, "Opens a room on " + M.name + ". Everyone else joins with the room code, and the host can still switch games in the lobby."));
     main.append(head, ol, foot);
     box.append(art, main);
@@ -3857,7 +3859,7 @@ function lobbyRender(d) {
     }
     // modes
     buildModeCards();
-    document.querySelectorAll("#lobbyModes .mode-card").forEach(b => {
+    document.querySelectorAll("#lobbyModes .lm").forEach(b => {
         const mt = b.dataset.mode, MM = MODES[mt], fits = act.length >= MM.min && act.length <= MM.max;
         b.classList.toggle("selected", mt === t); b.classList.toggle("unfit", !fits); b.disabled = spectating;
         b.setAttribute("aria-pressed", String(mt === t));
@@ -3894,7 +3896,7 @@ function lobbyRender(d) {
     if (!spectating) modePrep(d);
     // status + start
     const req = modeReq(d), meNode = pNode(d, me) || {};
-    $("lobbyStatus").textContent = spectating ? "Hang tight: the current match has to finish first." : t === "cardvault" ? "ARCADE VAULT is open: everyone has their own Vault page. Challenge each other from its Battle tab." : req.ok ? (host ? "Ready: " + req.msg + ". Hit START when your squad is set." : "Ready: " + req.msg + ". Waiting for " + pName(d, hostSlot(d)) + " to start.") : req.msg;
+    $("lobbyStatus").textContent = spectating ? "Hang tight: the current match has to finish first." : t === "cardvault" ? "ANIME TCG is open: everyone has their own Anime TCG page. Challenge each other from its Battle tab." : req.ok ? (host ? "Ready: " + req.msg + ". Hit START when your squad is set." : "Ready: " + req.msg + ". Waiting for " + pName(d, hostSlot(d)) + " to start.") : req.msg;
     $("lobbyStatus").classList.toggle("ok", req.ok && !spectating);
     const sb = $("startButton");
     const vaultMode = t === "cardvault";
@@ -4081,7 +4083,7 @@ window.leaveRoom = async function () {
     goHome("You left the room.");
 };
 window.exitGame = window.leaveRoom;          // older buttons
-/* Close room (host only, from the lobby, the in-game menu or the Vault page). The room is DELETED from the database:
+/* Close room (host only, from the lobby, the in-game menu or the Anime TCG page). The room is DELETED from the database:
    every client's listener sees it vanish and goes to the main menu ("The host closed the room."), and the code stops
    working. Guests leaving cancel their own "offline" flag before the page unloads (goHome); a moment later the host
    deletes once more, so nothing a departing client still wrote can leave part of the room behind. Each step is
@@ -4127,7 +4129,7 @@ function listenToRoom() {
         applyTheme(); updatePresenceBanner(d); winSoundPreload(d.animes); musicSync(d); emotesSync(d);
         resultSync(d);       // before rendering: a render error must never swallow a finished match
         VAULT.roomSync(d);   // card trades + the collection binder friends browse
-        CV.cvSync(d);        // Arcade Vault card battles: my deck, coins for finished battles, the challenge strip
+        CV.cvSync(d);        // Anime TCG card battles: my deck, coins for finished battles, the challenge strip
         NP.npSync(d);        // Night Party: prep, host takeover, the end-of-night bonus, the HUD chip
         hostDuties(d);
         route(d);
@@ -4172,7 +4174,7 @@ function listenToRoom() {
 /* ---------- the standard match result (every mode, A1) ----------
    When a match reaches its final state the host stores ONE result object in rooms/<code>/lastResult
    (built by vault/result.js from the room's own state); every client then reports that same object to
-   the Vault. If the host doesn't write it within 5 s (left, offline), a client reports its own copy,
+   the bank (vault.js). If the host doesn't write it within 5 s (left, offline), a client reports its own copy,
    built from the same state. Reports are per match key; whatever pays for it must be idempotent. */
 let resultSeen = "", resultTimer = 0, resultWriting = "";
 const resultX = { draftStandings: s => DRAFT.standings(s, DRAFT.draftDb()) };
@@ -4203,7 +4205,7 @@ function resultEmit(r) {
     document.dispatchEvent(new CustomEvent("aap:result", { detail: r }));
 }
 
-/* an Arcade Vault battle's result (one per challenge, built by the host into rooms/<code>/cvb/<bid>/res) */
+/* an Anime TCG battle's result (one per challenge, built by the host into rooms/<code>/cvb/<bid>/res) */
 function battleReport(r, cvUsed) {
     window.__aapResults = (window.__aapResults || []).concat([r]).slice(-20);
     console.info("[AAP result]", r.key, r);
@@ -4219,7 +4221,7 @@ function hostDuties(d) {
     if (!d.status || d.status === "waiting") {
         const gone = SLOTS.filter(i => d["player" + i] && d["player" + i].left);
         if (gone.length) { const upd = {}; gone.forEach(i => { upd["player" + i] = null; upd["presence/p" + i] = null; upd["packs/p" + i] = null; upd["emote/p" + i] = null; upd["vloc/p" + i] = null; }); update(ref(db, "rooms/" + room), upd).catch(() => {}); }
-        CV.cvDuties(d);      // Arcade Vault: start accepted challenges, resolve battle rounds, expire and clear old ones
+        CV.cvDuties(d);      // Anime TCG: start accepted challenges, resolve battle rounds, expire and clear old ones
         return;
     }
     if (matchOver(d)) return;
@@ -4270,7 +4272,7 @@ let lastStatus = "";
 function route(d) {
     const st = d.status || "waiting", spec = gwSpectating(d), drLive = (d.gameType === "draft" && st !== "waiting" && !!d.draft) || (d.gameType === "feud" && st !== "waiting" && !!d.feud) || (d.gameType === "likely" && st !== "waiting" && !!d.likely) || (d.gameType === "sketch" && st !== "waiting" && !!d.sketch) ; // a draft or a feud is watched live by everyone in the room
     // NIGHT PARTY: between stages (and for anyone not in the running match) everyone is on the tournament screen;
-    // during an intermission a player may open their own Vault page
+    // during an intermission a player may open their own Anime TCG page
     if (NP.npActive(d) && (st === "waiting" || (!inMatch(d) && !spec && !drLive))) {
         lastStatus = st;
         if (st === "waiting" && VAULT.vaultWanted(d)) {
@@ -4282,7 +4284,7 @@ function route(d) {
     }
     if (st === "waiting" || (!inMatch(d) && !spec && !drLive)) {
         lastStatus = st;
-        // ARCADE VAULT: no shared screen. Each player sees their own Vault page, their battle, a battle they watch, or the lobby.
+        // ANIME TCG: no shared screen. Each player sees their own Anime TCG page, their battle, a battle they watch, or the lobby.
         const bid = st === "waiting" ? CV.battleWanted(d) : null, vault = st === "waiting" && VAULT.vaultWanted(d);
         if (bid) { CV.cvLoc(d, "b"); CV.showBattle(d, bid); return; }
         if (vault) {
@@ -4293,7 +4295,7 @@ function route(d) {
         if ($("lobby").classList.contains("hidden")) { resetMatchState(); showOnly("lobby"); seatSig = ""; }
         lobbyRender(d); return;
     }
-    if (lastStatus === "waiting" || lastStatus === "") { resetMatchState(); closeOverlay("vaultRw"); }
+    if (lastStatus === "waiting" || lastStatus === "") { resetMatchState(); closeOverlay("vaultRw"); closeOverlay("shop"); }
     lastStatus = st;
     if (spec) { showGwSpec(d); return; }
     matchIntro(d);
@@ -4835,7 +4837,10 @@ async function initApp() {
         amHost: () => amHost(), db, ref, update, runTransaction, room: () => room, me: () => Number(myPlayer), pName, activeSlots,
         seatCard, roomData: () => currentRoomData, roomCode: () => room, refresh, showOnly,
         crinkle: v => audio.crinkle(v), hostParty: () => window.createRoom({ vault: true }), joinParty: code => { $("joinCode").value = code; window.joinRoom(); } });
-    bindUpload(); bindSettings(); syncDock(); renderProfileCard(); buildHomeModes();
+    SHOP.initShop({ sfx, toast, uiConfirm, openOverlay, closeOverlay, passCard, avatarEl, profilePub: () => profile.public(), level: () => profile.level(), inRoom: () => !!room,
+        setLook: look => { const P = profile.get(); if (["sf", "bg", "ts", "uc", "vtn"].some(k => (P[k] || "") !== (look[k] || ""))) profile.update(look); } });
+    WARD.initWardrobe({ sfx, toast, closeOverlay, openShop: where => SHOP.openShop(where) });
+    bindSettings(); syncDock(); renderProfileCard(); buildHomeModes();
     $("name").value = profile.get().name || "";
     $("joinCode").addEventListener("keydown", e => { if (e.key === "Enter") joinRoom(); });
     let codeLen = 0;

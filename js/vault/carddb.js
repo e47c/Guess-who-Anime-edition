@@ -5,7 +5,7 @@
                  fx, fy (the face centre in the picture, 0..1), fz (zoom), fit (show the whole picture), ar (picture width / height) }
    ===================================================================== */
 import { CARD_SERIES, CARD_COUNT, CARD_IMG, CARD_ROWS } from "./cards.js?v=2";
-import { ARCHETYPES, RARITY_KEYS, RARITY_NAMES, abilityName } from "../cardvault/abilities.js?v=1";
+import { ARCHETYPES, RARITY_KEYS, RARITY_NAMES, abilityName } from "../cardvault/abilities.js?v=2";
 
 export const CARDS = {}, BY_SERIES = {}, BY_SERIES_RARITY = {};
 CARD_SERIES.forEach(s => { BY_SERIES[s] = []; BY_SERIES_RARITY[s] = RARITY_KEYS.map(() => []); });

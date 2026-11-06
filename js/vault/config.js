@@ -1,6 +1,6 @@
 /* =====================================================================
-   ARCADE VAULT · BALANCE CONFIG
-   Every number of the economy and of ARCADE VAULT (the ninth lobby mode) lives here, so balance can be tuned without touching
+   ANIME TCG · BALANCE CONFIG
+   Every number of the economy and of ANIME TCG (the ninth lobby mode) lives here, so balance can be tuned without touching
    game logic. Nothing else in the code hard-codes a price, an odd, a reward or a life total.
    Edit a value, bump `?v=` where vault files are imported, done.
    ===================================================================== */
@@ -29,7 +29,7 @@ export const MODE_META = {
     feud:      { name: "Anime Feud",       min: 2, max: 8, teams: true,  ffa: false, oneVone: false, length: "long",   fast: false },
     likely:    { name: "Most Likely",      min: 2, max: 8, teams: true,  ffa: true,  oneVone: false, length: "medium", fast: true  },
     sketch:    { name: "Anime Sketch",     min: 2, max: 8, teams: false, ffa: true,  oneVone: false, length: "long",   fast: false },
-    cardvault: { name: "Arcade Vault",     min: 2, max: 8, teams: false, ffa: true,  oneVone: true,  length: "short",  fast: true, stage: false }   // id kept for saved data; battles become a stage later
+    cardvault: { name: "Anime TCG",     min: 2, max: 8, teams: false, ffa: true,  oneVone: true,  length: "short",  fast: true, stage: false }   // id kept for saved data; battles become a stage later
 };
 
 /* ---------- A2. Earning coins ---------- */
@@ -140,7 +140,7 @@ export const CARD_ART = {
 export const DECK = { size: 10, maxCopies: 1, starterCount: 10, maxDecks: 8, veteranWins: 10 };
 export const TRADE = { maxCards: 5, maxOpen: 3 };      // cards per side of one offer, open offers per player
 
-/* ---------- B. ARCADE VAULT card battles (challenges from the Vault's Battle tab) ---------- */
+/* ---------- B. ANIME TCG card battles (challenges from the Vault's Battle tab) ---------- */
 export const BATTLE = {
     duel: { life: 20, hand: 4, draw: 1 },
     ffa:  { life: 25, hand: 4, draw: 1, min: 3, max: 8 },

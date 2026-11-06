@@ -121,7 +121,7 @@ export function resultOf(d, x, now = Date.now()) {
     return out;
 }
 
-/* ARCADE VAULT card battles are challenges between some of the players in a room (rooms/<code>/cvb/<bid>), not a
+/* ANIME TCG card battles are challenges between some of the players in a room (rooms/<code>/cvb/<bid>), not a
    room-wide match, so they report one standard result per battle: key "cardvault:<bid>". b = the battle node
    ({ s: engine state, uids, t0, end, timer, pack }), d = the room (for uids of older nodes). Pure. */
 export function battleResultOf(b, d, bid, now = Date.now()) {

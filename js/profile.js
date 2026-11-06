@@ -5,7 +5,7 @@
    player node so everybody sees the same card in every mode.
    ===================================================================== */
 
-import { SKINS } from "./vault/config.js?v=7";
+import { SKINS } from "./vault/config.js?v=8";
 import { NIGHT_PARTY } from "./party/config.js?v=1";
 
 const KEY = "gw_profile_v1";
@@ -67,7 +67,7 @@ export const profile = {
     update(patch) { Object.assign(P, patch); persist(); },
     level() { return levelOf(P.xp); },
     // the part other players see (kept small: it rides along on every room update)
-    // sf/bg/ts/uc/vtn = Arcade Vault cosmetics (Season frame, background, title skin, username style, Vault title), set from the Vault wardrobe
+    // sf/bg/ts/uc/vtn = Anime TCG cosmetics (Season frame, background, title skin, username style, Vault title), equipped in the Wardrobe (js/wardrobe.js)
     public() { return { name: P.name || "Player", av: P.av, col: P.col, fr: P.fr, ttl: P.vtn || titleName(P.ttl), lvl: levelOf(P.xp).lvl, sf: P.sf || "", bg: P.bg || "", ts: P.ts || "", uc: P.uc || "" }; },
     stats(mode) { return P.st[mode] || { p: 0, w: 0, s: 0, b: 0 }; },
     has(id) { return !!P.ach[id]; },
@@ -156,7 +156,7 @@ export function avatarEl(p, { size = 48, cls = "", badge = false } = {}) {
 }
 /* The player card exactly as the lobby draws it: the "1P" tag, the picture (with its frame), name, title and level.
    p.bg (Season background) restyles the whole panel: .sbg[data-bg] in css/vault.css, over the lobby's stripes.
-   Used by the lobby seats (game.js), the Vault's shop preview and the Battle tab, so they always match. */
+   Used by the lobby seats (game.js), the Anime TCG Battle tab, so they always match. */
 export function seatCard(p, { slot = 1, me = false, col = "", cls = "", size = 72 } = {}) {
     p = p || {};
     const s = document.createElement("div"), bg = COSM.test(p.bg || "") ? p.bg : "";
@@ -170,6 +170,40 @@ export function seatCard(p, { slot = 1, me = false, col = "", cls = "", size = 7
     sm.append(tt, document.createTextNode(p.lvl ? " · LV " + p.lvl : "")); id.append(nm, sm);
     s.append(no, avatarEl(p, { size, badge: true }), id);
     return s;
+}
+/* THE ARCADE PASS: a credit-card-shaped player card (1.586:1). Picture with the equipped FRAME (avatarEl), the
+   equipped BACKGROUND over the whole card (the same .sbg[data-bg] skin CSS as the lobby seats, css/vault.css),
+   name with the username style, title with the title skin, level and the XP bar. A golden EMV chip on the right.
+   Used on the main menu, as the Wardrobe's live preview and as the Shop's try-on, so all three always match.
+   o = { xp: { lvl, into, need, pct }, ids (the home card: #pcName...), tilt, cls, empty (no name yet) } */
+export function passCard(p, o = {}) {
+    p = p || {};
+    const c = document.createElement("div"), bg = COSM.test(p.bg || "") ? p.bg : "", xp = o.xp || null;
+    const col = /^#[0-9a-f]{3,8}$/i.test(p.col || "") ? p.col : "#e11b1b";
+    c.className = "pass" + (bg ? " sbg" : "") + (o.cls ? " " + o.cls : "");
+    c.style.setProperty("--pc", col);
+    if (o.tilt) c.setAttribute("data-tilt", "");
+    if (bg) { c.dataset.bg = bg; const f = document.createElement("i"); f.className = "sbg-fx"; f.setAttribute("aria-hidden", "true"); c.appendChild(f); fxWatch(c); }
+    const el = (tag, cls, txt, id) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (id && o.ids) e.id = id; return e; };
+    const sheen = el("i", "pass-sheen"); sheen.setAttribute("aria-hidden", "true");
+    const top = el("div", "pass-top");
+    const brand = el("span", "pass-brand"); brand.innerHTML = '<svg class="aa-mark" viewBox="0 0 120 120" aria-hidden="true"><use href="#aa-mark"/></svg>';
+    brand.appendChild(document.createTextNode("ARCADE PASS"));
+    top.append(brand, el("span", "pass-lv", "LV " + ((xp && xp.lvl) || p.lvl || 1), "pcLvl"));
+    const chip = el("span", "pass-chip"); chip.setAttribute("aria-hidden", "true"); chip.innerHTML = "<i></i><i></i><i></i>";
+    const mid = el("div", "pass-mid");
+    const ava = avatarEl(p, { size: 72 }); ava.classList.add("pass-ava"); if (o.ids) ava.id = "pcAva";
+    const id = el("div", "pass-id");
+    const nm = el("b", "pass-name", o.empty ? "Set your name" : (p.name || "Player"), "pcName"); styleName(nm, p);
+    const tt = el("span", "pass-title", p.ttl || "Rookie", "pcTitle"); styleTitle(tt, p);
+    id.append(el("small", "pass-holder", "CARD HOLDER"), nm, tt);
+    mid.append(ava, id);
+    const foot = el("div", "pass-foot");
+    const bar = el("div", "pass-xp"); const fill = el("i", null, null, "pcXp"); fill.style.width = Math.round(((xp && xp.pct) || 0) * 100) + "%"; bar.appendChild(fill);
+    foot.append(bar, el("span", "pass-xpt", xp ? xp.into + " / " + xp.need + " XP" : "", "pcXpTxt"));
+    c.append(sheen, top, chip, mid, foot);
+    c.setAttribute("role", "img"); c.setAttribute("aria-label", "Arcade Pass: " + (p.name || "Player") + ", " + (p.ttl || "Rookie") + ", level " + ((xp && xp.lvl) || p.lvl || 1));
+    return c;
 }
 /* animated frames and backgrounds pause while scrolled out of view (class fx-off; css/vault.css) */
 let fxIO = null; const fxSeen = new Set();
@@ -186,7 +220,7 @@ if (typeof document !== "undefined" && SKINS) {
     (SKINS.tiers || []).forEach(t => r.setProperty("--sp-" + t.id, String(Number(t.speed) > 0 ? Number(t.speed) : 1)));
     if (Number(SKINS.ringWidth) > 0) r.setProperty("--ring", String(SKINS.ringWidth));
 }
-/* username style + title skin (Arcade Vault scratch-card rewards) on any element showing a name / title */
+/* username style + title skin (Anime TCG scratch-card rewards) on any element showing a name / title */
 export function styleName(elm, p) { if (elm && p && COSM.test(p.uc || "")) elm.classList.add("uc", "uc-" + p.uc); return elm; }
 export function styleTitle(elm, p) { if (elm && p && COSM.test(p.ts || "")) elm.classList.add("ts", "ts-" + p.ts); return elm; }
 const initials = n => (String(n || "?").trim().split(/\s+/).map(w => w[0]).join("").slice(0, 2) || "?").toUpperCase();
@@ -208,73 +242,28 @@ async function galleryFor(tab) {
     return out;
 }
 
-/* ---------------- editor UI ---------------- */
-let draft = null, tab = "emblem", hooks = { onSave: null, sfx: () => {} };
+/* ---------------- shared with the Wardrobe (js/wardrobe.js owns the editor) ---------------- */
+let hooks = { onSave: null, sfx: () => {} };
 export function setProfileHooks(h) { Object.assign(hooks, h); }
+export const profileHooks = () => hooks;
 const $ = id => document.getElementById(id);
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
-
-export function openProfileEditor() {
-    draft = JSON.parse(JSON.stringify({ name: P.name, av: P.av, col: P.col, fr: P.fr, ttl: P.ttl, ttl0: P.ttl }));
-    $("profName").value = draft.name || "";
-    renderEditor(); renderTabs(); renderGrid();
+/* the picture gallery: Emblems + one tab per series (local pictures + AniList characters) */
+export const galleryTabs = () => [["emblem", "Emblems"]].concat(Object.keys(SERIES_LABEL).map(k => [k, SERIES_LABEL[k]]));
+export { galleryFor };
+/* commit what the Wardrobe edited on the profile side (name, picture, accent colour, arcade frame, level title) */
+export function commitProfile(d) {
+    const name = String(d.name || "").trim().slice(0, 20);
+    if (!name) return { error: "Pick a display name first." };
+    const changedPic = JSON.stringify(d.av) !== JSON.stringify(P.av) && d.av && d.av.t !== "g";
+    Object.assign(P, { name, av: cleanAvatar(d.av) || P.av, col: /^#[0-9a-f]{3,8}$/i.test(d.col || "") ? d.col : P.col, fr: isUnlocked(FRAMES.find(f => f.id === d.fr) || FRAMES[0]) ? d.fr : "none", ttl: (TITLES.find(t => t.id === d.ttl && isUnlocked(t)) || {}).id || P.ttl });
+    persist();
+    let ach = null;
+    if (changedPic) { ach = profile.unlock("new_look"); if (ach && hooks.onAchievement) hooks.onAchievement(ach); }
+    if (hooks.onSave) hooks.onSave(P);
+    return { ok: true, ach };
 }
-function renderEditor() {
-    const pv = $("profPreview"); pv.innerHTML = "";
-    const card = mk("div", "prof-card"); card.style.setProperty("--ac", draft.col);
-    card.appendChild(avatarEl({ name: draft.name, av: draft.av, col: draft.col, fr: draft.fr, lvl: levelOf(P.xp).lvl, sf: P.sf }, { size: 112, badge: true }));
-    const id = mk("div", "prof-card-id"); id.append(mk("b", null, draft.name || "Your name"), mk("small", null, titleName(draft.ttl)));
-    card.appendChild(id); pv.appendChild(card);
-    const sw = $("profColors"); sw.innerHTML = "";
-    COLORS.forEach(c => { const b = mk("button", "swatch" + (c === draft.col ? " on" : "")); b.style.background = c; b.setAttribute("aria-label", "Colour " + c); b.onclick = () => { draft.col = c; if (draft.av.t === "g") draft.av.c = c; hooks.sfx("toggle"); renderEditor(); }; sw.appendChild(b); });
-    const pill = (box, list, key) => { box.innerHTML = ""; list.forEach(it => { const ok = isUnlocked(it); if (it.hidden && !ok) return; const b = mk("button", "pill" + (draft[key] === it.id ? " on" : "") + (ok ? "" : " locked"), it.name); b.title = ok ? it.name : (it.ach ? "Unlock: " + (ACH.find(a => a.id === it.ach) || {}).name : "Reach level " + it.lvl); if (!ok) b.disabled = true; b.onclick = () => { draft[key] = it.id; hooks.sfx("toggle"); renderEditor(); }; box.appendChild(b); }); };
-    pill($("profTitles"), TITLES, "ttl"); pill($("profFrames"), FRAMES, "fr");
-    const ach = $("profAch"); ach.innerHTML = "";
-    const npBox = $("profNp");
-    if (npBox) {
-        const N = profile.nightParty(); npBox.innerHTML = "";
-        const top = mk("div", "pnp-top"); top.append(mk("b", null, String(N.won | 0)), mk("small", null, "Tournaments won"), mk("b", null, String(N.played | 0)), mk("small", null, "Played"));
-        npBox.appendChild(top);
-        if (!N.hist.length) npBox.appendChild(mk("p", "anime-hint", "No Night Party yet. Pick NIGHT PARTY in a room's lobby to host one."));
-        N.hist.forEach(h => {
-            const r = mk("div", "pnp-row" + (h.won ? " won" : ""));
-            const l = mk("div"); l.append(mk("b", null, (h.won ? "🏆 " : "") + h.name), mk("small", null, "Winner: " + (h.winner || "?") + (h.reward ? " · " + h.reward : "")));
-            r.append(l, mk("time", null, new Date(h.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })));
-            npBox.appendChild(r);
-        });
-    }
-    ACH.forEach(a => { const got = profile.has(a.id), secret = a.hidden && !got, d = mk("div", "ach" + (got ? " got" : "")); d.title = secret ? "A secret" : a.desc; d.append(mk("span", "ach-i", got ? a.icon : secret ? "❔" : "🔒"), mk("b", null, secret ? "???" : a.name), mk("small", null, secret ? "Hidden achievement" : a.desc)); ach.appendChild(d); });
-}
-function renderTabs() {
-    const box = $("avaTabs"); box.innerHTML = "";
-    [["emblem", "Emblems"]].concat(Object.keys(SERIES_LABEL).map(k => [k, SERIES_LABEL[k]])).forEach(([k, l]) => {
-        const b = mk("button", "ava-tab" + (k === tab ? " on" : ""), l); b.setAttribute("role", "tab"); b.setAttribute("aria-selected", k === tab);
-        b.onclick = () => { tab = k; renderTabs(); renderGrid(); }; box.appendChild(b);
-    });
-}
-async function renderGrid() {
-    const box = $("avaGrid"), want = tab; box.innerHTML = ""; box.appendChild(mk("div", "anime-hint", "Loading…"));
-    const items = await galleryFor(want); if (want !== tab) return;
-    box.innerHTML = "";
-    items.forEach(it => {
-        const b = mk("button", "ava-pick"); b.setAttribute("aria-label", it.label || "Avatar");
-        const same = JSON.stringify(cleanAvatar(it.av)) === JSON.stringify(cleanAvatar(draft.av)); if (same) b.classList.add("on");
-        b.appendChild(avatarEl({ name: draft.name, av: it.av, col: draft.col, fr: "none" }, { size: 64 }));
-        b.onclick = () => { draft.av = JSON.parse(JSON.stringify(it.av)); if (draft.av.t === "g") draft.col = draft.av.c; hooks.sfx("pick"); renderEditor(); box.querySelectorAll(".ava-pick").forEach(x => x.classList.remove("on")); b.classList.add("on"); };
-        box.appendChild(b);
-    });
-    if (!items.length) box.textContent = "No pictures for this series yet.";
-}
-export function bindUpload() {
-    const nm = $("profName"); if (nm) nm.addEventListener("input", () => { if (!draft) return; draft.name = nm.value.trim().slice(0, 20); const b = document.querySelector("#profPreview .prof-card-id b"); if (b) b.textContent = draft.name || "Your name"; const g = document.querySelector("#profPreview .ava-in.glyph"); if (g && !(draft.av && draft.av.g)) g.textContent = (draft.name || "?").slice(0, 2).toUpperCase(); });
-    const inp = $("avaFile"); if (!inp) return;
-    inp.addEventListener("change", async () => {
-        const f = inp.files && inp.files[0]; inp.value = ""; if (!f) return;
-        if (!/^image\//.test(f.type) || f.size > 12 * 1024 * 1024) { hooks.toast && hooks.toast("Pick an image file (under 12 MB)."); return; }
-        try { draft.av = { t: "i", d: await shrink(f) }; hooks.sfx("pick"); renderEditor(); }
-        catch (e) { hooks.toast && hooks.toast("Couldn't read that image."); }
-    });
-}
+export function shrinkImage(file) { return shrink(file); }
 function shrink(file) {
     return new Promise((res, rej) => {
         const url = URL.createObjectURL(file), img = new Image();
@@ -290,26 +279,13 @@ function shrink(file) {
         img.src = url;
     });
 }
-export function commitProfileEditor() {
-    const name = ($("profName").value || "").trim().slice(0, 20);
-    if (!name) { hooks.toast && hooks.toast("Pick a display name first."); $("profName").focus(); return false; }
-    const changedPic = JSON.stringify(draft.av) !== JSON.stringify(P.av) && draft.av.t !== "g";
-    Object.assign(P, { name, av: cleanAvatar(draft.av) || P.av, col: draft.col, fr: isUnlocked(FRAMES.find(f => f.id === draft.fr) || FRAMES[0]) ? draft.fr : "none", ttl: draft.ttl });
-    if (draft.ttl !== draft.ttl0) P.vtn = "";          // picking a level title replaces an equipped Vault title
-    persist();
-    if (changedPic) { const a = profile.unlock("new_look"); if (a && hooks.onAchievement) hooks.onAchievement(a); }
-    if (hooks.onSave) hooks.onSave(P);
-    return true;
-}
-
-/* ---------------- home screen card ---------------- */
+/* ---------------- home screen: the Arcade Pass (credit card) + stats under it ---------------- */
 export function renderProfileCard() {
-    const L = levelOf(P.xp), pub = profile.public();
-    const a = $("pcAva"); if (!a) return; a.innerHTML = ""; a.appendChild(avatarEl(pub, { size: 76, badge: true }));
-    $("pcName").textContent = P.name || "Set your name"; $("pcName").className = "pc-name"; styleName($("pcName"), pub);
-    $("pcTitle").textContent = pub.ttl; $("pcTitle").className = "pc-title"; styleTitle($("pcTitle"), pub);
-    $("pcLvl").textContent = "LV " + L.lvl; $("pcXp").style.width = Math.round(L.pct * 100) + "%"; $("pcXpTxt").textContent = L.into + " / " + L.need + " XP";
-    const st = P.st.all || { p: 0, w: 0, s: 0, b: 0 }, box = $("pcStats"); box.innerHTML = "";
-    [["Matches", st.p], ["Wins", st.w], ["Best streak", st.b], ["Badges", Object.keys(P.ach).length + "/" + ACH.length]].forEach(([k, v]) => { const d = mk("div", "pc-stat"); d.append(mk("b", null, String(v)), mk("small", null, k)); box.appendChild(d); });
-    document.getElementById("profileCard").style.setProperty("--ac", P.col);
+    const box = $("pcPass"); if (!box) return;
+    const pub = profile.public();
+    box.innerHTML = "";
+    box.appendChild(passCard(pub, { xp: levelOf(P.xp), ids: true, tilt: true, empty: !P.name }));
+    const st = P.st.all || { p: 0, w: 0, s: 0, b: 0 }, sb = $("pcStats"); if (!sb) return; sb.innerHTML = "";
+    [["Matches", st.p], ["Wins", st.w], ["Best streak", st.b], ["Badges", Object.keys(P.ach).length + "/" + ACH.length]].forEach(([k, v]) => { const d = mk("div", "pc-stat"); d.append(mk("b", null, String(v)), mk("small", null, k)); sb.appendChild(d); });
+    const card = $("profileCard"); if (card) card.style.setProperty("--ac", P.col);
 }

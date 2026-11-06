@@ -2,7 +2,7 @@
 
 *(formerly Guess Who: Anime Edition)*
 
-A browser party game for a squad of up to 8 friends with nine anime modes in one room; the ninth, ARCADE VAULT, is the economy (coins, shop, card packs, collection, card battles):
+A browser party game for a squad of up to 8 friends with ten anime modes in one room (the ninth, Anime TCG, is a trading card game; the tenth, Night Party, a tournament of the others), plus a Shop for cosmetics and a Wardrobe for your Arcade Pass:
 
 | Mode | Players | Identity |
 |---|---|---|
@@ -14,7 +14,8 @@ A browser party game for a squad of up to 8 friends with nine anime modes in one
 | **Anime Feud** | 2–8 (Team vs Team) | *Game Show*: a classic blue TV studio, buzzer podiums, a marquee-bulb board; game-show sounds (answer ding, wrong-answer buzzer, applause, fanfare) and bouncy show music |
 | **Most Likely** | 2–8 (Team vs Team or Free For All) | *Hot Takes*: a dark, fiery argument (smoky glass, embers, two burning cards around a VS crest); fire crackle, clash hits, taiko and an aggressive drum-and-bass theme |
 | **Anime Sketch** | 2–8 (everyone draws in turn) | *Draw & Guess*: the art room after hours (a white sheet taped to a dark desk, sticky-note round counter, lined-paper word strip, marker lettering); pencil scribbles, a marimba "got it!", soft pops, a light lo-fi groove |
-| **Arcade Vault** | 1–8, everyone at their own pace | *Vault cabinet*: picking it in the lobby gives every player their own Vault page (Shop, Scratch Cards, Packs, Collection, Decks, Battle); card battles are challenges between players in the room, 1v1 or free-for-all, watchable by the rest |
+| **Anime TCG** | 1–8, everyone at their own pace | *Card table*: picking it in the lobby gives every player their own Anime TCG page (Packs Store, Collection, Decks, Battle) on a playmat, with a binder, deck boxes and a duel board; card battles are challenges between players in the room, 1v1 or free-for-all, watchable by the rest |
+| **Night Party** | 2–8 | *Festival night*: a tournament that runs the other modes as stages; see below |
 
 ## How the modes scale
 
@@ -261,21 +262,45 @@ Picked under **Game type** in the lobby (Classic / Contest; default Classic). Ev
 - **Firebase:** the same three nodes. In `sketch` a contest holds the public word, the round's artists (`ent`), who is done, the ratings (`rt`, rater → drawing → stars), the gallery order and a round log with every drawing's stars. Every move (done, rate, timeout, check, next, join) is a transaction checked against the round number. Moves that end a phase name it, and the rating moves name the drawing on screen (`gi`), so a late duplicate can't skip one. In `sketchInk` each stroke also carries its owner (`o`). The previous round's strokes are deleted when the next round starts.
 - **Honest limit:** the strokes and ratings are in the shared room, so someone using the developer tools could peek at other sheets while drawing, or see who gave which stars. Normal players can't.
 
-## ARCADE VAULT (mode 9: the economy and card battles)
+## ANIME TCG (mode 9), the Shop, the Wardrobe and the economy
 
 **One currency: AAP Coins.** The arcade **CREDIT** counter at the top of the main menu is the AAP Coin balance (live);
-the same balance shows in the lobby, on the Vault page and next to every price (coin icon). Shards are not a currency:
-they are what duplicate cards turn into, and they only craft packs.
+the same balance shows in the lobby, in the Shop, on the Anime TCG page and next to every price (coin icon). The CREDIT
+counter and the lobby's coin chip open the Shop. Shards are not a currency: they are what duplicate cards turn into, and
+they only craft packs.
 
-The **Arcade Vault** is ONE page (`#arcadeVault`, `js/vault/vault.js` + `tabs.js`, tabs Shop, Scratch Cards, Packs,
-Collection, Decks, Battle) with two ways in:
-- **Main menu** (the ARCADE VAULT button, or the CREDIT counter): no room. Instead of the room code and friends it shows
-  HOST PARTY (makes a room; you land in its lobby) and JOIN (a room code). Everything works except battles and trades;
-  the Battle tab says "Host a party or join one to battle". ‹ Menu goes back to the main menu.
-- **A room's lobby**, by picking the ARCADE VAULT mode: every player gets their own page (no shared screen), with the
-  room code, the friends in the room and, for the host, Close room. ‹ Lobby goes back (the lobby then shows ENTER THE
-  VAULT; the host keeps the normal mode controls).
-The ★ Daily button opens the login streak, missions and coin history.
+**The Shop** (`js/vault/shoppage.js`, `css/shop.css`) is its own section, not a game mode: the storefront tile under the
+logo on the main menu, or the Shop button at the top of the lobby (a full-screen sheet over the lobby, so closing it
+returns to the same room with everyone still there). Season 1 skins (Frame + Background per tier, bundle -20%) and
+scratch cards (Basic / Silver / Gold -> titles, title skins, username styles). The try-on is your Arcade Pass. Buying
+never equips: after every purchase and every new scratch prize, **Equip now** (sits next to Keep browsing) equips it in
+the right slot at once and shows it on the pass; otherwise equip it later in the Wardrobe.
+
+**The Wardrobe** (`js/wardrobe.js`) is "Edit player card": display name, profile picture (gallery or upload, accent
+colour), Frame (Season 1 frames + arcade frames from levels / achievements), Background, Title (level titles + Shop
+titles), Title skins, Username styles and Card sleeves (Anime TCG, from completed series), with your achievements and
+Night Party record. Owned items are selectable, the rest greyed out with where to get them ("Get it in the Shop" opens
+the Shop on that item). The live preview is the Arcade Pass. Nothing is applied until Save profile; closing discards.
+Equipping happens only here (and through Equip now).
+
+**The Arcade Pass** (`passCard` in `js/profile.js`) is a credit card (1.586:1, rounded corners, edge highlight and
+shadow, a golden EMV chip on the right): the picture with the equipped frame, the equipped background over the whole
+card, the name with its username style, the title with its title skin, the level and the XP bar. The same function
+draws the main menu card, the Wardrobe preview and the Shop try-on; the background skin is the same CSS as the lobby
+seats (`.sbg[data-bg=<tier>]` in `css/vault.css`), so the pass and the lobby card always match. The stats sit below the
+card and Edit player card is its own button under it.
+
+The **Anime TCG** is ONE page (`#arcadeVault`, `js/vault/vault.js` + `tabs.js`, `css/tcg.css`; internal id
+`cardvault`, saved data unchanged) with four tabs: Packs Store (a booster shelf), Collection (a binder with 9-pocket
+pages; trades), Decks (deck boxes; the builder shows the 10 slots and the Power / Defense curve) and Battle (a duel
+board). Two ways in:
+- **Main menu** (the ANIME TCG button under Host a party): no room. Instead of the room code and friends it shows
+  HOST PARTY (makes a room; you land on its Anime TCG page) and JOIN (a room code). Everything works except battles and
+  trades; the Battle tab says "Host a party or join one to battle". ‹ Menu goes back to the main menu.
+- **A room's lobby**, by picking the ANIME TCG mode: every player gets their own page (no shared screen), with the
+  room code, the friends in the room (the Battle tab lists them) and, for the host, Close room. ‹ Lobby goes back (the
+  lobby then shows ENTER ANIME TCG; the host keeps the normal mode controls).
+The ★ Daily button (on the Anime TCG page and in the Shop) opens the login streak, missions and coin history.
 **Every number** (prices, odds, rewards, pity, life totals, timers, mode lengths, challenge expiry, skin animation
 speeds) is in one file: `js/vault/config.js`. The full card list with rarity, stats and abilities is `docs/cards.md`
 (generated).
@@ -301,13 +326,13 @@ hidden by the interface, as in the other modes.
   **Background** ("Iron Background - Season 1"), bundle -20%. Two separate slots, both seen by everyone in the room:
   the Frame is the animated ring around the circular picture (`.ava.sf-<tier>`: the ring's metal or gem, a layer masked
   to the ring for glints / facets / ripples, and a layer just outside it for sparkles, flames, bubbles, orbiting lights);
-  the Background restyles the whole player card, the lobby seat with its stripes, 1P tag and angled corners
-  (`.seat.sbg[data-bg=<tier>]`, its animated layer runs under the diagonal-stripe base motif). Both are CSS only
-  (transforms and opacity), pause while scrolled off-screen, and fall back to a still version under Reduced effects.
-  The try-on shows your real lobby card (`seatCard` in `js/profile.js`, the same builder the lobby uses) with any frame
-  and any background together before you buy. Scratch Cards (Basic 60, Silver 150, Gold 350): the prize (title, title skin, username
-  colour / effect) is rolled when you buy, scratching only reveals it; duplicates refund 20 / 60 / 150 / 400. The
-  Wardrobe equips everything. Cosmetics can't be traded; a duplicate from any future source refunds 50%.
+  the Background restyles the whole player card: the lobby seat with its stripes, 1P tag and angled corners, and the
+  whole Arcade Pass (`.sbg[data-bg=<tier>]`, its animated layer runs under the diagonal-stripe base motif). Both are CSS
+  only (transforms and opacity), pause while scrolled off-screen, and fall back to a still version under Reduced
+  effects. Scratch Cards (Basic 60, Silver 150, Gold 350): the prize (title, title skin, username colour / effect) is
+  rolled when you buy, scratching only reveals it; duplicates refund 20 / 60 / 150 / 400. The Wardrobe equips
+  everything (or Equip now right after a purchase). Cosmetics can't be traded; a duplicate from any future source
+  refunds 50%.
 - **Cards.** One card per Anime Draft character (831, all 18 series), generated by `node tools/cards-build.mjs`: rarity
   from the Draft's power + story rank inside each series (Common to Mythic), an archetype (Brawler, Tank, Speedster,
   Trickster, Healer, Mage, Support), Power + Defense nearly flat across rarities, and one ability by rarity
@@ -353,7 +378,7 @@ hidden by the interface, as in the other modes.
   better makes the stack glow first), reactions by rarity (Legendary / Mythic: a canvas cinematic), hold to inspect
   (3D tilt, light, holo parallax, card thickness), summary with NEW, shards and the pity counter. Sounds are generated
   (Web Audio). Timings in `OPENING` (config). The pull is rolled and saved before the animation. Dev page: `dev/pack.html`.
-- **Close room** (host, from the lobby, the in-game menu or the Vault page): after a confirmation the room is deleted
+- **Close room** (host, from the lobby, the in-game menu or the Anime TCG page): after a confirmation the room is deleted
   from the database. Every client returns to the main menu ("The host closed the room.") and the code can't be joined
   again. Leaving clients cancel their own disconnect flag before the page unloads, and the host deletes once more a
   moment later, so nothing is left behind. Offline, the host still lands on the main menu (no reload) and the delete is
@@ -411,8 +436,9 @@ player count, with the estimated duration. START NIGHT PARTY whenever everyone i
 ## Menu and lobby
 
 - **Main menu** (`css/menu.css`; the cards and panel are built by `buildHomeModes` / `pickGuide` in `js/game.js`).
-  - **Hero:** the logo, the tagline, **Host a party** (*insert coin*: a coin drops into the slot and the credit counter ticks before the room is made), the six-cell room-code entry, and the counts (games, players, one room code). Fire is used as light: a slow ember glow along the floor and embers drifting up.
-  - **Arcade Pass:** a notched collectible card on smoked glass with a gold edge that follows the notches, the player's colour as a foil stripe and avatar ring, a faint emblem watermark, a sheen that follows the pointer, the contact chip, a level tag, the XP bar and the hi-score table as four tiles. Edit player card as before.
+  - **Hero:** the logo, the tagline, the **Shop** storefront tile (deliberately unlike the game tiles: landscape, an awning, neon lettering, "NOT A GAME · SHOP"), **Host a party** (*insert coin*: a coin drops into the slot and the credit counter ticks before the room is made), the six-cell room-code entry, and the counts (games, players, one room code). Fire is used as light: a slow ember glow along the floor and embers drifting up.
+  - **Arcade Pass:** the credit-card player card (see "The Arcade Pass" above), Edit player card under it (opens the Wardrobe), then the hi-score stats. The ANIME TCG button sits under Host a party / Join.
+  - **The 10 game tiles:** two balanced rows of 5 (2 columns x 5 rows on phones), the same poster tiles in the lobby's mode picker (plus who voted, the cursors and SELECTED). Anime TCG is a holo-framed trading card with a card back peeking out; Night Party a festival night with string lights.
   - **Pick your game / How to play:** one card per mode, then the How to Play panel for the picked one (the same rules as the in-room rules sheet, each with a short headline, plus player count and format). The cards are a tablist (arrow keys, Home, End); the last pick is remembered. **Host a … party** opens a room already on that game.
   - **Each mode has its own skin**, shared by its card and its panel: Guess Who a noir case file with a magnifying glass and yellow evidence markers; Headbanz a polaroid pinned to a cork case board with typewriter type; Imposter a dark camera feed with scanlines and a glitch; Anime UNO a playing card ringed in the four deck colours; Anime Draft a foil trading card with rarity gems; Anime Feud a blue studio panel ringed with marquee bulbs; Most Likely two sides split by a burning seam with a VS badge; Anime Sketch a taped sheet with a pencil-sketch picture and marker lettering. Adding a mode = an entry in `MODES`, `RULES` and `GUIDE` (game.js) and one `[data-mode]` block in `menu.css`.
   - **Discord: @e47** sits small in the bottom-left corner.

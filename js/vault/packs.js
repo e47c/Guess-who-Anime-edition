@@ -1,5 +1,5 @@
 /* =====================================================================
-   ARCADE VAULT · PACKS, COLLECTION, DECKS, TRADES (pure; tested in tools/vault-test.mjs)
+   ANIME TCG · PACKS, COLLECTION, DECKS, TRADES (pure; tested in tools/vault-test.mjs)
    Collection: w.cards[id] = { n (normal copy 0/1), h (holo copy 0/1), at, by ("first pulled by" stamp), w (wins) }.
    The first copy of a card (and the first holo copy) is kept; any further copy turns into shards
    (Common 5 ... Mythic 500, Holo x2). Shards craft a pack of any series.
@@ -13,8 +13,8 @@
    5. the cards go into the collection right away (the opening animation only reveals them), in reveal order:
       lowest rarity first, best last.
    ===================================================================== */
-import { PACKS, SHARDS, RARITY_ORDER, DECK, TRADE } from "./config.js?v=7";
-import { CARDS, BY_SERIES, BY_SERIES_RARITY, CARD_SERIES } from "./carddb.js?v=2";
+import { PACKS, SHARDS, RARITY_ORDER, DECK, TRADE } from "./config.js?v=8";
+import { CARDS, BY_SERIES, BY_SERIES_RARITY, CARD_SERIES } from "./carddb.js?v=3";
 import { rngFrom, pickWeighted, pickInt, shuffleWith } from "./rng.js?v=1";
 
 export const owned = (w, id) => { const c = (w.cards || {})[id]; return !!c && (c.n > 0 || c.h > 0); };

@@ -48,11 +48,11 @@ recomputes them every time, so the scoring can always be redone from the stored 
 | Launch with a preset settings object (the lobby UI's schema) | `js/party/stages.js` (schema, normaliser), `modeLaunch` in `js/game.js` | Settings existed only as room keys written by the lobby UI | Added. The schema keys are exactly the room keys each mode reads, which are also the ones its result reports (unit-tested) |
 | Deal in only some players (bracket match, sudden death) | `dealSlots(d)` in game.js + `seatsOnly` in the room | Every start dealt in everyone | Added. An optional `rooms/<code>/seatsOnly`; when absent, everyone is dealt in exactly as before. Every mode's start honours it, and it's cleared with the match |
 | Preset teams | `teamPatch` (stages.js) | Team splits lived in `feudTeams` / `likelyTeams` / `draftSides` | Launch writes the given split into the same key |
-| Tie-aware result `{ mode, players, placements, scores, duration, settings, teams? }` | `js/vault/result.js` | Already there for every mode (Arcade Vault phase 1) | None |
+| Tie-aware result `{ mode, players, placements, scores, duration, settings, teams? }` | `js/vault/result.js` | Already there for every mode (Anime TCG phase 1) | None |
 | Metadata: min / max, teams, 1v1, FFA, length, fast | `MODE_META` in `js/vault/config.js` | Had `duel` (meaning "playable by 2"), no FFA flag | Now `teams`, `ffa`, `oneVone` (a match is exactly 2: Night Party brackets it), `length`, `fast`, `stage` |
 | Start / end / abort the controller can drive | `window.AAP_MODES` in game.js | START, lobby reset and the result existed separately | `launch`, `over`, `result`, `abort`, `prep` (see below) |
 | Only the host reports results | `resultSync` in game.js | Host writes `lastResult`; a guest only pays its own Vault from its own copy if the host is gone for 5 s | None. The controller only reads the host's result |
-| Arcade Vault battles addable later | `registerStage(id, meta)` | n/a | Arcade Vault is `stage: false`. One `registerStage` call adds it (unit-tested with a stand-in) |
+| Anime TCG battles addable later | `registerStage(id, meta)` | n/a | Anime TCG is `stage: false`. One `registerStage` call adds it (unit-tested with a stand-in) |
 
 `AAP_MODES` (host side; the Night Party controller will receive the same functions):
 - `launch(mode, settings, { seats?, teams?, prepMs?, startMs? })` normalises the settings. It writes the mode,
@@ -80,7 +80,7 @@ so as a stage it needs an even player count and N = players / 2.
   - Feud with a given team split. Draft Build with given sides, and Draft Auction.
   - Sketch for 2 of 3 players. Headbanz for 2 of 3, after waiting for pictures. UNO for everyone, after waiting
     for the deck. Imposter for everyone.
-  - Imposter with 2 seats fails cleanly. Arcade Vault is refused. A guest can't launch.
+  - Imposter with 2 seats fails cleanly. Anime TCG is refused. A guest can't launch.
   - Abort returns everyone to the lobby with the seat list cleared.
   - The normal START still deals in everyone. No page errors.
 - [x] Browser regressions: Vault and close room (av2) 32, hosting (hostentry) 8, results (res) 25, Daily drawer

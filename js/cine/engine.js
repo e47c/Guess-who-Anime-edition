@@ -11,13 +11,13 @@
    - reduced motion / Reduced effects: a short card banner instead
    Scenes: freeze.js, swap.js, ult.js, peek.js. Each one: { col, ms, main(g, X, T), seal|tailFx|tail... }
    ===================================================================== */
-import { audio } from "../audio.js?v=2";
+import { audio } from "../audio.js?v=3";
 import { isReduced } from "../fx.js";
 import * as K from "./kit.js?v=11";
 import { FREEZE } from "./freeze.js?v=11";
 import { SWAP } from "./swap.js?v=11";
 import { ULT } from "./ult.js?v=11";
-import { PEEK } from "./peek.js?v=13";
+import { PEEK } from "./peek.js?v=14";
 
 let A = null;                 // game hooks (see initCine)
 /* api: { hbEl, unoCardEl, unoNext, plateRect(p), me(), arr } */

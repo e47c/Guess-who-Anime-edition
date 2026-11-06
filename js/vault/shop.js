@@ -1,11 +1,11 @@
 /* =====================================================================
-   ARCADE VAULT · SHOP RULES (pure; tested in tools/vault-test.mjs)
+   ANIME TCG · SHOP RULES (pure; tested in tools/vault-test.mjs)
    Season 1 skins (each tier as a Frame = the ring around the picture, and a Background = the whole player card;
    bundle -20%), scratch cards,
    the wardrobe (what's equipped) and duplicate refunds. Cosmetics can't be traded or gifted.
    Inventory: w.inv[itemId] = 1. Equipped: w.equip = { sf, bg, title, ts, uc, sleeve } (item ids, "" = none).
    ===================================================================== */
-import { SKINS, SCRATCH } from "./config.js?v=7";
+import { SKINS, SCRATCH } from "./config.js?v=8";
 import { rngFrom, pickWeighted, pickInt } from "./rng.js?v=1";
 
 /* ---------- the catalogue ---------- */

@@ -1,10 +1,10 @@
 /* Night Party unit tests: node tools/party-test.mjs
    Phase 1: the stage registry (metadata, settings schema, formats, fits, team patches) and its match with the
    standard result every mode reports. */
-import { MODE_META } from "../js/vault/config.js?v=7";
-import { RESULT_MODES, RESULT_SETTINGS } from "../js/vault/result.js?v=3";
+import { MODE_META } from "../js/vault/config.js?v=8";
+import { RESULT_MODES, RESULT_SETTINGS } from "../js/vault/result.js?v=4";
 import { basePoints, sharePoints, stagePoints, teamPlacements, adjustPlacements, standings, topTied, leadGap, lateStart, seedOrder, splitTeams, seedSlots, makeBracket, normBracket, nextMatch, recordWin, bracketDone, matchesLeft, bracketPlacements, sdWinners } from "../js/party/scoring.js?v=1";
-import { STAGE_SETTINGS, registerStage, stageIds, stageMeta, fastStages, normalizeSettings, defaultSettings, formatOf, stageFits, teamPatch, estMinutes, estTotal } from "../js/party/stages.js?v=2";
+import { STAGE_SETTINGS, registerStage, stageIds, stageMeta, fastStages, normalizeSettings, defaultSettings, formatOf, stageFits, teamPatch, estMinutes, estTotal } from "../js/party/stages.js?v=3";
 import { NIGHT_PARTY } from "../js/party/config.js?v=1";
 
 let pass = 0, fail = 0;
@@ -14,8 +14,8 @@ const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 sect("registry");
 const modes = Object.keys(MODE_META).filter(m => MODE_META[m].stage !== false);
-t(eq(stageIds().sort(), modes.slice().sort()), "every mode except Arcade Vault is a stage (" + stageIds().join(", ") + ")");
-t(!stageMeta("cardvault") && MODE_META.cardvault.stage === false, "Arcade Vault battles are not a stage yet");
+t(eq(stageIds().sort(), modes.slice().sort()), "every mode except Anime TCG is a stage (" + stageIds().join(", ") + ")");
+t(!stageMeta("cardvault") && MODE_META.cardvault.stage === false, "Anime TCG battles are not a stage yet");
 t(stageIds().every(id => RESULT_MODES.includes(id)), "every stage reports the standard result");
 t(stageIds().every(id => { const m = stageMeta(id); return m.min >= 2 && m.max <= 8 && m.min <= m.max && ["short", "medium", "long"].includes(m.length) && (m.teams || m.ffa || m.oneVone); }), "every stage has players, a length and at least one format");
 t(eq(fastStages().sort(), ["classic", "likely"]), "fast stages (tiebreaker pool): Guess Who and Most Likely");

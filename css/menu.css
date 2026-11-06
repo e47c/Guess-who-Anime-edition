@@ -221,7 +221,7 @@ body[data-scene="home"] .arc-floor { display: none; }
 .sec-kick::before { content: ""; width: 26px; height: 2px; background: linear-gradient(90deg, var(--red), var(--gold-bright)); }
 .modes-head h2 { margin: 0; font: 400 clamp(28px, 3.6vw, 44px)/1 var(--f-title); color: #fff; }
 .modes-head p { margin: 4px 0 0; max-width: 62ch; font: 500 15px/1.45 var(--f-ui); color: rgba(251,246,238,.62); }
-.mode-rail { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.mode-rail { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }      /* 10 games = 2 rows of 5 (2 x 5 on phones) */
 
 /* the shared card: art, a readable foot, the mode's own decoration on top */
 .mtab { --mc: var(--gold); --lift: 0px; position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; aspect-ratio: 3 / 4; min-width: 0; padding: 12px; border: 0; border-radius: 14px; overflow: hidden;
@@ -405,8 +405,7 @@ body[data-scene="home"] .arc-floor { display: none; }
 
 /* ---------- smaller screens ---------- */
 @media (max-width: 1100px) {
-    .mode-rail { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .mtab { aspect-ratio: 4 / 3.4; }
+    .mode-rail { gap: 10px; }
 }
 @media (max-width: 900px) {
     .home-main { grid-template-columns: minmax(0, 1fr); }
@@ -421,9 +420,8 @@ body[data-scene="home"] .arc-floor { display: none; }
     .aa-logo { font-size: clamp(40px, 14.5vw, 64px); }
     .home-hero { text-align: left; }
     .home-facts { gap: 8px 16px; } .home-facts li + li::before { margin-right: 6px; }
-    .mode-rail { display: flex; gap: 10px; margin: 0 -12px 16px; padding: 4px 12px 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
-    .mode-rail::-webkit-scrollbar { display: none; }
-    .mtab { flex: 0 0 40vw; aspect-ratio: 3 / 4; scroll-snap-align: start; }
+    .mode-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .mtab { aspect-ratio: 4 / 4.4; }
     .g-steps { grid-template-columns: minmax(0, 1fr); }
     .guide { padding: 16px; border-radius: 18px; }
     .g-foot .btn { flex: 1 1 100%; }
@@ -432,3 +430,66 @@ body[data-scene="home"] .arc-floor { display: none; }
 }
 body.fx-lite .home-fire i, body.fx-lite #homeTitle .aa-mark, body.fx-lite .mtab[data-mode="feud"] .mt-deco { animation: none !important; }
 body.fx-lite .profile-card::before { backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* =========================================================
+   ANIME TCG and NIGHT PARTY: the same poster tile as the other eight (tag, art, kanji, title, players footer),
+   each with its own identity. Card + panel share each block, like the rest.
+========================================================= */
+/* ANIME TCG · a trading card: holo-foil frame, a card back peeking out, gem-cut corners */
+[data-mode="cardvault"] { --mc: #b38bff; --mfont: var(--f-title); }
+.mtab[data-mode="cardvault"] { padding: 14px; border-radius: 10px; background: #120a22; box-shadow: inset 0 0 0 3px #1a0f2e, inset 0 0 0 5px rgba(179,139,255,.75), 0 14px 28px rgba(0,0,0,.45); }
+.mtab[data-mode="cardvault"] .mt-art { inset: 9px; border-radius: 6px; }
+.mtab[data-mode="cardvault"] .mt-art img { filter: brightness(.62) saturate(1.15) hue-rotate(-10deg); }
+.mtab[data-mode="cardvault"]::after { inset: 9px; border-radius: 6px; background: linear-gradient(180deg, rgba(18,10,34,.1) 30%, rgba(18,10,34,.95) 100%); }
+.mtab[data-mode="cardvault"] .mt-deco { right: -14%; bottom: 24%; width: 46%; aspect-ratio: 63 / 88; border-radius: 6px; transform: rotate(14deg); z-index: -1;
+    background: radial-gradient(circle at 50% 50%, rgba(255,215,106,.9) 0 9%, transparent 10%), repeating-linear-gradient(45deg, rgba(255,255,255,.12) 0 3px, transparent 3px 9px), linear-gradient(135deg, #3a1f6e, #1c0f3a);
+    box-shadow: inset 0 0 0 2px #e6d6ff, 0 6px 14px rgba(0,0,0,.6); transition: transform .4s var(--e-out); }
+.mtab[data-mode="cardvault"]:hover .mt-deco, .mtab[data-mode="cardvault"].on .mt-deco, .mtab[data-mode="cardvault"].selected .mt-deco { transform: rotate(6deg) translate(-10%, -4%); }
+.mtab[data-mode="cardvault"]::before { background: linear-gradient(90deg, #4dd9ff, #b38bff, #ffd76a); }
+.mtab[data-mode="cardvault"] .mt-tag { color: #12081f; background: linear-gradient(90deg, #e6d6ff, #b38bff); }
+.guide[data-mode="cardvault"] { background: radial-gradient(ellipse 55% 60% at 0% 0%, rgba(179,139,255,.2), transparent 70%), repeating-linear-gradient(45deg, rgba(179,139,255,.035) 0 6px, transparent 6px 18px), #0d0718; }
+.guide[data-mode="cardvault"] .g-img { border-radius: 8px; border: 4px solid #e6d6ff; box-shadow: 0 0 0 2px #3a1f6e, 0 16px 32px rgba(0,0,0,.55); }
+.guide[data-mode="cardvault"] .g-num { border-radius: 6px; color: #12081f; background: linear-gradient(135deg, #e6d6ff, #b38bff); }
+
+/* NIGHT PARTY · a festival night: string lights, a neon marquee, confetti */
+[data-mode="party"] { --mc: #ff9f43; --mfont: var(--f-title); }
+.mtab[data-mode="party"] { border-radius: 14px 14px 4px 14px; background: #1a0a04; }
+.mtab[data-mode="party"] .mt-art img { filter: brightness(.55) saturate(1.2) sepia(.15); }
+.mtab[data-mode="party"]::after { background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,159,67,.25), transparent 70%), linear-gradient(180deg, rgba(10,4,2,.1) 25%, rgba(10,4,2,.95) 100%); }
+.mtab[data-mode="party"] .mt-deco { left: 0; right: 0; top: 30px; height: 16px;
+    background: radial-gradient(circle 4px at 10px 9px, #ffd76a 0 3px, transparent 4.5px) 0 0 / 22px 16px repeat-x, radial-gradient(circle 4px at 21px 11px, #ff5a8a 0 3px, transparent 4.5px) 0 0 / 22px 16px repeat-x;
+    filter: drop-shadow(0 0 4px rgba(255,200,100,.9)); }
+.mtab[data-mode="party"] .mt-name { text-shadow: 0 0 10px rgba(255,159,67,.8), 0 2px 0 #000; }
+.mtab[data-mode="party"]::before { background: linear-gradient(90deg, #ffd76a, #ff9f43, #ff5a8a); }
+.guide[data-mode="party"] { background: radial-gradient(ellipse 55% 60% at 100% 0%, rgba(255,159,67,.2), transparent 70%), radial-gradient(circle 2px at 20px 20px, rgba(255,215,106,.35), transparent 3px) 0 0 / 46px 46px, #120804; }
+.guide[data-mode="party"] .g-img { border-radius: 12px; box-shadow: 0 0 0 3px #ff9f43, 0 16px 32px rgba(0,0,0,.55); }
+.guide[data-mode="party"] .g-num { border-radius: 50%; color: #1a0d02; background: radial-gradient(circle at 35% 30%, #ffe2b8, #ff9f43); }
+body.fx-lite .mtab[data-mode="cardvault"] .mt-deco { transition: none; }
+
+/* =========================================================
+   THE LOBBY MODE PICKER = the same tiles (.mtab.lm), plus who voted, the cursors and SELECTED
+========================================================= */
+.lobby-modes { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: 10px; }
+.mtab.lm { aspect-ratio: 3 / 4.1; padding: 10px; animation-delay: calc(.05s + var(--i) * .04s); }
+.mtab.lm .mt-name { font-size: clamp(13px, 1.05vw, 17px); }
+.mtab.lm .mt-tag { left: 8px; top: 8px; font-size: 8px; letter-spacing: .14em; max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mtab.lm .mt-kanji { font-size: 24px; }
+.mtab.lm .mt-pl { font-size: 9px; letter-spacing: .08em; }
+.mtab.lm.selected { --lift: -6px; box-shadow: 0 0 0 3px var(--mc), 0 16px 32px rgba(0,0,0,.55), 0 0 30px color-mix(in srgb, var(--mc) 45%, transparent); }
+.mtab.lm.selected::before { width: 50%; }
+.mtab.lm.selected .mt-art img { filter: brightness(.82) saturate(1.1); }
+.mtab.lm .mc-sel { display: none; }
+.mtab.lm .mc-brk { position: absolute; inset: 4px; z-index: 2; pointer-events: none; opacity: 0;
+    background: linear-gradient(var(--mc), var(--mc)) top left / 14px 3px no-repeat, linear-gradient(var(--mc), var(--mc)) top left / 3px 14px no-repeat, linear-gradient(var(--mc), var(--mc)) top right / 14px 3px no-repeat, linear-gradient(var(--mc), var(--mc)) top right / 3px 14px no-repeat,
+        linear-gradient(var(--mc), var(--mc)) bottom left / 14px 3px no-repeat, linear-gradient(var(--mc), var(--mc)) bottom left / 3px 14px no-repeat, linear-gradient(var(--mc), var(--mc)) bottom right / 14px 3px no-repeat, linear-gradient(var(--mc), var(--mc)) bottom right / 3px 14px no-repeat; }
+.mtab.lm.selected .mc-brk { opacity: 1; animation: brkPulse .9s ease-in-out infinite alternate; }
+.mtab.lm .mc-curs { position: absolute; left: 8px; top: 28px; z-index: 4; display: flex; flex-wrap: wrap; gap: 3px; max-width: 80%; }
+.mtab.lm .mc-votes { position: absolute; right: 8px; top: 30px; z-index: 4; display: flex; }
+.mtab.lm.unfit { filter: saturate(.55); }
+.mtab.lm.unfit .mc-players { color: #ff8a8a; }
+.mtab.lm:disabled { cursor: default; opacity: .75; }
+.mtab.lm.flash { animation: lmFlash .6s ease-out; }
+@keyframes lmFlash { 0% { filter: brightness(1.8); } 100% { filter: none; } }
+@media (max-width: 1180px) { .mtab.lm .mt-tag { display: none; } .mtab.lm .mc-curs { top: 8px; } .mtab.lm .mc-votes { top: 8px; } }
+@media (max-width: 760px) { .lobby-modes { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } .mtab.lm { aspect-ratio: 4 / 3.6; } .mtab.lm .mt-tag { display: block; } .mtab.lm .mc-curs, .mtab.lm .mc-votes { top: 28px; } .mtab.lm .mt-name { font-size: 16px; } }
+body.fx-lite .mtab.lm.selected .mc-brk, body.fx-lite .mtab.lm.flash { animation: none; }

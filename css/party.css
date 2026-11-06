@@ -226,5 +226,3 @@ body.fx-lite .np-bg i, body.fx-lite .np-crown { animation: none; }
 body.fx-lite .np-tok { transition: none; }
 body.fx-lite .np-confetti { display: none; }
 @media (prefers-reduced-motion: reduce) { .np-bg i, .np-crown { animation: none; } .np-tok { transition: none; } }
-.mtab[data-mode="party"] .mt-deco { background: repeating-linear-gradient(115deg, transparent 0 14px, rgba(255,159,67,.18) 14px 16px); }
-[data-mode="party"] { --mc: #ff9f43; }

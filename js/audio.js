@@ -93,7 +93,7 @@ function sfx(name, opt) {
 }
 const chord = (o, t, ms, step, v, w) => ms.forEach((m, i) => V.pluck(o, t + i * step, m, .5, v, w || "triangle", 3800, .35));
 const FX = {
-    // Arcade Vault pack opening (all generated: filtered noise + a few tones, no downloads)
+    // Anime TCG pack opening (all generated: filtered noise + a few tones, no downloads)
     whoosh(o, t) { const g = gainTo(o, 0); env(g, t, .12, .5, .35, .001); const b = filt("bandpass", 500, 1.2, g); b.frequency.setValueAtTime(400, t); b.frequency.exponentialRampToValueAtTime(3200, t + .4); noise(t, .55, b); send(g, .2); },
     tick(o, t) { V.pluck(o, t, 96, .03, .35, "square", 7000, 0); },
     cardShine(o, t) { V.sweep(o, t, 3000, 9000, .35, .35, 4); V.bell(o, t + .05, 96, .25, .6); },
@@ -101,7 +101,7 @@ const FX = {
     stRare(o, t) { chord(o, t, [72, 76, 79, 84], .05, .7); V.sweep(o, t, 1200, 5000, .5, .35, 4); },
     stUltra(o, t) { V.kick(o, t, .9); chord(o, t + .02, [74, 78, 81, 86], .035, .9, "sawtooth"); V.sweep(o, t, 8000, 900, .5, .6, 3); },
     stEpic(o, t) { V.kick(o, t, 1.1); V.snare(o, t + .03, .6, .3); V.sweep(o, t, 200, 7000, .6, .7, 2); chord(o, t + .12, [77, 81, 84, 89, 93], .04, 1, "sawtooth"); },
-    // Arcade Vault: packs, scratch cards, card battles
+    // Anime TCG: packs, scratch cards, card battles
     rip(o, t) { V.sweep(o, t, 2200, 9500, .34, 1.1, 1.1); V.snare(o, t + .02, .75, .24); V.hat(o, t + .12, .6, true); V.sweep(o, t + .18, 6000, 2000, .2, .5, 2); },
     epicHit(o, t) { V.kick(o, t, 1); V.sweep(o, t, 6000, 1200, .3, .8, 3); chord(o, t + .05, [76, 83, 88], .03, .9); },
     legendary(o, t) { V.sweep(o, t, 200, 6000, 1.1, .7, 3); V.pad(o, t, [48, 55, 60, 64], 2.6, .9, 1500, "sawtooth"); [72, 76, 79, 84, 88, 91].forEach((m, i) => V.bell(o, t + .45 + i * .11, m, .8, 2.6)); V.kick(o, t + 1.05, 1.2); },

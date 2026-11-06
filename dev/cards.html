@@ -34,8 +34,8 @@ h2 { margin: 22px 0 8px; font: 600 22px/1 Teko; letter-spacing: .06em; text-tran
 <select id="series"><option value="">every series</option></select><span id="count"></span></div>
 <div id="out"></div>
 <script type="module">
-import { CARDS, BY_SERIES, CARD_SERIES } from "../js/vault/carddb.js?v=2";
-import { cardEl, theme, artPlace } from "../js/vault/cardui.js?v=4";
+import { CARDS, BY_SERIES, CARD_SERIES } from "../js/vault/carddb.js?v=3";
+import { cardEl, theme, artPlace } from "../js/vault/cardui.js?v=5";
 const focus = await fetch("../data/card-focus.json").then(r => r.json()).catch(() => ({}));
 const fix = await fetch("../data/card-focus-fix.json").then(r => r.json()).catch(() => ({}));
 let size = "sm";

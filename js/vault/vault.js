@@ -1,28 +1,29 @@
 /* =====================================================================
-   ARCADE VAULT · hub module
+   ANIME TCG + ECONOMY · hub module (the internal id "cardvault" and the saved keys stay as they were)
    Owns the player's bank (storage layer, store.js), pays finished matches (the standard result from
    result.js, reported by game.js), the daily login bonus and daily missions (economy.js), and draws the
-   ARCADE VAULT page (#arcadeVault, tabs: Shop, Scratch Cards, Packs, Collection, Decks, Battle). ONE page, two
-   ways in: the ARCADE VAULT mode in a room's lobby (in-room: the room code, the friends in the room, battles), or
-   the ARCADE VAULT entry on the main menu (no room: HOST PARTY and JOIN instead; everything but battles and trades
-   works). Same tabs, same data, same look. Also: the CREDIT counter and coin chips (the AAP Coin balance, the only
-   currency), the daily-bonus sheet, the rewards drawer (streak, missions, coin history), the coin pop-up.
+   ANIME TCG page (#arcadeVault, tabs: Packs Store, Collection, Decks, Battle). ONE page, two ways in: the ANIME TCG
+   mode in a room's lobby (in-room: the room code, the friends in the room, battles), or the ANIME TCG button on the
+   main menu (no room: HOST PARTY and JOIN instead; everything but battles and trades works). The Shop is its own
+   section (shoppage.js) and the Wardrobe lives in the player card editor (js/wardrobe.js). Also: the CREDIT counter
+   and coin chips (the AAP Coin balance, the only currency; they open the Shop), the daily-bonus sheet, the rewards
+   drawer (streak, missions, coin history), the coin pop-up.
    Every coin change goes through bank.apply(opId, ...), so a reload, a reconnect or a double click
    never pays twice.
    ===================================================================== */
-import { createBank, localBackend } from "./store.js?v=7";
-import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=7";
-import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=6";
+import { createBank, localBackend } from "./store.js?v=8";
+import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=8";
+import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=7";
 import { newSeed } from "./rng.js?v=1";
-import { grantStarter, recordBattle, grantToken, activeDeck, deckProblem } from "./packs.js?v=5";
-import { publicLook } from "./shop.js?v=5";
-import { initOpening } from "./opening.js?v=4";
-import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=5";
+import { grantStarter, recordBattle, grantToken, activeDeck, deckProblem } from "./packs.js?v=6";
+import { publicLook } from "./shop.js?v=6";
+import { initOpening } from "./opening.js?v=5";
+import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=6";
 import { motionOK } from "../fx.js";
 
 export const bank = createBank(localBackend());
 export { MODE_META, FEATURES };
-["packs", "scratch", "decks", "battle", "party"].forEach(f => FEATURES.add(f));      // every part of the Vault now exists: their missions can roll
+["packs", "scratch", "decks", "battle", "party"].forEach(f => FEATURES.add(f));      // every part of the economy exists: their missions can roll
 
 const $ = id => document.getElementById(id);
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -53,7 +54,7 @@ async function payGame(r, ctx) {
     if (!res.ok || res.dup) return;
     setTimeout(() => coinPop(res.result), 2600);
 }
-/* other parts of the Vault report actions that missions count: kind = pack | scratch | deck */
+/* the Shop and Anime TCG report actions that missions count: kind = pack | scratch | deck */
 export function vaultEvent(kind, opId) {
     return bank.apply(opId, "event", (w, x) => { ensureMissions(w, x.now, newSeed(), x.log); return { missions: missionEvent(w, { [kind]: 1 }, x.log) }; }, { silent: true })
         .then(res => { if (res.ok && !res.dup && res.result.missions.length) setTimeout(() => missionToast(res.result.missions), 400); return res; });
@@ -81,7 +82,7 @@ function coinPop(o) {
     el.appendChild(mk("small", "cp-l", line));
     if (o.why) el.appendChild(mk("small", "cp-why", (o.coins ? "Cut: " : "No coins: ") + o.why));
     (o.missions || []).forEach(m => el.appendChild(mk("small", "cp-m", "✔ " + m.text + "  +" + m.coins)));
-    if (o.token) el.appendChild(mk("small", "cp-m", "🎁 Free pack of any series: open it in the Vault's Packs tab"));
+    if (o.token) el.appendChild(mk("small", "cp-m", "🎁 Free pack of any series: open it in Anime TCG's Packs Store"));
     el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
     if (o.coins) X.sfx("coin"); else X.sfx("tick");
     clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("show"), 5200 + (o.missions || []).length * 900);
@@ -102,20 +103,19 @@ function renderChips(animate) {
     const vb = $("vtBal"); if (vb) vb.textContent = fmt(to);
 }
 
-/* ---------- the Vault page ---------- */
-const TABS = [{ id: "shop", name: "Shop", ico: "◆" }, { id: "scratch", name: "Scratch Cards", ico: "✦" }, { id: "packs", name: "Packs", ico: "▣" },
-    { id: "collection", name: "Collection", ico: "❖" }, { id: "decks", name: "Decks", ico: "≡" }, { id: "battle", name: "Battle", ico: "⚔" }];
-let tab = "shop", pageOn = false, pageDismissed = false, roomD = null, bodySig = "", homeOpen = false, joinOpen = false;
+/* ---------- the Anime TCG page ---------- */
+const TABS = [{ id: "packs", name: "Packs Store", ico: "▣" }, { id: "collection", name: "Collection", ico: "❏" }, { id: "decks", name: "Decks", ico: "▤" }, { id: "battle", name: "Battle", ico: "⚔" }];
+let tab = "packs", pageOn = false, pageDismissed = false, roomD = null, bodySig = "", homeOpen = false, joinOpen = false;
 const inRoom = () => !!(X.inRoom && X.inRoom());
 try { const t = localStorage.getItem("aap_vault_tab"); if (TABS.some(x => x.id === t)) tab = t; } catch (e) {}
 const vaultRoom = d => !!d && !d.np && d.gameType === "cardvault" && (!d.status || d.status === "waiting");
-/* a Night Party in an intermission (or on its results / winner screen): anyone may open their own Vault page */
+/* a Night Party in an intermission (or on its results / winner screen): anyone may open their own Anime TCG page */
 const NP_PAUSE = ["next", "match", "results", "failed", "winner"];
 const npPause = d => !!d && !!d.np && (!d.status || d.status === "waiting") && NP_PAUSE.includes(d.np.phase);
 let npOn = false;
 export const vaultCanOpen = d => npPause(d);
-/* game.js asks on every room update while the room is in the lobby: should this player see their Vault page?
-   Yes as soon as the lobby is on ARCADE VAULT, until they go back to the lobby (then: the lobby's Enter button). */
+/* game.js asks on every room update while the room is in the lobby: should this player see their Anime TCG page?
+   Yes as soon as the lobby is on ANIME TCG, until they go back to the lobby (then: the lobby's Enter button). */
 export function vaultWanted(d) {
     if (d && d.np) { if (!npPause(d)) npOn = false; return npOn; }       // Night Party: only during intermissions, only on request
     npOn = false;
@@ -130,21 +130,21 @@ export function openVault(which) {
         X.showOnly("arcadeVault"); window.scrollTo(0, 0); renderVault(); return;
     }
     const rd = X.roomData ? X.roomData() : null;
-    if (rd && rd.np) { if (!npPause(rd)) { X.toast("The Vault opens between Night Party stages."); return; } npOn = true; bodySig = ""; X.sfx("start"); X.refresh(); return; }
-    if (!vaultRoom(rd)) { X.toast("In a room, the Vault opens when the lobby picks the ARCADE VAULT mode."); return; }
+    if (rd && rd.np) { if (!npPause(rd)) { X.toast("Anime TCG opens between Night Party stages."); return; } npOn = true; bodySig = ""; X.sfx("start"); X.refresh(); return; }
+    if (!vaultRoom(rd)) { X.toast("In a room, Anime TCG opens when the lobby picks the ANIME TCG mode."); return; }
     pageOn = true; pageDismissed = false; bodySig = ""; X.sfx("start"); X.refresh();
 }
-/* leave the Vault: to the lobby (in a room) or to the main menu (no room) */
+/* leave Anime TCG: to the lobby (in a room) or to the main menu (no room) */
 export function vaultBack() {
     X.sfx("close");
     if (!inRoom()) { homeOpen = false; X.showOnly("home"); return; }
     if (npOn) { npOn = false; X.refresh(); return; }
     pageOn = false; pageDismissed = true; X.refresh();
 }
-/* no-room context: HOST PARTY makes a room on ARCADE VAULT and lands on its Vault page (createRoom in game.js);
+/* no-room context: HOST PARTY makes a room on ANIME TCG and lands on its page (createRoom in game.js);
    JOIN takes a code and lands in that room's lobby */
 export function landInLobby() { pageOn = false; pageDismissed = true; homeOpen = false; }
-export function arriveInVault() { pageOn = false; pageDismissed = false; homeOpen = false; bodySig = ""; }      // the room's Vault page opens on arrival
+export function arriveInVault() { pageOn = false; pageDismissed = false; homeOpen = false; bodySig = ""; }      // the room's Anime TCG page opens on arrival
 function hostParty() { X.sfx("coin"); X.hostParty(); }
 function joinParty(code) { code = String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6); if (code.length !== 6) { X.toast("Enter a 6-character room code."); return; } landInLobby(); X.joinParty(code); }
 /* draw the page; on room updates only a tab that reads the room is redrawn (Battle, trades) */
@@ -304,8 +304,8 @@ export function initVault(ctx) {
     if (!bank.get().starter) bank.apply("starter", "starter", (w, x) => grantStarter(w, newSeed(), "Starter deck", x.now));   // every new player: a free 10-card starter deck
     if (X.setLook) { const look = publicLook(bank.get()); X.setLook(look); }
     window.openVault = openVault; window.vaultBack = vaultBack; window.vaultRewards = openRewards;
-    /* the coin chips only show the balance; in a lobby on ARCADE VAULT the chip also opens the Vault */
-    window.vaultChip = () => { if (!inRoom() || vaultRoom(X.roomData ? X.roomData() : null)) openVault(); else X.toast("Your AAP Coins. In a room, spend them in the ARCADE VAULT mode (pick it in the lobby)."); };
+    /* the coin chips show the balance and open the Shop (where coins are spent on cosmetics) */
+    window.vaultChip = () => { if (window.openShop) window.openShop(); };
     window.vaultClaimDaily = async () => { const r = await doClaim(); if (r.ok) setTimeout(() => X.closeOverlay("daily"), motionOK() ? 900 : 200); };
     ["vaultRw", "daily"].forEach(id => { const o = $(id); if (o) o.addEventListener("click", e => { if (e.target === o) X.closeOverlay(id); }); });
     bank.onChange(() => { renderChips(true); if (pageVisible()) renderVault(); });

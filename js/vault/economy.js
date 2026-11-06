@@ -1,5 +1,5 @@
 /* =====================================================================
-   ARCADE VAULT · ECONOMY RULES (pure: no DOM, no storage; unit-tested in tools/vault-test.mjs)
+   ANIME TCG · ECONOMY RULES (pure: no DOM, no storage; unit-tested in tools/vault-test.mjs)
    Every function here changes a vault document `w` handed in by bank.apply(), so it is saved atomically
    and at most once per operation id. Numbers come from config.js.
 
@@ -12,7 +12,7 @@
    4. Paid only if: 2+ real players (distinct accounts) and the game lasted the mode's minimum length.
       There is no daily limit on coins from games.
    ===================================================================== */
-import { EARN, DAILY_LOGIN, MISSIONS, MODE_META, BATTLE } from "./config.js?v=7";
+import { EARN, DAILY_LOGIN, MISSIONS, MODE_META, BATTLE } from "./config.js?v=8";
 import { rngFrom, shuffleWith } from "./rng.js?v=1";
 import { NIGHT_PARTY } from "../party/config.js?v=1";
 

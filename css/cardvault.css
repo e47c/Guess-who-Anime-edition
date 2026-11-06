@@ -79,7 +79,6 @@
 .cv-dkst b { font-weight: 700; } .cv-dkst small { margin-left: auto; color: #ff9a8a; font: 600 12px/1 var(--f-mono); } .cv-dkst.ok small { color: #7dff9a; }
 .cv-mydeck { margin: 8px 0 0; font: 600 13px/1.4 var(--f-ui); color: #ffd76a; }
 /* menu card + lobby skin */
-.mtab[data-mode="cardvault"] .mt-deco { background: repeating-linear-gradient(115deg, transparent 0 14px, rgba(179,139,255,.18) 14px 16px); }
 #lobby[data-mode="cardvault"] .seat { clip-path: none; border-radius: 10px; background: radial-gradient(ellipse 80% 55% at 50% 38%, color-mix(in srgb, var(--pc) 28%, transparent), transparent 75%), linear-gradient(180deg, #160e24, #07050c); box-shadow: inset 0 0 0 1px rgba(179,139,255,.35), 0 10px 22px rgba(0,0,0,.45); }
 #lobby[data-mode="cardvault"] .seat .seat-no { color: #12081f; background: linear-gradient(135deg, #e6d6ff, #b38bff); }
 body.fx-lite .cv-dmg, body.fx-lite .cv-heal, body.fx-lite .cv-ban, body.fx-lite .cv-ko { animation: none !important; opacity: 1; transform: none; }
