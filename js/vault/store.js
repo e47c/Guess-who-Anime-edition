@@ -18,7 +18,7 @@
      document first, so two tabs can't both spend the same coins.
    - A coin balance never goes below 0 (spend() refuses instead).
    ===================================================================== */
-import { VAULT } from "./config.js?v=2";
+import { VAULT } from "./config.js?v=3";
 
 export const VAULT_KEY = "aap_vault_v1";
 const DAY = 86400000;
@@ -34,9 +34,12 @@ export function blankVault(now = Date.now()) {
         earn: { day: "", games: 0 },             // coins from games today (daily cap)
         missions: { day: "", list: [] },
         modes: {},                               // mode -> last time played (for the "try a mode" mission)
-        inv: {}, equip: {},                      // cosmetics owned / equipped
-        pity: { normal: 0, premium: 0 },
-        cards: {}, shards: 0, decks: [], pending: []
+        inv: {}, equip: {},                      // cosmetics owned ({id: 1}) / equipped ({slot: id})
+        pity: { normal: 0, premium: 0 },         // packs in a row without the pity rarity
+        cards: {}, shards: 0,                    // collection {id: {n, h, at, by, w}} + crafting shards
+        decks: [], activeDeck: "", starter: 0,   // saved 10-card decks
+        pending: [], tokens: {}, packsOpened: 0, // rolled-but-unrevealed packs, free pack tokens
+        locks: {}, battles: { p: 0, w: 0 }       // cards held in open trade offers, card battle record
     };
 }
 

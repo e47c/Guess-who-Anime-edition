@@ -7,14 +7,19 @@
    Every coin change goes through bank.apply(opId, ...), so a reload, a reconnect or a double click
    never pays twice.
    ===================================================================== */
-import { createBank, localBackend } from "./store.js?v=2";
-import { MODE_META, DAILY_LOGIN, EARN, VAULT as VCFG } from "./config.js?v=2";
-import { applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, FEATURES } from "./economy.js?v=1";
+import { createBank, localBackend } from "./store.js?v=3";
+import { MODE_META, DAILY_LOGIN, EARN, VAULT as VCFG } from "./config.js?v=3";
+import { applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, FEATURES } from "./economy.js?v=2";
 import { newSeed } from "./rng.js?v=1";
+import { grantStarter, recordBattle, grantToken, activeDeck, deckProblem } from "./packs.js?v=1";
+import { publicLook } from "./shop.js?v=1";
+import { initOpening } from "./opening.js?v=1";
+import { renderTab, initTabs, roomSync as tabsRoomSync } from "./tabs.js?v=1";
 import { motionOK } from "../fx.js";
 
 export const bank = createBank(localBackend());
 export { MODE_META, FEATURES };
+["packs", "scratch", "decks", "battle"].forEach(f => FEATURES.add(f));      // every part of the Vault now exists: their missions can roll
 
 const $ = id => document.getElementById(id);
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -33,7 +38,15 @@ export function reportResult(r, ctx) {
 async function payGame(r, ctx) {
     const me = r.players.find(p => p.slot === ctx.me);
     if (!me || (ctx.uid && me.uid && me.uid !== ctx.uid)) return;          // spectators and other seats earn nothing here
-    const res = await bank.apply("game:" + ctx.room + ":" + r.key, "game", (w, x) => applyGame(w, r, ctx.me, x.now, newSeed(), x.log));
+    const res = await bank.apply("game:" + ctx.room + ":" + r.key, "game", (w, x) => {
+        const out = applyGame(w, r, ctx.me, x.now, newSeed(), x.log);
+        if (r.mode === "cardvault") {          // the cards you played count toward their "veteran" mark; the optional free pack for the winner
+            const place = (r.placements.find(p => p.slot === ctx.me) || {}).place;
+            recordBattle(w, ctx.cvUsed || [], place === 1);
+            if (place === 1 && r.settings && r.settings.cvPack) { grantToken(w, "normal", 1); out.token = 1; x.log({ kind: "token", d: 0, info: "free pack (battle win)" }); }
+        }
+        return out;
+    });
     if (!res.ok || res.dup) return;
     setTimeout(() => coinPop(res.result), 2600);
 }
@@ -55,6 +68,7 @@ function coinPop(o) {
     el.appendChild(mk("small", "cp-l", line));
     if (o.why) el.appendChild(mk("small", "cp-why", (o.coins ? "Cut: " : "No coins: ") + o.why));
     (o.missions || []).forEach(m => el.appendChild(mk("small", "cp-m", "✔ " + m.text + "  +" + m.coins)));
+    if (o.token) el.appendChild(mk("small", "cp-m", "🎁 Free pack of any series: open it in the Vault"));
     el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
     if (o.coins) X.sfx("coin"); else X.sfx("tick");
     clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("show"), 5200 + (o.missions || []).length * 900);
@@ -76,11 +90,7 @@ function renderChips(animate) {
 }
 
 /* ---------- the Vault sheet ---------- */
-const TABS = [
-    { id: "rewards", name: "Rewards" }, { id: "shop", name: "Shop", soon: "Season 1 frames, backgrounds and scratch cards" },
-    { id: "packs", name: "Packs", soon: "A pack for every series" }, { id: "collection", name: "Collection", soon: "Every card you own, series by series" },
-    { id: "deck", name: "Deck", soon: "Build 10-card decks" }, { id: "battle", name: "Battle", soon: "Anime Card Vault: card battles with your friends" }
-];
+const TABS = [{ id: "rewards", name: "Rewards" }, { id: "shop", name: "Shop" }, { id: "packs", name: "Packs" }, { id: "collection", name: "Collection" }, { id: "deck", name: "Deck" }, { id: "battle", name: "Battle" }];
 let tab = "rewards";
 try { const t = localStorage.getItem("aap_vault_tab"); if (TABS.some(x => x.id === t)) tab = t; } catch (e) {}
 export function openVault(which) {
@@ -92,7 +102,7 @@ function renderVault() {
     const nav = $("vtTabs"), body = $("vtBody"); if (!nav || !body) return;
     nav.innerHTML = "";
     TABS.forEach(t => {
-        const b = mk("button", "vt-tab" + (t.id === tab ? " on" : "") + (t.soon ? " soon" : ""), t.name); b.type = "button";
+        const b = mk("button", "vt-tab" + (t.id === tab ? " on" : ""), t.name); b.type = "button";
         b.setAttribute("role", "tab"); b.setAttribute("aria-selected", t.id === tab);
         if (t.id === "rewards" && !loginState(bank.get(), Date.now()).claimed) b.appendChild(mk("i", "vt-dot"));
         b.onclick = () => { tab = t.id; try { localStorage.setItem("aap_vault_tab", tab); } catch (e) {} X.sfx("toggle"); renderVault(); };
@@ -101,7 +111,7 @@ function renderVault() {
     body.innerHTML = "";
     const T = TABS.find(t => t.id === tab);
     if (tab === "rewards") body.appendChild(rewardsTab());
-    else { const s = mk("div", "vt-soon"); s.append(mk("b", null, T.name), mk("p", null, T.soon), mk("small", null, "Opens in a coming update.")); body.appendChild(s); }
+    else renderTab(tab, body, H);
     renderChips(false);
 }
 function streakTrack(st, big) {
@@ -147,7 +157,7 @@ function rewardsTab() {
     wrap.appendChild(ec);
     // history
     const hc = mk("details", "vt-card vt-hist"); hc.appendChild(mk("summary", null, "Coin history"));
-    const LBL = { game: "Game", daily: "Daily login", mission: "Mission", missions: "New missions", grant: "Gift", spend: "Spent", start: "Welcome" };
+    const LBL = { game: "Game", daily: "Daily login", mission: "Mission", missions: "New missions", grant: "Gift", spend: "Spent", start: "Welcome", skin: "Shop", bundle: "Shop bundle", scratch: "Scratch card", pack: "Pack", craft: "Crafted pack", starter: "Starter deck", trade: "Trade", token: "Free pack" };
     const lines = bank.ledger().filter(l => l.d || l.kind === "missions").slice(-25).reverse();
     if (!lines.length) hc.appendChild(mk("p", "vt-rule", "Nothing yet. Finish a game or claim your daily bonus."));
     lines.forEach(l => {
@@ -186,8 +196,20 @@ export function maybeShowDaily() {
 }
 
 /* ---------- wiring ---------- */
+/* what the tabs get (tabs.js) */
+const H = {
+    bank, act: (opId, kind, fn) => bank.apply(opId, kind, fn), rerender: () => renderVault(), event: (k, op) => vaultEvent(k, op), x: () => X,
+    setLook() { X.setLook && X.setLook(publicLook(bank.get())); }, newSeed, open: id => openVault(id)
+};
+export const vaultTabs = id => openVault(id);
+export function roomSync(d) { tabsRoomSync(d); }
+export function activeDeckCards() { const w = bank.get(), d = activeDeck(w); return d && !deckProblem(w, d.cards) ? { name: d.name, cards: d.cards.slice() } : null; }
 export function initVault(ctx) {
     X = Object.assign(X, ctx);
+    initOpening({ sfx: X.sfx, stamp: id => { const c = (bank.get().cards || {})[id]; return c ? { by: c.by, at: c.at } : null; }, sleeve: () => ((bank.get().equip || {}).sleeve || "").replace(/^sl_/, "") });
+    initTabs(H);
+    if (!bank.get().starter) bank.apply("starter", "starter", (w, x) => grantStarter(w, newSeed(), "Starter deck", x.now));   // every new player: a free 10-card starter deck
+    if (X.setLook) { const look = publicLook(bank.get()); X.setLook(look); }
     window.openVault = openVault;
     window.vaultClaimDaily = async () => { const r = await doClaim(); if (r.ok) setTimeout(() => X.closeOverlay("daily"), motionOK() ? 900 : 200); };
     ["vault", "daily"].forEach(id => { const o = $(id); if (o) o.addEventListener("click", e => { if (e.target === o) X.closeOverlay(id); }); });

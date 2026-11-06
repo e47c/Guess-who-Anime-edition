@@ -5,7 +5,7 @@
    XP bar (+ level up) -> achievements -> action buttons.
    It owns one canvas loop that stops by itself; call the returned close().
    ===================================================================== */
-import { avatarEl } from "./profile.js";
+import { avatarEl, styleName, styleTitle } from "./profile.js?v=2";
 import { audio } from "./audio.js";
 import { motionOK, countUp } from "./fx.js";
 
@@ -38,8 +38,8 @@ export function showResults(o) {
             const c = mk("div", "vx-pl" + (r.win ? " champ" : "") + (r.me ? " me" : "")); c.style.setProperty("--i", i);
             if (r.win) c.appendChild(mk("div", "vx-crown", "👑"));
             c.appendChild(avatarEl(r.player, { size: r.win ? 92 : 64, badge: true }));
-            c.appendChild(mk("b", "vx-pn", (r.player && r.player.name) || "Player"));
-            if (r.player && r.player.ttl) c.appendChild(mk("small", "vx-pt", r.player.ttl));
+            c.appendChild(styleName(mk("b", "vx-pn", (r.player && r.player.name) || "Player"), r.player));
+            if (r.player && r.player.ttl) c.appendChild(styleTitle(mk("small", "vx-pt", r.player.ttl), r.player));
             if (r.score != null) c.appendChild(mk("div", "vx-ps", String(r.score)));
             if (r.label) c.appendChild(mk("div", "vx-pl-l", r.label));
             pod.appendChild(c);

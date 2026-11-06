@@ -2,7 +2,7 @@
 
 *(formerly Guess Who: Anime Edition)*
 
-A browser party game for a squad of up to 8 friends with eight anime modes in one room:
+A browser party game for a squad of up to 8 friends with nine anime modes in one room, plus the Arcade Vault (coins, shop, card packs, collection):
 
 | Mode | Players | Identity |
 |---|---|---|
@@ -14,6 +14,7 @@ A browser party game for a squad of up to 8 friends with eight anime modes in on
 | **Anime Feud** | 2–8 (Team vs Team) | *Game Show*: a classic blue TV studio, buzzer podiums, a marquee-bulb board; game-show sounds (answer ding, wrong-answer buzzer, applause, fanfare) and bouncy show music |
 | **Most Likely** | 2–8 (Team vs Team or Free For All) | *Hot Takes*: a dark, fiery argument (smoky glass, embers, two burning cards around a VS crest); fire crackle, clash hits, taiko and an aggressive drum-and-bass theme |
 | **Anime Sketch** | 2–8 (everyone draws in turn) | *Draw & Guess*: the art room after hours (a white sheet taped to a dark desk, sticky-note round counter, lined-paper word strip, marker lettering); pencil scribbles, a marimba "got it!", soft pops, a light lo-fi groove |
+| **Anime Card Vault** | 1v1 (2–8 in the room) or free-for-all 3–8 | *Card Battle*: your Vault deck; pick in secret, flip together, clash Power against Defense with rarity-styled cards, ability banners and a battle log |
 
 ## How the modes scale
 
@@ -260,36 +261,59 @@ Picked under **Game type** in the lobby (Classic / Contest; default Classic). Ev
 - **Firebase:** the same three nodes. In `sketch` a contest holds the public word, the round's artists (`ent`), who is done, the ratings (`rt`, rater → drawing → stars), the gallery order and a round log with every drawing's stars. Every move (done, rate, timeout, check, next, join) is a transaction checked against the round number. Moves that end a phase name it, and the rating moves name the drawing on screen (`gi`), so a late duplicate can't skip one. In `sketchInk` each stroke also carries its owner (`o`). The previous round's strokes are deleted when the next round starts.
 - **Honest limit:** the strokes and ratings are in the shared room, so someone using the developer tools could peek at other sheets while drawing, or see who gave which stars. Normal players can't.
 
-## Arcade Vault (economy) · in progress
+## Arcade Vault (economy) and Anime Card Vault (mode 9)
 
-Being built in phases: coins (AAP Coins), daily rewards, missions, a shop, scratch cards, series packs, a card
-collection and decks, and Anime Card Vault (mode 9, a card battle).
+The coin chip on the home screen, the player card and the lobby opens the **Arcade Vault**: one sheet with the tabs
+Rewards, Shop, Packs, Collection, Deck and Battle. **Every number** (prices, odds, rewards, pity, life totals, timers,
+mode lengths) is in one file: `js/vault/config.js`. The full card list with rarity, stats and abilities is
+`docs/cards.md` (generated).
 
-- **Every mode reports one standard result** when a match ends: `{ key, mode, players, placements (ties share a place),
-  scores, teams?, duration, settings }`. It is built by `js/vault/result.js` from the room's own final state, so it never
-  changes how a mode plays. The host stores it once in `rooms/<code>/lastResult` and every client reports that same object
-  (if the host is gone, each client builds it from the room state after 5 s). `key` is one per started match, so a reload, a
-  reconnect or a Headbanz sudden death never counts a match twice.
-- **Per-mode metadata** (players, teams, 1v1, short/medium/long, fast) and **every balance number** (prices, odds, rewards,
-  life totals) live in one file: `js/vault/config.js`.
-- **Storage layer** (`js/vault/store.js`): coins, collection, decks, pity, missions and streaks are one document per player.
-  Like the profile, it is stored in this browser (localStorage `aap_vault_v1`): this site has no server and the Firebase
-  rules only allow writes under `rooms/`. Every change goes through `bank.apply(opId, ...)`: idempotent (an operation id
-  pays once), atomic across tabs (Web Locks), never below 0 coins, and logged with its seed in a ledger. A server backend
-  can replace the local one without touching the callers.
-- **Earning coins (phase 2):** the coin chip on the home screen and in the lobby opens the Vault (Rewards tab for now).
-  - A finished game pays by placement: with 8 players 40, 34, 28, 24, 20, 16, 13, 10; with fewer an even spread from 40 to 10.
-    Players who share a place (a tie, or a whole team) get the average of the places they cover. x0.75 for short modes,
-    x1.5 for long ones (lengths in `MODE_META`). A pop-up shows what you got and why.
-  - Anti-farming: only with 2+ different accounts, only if the game lasted the mode's minimum (short 1 min, medium 2.5,
-    long 4), and at most 600 coins from games per day. Spectators earn nothing.
-  - Daily login: 30, 30, 40, 40, 50, 50, 100, then it repeats; a missed day starts over. The bonus sheet opens once a day
-    on the home screen (never inside a room) and stays claimable in the Vault.
-  - Daily missions: 3 a day from the pool in `config.js`, one always "play a mode you haven't played in 7 days". They pay
-    the moment they're done. Missions about packs, scratch cards, decks and card battles only appear once those exist.
-  - The Rewards tab also lists today's game coins against the cap and a coin history (every roll with its seed).
-  - The Night Party bonus (winner +100, +10 per stage) has a hook (`nightPartyCoins`) for the tournament builder.
-- Tests: `node tools/vault-test.mjs`.
+**Storage and fairness.** The site has no server of its own and the Firebase rules only allow writes under `rooms/`,
+so coins, cards, decks, cosmetics, pity counters, missions and streaks are kept in this browser (localStorage
+`aap_vault_v1`, next to the profile). All of it goes through one bank (`js/vault/store.js`): every change is an
+operation with an id, applied at most once (a double click, a reload or a second tab never pays twice), atomic across
+tabs (Web Locks), never below 0 coins, and logged in a ledger with the seed of every random roll (packs, scratch cards,
+missions, starter deck), so any roll can be replayed. A server backend can replace the browser one without touching
+the rest. In rooms the host resolves battles and stores every match result; hidden information (hands, picks) is
+hidden by the interface, as in the other modes.
+
+- **Results.** Every mode reports one standard result when a match ends: `{ key, mode, players, placements (ties share
+  a place), scores, teams?, duration, settings }`, built by `js/vault/result.js` from the room's final state. The host
+  stores it in `rooms/<code>/lastResult`. Per-mode metadata (players, teams, 1v1, length, fast) is `MODE_META`.
+- **Earning coins.** By placement: 40, 34, 28, 24, 20, 16, 13, 10 with 8 players, an even spread from 40 to 10 with
+  fewer; ties and teams share the average of the places they cover; x0.75 short / x1 medium / x1.5 long. Only with 2+
+  accounts, only past the mode's minimum length, at most 600 a day from games. Daily login 30, 30, 40, 40, 50, 50, 100
+  (a missed day resets it). 3 daily missions, one always "play a mode you haven't played in 7 days". Night Party bonus:
+  hook only (`nightPartyCoins`).
+- **Shop.** Season 1 skins: each tier (Iron 150 ... Prismatic 3000; Flame and Water animated) as a Frame and a
+  Background, bundle -20%, previewed on the exact lobby seat. Frames, backgrounds and pictures are all clipped to the same
+  circle (no square corners). Scratch cards (Basic 60, Silver 150, Gold 350): the prize (title, title skin, username
+  colour / effect) is rolled when you buy, scratching only reveals it; duplicates refund 20 / 60 / 150 / 400. The
+  Wardrobe equips everything. Cosmetics can't be traded; a duplicate from any future source refunds 50%.
+- **Cards.** One card per Anime Draft character (831, all 18 series), generated by `node tools/cards-build.mjs`: rarity
+  from the Draft's power + story rank inside each series (Common to Mythic), an archetype (Brawler, Tank, Speedster,
+  Trickster, Healer, Mage, Support), Power + Defense nearly flat across rarities, and one ability by rarity
+  (`js/cardvault/abilities.js`). Rarity decides the frame (matte steel ... embossed gold ... the Mythic void), the series
+  decides colours, ornaments, holo pattern, card back and pack art. No official logos: stylised text and simple emblems.
+- **Packs.** Per series. Normal 150 (5 cards), Premium 400 (6 cards, metallic gold foil, one Rare+). Odds, Holo 8% /
+  12%, pity (Ultra Rare+ within 20 Normal packs, Legendary+ within 30 Premium) as specified; a pack only holds its own
+  series. Duplicates turn into shards (Common 5 ... Mythic 500, Holo double); 100 / 250 shards craft a pack of any series.
+  Opening: float, swipe to tear (rip sound, foil confetti), flip one card at a time with reactions by rarity (full-screen
+  reveal for Legendary / Mythic), hold to inspect (tilt with finger, mouse or the phone's motion), summary with NEW tags
+  and shards. A rolled pack is saved before the animation, so a reload never re-rolls it.
+- **Collection and decks.** A book per series with completion (a finished series gets a gold edge and unlocks its card
+  sleeve). Decks of exactly 10 different cards (up to 8 decks); everyone starts with a free Starter Deck (10
+  Common/Uncommon cards, 5+ series, all 7 archetypes) and 100 coins. Cards in 10 winning battles get a Veteran mark.
+- **Anime Card Vault (mode 9).** Pick in secret, flip together, clash: damage = Power - Defense, then abilities, in the
+  order written at the top of `js/cardvault/engine.js`. 1v1: 20 life, hand 4, draw 1; free-for-all (3-8): 25 life and a
+  target. Pick timer with auto-pick, one grace pause for a disconnect, spectators, battle log. The host can turn on
+  "winner picks a free pack". Practice vs CPU from the Vault's Battle tab (no coins).
+- **Trades.** In a room, Collection › Trade with friends: up to 5 cards each way; the cards are locked while the offer is
+  open and each side swaps its own cards exactly once. Cards only.
+- **Balance.** `node tools/cardvault-test.mjs` simulates thousands of battles: in mixed decks a deck holding a given
+  card wins 48% (Common) to 53% (Mythic) of the time and no ability falls outside 44-60%; an all-Common deck still beats an all-Legendary/Mythic one now and
+  then. Re-run it after changing an ability or `BATTLE.statTotal`.
+- Tests: `node tools/vault-test.mjs` (economy, shop, scratch, packs, pity, decks, trades), `node tools/cardvault-test.mjs`.
 
 ## Customising
 

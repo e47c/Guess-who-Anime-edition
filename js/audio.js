@@ -93,6 +93,16 @@ function sfx(name, opt) {
 }
 const chord = (o, t, ms, step, v, w) => ms.forEach((m, i) => V.pluck(o, t + i * step, m, .5, v, w || "triangle", 3800, .35));
 const FX = {
+    // Arcade Vault: packs, scratch cards, card battles
+    rip(o, t) { V.sweep(o, t, 2200, 9500, .34, 1.1, 1.1); V.snare(o, t + .02, .75, .24); V.hat(o, t + .12, .6, true); V.sweep(o, t + .18, 6000, 2000, .2, .5, 2); },
+    epicHit(o, t) { V.kick(o, t, 1); V.sweep(o, t, 6000, 1200, .3, .8, 3); chord(o, t + .05, [76, 83, 88], .03, .9); },
+    legendary(o, t) { V.sweep(o, t, 200, 6000, 1.1, .7, 3); V.pad(o, t, [48, 55, 60, 64], 2.6, .9, 1500, "sawtooth"); [72, 76, 79, 84, 88, 91].forEach((m, i) => V.bell(o, t + .45 + i * .11, m, .8, 2.6)); V.kick(o, t + 1.05, 1.2); },
+    mythic(o, t) { V.pad(o, t, [37, 44, 49], 2.8, 1, 600); V.sweep(o, t, 9000, 160, .9, .9, 8); for (let i = 0; i < 7; i++) V.pluck(o, t + .55 + i * .055, 97 - i * 4, .05, .6, "square", 6000, .2); V.bell(o, t + 1.15, 85, 1, 3.4); V.bell(o, t + 1.18, 92, .6, 3); V.kick(o, t + 1.15, 1.3); },
+    shard(o, t) { [100, 105, 109].forEach((m, i) => V.bell(o, t + i * .05, m, .5, .9)); },
+    scratch(o, t) { V.sweep(o, t, 2600, 5200, .1, .45, 1.4); },
+    clash(o, t) { V.kick(o, t, 1.1); V.snare(o, t, .9, .12); V.sweep(o, t, 4000, 900, .2, .8, 4); },
+    ko(o, t) { V.tom(o, t, 70, 1.2); V.sweep(o, t, 1200, 90, .6, 1, 2); V.kick(o, t + .1, 1); },
+    ability(o, t) { V.pluck(o, t, 88, .08, .6, "triangle", 6000, .3); V.pluck(o, t + .06, 95, .1, .6, "triangle", 6000, .3); },
     hover(o, t) { V.pluck(o, t, 96, .05, .25, "sine", 6000, 0); },
     click(o, t) { V.pluck(o, t, 84, .06, .5, "square", 3000, 0); V.hat(o, t, .4); },
     toggle(o, t) { V.pluck(o, t, 79, .05, .5, "triangle", 4000, 0); V.pluck(o, t + .05, 86, .05, .4, "triangle", 4000, 0); },

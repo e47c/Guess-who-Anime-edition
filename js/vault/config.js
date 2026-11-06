@@ -23,7 +23,7 @@ export const MODE_META = {
     feud:      { name: "Anime Feud",       min: 2, max: 8, teams: true,  duel: true,  length: "long",   fast: false },
     likely:    { name: "Most Likely",      min: 2, max: 8, teams: true,  duel: true,  length: "medium", fast: true  },
     sketch:    { name: "Anime Sketch",     min: 2, max: 8, teams: false, duel: true,  length: "long",   fast: false },
-    cardvault: { name: "Anime Card Vault", min: 2, max: 8, teams: false, duel: true,  length: "medium", fast: true  }
+    cardvault: { name: "Anime Card Vault", min: 2, max: 8, teams: false, duel: true,  length: "short",  fast: true  }
 };
 
 /* ---------- A2. Earning coins ---------- */
@@ -79,10 +79,10 @@ export const SKINS = {
 
 /* ---------- A4. Scratch cards (rolled before the scratch UI; scratching only reveals) ---------- */
 export const SCRATCH = {
-    tiers: {
-        basic:  { name: "Basic",  price: 60,  odds: { common: 80, rare: 18, epic: 2, legendary: 0 } },
-        silver: { name: "Silver", price: 150, odds: { common: 45, rare: 40, epic: 13, legendary: 2 } },
-        gold:   { name: "Gold",   price: 350, odds: { common: 0,  rare: 45, epic: 40, legendary: 15 } }
+    tiers: {      // odds = reward rarity; types = what kind of reward (title, title skin, username colour/effect)
+        basic:  { name: "Basic",  price: 60,  odds: { common: 80, rare: 18, epic: 2, legendary: 0 },  types: { title: 50, ucol: 50 } },
+        silver: { name: "Silver", price: 150, odds: { common: 45, rare: 40, epic: 13, legendary: 2 }, types: { title: 40, tskin: 25, ucol: 35 } },
+        gold:   { name: "Gold",   price: 350, odds: { common: 0,  rare: 45, epic: 40, legendary: 15 }, types: { title: 35, tskin: 30, ucol: 35 } }
     },
     dupRefund: { common: 20, rare: 60, epic: 150, legendary: 400 }
 };
@@ -100,7 +100,8 @@ export const PACKS = {
 export const SHARDS = { common: 5, uncommon: 10, rare: 25, ultra: 60, epic: 120, legendary: 250, mythic: 500, holoMult: 2 };
 
 /* ---------- A7. Decks ---------- */
-export const DECK = { size: 10, maxCopies: 1, starterCount: 10 };
+export const DECK = { size: 10, maxCopies: 1, starterCount: 10, maxDecks: 8, veteranWins: 10 };
+export const TRADE = { maxCards: 5, maxOpen: 3 };      // cards per side of one offer, open offers per player
 
 /* ---------- B. Anime Card Vault ---------- */
 export const BATTLE = {
@@ -108,7 +109,7 @@ export const BATTLE = {
     ffa:  { life: 25, hand: 4, draw: 1, min: 3, max: 8 },
     pickSeconds: 30,                              // auto-pick when it runs out
     reconnectGrace: 20,                           // seconds a disconnected player is waited for before auto-picks
-    length: "medium",                             // for the coin multiplier
+    length: "short",                              // for the coin multiplier (a duel takes 2-4 minutes)
     winnerPackOption: true,                       // host setting: "winner picks a free pack of any series"
-    statTotal: { common: [10, 12], uncommon: [10, 12], rare: [11, 12], ultra: [11, 13], epic: [11, 13], legendary: [12, 13], mythic: [12, 14] }
+    statTotal: { common: [11, 12], uncommon: [11, 12], rare: [11, 12], ultra: [11, 12], epic: [11, 12], legendary: [11, 12], mythic: [12, 13] }   // Power + Defense per rarity (nearly flat on purpose)
 };

@@ -48,7 +48,7 @@ const MODE_KEYS = ["gw", "hb", "im", "uno"];
 function blank() {
     let legacy = ""; try { legacy = localStorage.getItem("gw_name") || ""; } catch (e) {}
     const c = COLORS[(Math.random() * COLORS.length) | 0];
-    return { v: 1, name: legacy, av: { t: "g", g: GLYPHS[(Math.random() * GLYPHS.length) | 0], c }, col: c, fr: "none", ttl: "rookie", xp: 0, st: {}, ach: {}, em: 0 };
+    return { v: 1, name: legacy, av: { t: "g", g: GLYPHS[(Math.random() * GLYPHS.length) | 0], c }, col: c, fr: "none", ttl: "rookie", xp: 0, st: {}, ach: {}, em: 0, sf: "", bg: "", ts: "", uc: "", vtn: "" };
 }
 let P = blank();
 try { const s = JSON.parse(localStorage.getItem(KEY) || "null"); if (s && s.v === 1) P = Object.assign(blank(), s); } catch (e) {}
@@ -63,7 +63,8 @@ export const profile = {
     update(patch) { Object.assign(P, patch); persist(); },
     level() { return levelOf(P.xp); },
     // the part other players see (kept small: it rides along on every room update)
-    public() { return { name: P.name || "Player", av: P.av, col: P.col, fr: P.fr, ttl: titleName(P.ttl), lvl: levelOf(P.xp).lvl }; },
+    // sf/bg/ts/uc/vtn = Arcade Vault cosmetics (Season frame, background, title skin, username style, Vault title), set from the Vault wardrobe
+    public() { return { name: P.name || "Player", av: P.av, col: P.col, fr: P.fr, ttl: P.vtn || titleName(P.ttl), lvl: levelOf(P.xp).lvl, sf: P.sf || "", bg: P.bg || "", ts: P.ts || "", uc: P.uc || "" }; },
     stats(mode) { return P.st[mode] || { p: 0, w: 0, s: 0, b: 0 }; },
     has(id) { return !!P.ach[id]; },
     unlock(id) { if (P.ach[id] || !ACH.find(a => a.id === id)) return null; P.ach[id] = Date.now(); persist(); return ACH.find(a => a.id === id); },
@@ -112,11 +113,16 @@ export function cleanAvatar(av) {
     return null;
 }
 /* p = a player node / profile.public(): { name, av, col, fr, lvl }. Returns a .ava element. */
+/* Layers, all clipped to the same circle (no square corners anywhere): the ring (level frame, or a Season frame),
+   an optional Season background inside it, the picture on top (inset when a background shows), the frame's shine. */
+const COSM = /^[a-z0-9]{1,24}$/;
 export function avatarEl(p, { size = 48, cls = "", badge = false } = {}) {
     p = p || {};
     const el = document.createElement("div"), av = cleanAvatar(p.av), col = /^#[0-9a-f]{3,8}$/i.test(p.col || "") ? p.col : "#e11b1b";
-    el.className = "ava fr-" + (FRAMES.some(f => f.id === p.fr) ? p.fr : "none") + (cls ? " " + cls : "");
+    const sf = COSM.test(p.sf || "") ? p.sf : "", bg = COSM.test(p.bg || "") ? p.bg : "";
+    el.className = "ava fr-" + (sf ? "none" : FRAMES.some(f => f.id === p.fr) ? p.fr : "none") + (sf ? " sf sf-" + sf : "") + (bg ? " has-bg" : "") + (cls ? " " + cls : "");
     el.style.setProperty("--ava", size + "px"); el.style.setProperty("--ac", col);
+    if (bg) { const b = document.createElement("div"); b.className = "ava-bg bg-" + bg; el.appendChild(b); }
     const inner = document.createElement("div"); inner.className = "ava-in";
     if (av && (av.t === "c" || av.t === "i")) {
         const img = new Image(); img.alt = ""; img.decoding = "async"; img.draggable = false; img.referrerPolicy = "no-referrer";
@@ -127,9 +133,13 @@ export function avatarEl(p, { size = 48, cls = "", badge = false } = {}) {
         inner.style.setProperty("--gc", av && av.c ? av.c : col);
     }
     el.appendChild(inner);
+    if (sf) { const s = document.createElement("i"); s.className = "ava-sheen"; el.appendChild(s); }
     if (badge && p.lvl) { const b = document.createElement("span"); b.className = "ava-lvl"; b.textContent = p.lvl; el.appendChild(b); }
     return el;
 }
+/* username style + title skin (Arcade Vault scratch-card rewards) on any element showing a name / title */
+export function styleName(elm, p) { if (elm && p && COSM.test(p.uc || "")) elm.classList.add("uc", "uc-" + p.uc); return elm; }
+export function styleTitle(elm, p) { if (elm && p && COSM.test(p.ts || "")) elm.classList.add("ts", "ts-" + p.ts); return elm; }
 const initials = n => (String(n || "?").trim().split(/\s+/).map(w => w[0]).join("").slice(0, 2) || "?").toUpperCase();
 
 /* ---------------- avatar gallery sources ---------------- */
@@ -156,14 +166,14 @@ const $ = id => document.getElementById(id);
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 
 export function openProfileEditor() {
-    draft = JSON.parse(JSON.stringify({ name: P.name, av: P.av, col: P.col, fr: P.fr, ttl: P.ttl }));
+    draft = JSON.parse(JSON.stringify({ name: P.name, av: P.av, col: P.col, fr: P.fr, ttl: P.ttl, ttl0: P.ttl }));
     $("profName").value = draft.name || "";
     renderEditor(); renderTabs(); renderGrid();
 }
 function renderEditor() {
     const pv = $("profPreview"); pv.innerHTML = "";
     const card = mk("div", "prof-card"); card.style.setProperty("--ac", draft.col);
-    card.appendChild(avatarEl({ name: draft.name, av: draft.av, col: draft.col, fr: draft.fr, lvl: levelOf(P.xp).lvl }, { size: 112, badge: true }));
+    card.appendChild(avatarEl({ name: draft.name, av: draft.av, col: draft.col, fr: draft.fr, lvl: levelOf(P.xp).lvl, sf: P.sf, bg: P.bg }, { size: 112, badge: true }));
     const id = mk("div", "prof-card-id"); id.append(mk("b", null, draft.name || "Your name"), mk("small", null, titleName(draft.ttl)));
     card.appendChild(id); pv.appendChild(card);
     const sw = $("profColors"); sw.innerHTML = "";
@@ -223,6 +233,7 @@ export function commitProfileEditor() {
     if (!name) { hooks.toast && hooks.toast("Pick a display name first."); $("profName").focus(); return false; }
     const changedPic = JSON.stringify(draft.av) !== JSON.stringify(P.av) && draft.av.t !== "g";
     Object.assign(P, { name, av: cleanAvatar(draft.av) || P.av, col: draft.col, fr: isUnlocked(FRAMES.find(f => f.id === draft.fr) || FRAMES[0]) ? draft.fr : "none", ttl: draft.ttl });
+    if (draft.ttl !== draft.ttl0) P.vtn = "";          // picking a level title replaces an equipped Vault title
     persist();
     if (changedPic) { const a = profile.unlock("new_look"); if (a && hooks.onAchievement) hooks.onAchievement(a); }
     if (hooks.onSave) hooks.onSave(P);
@@ -233,8 +244,8 @@ export function commitProfileEditor() {
 export function renderProfileCard() {
     const L = levelOf(P.xp), pub = profile.public();
     const a = $("pcAva"); if (!a) return; a.innerHTML = ""; a.appendChild(avatarEl(pub, { size: 76, badge: true }));
-    $("pcName").textContent = P.name || "Set your name";
-    $("pcTitle").textContent = titleName(P.ttl);
+    $("pcName").textContent = P.name || "Set your name"; $("pcName").className = "pc-name"; styleName($("pcName"), pub);
+    $("pcTitle").textContent = pub.ttl; $("pcTitle").className = "pc-title"; styleTitle($("pcTitle"), pub);
     $("pcLvl").textContent = "LV " + L.lvl; $("pcXp").style.width = Math.round(L.pct * 100) + "%"; $("pcXpTxt").textContent = L.into + " / " + L.need + " XP";
     const st = P.st.all || { p: 0, w: 0, s: 0, b: 0 }, box = $("pcStats"); box.innerHTML = "";
     [["Matches", st.p], ["Wins", st.w], ["Best streak", st.b], ["Badges", Object.keys(P.ach).length + "/" + ACH.length]].forEach(([k, v]) => { const d = mk("div", "pc-stat"); d.append(mk("b", null, String(v)), mk("small", null, k)); box.appendChild(d); });

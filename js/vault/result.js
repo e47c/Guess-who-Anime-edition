@@ -20,7 +20,7 @@ const SETTINGS = {
     classic: ["animes", "boardSize"], headbanz: ["animes", "difficulty", "rounds"], imposter: ["animes", "difficulty", "laps"],
     uno: ["animes", "unoDeck", "unoSp"], draft: ["animes", "draftType", "draftFmt", "draftRoles"], feud: ["animes", "feudRounds", "feudTimer"],
     likely: ["animes", "likelyPlay", "likelyRounds", "likelyTimer"], sketch: ["animes", "sketchRounds", "sketchTimer", "sketchDiff", "sketchMode"],
-    cardvault: ["cvFormat", "cvPack"]
+    cardvault: ["cvFormat", "cvTimer", "cvPack"]
 };
 
 /* rows sorted best-first + a "same as the row before" test -> shared places */
