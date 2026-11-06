@@ -12,18 +12,24 @@ export const VAULT = {
     opsKeepDays: 45                      // how long applied operation ids are remembered (idempotency window)
 };
 
-/* ---------- per-mode metadata (A1). The Night Party tournament builder reads this later. ----------
-   length: short | medium | long -> the coin multiplier below. fast = good as a quick tournament stage. */
+/* ---------- per-mode metadata (A1). The Night Party stage registry (js/party/stages.js) reads it. ----------
+   min / max  = players one match of the mode seats.
+   teams      = has a team format (Team vs Team, Draft Build sides).
+   ffa        = has an everyone-for-themselves format (all players in one match).
+   oneVone    = a match is exactly 2 players (Night Party runs it as a single-elimination bracket).
+   length     = short | medium | long -> the coin multiplier below and the Night Party time estimate.
+   fast       = good as a quick Night Party stage or tiebreaker.
+   stage      = false: not a Night Party stage yet (registered later with registerStage). */
 export const MODE_META = {
-    classic:   { name: "Guess Who",        min: 2, max: 2, teams: false, duel: true,  length: "short",  fast: true  },
-    headbanz:  { name: "Headbanz",         min: 2, max: 8, teams: false, duel: true,  length: "medium", fast: false },
-    imposter:  { name: "Imposter",         min: 3, max: 8, teams: false, duel: false, length: "medium", fast: false },
-    uno:       { name: "Anime UNO",        min: 2, max: 8, teams: false, duel: true,  length: "medium", fast: false },
-    draft:     { name: "Anime Draft",      min: 2, max: 8, teams: true,  duel: true,  length: "medium", fast: false },
-    feud:      { name: "Anime Feud",       min: 2, max: 8, teams: true,  duel: true,  length: "long",   fast: false },
-    likely:    { name: "Most Likely",      min: 2, max: 8, teams: true,  duel: true,  length: "medium", fast: true  },
-    sketch:    { name: "Anime Sketch",     min: 2, max: 8, teams: false, duel: true,  length: "long",   fast: false },
-    cardvault: { name: "Arcade Vault",     min: 2, max: 8, teams: false, duel: true,  length: "short",  fast: true  }   // id kept for saved data
+    classic:   { name: "Guess Who",        min: 2, max: 2, teams: false, ffa: false, oneVone: true,  length: "short",  fast: true  },
+    headbanz:  { name: "Headbanz",         min: 2, max: 8, teams: false, ffa: true,  oneVone: false, length: "medium", fast: false },
+    imposter:  { name: "Imposter",         min: 3, max: 8, teams: false, ffa: true,  oneVone: false, length: "medium", fast: false },
+    uno:       { name: "Anime UNO",        min: 2, max: 8, teams: false, ffa: true,  oneVone: false, length: "medium", fast: false },
+    draft:     { name: "Anime Draft",      min: 2, max: 8, teams: true,  ffa: true,  oneVone: false, length: "medium", fast: false },
+    feud:      { name: "Anime Feud",       min: 2, max: 8, teams: true,  ffa: false, oneVone: false, length: "long",   fast: false },
+    likely:    { name: "Most Likely",      min: 2, max: 8, teams: true,  ffa: true,  oneVone: false, length: "medium", fast: true  },
+    sketch:    { name: "Anime Sketch",     min: 2, max: 8, teams: false, ffa: true,  oneVone: false, length: "long",   fast: false },
+    cardvault: { name: "Arcade Vault",     min: 2, max: 8, teams: false, ffa: true,  oneVone: true,  length: "short",  fast: true, stage: false }   // id kept for saved data; battles become a stage later
 };
 
 /* ---------- A2. Earning coins ---------- */
@@ -32,9 +38,8 @@ export const EARN = {
     top: 40, bottom: 10,                         // fewer players: spread evenly between these
     lengthMult: { short: 0.75, medium: 1, long: 1.5 },
     minRealPlayers: 2,                           // distinct accounts in the match
-    minSeconds: { short: 60, medium: 150, long: 240 },   // a game shorter than this pays nothing
-    dailyGameCap: 600,                           // coins from games per day (missions and login are separate)
-    nightParty: { winner: 100, perStage: 10 }    // hook only: the tournament builder is not built yet
+    minSeconds: { short: 60, medium: 150, long: 240 },   // a game shorter than this pays nothing (no daily limit)
+    nightParty: { winner: 100, perStage: 10 }    // tournament bonus on top of each stage's normal coins
 };
 export const DAILY_LOGIN = [30, 30, 40, 40, 50, 50, 100];     // 7-day streak, then it repeats; a missed day resets it
 

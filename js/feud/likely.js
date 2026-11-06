@@ -14,7 +14,7 @@
    ===================================================================== */
 import { FEUD_RULES as R, poolInfo, newMatch, act, advance, needsQuestion, balanceTeams, seatsOf, qText, kindLabel } from "./engine.js?v=5";
 import { LIB, K, arr, el, srvNow, label, presentIn, pickOpt, seriesOf, TEAM, initCommon, recordSeen, publishHist, syncRemoteHist, roomHists, nextQuestion,
-    charName, charSeries, img, teamsFrom, optButtons, scopeLine, teamColumns, tapTeam, shuffleTeams, kit, makeTimer, confetti, hintFor } from "./common.js?v=3";
+    charName, charSeries, img, teamsFrom, optButtons, scopeLine, teamColumns, tapTeam, shuffleTeams, kit, makeTimer, confetti, hintFor } from "./common.js?v=4";
 
 const TYPE = "likely", NODE = "likely", GT = "likely";
 const KT = kit("ml"), $ = KT.$, banner = KT.banner, feedback = KT.feedback;
@@ -53,7 +53,7 @@ export function initLikely(ctx) {
 export const teamsOf = d => teamsFrom(d, "likelyTeams");
 export const likelyHint = hintFor;
 export function likelyReq(d) {
-    const series = seriesOf(d), rounds = lRounds(d), play = lPlay(d), n = X.activeSlots(d).length;
+    const series = seriesOf(d), rounds = lRounds(d), play = lPlay(d), n = X.dealSlots(d).length;
     if (!series.length) return { ok: false, msg: "Tick at least one series." };
     if (play === "teams") { const T = teamsOf(d); if (!T.A.length || !T.B.length) return { ok: false, msg: "Both teams need at least one player. Tap a player to move them." }; }
     const p = poolInfo(LIB, TYPE, series), what = series.length === 1 ? label(series[0]) + " on its own" : "this mix";
@@ -84,7 +84,7 @@ export async function likelyStart(again) {
     const prev = d.likely;
     if (again && prev && prev.phase !== "over" && !(await X.uiConfirm({ title: "Restart Most Likely?", text: "The current match is thrown away.", ok: "Restart" }))) return;
     try {
-        const act2 = X.activeSlots(d), series = again && prev ? arr(prev.series) : seriesOf(d), ffa = again && prev ? !!prev.ffa : lPlay(d) === "ffa";
+        const act2 = X.dealSlots(d), series = again && prev ? arr(prev.series) : seriesOf(d), ffa = again && prev ? !!prev.ffa : lPlay(d) === "ffa";
         let teams = null, players = null;
         if (ffa) { players = act2.slice(); if (players.length < 2) { X.toast("Most Likely needs at least 2 players."); return; } }
         else {

@@ -20,16 +20,17 @@ import {
 
 import { audio } from "./audio.js?v=2";
 import { ambient, titleCard, shake, ring, burstText, countUp, flyClone, motionOK, setReduced, isReduced } from "./fx.js";
-import { profile, avatarEl, seatCard, styleName, styleTitle, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js?v=4";
-import { showResults, closeResults } from "./results.js?v=2";
-import * as DRAFT from "./draft/draft.js?v=6";
-import * as FEUD from "./feud/feud.js?v=6";
-import * as LIKELY from "./feud/likely.js?v=3";
-import * as SKETCH from "./sketch/sketch.js?v=8";
-import * as VAULT from "./vault/vault.js?v=6";
-import * as CV from "./cardvault/cardvault.js?v=3";
-import { resultOf, resultToDb, resultFromDb } from "./vault/result.js?v=2";
-import { initCine, cineHook, cineHas } from "./cine/engine.js?v=12";
+import { profile, avatarEl, seatCard, styleName, styleTitle, initGallery, openProfileEditor, commitProfileEditor, bindUpload, setProfileHooks, renderProfileCard } from "./profile.js?v=5";
+import { showResults, closeResults } from "./results.js?v=3";
+import * as DRAFT from "./draft/draft.js?v=7";
+import * as FEUD from "./feud/feud.js?v=7";
+import * as LIKELY from "./feud/likely.js?v=4";
+import * as SKETCH from "./sketch/sketch.js?v=9";
+import * as VAULT from "./vault/vault.js?v=7";
+import * as CV from "./cardvault/cardvault.js?v=4";
+import { resultOf, resultToDb, resultFromDb } from "./vault/result.js?v=3";
+import { stageMeta, normalizeSettings, teamPatch } from "./party/stages.js?v=1";
+import { initCine, cineHook, cineHas } from "./cine/engine.js?v=13";
 import { hand as cineHand } from "./cine/hands.js?v=11";
 import * as CK from "./cine/kit.js?v=11";
 import * as HOLD from "./cine/holds.js?v=11";
@@ -1472,7 +1473,7 @@ async function hbBegin(kind) {
     $("hbLoading").classList.remove("hidden"); { const lt = document.querySelector("#hbLoading div"); if (lt) lt.textContent = "Summoning characters..."; }
     try {
         // a new match seats everyone in the room; the next round of the same match keeps the same table
-        const players = (kind === "first" || kind === "new") ? activeSlots(d) : arr(d.hb && d.hb.players).map(Number);
+        const players = (kind === "first" || kind === "new") ? dealSlots(d) : arr(d.hb && d.hb.players).map(Number);
         if (players.length < 2) throw new Error("Need at least 2 players.");
         if (players.length > 8) throw new Error("Headbanz seats up to 8 players.");
         if (kind === "first" && !players.every(i => Number((d.packs || {})["p" + i]) >= 100)) throw new Error("Some players are still downloading the characters.");
@@ -1752,7 +1753,7 @@ async function imBegin(kind) {
     }
     $("hbLoading").classList.remove("hidden"); { const lt = document.querySelector("#hbLoading div"); if (lt) lt.textContent = "Summoning characters..."; }
     try {
-        const players = kind === "next" ? arr(d.im.players).map(Number) : activeSlots(d);
+        const players = kind === "next" ? arr(d.im.players).map(Number) : dealSlots(d);
         if (players.length < 3) throw new Error("Imposter needs at least 3 players.");
         if (kind === "first" && !players.every(i => Number((d.packs || {})["p" + i]) >= 100)) throw new Error("Some players are still downloading the characters.");
         const pool = await hbBuildPool(keys, "hard", (pct, msg) => { const t = document.querySelector("#hbLoading div"); if (t) t.textContent = msg; });
@@ -2381,7 +2382,7 @@ async function unoTx(fn) {
     catch (e) { console.error(e); toast("That move didn't go through. Try again."); }
 }
 async function unoStart() {
-    const d = currentRoomData, seats = activeSlots(d);
+    const d = currentRoomData, seats = dealSlots(d);
     if (seats.length < 2) { toast("Need at least 2 players."); return; }
     if (!d.uno || !d.uno.cards || d.uno.key !== unoDeckKey(arr(d.animes))) { toast("The deck is still being prepared."); return; }
     const names = {}; seats.forEach(i => { names["p" + i] = d["player" + i].name; });
@@ -2394,7 +2395,7 @@ window.unoDrawClick = () => unoTx(u => unoDoDraw(u, Number(myPlayer)));
 window.unoPass = () => unoTx(u => unoDoPass(u, Number(myPlayer)));
 window.unoSkipAbsent = () => unoTx(u => unoSkipTurn(u, u.turn, " is away, turn skipped."));
 window.unoRematch = () => {
-    const d = currentRoomData, seats = activeSlots(d), names = {};
+    const d = currentRoomData, seats = dealSlots(d), names = {};
     if (seats.length < 2) { toast("Need at least 2 players for another round."); return; }
     seats.forEach(i => { names["p" + i] = d["player" + i].name; });
     unoTx(u => { if (u.phase !== "over") return false; Object.assign(u, unoDealState(u.cards, u.anime, seats, names, (u.round || 1) + 1)); });
@@ -3329,6 +3330,9 @@ function showRules(t) {
 window.showRules = () => showRules(currentRoomData && MODES[currentRoomData.gameType] ? currentRoomData.gameType : "classic");
 const pNode = (d, i) => (d && d["player" + i]) || null;
 const activeSlots = d => d ? SLOTS.filter(i => d["player" + i] && !d["player" + i].left) : [];
+/* who a NEW match deals in: everyone in the room, or only the slots in rooms/<code>/seatsOnly when a Night Party
+   stage sets it (one bracket match, a sudden death). Not set = everyone, exactly as before. Cleared with the match. */
+const dealSlots = d => { const act = activeSlots(d), only = arr(d && d.seatsOnly).map(Number); return only.length ? act.filter(i => only.includes(i)) : act; };
 function hostSlot(d) { const act = activeSlots(d), h = Number(d && d.host) || 1; return act.includes(h) ? h : (act[0] || h); }
 const amHost = () => !!currentRoomData && hostSlot(currentRoomData) === Number(myPlayer);
 const pName = (d, i) => (pNode(d, i) || {}).name || "Player " + i;
@@ -3344,7 +3348,7 @@ const gwOther = (d, p) => { const s = gwSeats(d); return s[0] === Number(p) ? s[
 /* Guess Who stays a 1v1 duel; with more than 2 in the room the host picks the duelists (d.gwDuel) and the rest spectate.
    Until the host picks, the host and the next player duel. [-1] = the host cleared both picks. */
 function gwDuelists(d) {
-    const act = activeSlots(d);
+    const act = dealSlots(d);
     if (act.length <= 2) return act.slice();
     if (!d.gwDuel) return [hostSlot(d), act.find(i => i !== hostSlot(d))];
     return arr(d.gwDuel).map(Number).filter((x, i, a) => act.includes(x) && a.indexOf(x) === i).slice(0, 2);
@@ -3620,7 +3624,7 @@ window.kickPlayer = async function (i) {
     update(ref(db, "rooms/" + room), { ["player" + i]: null, ["presence/p" + i]: null, ["packs/p" + i]: null, ["emote/p" + i]: null, ["feudHist/p" + i]: null }).catch(() => toast("Couldn't remove that player."));
 };
 function modeReq(d) {
-    const t = MODES[d.gameType] ? d.gameType : "classic", M = MODES[t], n = activeSlots(d).length, keys = arr(d.animes);
+    const t = MODES[d.gameType] ? d.gameType : "classic", M = MODES[t], n = dealSlots(d).length, keys = arr(d.animes);
     if (n < M.min) return { ok: false, msg: M.name + " needs " + (M.min === M.max ? "exactly " + M.min : M.min + " to " + M.max) + " players. " + n + " here, invite " + (M.min - n === 1 ? "one more" : (M.min - n) + " more") + "." };
     if (n > M.max) return { ok: false, msg: M.name + " seats up to " + M.max + " players (" + n + " here). Pick another mode." };
     if (t === "cardvault") return CV.cvReq(d);
@@ -3637,7 +3641,7 @@ function modeReq(d) {
         if (!d.uno || !d.uno.cards || d.uno.key !== unoDeckKey(keys)) return { ok: false, wait: true, msg: amHost() ? "Forging the deck… " + (unoDeckPct || 1) + "%" : "The host is forging the deck…" };
     }
     if (t === "headbanz" || t === "imposter") {
-        const packs = d.packs || {}, missing = activeSlots(d).filter(i => Number(packs["p" + i]) < 100 || packs["p" + i] == null);
+        const packs = d.packs || {}, missing = dealSlots(d).filter(i => Number(packs["p" + i]) < 100 || packs["p" + i] == null);
         if (missing.length) return { ok: false, wait: true, msg: "Loading characters for " + missing.map(i => pName(d, i)).join(", ") + "…" };
     }
     const extra = t === "headbanz" ? " · " + (d.rounds || 5) + " rounds, everyone at once" : t === "imposter" ? " · " + n * (Number(d.laps) || 1) + " rounds" : t === "classic" ? " · " + (d.boardSize || 24) + " cards" + (n > 2 ? " · " + gwDuelists(d).map(i => pName(d, i)).join(" vs ") + ", " + (n - 2) + " spectating" : "") : " · " + (unoDeckType(d) === "chaos" ? "Chaos" : "Classic") + " deck · " + (unoSpType(d) === "reuse" ? "reusable specials · " : "") + arr(d.uno && d.uno.anime).join(" · ");
@@ -3877,9 +3881,7 @@ function lobbyRender(d) {
     gwDuelRenderPick(d, lock || t !== "classic");
     applyModeUI(M.key);   // again, so the 4/4 counter reflects the boxes just ticked
     // background prep for the chosen mode
-    if (!spectating && (t === "headbanz" || t === "imposter")) hbPrefetch(keys);
-    const [ulo, uhi] = UNO_DECK_RANGE[unoDeckType(d)];
-    if (!spectating && t === "uno" && host && keys.length >= ulo && keys.length <= uhi && keys.every(k => UNO_DECKS[k]) && !(d.uno && d.uno.cards && d.uno.key === unoDeckKey(keys))) unoPrepDeck(keys);
+    if (!spectating) modePrep(d);
     // status + start
     const req = modeReq(d), meNode = pNode(d, me) || {};
     $("lobbyStatus").textContent = spectating ? "Hang tight: the current match has to finish first." : t === "cardvault" ? "ARCADE VAULT is open: everyone has their own Vault page. Challenge each other from its Battle tab." : req.ok ? (host ? "Ready: " + req.msg + ". Hit START when your squad is set." : "Ready: " + req.msg + ". Waiting for " + pName(d, hostSlot(d)) + " to start.") : req.msg;
@@ -3909,17 +3911,87 @@ window.startGame = async function () {
     const req = modeReq(d); if (!req.ok) { toast(req.msg); return; }
     saveLobbyPrefs(d);
     const sb = $("startButton"); sb.disabled = true;
-    try {
-        if (d.gameType === "headbanz") return await hbStart();
-        if (d.gameType === "imposter") return await imBegin("first");
-        if (d.gameType === "uno") return await unoStart();
-        if (d.gameType === "draft") return await DRAFT.draftStart();
-        if (d.gameType === "feud") return await FEUD.feudStart();
-        if (d.gameType === "likely") return await LIKELY.likelyStart();
-        if (d.gameType === "sketch") return await SKETCH.sketchStart();
-        return await gwStart();
-    } finally { setTimeout(() => { if (sb) sb.disabled = false; }, 800); }
+    try { return await startMode(d); } finally { setTimeout(() => { if (sb) sb.disabled = false; }, 800); }
 };
+/* START for the room's mode (the lobby button and modeLaunch both come here) */
+function startMode(d) {
+    if (d.gameType === "headbanz") return hbStart();
+    if (d.gameType === "imposter") return imBegin("first");
+    if (d.gameType === "uno") return unoStart();
+    if (d.gameType === "draft") return DRAFT.draftStart();
+    if (d.gameType === "feud") return FEUD.feudStart();
+    if (d.gameType === "likely") return LIKELY.likelyStart();
+    if (d.gameType === "sketch") return SKETCH.sketchStart();
+    return gwStart();
+}
+/* what a mode needs ready before it can start, run on every client that has the room (idempotent): Headbanz and
+   Imposter download their pictures on every player's device, the host forges the UNO deck */
+function modePrep(d) {
+    const t = d.gameType, keys = arr(d.animes);
+    if (t === "headbanz" || t === "imposter") hbPrefetch(keys);
+    const [ulo, uhi] = UNO_DECK_RANGE[unoDeckType(d)];
+    if (t === "uno" && amHost() && keys.length >= ulo && keys.length <= uhi && keys.every(k => UNO_DECKS[k]) && !(d.uno && d.uno.cards && d.uno.key === unoDeckKey(keys))) unoPrepDeck(keys);
+}
+
+/* ---------- driving a mode from code (the Night Party controller) ----------
+   start  modeLaunch(mode, settings, { seats, teams }): host only, room in the lobby. Writes the mode, its settings (the
+          same room keys the lobby UI writes, normalised by party/stages.js), who is dealt in (seatsOnly) and an optional
+          team split; waits for the mode's own preparation; then starts it exactly like START.
+          -> { ok: true, matchId, seats } or { ok: false, error } (nothing half-started: the seat list is cleared on failure).
+   end    modeOver(d) + modeResult(d): the standard tie-aware result (vault/result.js), built from the room state the
+          host sees; the host also stores it in rooms/<code>/lastResult as before.
+   abort  modeAbort(): everyone back to the lobby, the match thrown away (the lobby reset every mode already uses). */
+function waitRoom(test, ms) {
+    return new Promise(res => {
+        const t0 = Date.now();
+        const tick = () => {
+            let v = null; try { v = currentRoomData && room ? test(currentRoomData) : null; } catch (e) { console.error(e); }
+            if (v) return res(v);
+            if (!room || exiting || Date.now() - t0 > ms) return res(null);
+            setTimeout(tick, 150);
+        };
+        tick();
+    });
+}
+async function modeLaunch(mode, settings, o = {}) {
+    const d = currentRoomData;
+    if (!d || !room || !amHost()) return { ok: false, error: "Only the host can start a stage." };
+    if (d.status && d.status !== "waiting") return { ok: false, error: "A match is still running." };
+    const meta = stageMeta(mode); if (!meta) return { ok: false, error: "That mode can't be a stage." };
+    const s = normalizeSettings(mode, settings);
+    s.animes = fixSeries(mode, s.animes, s.unoDeck);
+    const act = activeSlots(d), seats = o.seats ? arr(o.seats).map(Number).filter((i, k, a) => act.includes(i) && a.indexOf(i) === k) : act;
+    if (seats.length < 2) return { ok: false, error: "Not enough players here for this stage." };
+    if (meta.oneVone && !meta.ffa && seats.length !== 2) return { ok: false, error: meta.name + " is a 1v1: give it exactly 2 players." };
+    const only = o.seats ? seats : null;
+    const patch = Object.assign({ gameType: mode, seatsOnly: only }, s);
+    if (mode === "classic") patch.gwDuel = seats;
+    const tp = o.teams ? teamPatch(mode, o.teams) : null; if (tp) patch[tp.key] = tp.map;
+    const fail = async error => { try { await update(ref(db, "rooms/" + room), { seatsOnly: null }); } catch (e) {} return { ok: false, error }; };
+    try { await update(ref(db, "rooms/" + room), patch); } catch (e) { return fail("Couldn't save the stage settings."); }
+    const sameSeats = d2 => JSON.stringify(arr(d2.seatsOnly).map(Number)) === JSON.stringify(only || []);
+    let req = null;
+    const ready = await waitRoom(d2 => {
+        if (d2.gameType !== mode || !sameSeats(d2)) return null;
+        modePrep(d2); req = modeReq(d2);
+        return req.ok || !req.wait ? req : null;
+    }, o.prepMs || 60000);
+    if (!ready) return fail(req && req.msg ? req.msg : "The mode didn't get ready in time.");
+    if (!ready.ok) return fail(ready.msg);
+    const before = Number(currentRoomData.matchId) || 0;
+    try { await startMode(currentRoomData); } catch (e) { console.error(e); }
+    const started = await waitRoom(d2 => d2.status && d2.status !== "waiting" && Number(d2.matchId) && Number(d2.matchId) !== before ? d2 : null, o.startMs || 20000);
+    if (!started) return fail("The mode didn't start.");
+    return { ok: true, matchId: Number(started.matchId), seats: matchSeats(started) };
+}
+async function modeAbort() {
+    const d = currentRoomData; if (!d || !room || !amHost()) return false;
+    if (!d.status || d.status === "waiting") { if (d.seatsOnly) await update(ref(db, "rooms/" + room), { seatsOnly: null }).catch(() => {}); return true; }
+    try { await update(ref(db, "rooms/" + room), lobbyResetPatch(d)); return true; } catch (e) { console.error(e); return false; }
+}
+const modeOver = (d = currentRoomData) => !!d && !!d.status && d.status !== "waiting" && matchOver(d);
+const modeResult = (d = currentRoomData) => (d ? resultNow(d) : null);
+window.AAP_MODES = { launch: modeLaunch, abort: modeAbort, over: modeOver, result: modeResult, prep: () => currentRoomData && modePrep(currentRoomData), seats: d => matchSeats(d || currentRoomData), deal: d => dealSlots(d || currentRoomData) };
 async function gwStart() {
     const d = currentRoomData, seats = gwDuelists(d), keys = arr(d.animes), size = Number(d.boardSize) || 24;
     if (seats.length !== 2) { toast("Pick the 2 duelists first."); return; }
@@ -3930,7 +4002,7 @@ async function gwStart() {
     try { await update(ref(db, "rooms/" + room), upd); } catch (e) { console.error(e); toast("Could not start: " + (e.message || e)); }
 }
 function lobbyResetPatch(d, exclude) {
-    const upd = { status: "waiting", board: null, gw: null, guess: null, revealed: null, private: null, winner: null, result: null, guessedCharacter: null, finishedAt: null, hb: null, im: null, draft: null, feud: null, likely: null, sketch: null, sketchInk: null, sketchChat: null, cv: null, turn: 1, matchId: null };
+    const upd = { status: "waiting", board: null, gw: null, guess: null, revealed: null, private: null, winner: null, result: null, guessedCharacter: null, finishedAt: null, hb: null, im: null, draft: null, feud: null, likely: null, sketch: null, sketchInk: null, sketchChat: null, cv: null, turn: 1, matchId: null, seatsOnly: null };
     if (d.uno) upd.uno = d.uno.cards ? { cards: d.uno.cards, anime: d.uno.anime || null, phase: "lobby", n: 0, key: d.uno.key || null, missing: d.uno.missing || null } : null;
     SLOTS.forEach(i => {
         const p = d["player" + i]; if (!p || i === exclude) return;
@@ -4712,9 +4784,9 @@ function secretPower(text) {
     burstText(text, innerWidth / 2, innerHeight * .42, "#7df3ff"); shake(document.querySelector(".screen:not(.hidden)"), 14, 520);
 }
 async function initApp() {
-    DRAFT.initDraft({ db, ref, update, runTransaction, room: () => room, me: () => Number(myPlayer), data: () => currentRoomData, amHost, hostSlot, activeSlots, pName, pPub, avatarEl,
+    DRAFT.initDraft({ db, ref, update, runTransaction, room: () => room, me: () => Number(myPlayer), data: () => currentRoomData, amHost, hostSlot, activeSlots, dealSlots, pName, pPub, avatarEl,
         sfx, toast, showOnly, uiConfirm, lobbySet, lobbyRefresh, backToLobby: skip => window.backToLobby(skip), loadPacks: hbLoadPacks, HB_SERIES, ring, burstText, shake, countUp, flyClone });
-    const feudCtx = { db, ref, update, get, onValue, runTransaction, room: () => room, me: () => Number(myPlayer), uid: () => (user && user.uid) || "", data: () => currentRoomData, amHost, hostSlot, activeSlots, pName, pPub, avatarEl,
+    const feudCtx = { db, ref, update, get, onValue, runTransaction, room: () => room, me: () => Number(myPlayer), uid: () => (user && user.uid) || "", data: () => currentRoomData, amHost, hostSlot, activeSlots, dealSlots, pName, pPub, avatarEl,
         sfx, toast, showOnly, uiConfirm, lobbySet, backToLobby: skip => window.backToLobby(skip), draftDb: () => DRAFT.draftLoad(), HB_SERIES, burstText, shake, countUp, motionOK };
     FEUD.initFeud(feudCtx); LIKELY.initLikely(feudCtx); SKETCH.initSketch(feudCtx);
     const refresh = () => { if (currentRoomData && !exiting) route(currentRoomData); };

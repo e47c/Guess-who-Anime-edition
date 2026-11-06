@@ -17,7 +17,7 @@ import { SK, arr, maskOf, hintMax, pickHint, hintAt, buildWords, poolFor, pickOp
     CT, isContest, newContest, contestWord, ents, isDone, ratedBy, ratedAll, toRate, allDone, allRated, tally, curOf, curRated, shownSoFar, ratersOf } from "./engine.js?v=5";
 import { LIBRARY } from "./words.js?v=3";
 import { CHARS } from "../draft/data.js?v=3";
-import { el, srvNow, label, presentIn, pickOpt, seriesOf, initCommon, charOf, img, optButtons, confetti } from "../feud/common.js?v=3";
+import { el, srvNow, label, presentIn, pickOpt, seriesOf, initCommon, charOf, img, optButtons, confetti } from "../feud/common.js?v=4";
 import { push, set, remove, query, limitToLast, onChildAdded, onChildChanged, onChildRemoved } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
 const GT = "sketch", NODE = "sketch";
@@ -87,7 +87,7 @@ export function sketchHint(d) {
     return n === 1 ? "Single anime: every word comes from " + label(seriesOf(d)[0]) + "." : n > 1 ? "Anime Mix: words come from the " + n + " series you tick." : "Tick one series for its own words, or several for an Anime Mix.";
 }
 export function sketchReq(d) {
-    const series = seriesOf(d), n = X.activeSlots(d).length, rounds = sRounds(d);
+    const series = seriesOf(d), n = X.dealSlots(d).length, rounds = sRounds(d);
     if (!series.length) return { ok: false, msg: "Tick at least one series." };
     const pool = poolFor(words(), series).length, need = n * rounds + 2;
     if (sMode(d) === 1) {          // Contest: one word per round, for everyone
@@ -120,7 +120,7 @@ export async function sketchStart(again) {
     const prev = d.sketch;
     if (again && prev && prev.phase !== "over" && !(await X.uiConfirm({ title: "Restart Anime Sketch?", text: "The current match is thrown away.", ok: "Restart" }))) return;
     try {
-        const players = X.activeSlots(d), series = again && prev ? arr(prev.series) : seriesOf(d);
+        const players = X.dealSlots(d), series = again && prev ? arr(prev.series) : seriesOf(d);
         if (players.length < 2) { X.toast("Anime Sketch needs at least 2 players."); return; }
         const mid = Date.now();
         if (again && prev ? isContest(prev) : sMode(d) === 1) {

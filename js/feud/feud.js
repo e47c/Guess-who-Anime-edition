@@ -14,7 +14,7 @@
 import { FEUD_RULES as R, eligible, poolInfo, stateBoard, qText, newMatch, act, actorOf, advance, needsQuestion,
     balanceTeams, guessTeam, other, faceOffOf, kindLabel, fairAnswer } from "./engine.js?v=5";
 import { LIB, K, arr, el, srvNow, label, presentIn, pickOpt, seriesOf, TEAM, initCommon, recordSeen, publishHist, syncRemoteHist, roomHists, nextQuestion,
-    img, teamsFrom, optButtons, scopeLine, teamColumns, tapTeam, shuffleTeams, kit, makeTimer, confetti, hintFor } from "./common.js?v=3";
+    img, teamsFrom, optButtons, scopeLine, teamColumns, tapTeam, shuffleTeams, kit, makeTimer, confetti, hintFor } from "./common.js?v=4";
 
 export const FEUD_LIB = LIB;
 const TYPE = "classic", NODE = "feud", GT = "feud";
@@ -86,7 +86,7 @@ export async function feudStart(again) {
     try {
         const series = again && d.feud ? arr(d.feud.series) : seriesOf(d);
         let teams = again && d.feud ? { A: arr(d.feud.teams.A).map(Number), B: arr(d.feud.teams.B).map(Number) } : teamsOf(d);
-        const act2 = X.activeSlots(d); teams = { A: teams.A.filter(p => act2.includes(p)), B: teams.B.filter(p => act2.includes(p)) };
+        const act2 = X.dealSlots(d); teams = { A: teams.A.filter(p => act2.includes(p)), B: teams.B.filter(p => act2.includes(p)) };
         if (!teams.A.length || !teams.B.length) teams = balanceTeams(act2);
         if (!teams.A.length || !teams.B.length) { X.toast("Anime Feud needs two teams."); return; }
         const now = srvNow(), q = nextQuestion(TYPE, series, roomHists(d, teams.A.concat(teams.B)), []);

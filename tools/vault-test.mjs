@@ -3,14 +3,14 @@
 // atomic, never negative), the seeded RNG, the config. Phase 2: coins per placement, anti-farming, the daily
 // cap, missions and the login streak.
 import { resultOf, resultToDb, resultFromDb, placeRows, RESULT_MODES, battleResultOf } from "../js/vault/result.js";
-import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=5";
+import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=6";
 import { rngFrom, newSeed, pickWeighted, shuffleWith } from "../js/vault/rng.js?v=1";
-import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=5";
-import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins } from "../js/vault/economy.js?v=4";
-import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=3";
-import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordBattle, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=3";
+import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=6";
+import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, gameCoinsOn } from "../js/vault/economy.js?v=5";
+import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=4";
+import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordBattle, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=4";
 import { CARDS, BY_SERIES, CARD_SERIES } from "../js/vault/carddb.js?v=2";
-import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=5";
+import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=6";
 
 let ok = 0, bad = 0;
 const t = (c, m) => { if (c) ok++; else { bad++; console.log("  ✘", m); } };
@@ -23,7 +23,7 @@ const NOW = 1000000 + 300000;     // 5 minutes after the start
 
 sect("config");
 t(RESULT_MODES.every(m => MODE_META[m]), "every mode with a result has metadata");
-t(Object.values(MODE_META).every(m => m.min >= 2 && m.max >= m.min && m.max <= 8 && ["short", "medium", "long"].includes(m.length) && typeof m.teams === "boolean" && typeof m.duel === "boolean" && typeof m.fast === "boolean"), "metadata: players, teams, 1v1, length, fast");
+t(Object.values(MODE_META).every(m => m.min >= 2 && m.max >= m.min && m.max <= 8 && ["short", "medium", "long"].includes(m.length) && typeof m.teams === "boolean" && typeof m.ffa === "boolean" && typeof m.oneVone === "boolean" && typeof m.fast === "boolean" && (m.teams || m.ffa || m.oneVone)), "metadata: players, teams, FFA, 1v1, length, fast (every mode has a format)");
 t(EARN.place8.length === 8 && EARN.place8[0] === 40 && EARN.place8[7] === 10, "8-player coin table");
 t(Object.values(PACKS).every(p => Math.abs(RARITY_ORDER.reduce((s, k) => s + p.odds[k], 0) - 100) < 1e-9), "pack odds add up to 100%");
 t(SKINS.tiers.length === 11 && SKINS.tiers.some(x => x.id === "prismatic") && !SKINS.tiers.some(x => x.id === "holo"), "11 skin tiers, Holo renamed Prismatic");
@@ -175,22 +175,22 @@ const T0 = new Date(2026, 10, 6, 12).getTime();
 let w = blankVault(T0);
 let g = applyGame(w, res("uno", [2, 1, 3, 4]), 2, T0, 77);
 const mc = ms => ms.reduce((s, m) => s + m.coins, 0);
-t(g.coins === 40 && w.coins === 140 + mc(g.missions) && w.earn.games === 40 && g.place === 1, "1st of 4 in UNO: +40 (+ any mission it finished)");
+t(g.coins === 40 && w.coins === 140 + mc(g.missions) && g.place === 1, "1st of 4 in UNO: +40 (+ any mission it finished)");
 t(w.missions.day === dayKey(T0) && w.missions.list.length === 3 && w.missions.seed === 77, "the first game of the day rolls the missions (seed kept)");
 t(w.missions.list.filter(m => m.kind === "fresh").length === 1 && new Set(w.missions.list.map(m => m.kind)).size === 3, "one 'try a mode' mission + two others, all different");
 t(w.missions.list.every(m => !MISSIONS.pool.find(p => p.id === m.id && p.needs)), "no mission for parts of the Vault that don't exist yet (packs, decks...)");
 t(Number(w.modes.uno) === T0, "the mode is marked as played");
 const cBefore = w.coins; g = applyGame(w, res("uno", [1, 2], { duration: 20 }), 2, T0, 1);
 t(g.coins === 0 && /too short/.test(g.why) && w.coins === cBefore && !g.missions.length, "too short: nothing, with the reason");
-w = blankVault(T0); w.earn = { day: dayKey(T0), games: 590 };
+w = blankVault(T0); w.earn = { day: dayKey(T0), games: 590 };          // a save from before the cap was removed
 g = applyGame(w, res("feud", [1, 2]), 1, T0, 5);
-t(g.coins === 10 && g.raw === 60 && /cap/.test(g.why) && w.earn.games === 600, "the daily cap cuts the last game to fit (600)");
-g = applyGame(w, res("feud", [1, 2]), 1, T0, 5);
-t(g.coins === 0 && w.earn.games === 600, "then nothing more from games today");
-g = applyGame(w, res("feud", [1, 2]), 1, T0 + 86400000, 5);
-t(g.coins === 60 && w.earn.games === 60, "the cap resets the next day");
-let total = 0; w = blankVault(T0); for (let i = 0; i < 40; i++) { const c0 = w.coins; applyGame(w, res("feud", [1, 2], { key: "k" + i }), 1, T0, i); total += w.coins - c0; }
-t(w.earn.games === EARN.dailyGameCap, "40 wins in a day pay exactly the cap from games (" + w.earn.games + ")");
+t(g.coins === 60 && g.raw === 60 && !g.why && !("earn" in w), "no daily cap: an old save's cap counter is ignored and dropped, the game pays in full");
+w = blankVault(T0); const toLedger = x => w.ledger.push(Object.assign({ t: T0 }, x)); for (let i = 0; i < 40; i++) applyGame(w, res("feud", [1, 2], { key: "k" + i }), 1, T0, i, toLedger);
+const fromGames = gameCoinsOn(w.ledger, dayKey(T0));
+t(fromGames === 40 * 60 && !("earn" in blankVault(T0)), "no daily cap: 40 wins in one day pay all 40 games (" + fromGames + " coins from games)");
+t(gameCoinsOn(w.ledger, dayKey(T0 + 86400000)) === 0, "coins from games today is a plain stat read from the ledger");
+t(!("dailyGameCap" in EARN), "the cap's config value is gone");
+t(!("earn" in migrate({ v: 1, coins: 75, earn: { day: dayKey(T0), games: 600 } }, T0)) && migrate({ v: 1, coins: 75, earn: {} }, T0).coins === 75, "an old save loads without the cap counter, coins intact");
 
 sect("missions");
 w = blankVault(T0); ensureMissions(w, T0, 3);

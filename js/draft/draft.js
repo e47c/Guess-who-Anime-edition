@@ -292,7 +292,7 @@ const $ = id => document.getElementById(id);
 /* ---------------- lobby ---------------- */
 /* Left / Right / spectating for Build. Saved picks first; anyone new fills the emptier side, the rest watch. */
 export function sidesOf(d) {
-    const act = X.activeSlots(d), N = dFmt(d), map = d.draftSides || {}, L = [], Rr = [], S = [];
+    const act = X.dealSlots(d), N = dFmt(d), map = d.draftSides || {}, L = [], Rr = [], S = [];
     act.forEach(i => { const v = map["p" + i]; if (v === "L" && L.length < N) L.push(i); else if (v === "R" && Rr.length < N) Rr.push(i); else if (v === "S") S.push(i); });
     act.filter(i => !L.includes(i) && !Rr.includes(i) && !S.includes(i)).forEach(i => {
         if (L.length < N && L.length <= Rr.length) L.push(i); else if (Rr.length < N) Rr.push(i); else if (L.length < N) L.push(i); else S.push(i);
@@ -305,7 +305,7 @@ export function draftHint(d) {
     return n === 1 ? "One series ticked: its own six roles. Tick two or more for the Mixed roles." : n > 1 ? n + " series ticked: the six Mixed roles. Characters only come from the series you tick." : "Tick the series for the character pool.";
 }
 export function draftReq(d) {
-    const keys = dSeries(d), act = X.activeSlots(d), type = dType(d), N = dFmt(d), pool = keys.reduce((n, k) => n + CHARS[k].length, 0);
+    const keys = dSeries(d), act = X.dealSlots(d), type = dType(d), N = dFmt(d), pool = keys.reduce((n, k) => n + CHARS[k].length, 0);
     if (!keys.length) return { ok: false, msg: "Tick at least one series." };
     let extra = "";
     if (type === "build") {
@@ -355,7 +355,7 @@ export async function draftStart(again) {
         const pool = Object.values(db).filter(c => series.includes(c.s)).map(c => c.id);
         const o = { type, series, classic: dClassic(d), mid, pool, rarity: id => (db[id] || { r: 4 }).r };
         if (type === "build") { const sd = again && d.draft && d.draft.sides ? { L: arr(d.draft.sides.L).map(Number), R: arr(d.draft.sides.R).map(Number) } : sidesOf(d); o.sides = { L: sd.L, R: sd.R }; }
-        else o.players = again && d.draft && d.draft.players ? arr(d.draft.players).map(Number).filter(p => X.activeSlots(d).includes(p)) : X.activeSlots(d);
+        else o.players = again && d.draft && d.draft.players ? arr(d.draft.players).map(Number).filter(p => X.activeSlots(d).includes(p)) : X.dealSlots(d);
         if (type === "auction" && o.players.length < 2) { X.toast("An auction needs at least 2 players."); return; }
         await X.update(X.ref(X.db, "rooms/" + X.room()), { status: "playing", matchId: mid, draft: newMatch(o) });
     } catch (e) { console.error(e); X.toast("Could not start the draft: " + (e.message || e)); }

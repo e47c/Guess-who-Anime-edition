@@ -291,10 +291,10 @@ hidden by the interface, as in the other modes.
 
 - **Results.** Every mode reports one standard result when a match ends: `{ key, mode, players, placements (ties share
   a place), scores, teams?, duration, settings }`, built by `js/vault/result.js` from the room's final state. The host
-  stores it in `rooms/<code>/lastResult`. Per-mode metadata (players, teams, 1v1, length, fast) is `MODE_META`.
+  stores it in `rooms/<code>/lastResult`. Per-mode metadata (players, teams, FFA, 1v1, length, fast) is `MODE_META`.
 - **Earning coins.** By placement: 40, 34, 28, 24, 20, 16, 13, 10 with 8 players, an even spread from 40 to 10 with
   fewer; ties and teams share the average of the places they cover; x0.75 short / x1 medium / x1.5 long. Only with 2+
-  accounts, only past the mode's minimum length, at most 600 a day from games. Daily login 30, 30, 40, 40, 50, 50, 100
+  accounts and only past the mode's minimum length; no daily limit. Daily login 30, 30, 40, 40, 50, 50, 100
   (a missed day resets it). 3 daily missions, one always "play a mode you haven't played in 7 days". Night Party bonus:
   hook only (`nightPartyCoins`).
 - **Shop.** Season 1 skins: each tier (Iron 150 ... Prismatic 3000) as a **Frame** ("Iron Frame - Season 1") and a
@@ -359,6 +359,15 @@ hidden by the interface, as in the other modes.
   moment later, so nothing is left behind. Offline, the host still lands on the main menu (no reload) and the delete is
   sent when the connection is back.
 - Tests: `node tools/vault-test.mjs` (economy, shop, scratch, packs, pity, decks, trades), `node tools/cardvault-test.mjs`.
+
+## NIGHT PARTY (mode 10, in progress)
+
+A tournament controller that runs existing modes as stages, with presets, placement scoring and live standings.
+Build notes, phase status and the test checklist of each phase are in `docs/night-party.md`. So far (phase 1):
+- the daily coin cap is gone;
+- `js/party/stages.js` is the stage registry: metadata, settings schema, formats and fits (`node tools/party-test.mjs`);
+- `window.AAP_MODES` in game.js launches any mode with preset settings, an optional seat list (`rooms/<code>/seatsOnly`)
+  and team split, reads its result, and aborts it.
 
 ## Customising
 

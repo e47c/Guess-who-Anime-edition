@@ -99,6 +99,7 @@ function feudLike(s) {
 }
 
 export const RESULT_MODES = Object.keys(MODES);
+export const RESULT_SETTINGS = SETTINGS;       // the lobby keys a result copies per mode (the Night Party stage schema must match)
 
 export function resultOf(d, x, now = Date.now()) {
     if (!d || !d.status || d.status === "waiting") return null;

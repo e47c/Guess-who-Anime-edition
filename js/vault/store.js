@@ -18,7 +18,7 @@
      document first, so two tabs can't both spend the same coins.
    - A coin balance never goes below 0 (spend() refuses instead).
    ===================================================================== */
-import { VAULT } from "./config.js?v=5";
+import { VAULT } from "./config.js?v=6";
 
 export const VAULT_KEY = "aap_vault_v1";
 const DAY = 86400000;
@@ -31,7 +31,6 @@ export function blankVault(now = Date.now()) {
         ops: {},                                 // opId -> { t, r (the result returned the first time) }
         // filled by later phases (kept here so the shape is documented in one place)
         daily: { last: "", streak: 0 },          // login bonus
-        earn: { day: "", games: 0 },             // coins from games today (daily cap)
         missions: { day: "", list: [] },
         modes: {},                               // mode -> last time played (for the "try a mode" mission)
         inv: {}, equip: {},                      // cosmetics owned ({id: 1}) / equipped ({slot: id})
@@ -134,7 +133,8 @@ export function migrate(d, now = Date.now()) {
     const b = blankVault(now);
     if (!d || typeof d !== "object" || d.v !== 1) return b;
     const out = Object.assign(b, d);
-    ["daily", "earn", "missions", "pity"].forEach(k => { out[k] = Object.assign(blankVault(now)[k], d[k] || {}); });
+    ["daily", "missions", "pity"].forEach(k => { out[k] = Object.assign(blankVault(now)[k], d[k] || {}); });
+    delete out.earn;                              // the old daily-cap counter (the cap was removed)
     out.ledger = Array.isArray(d.ledger) ? d.ledger : []; out.ops = d.ops && typeof d.ops === "object" ? d.ops : {};
     out.coins = Math.max(0, Math.round(Number(d.coins) || 0));
     return out;

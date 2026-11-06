@@ -82,7 +82,7 @@ export const charSeries = id => { const c = charOf(id); if (c) return c.s; for (
 export const img = (id, cls) => { const w = el("span", cls), c = charOf(id); if (c && c.img) { const i = new Image(); i.src = c.img; i.alt = ""; i.decoding = "async"; w.appendChild(i); } else w.textContent = charName(id).charAt(0); return w; };
 
 /* ---------------- lobby pieces ---------------- */
-export const teamsFrom = (d, mapKey) => balanceTeams(K.X.activeSlots(d), d[mapKey] || {});
+export const teamsFrom = (d, mapKey) => balanceTeams(K.X.dealSlots(d), d[mapKey] || {});
 export function optButtons(box, list, cur, lock, fmt, onPick) {
     box.innerHTML = "";
     list.forEach(v => { const b = el("button", "modebtn" + (v === cur ? " selected" : ""), fmt(v)); b.type = "button"; b.disabled = lock; b.dataset.k = v; b.onclick = () => onPick(v); box.appendChild(b); });
@@ -109,7 +109,7 @@ export function tapTeam(d, mapKey, p) {
     map["p" + p] = map["p" + p] === "A" ? "B" : "A";
     return map;
 }
-export function shuffleTeams(d) { const map = {}; K.X.activeSlots(d).slice().sort(() => Math.random() - .5).forEach((p, i) => { map["p" + p] = i % 2 ? "B" : "A"; }); return map; }
+export function shuffleTeams(d) { const map = {}; K.X.dealSlots(d).slice().sort(() => Math.random() - .5).forEach((p, i) => { map["p" + p] = i % 2 ? "B" : "A"; }); return map; }
 
 /* ---------------- screen helpers on a mode's own ids ("fd..." for Anime Feud, "ml..." for Most Likely) ---------------- */
 export function kit(px) {

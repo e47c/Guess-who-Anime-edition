@@ -24,7 +24,7 @@
    ===================================================================== */
 import { ABILITIES } from "./abilities.js?v=1";
 import { CARDS } from "../vault/carddb.js?v=2";
-import { BATTLE } from "../vault/config.js?v=5";
+import { BATTLE } from "../vault/config.js?v=6";
 import { rngFrom, shuffleWith } from "../vault/rng.js?v=1";
 
 export const arr = v => Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : [];

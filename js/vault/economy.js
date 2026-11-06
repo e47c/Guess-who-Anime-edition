@@ -9,10 +9,10 @@
    2. Each player gets the average of the position values they cover. Position values: the 8-player
       table with 8 players, otherwise an even spread from 40 (1st) to 10 (last).
    3. x the length multiplier of the mode (short 0.75, medium 1, long 1.5), rounded.
-   4. Paid only if: 2+ real players (distinct accounts), the game lasted the mode's minimum, and today's
-      coins from games stay under the daily cap (the last game is cut to fit the cap).
+   4. Paid only if: 2+ real players (distinct accounts) and the game lasted the mode's minimum length.
+      There is no daily limit on coins from games.
    ===================================================================== */
-import { EARN, DAILY_LOGIN, MISSIONS, MODE_META, BATTLE } from "./config.js?v=5";
+import { EARN, DAILY_LOGIN, MISSIONS, MODE_META, BATTLE } from "./config.js?v=6";
 import { rngFrom, shuffleWith } from "./rng.js?v=1";
 
 /* parts of the Vault that exist so far (missions that need a missing part are never rolled) */
@@ -50,7 +50,7 @@ export function gameValid(r) {
     if (r.duration < min) return { ok: false, why: "game too short (under " + (min >= 60 ? Math.round(min / 60 * 10) / 10 + " min" : min + " s") + ")" };
     return { ok: true };
 }
-/* coins before the daily cap */
+/* coins one player gets for one game */
 export function gameCoins(r, slot) {
     const v = placeValues(r.placements)[slot]; if (v == null) return 0;
     return Math.round(v * (EARN.lengthMult[lengthOf(r.mode)] || 1));
@@ -99,16 +99,13 @@ export function missionEvent(w, ev, log) {
 /* ---------- a finished game (the standard result) ---------- */
 export function applyGame(w, r, slot, now, seed, log) {
     ensureMissions(w, now, seed, log);
-    const day = dayKey(now), n = r.players.length, place = myPlace(r, slot), mode = r.mode;
+    const n = r.players.length, place = myPlace(r, slot), mode = r.mode;
     const out = { mode, place, n, coins: 0, raw: 0, mult: EARN.lengthMult[lengthOf(mode)] || 1, why: "", missions: [], teams: !!r.teams };
     const ok = gameValid(r);
     if (!ok.ok) { out.why = ok.why; return out; }
-    if (w.earn.day !== day) w.earn = { day, games: 0 };
-    out.raw = gameCoins(r, slot);
-    const room = Math.max(0, EARN.dailyGameCap - w.earn.games);
-    out.coins = Math.min(out.raw, room);
-    if (out.coins < out.raw) out.why = out.coins ? "daily game cap reached (" + EARN.dailyGameCap + ")" : "daily game cap reached";
-    w.coins += out.coins; w.earn.games += out.coins;
+    delete w.earn;                                               // the old daily-cap counter (no cap any more)
+    out.raw = out.coins = gameCoins(r, slot);
+    w.coins += out.coins;
     if (log) log({ kind: "game", d: out.coins, info: mode + " #" + place + "/" + n });
     const won = place === 1, ffa = !r.teams;
     out.missions = missionEvent(w, { mode, play: 1, win: won ? 1 : 0, top3ffa: ffa && n >= 4 && place <= 3 ? 1 : 0, squad: n >= 4 ? 1 : 0, teamwin: r.teams && won ? 1 : 0, cvwin: mode === "cardvault" && won ? 1 : 0 }, log);
@@ -131,5 +128,8 @@ export function claimDaily(w, now, log) {
     return { coins: s.coins, streak: s.streak, index: s.index };
 }
 
-/* ---------- Night Party hook (the tournament builder comes later) ---------- */
+/* coins from games on one day, read from the ledger (a plain stat: nothing is limited by it) */
+export const gameCoinsOn = (ledger, day) => (ledger || []).reduce((s, l) => s + (l.kind === "game" && dayKey(l.t) === day ? Number(l.d) || 0 : 0), 0);
+
+/* ---------- Night Party bonus coins ---------- */
 export const nightPartyCoins = (won, stages) => (won ? EARN.nightParty.winner : 0) + EARN.nightParty.perStage * Math.max(0, stages | 0);

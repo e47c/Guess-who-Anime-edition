@@ -7,7 +7,7 @@
    ===================================================================== */
 import * as K from "./kit.js?v=11";
 import { hand, POSE } from "./hands.js?v=11";
-import { audio } from "../audio.js";
+import { audio } from "../audio.js?v=2";
 const { lin, ss, hit, hs, TAU, mid, mix, bell } = K;
 
 const HS = X => X.M * (X.h > X.w ? .0036 : .003);
