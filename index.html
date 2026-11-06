@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="css/case.css?v=1">
 <link rel="stylesheet" href="css/suspect.css?v=2">
 <link rel="stylesheet" href="css/sketch.css?v=5">
+<link rel="stylesheet" href="css/vault.css?v=2">
 </head>
 <body class="anime-theme" data-scene="home">
 
@@ -134,6 +135,7 @@
 <div class="home-fire" aria-hidden="true"><i></i><i></i></div>
 <header class="home-top">
 <div class="home-top-r"><span class="credit" id="credit" aria-label="Credits">CREDIT <b>00</b></span>
+<button class="vault-chip" type="button" onclick="openVault()" aria-label="Arcade Vault: your AAP Coins"><i class="coin-ico" aria-hidden="true"></i><b class="vault-bal">0</b></button>
 <button class="icon-btn" onclick="openSettings()" aria-label="Settings">⚙</button></div>
 </header>
 <main class="home-main">
@@ -167,6 +169,7 @@
 <div class="pc-hs" aria-hidden="true">HI-SCORE TABLE</div>
 <div class="pc-stats" id="pcStats"></div>
 <button class="btn ghost wide" onclick="openProfile()">Edit player card</button>
+<button class="btn alt wide pc-vault" type="button" onclick="openVault()"><i class="coin-ico" aria-hidden="true"></i>Arcade Vault<small>rewards · shop · packs · cards</small></button>
 <input id="name" type="hidden">
 </aside>
 </main>
@@ -194,6 +197,7 @@
 <button class="chip-btn" onclick="copyInviteLink()" aria-label="Copy invite link">Invite link</button></span></div>
 <div class="lobby-title"><span class="logo-mini" role="img" aria-label="Anime Arcade Party"><svg class="aa-mark" viewBox="0 0 120 120" aria-hidden="true"><use href="#aa-mark"/></svg><b>ANIME</b><span class="lm-ap"><em>ARCADE</em><i>PARTY</i></span></span><small aria-hidden="true">PLAYER SELECT</small></div>
 <div class="lobby-top-actions">
+<button class="vault-chip" type="button" onclick="openVault()" aria-label="Arcade Vault: your AAP Coins"><i class="coin-ico" aria-hidden="true"></i><b class="vault-bal">0</b></button>
 <button class="icon-btn" onclick="openSettings()" aria-label="Settings">⚙</button>
 <button class="btn ghost sm" onclick="leaveRoom()">Leave</button>
 <button class="btn danger sm host-only" onclick="closeRoom()">Close room</button>
@@ -516,6 +520,26 @@
 </div>
 </div>
 
+<div id="vault" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="vaultTitle">
+<div class="sheet wide-sheet vault-sheet">
+<button class="sheet-x" onclick="closeOverlay('vault')" aria-label="Close">✕</button>
+<div class="sheet-kicker">AAP COINS</div>
+<header class="vt-head"><h2 id="vaultTitle">Arcade Vault</h2><div class="vt-bal" aria-label="Your balance"><i class="coin-ico" aria-hidden="true"></i><b id="vtBal">0</b><small>AAP Coins</small></div></header>
+<nav class="vt-tabs" id="vtTabs" role="tablist" aria-label="Vault sections"></nav>
+<div id="vtBody" class="vt-body"></div>
+</div>
+</div>
+
+<div id="daily" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="dailyTitle">
+<div class="sheet daily-sheet">
+<button class="sheet-x" onclick="closeOverlay('daily')" aria-label="Close">✕</button>
+<div class="sheet-kicker">ARCADE VAULT</div>
+<h2 id="dailyTitle">Daily bonus</h2>
+<div id="dailyBody"></div>
+<div class="sheet-foot dl-foot"><button id="dailyClaim" class="btn alt" onclick="vaultClaimDaily()">Claim</button><button class="btn ghost" onclick="closeOverlay('daily')">Later</button></div>
+</div>
+</div>
+
 <div id="confirm" class="overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
 <div class="sheet confirm-sheet"><h2 id="confirmTitle"></h2><p id="confirmText"></p>
 <div class="confirm-btns"><button id="confirmNo" class="btn ghost">Cancel</button><button id="confirmYes" class="btn">OK</button></div></div>
@@ -533,7 +557,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=43"></script>
+<script type="module" src="js/game.js?v=45"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){

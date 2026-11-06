@@ -1,10 +1,12 @@
-// Arcade Vault phase 1 tests: node tools/vault-test.mjs
-// The standard match result for every mode (from final room states), the storage layer (idempotent, atomic,
-// never negative), the seeded RNG, and that the config covers every mode.
+// Arcade Vault tests: node tools/vault-test.mjs
+// Phase 1: the standard match result for every mode (from final room states), the storage layer (idempotent,
+// atomic, never negative), the seeded RNG, the config. Phase 2: coins per placement, anti-farming, the daily
+// cap, missions and the login streak.
 import { resultOf, resultToDb, resultFromDb, placeRows, RESULT_MODES } from "../js/vault/result.js";
-import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js";
-import { rngFrom, newSeed, pickWeighted, shuffleWith } from "../js/vault/rng.js";
-import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT } from "../js/vault/config.js";
+import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=2";
+import { rngFrom, newSeed, pickWeighted, shuffleWith } from "../js/vault/rng.js?v=1";
+import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=2";
+import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins } from "../js/vault/economy.js?v=1";
 
 let ok = 0, bad = 0;
 const t = (c, m) => { if (c) ok++; else { bad++; console.log("  ✘", m); } };
@@ -123,11 +125,94 @@ const s1 = rngFrom(42), s2 = rngFrom(42), s3 = rngFrom(43);
 const seqA = Array.from({ length: 5 }, s1), seqB = Array.from({ length: 5 }, s2), seqC = Array.from({ length: 5 }, s3);
 t(eq(seqA, seqB) && !eq(seqA, seqC), "same seed, same rolls; another seed, other rolls");
 t(seqA.every(x => x >= 0 && x < 1), "values in [0, 1)");
-const g = rngFrom(newSeed()), cnt = { a: 0, b: 0, c: 0 }; for (let i = 0; i < 100000; i++) cnt[pickWeighted(g, { a: 60, b: 30, c: 10 })]++;
+const gR = rngFrom(newSeed()), cnt = { a: 0, b: 0, c: 0 }; for (let i = 0; i < 100000; i++) cnt[pickWeighted(gR, { a: 60, b: 30, c: 10 })]++;
 t(Math.abs(cnt.a / 1000 - 60) < 1.2 && Math.abs(cnt.b / 1000 - 30) < 1.2 && Math.abs(cnt.c / 1000 - 10) < 0.8, "weighted picks follow the odds: " + JSON.stringify(cnt));
 t(eq(shuffleWith(rngFrom(7), [1, 2, 3, 4, 5]), shuffleWith(rngFrom(7), [1, 2, 3, 4, 5])), "seeded shuffle is replayable");
 let lo = 1, hi = 0; const g2 = rngFrom(1); for (let i = 0; i < 1e5; i++) { const x = g2(); lo = Math.min(lo, x); hi = Math.max(hi, x); }
 t(lo < 0.001 && hi > 0.999, "covers the whole range");
+
+sect("coins per placement (A2)");
+const P = (...pl) => pl.map((place, i) => ({ slot: i + 1, place }));
+t(eq([1, 2, 3, 4, 5, 6, 7, 8].map(p => posValue(p, 8)), [40, 34, 28, 24, 20, 16, 13, 10]), "8 players: the table");
+t(eq([1, 2, 3, 4].map(p => posValue(p, 4)), [40, 30, 20, 10]) && eq([1, 2].map(p => posValue(p, 2)), [40, 10]), "fewer players: an even spread 40 -> 10");
+t(eq(placeValues(P(1, 2, 2, 4)), { 1: 40, 2: 25, 3: 25, 4: 10 }), "a tie shares the average of the places it covers");
+t(eq(placeValues(P(1, 1, 1, 2, 2)), { 1: 32.5, 2: 32.5, 3: 32.5, 4: 13.75, 5: 13.75 }), "teams: 3 winners cover 1st-3rd, 2 losers 4th-5th");
+const tt = placeValues(P(1, 1, 1, 1, 2, 2, 2, 2)); t(tt[1] === 31.5 && tt[5] === 14.75, "4v4: winners avg(40,34,28,24) = 31.5, losers avg(20,16,13,10) = 14.75");
+t(eq(placeValues(P(1, 1)), { 1: 25, 2: 25 }), "a 1v1 draw: 25 each");
+const res = (mode, pl, o = {}) => Object.assign({ key: mode + ":1", mode, players: pl.map((_, i) => ({ slot: i + 1, uid: "u" + (i + 1), name: "P" })), placements: P(...pl), duration: 600 }, o);
+t(gameCoins(res("classic", [1, 2]), 1) === 30 && gameCoins(res("classic", [1, 2]), 2) === 8, "short game x0.75 (Guess Who win 30, loss 8)");
+t(gameCoins(res("feud", [1, 2]), 1) === 60 && gameCoins(res("uno", [1, 2, 3]), 2) === 25, "long x1.5 (Feud win 60), medium x1");
+t(!gameValid(res("uno", [1, 2], { players: [{ slot: 1, uid: "same" }, { slot: 2, uid: "same" }] })).ok, "one account twice is not 2 real players");
+t(!gameValid(res("uno", [1, 2], { players: [{ slot: 1, uid: "u1" }, { slot: 2, uid: "" }] })).ok, "an unknown account doesn't count");
+t(!gameValid(res("uno", [1, 2], { duration: EARN.minSeconds.medium - 1 })).ok && gameValid(res("uno", [1, 2], { duration: EARN.minSeconds.medium })).ok, "a game shorter than the minimum pays nothing");
+
+sect("paying a game");
+const T0 = new Date(2026, 10, 6, 12).getTime();
+let w = blankVault(T0);
+let g = applyGame(w, res("uno", [2, 1, 3, 4]), 2, T0, 77);
+const mc = ms => ms.reduce((s, m) => s + m.coins, 0);
+t(g.coins === 40 && w.coins === 140 + mc(g.missions) && w.earn.games === 40 && g.place === 1, "1st of 4 in UNO: +40 (+ any mission it finished)");
+t(w.missions.day === dayKey(T0) && w.missions.list.length === 3 && w.missions.seed === 77, "the first game of the day rolls the missions (seed kept)");
+t(w.missions.list.filter(m => m.kind === "fresh").length === 1 && new Set(w.missions.list.map(m => m.kind)).size === 3, "one 'try a mode' mission + two others, all different");
+t(w.missions.list.every(m => !MISSIONS.pool.find(p => p.id === m.id && p.needs)), "no mission for parts of the Vault that don't exist yet (packs, decks...)");
+t(Number(w.modes.uno) === T0, "the mode is marked as played");
+const cBefore = w.coins; g = applyGame(w, res("uno", [1, 2], { duration: 20 }), 2, T0, 1);
+t(g.coins === 0 && /too short/.test(g.why) && w.coins === cBefore && !g.missions.length, "too short: nothing, with the reason");
+w = blankVault(T0); w.earn = { day: dayKey(T0), games: 590 };
+g = applyGame(w, res("feud", [1, 2]), 1, T0, 5);
+t(g.coins === 10 && g.raw === 60 && /cap/.test(g.why) && w.earn.games === 600, "the daily cap cuts the last game to fit (600)");
+g = applyGame(w, res("feud", [1, 2]), 1, T0, 5);
+t(g.coins === 0 && w.earn.games === 600, "then nothing more from games today");
+g = applyGame(w, res("feud", [1, 2]), 1, T0 + 86400000, 5);
+t(g.coins === 60 && w.earn.games === 60, "the cap resets the next day");
+let total = 0; w = blankVault(T0); for (let i = 0; i < 40; i++) { const c0 = w.coins; applyGame(w, res("feud", [1, 2], { key: "k" + i }), 1, T0, i); total += w.coins - c0; }
+t(w.earn.games === EARN.dailyGameCap, "40 wins in a day pay exactly the cap from games (" + w.earn.games + ")");
+
+sect("missions");
+w = blankVault(T0); ensureMissions(w, T0, 3);
+const mx = w.missions.list.map(m => m.id).join();
+t(!ensureMissions(w, T0 + 3600000, 999) && w.missions.list.map(m => m.id).join() === mx, "rolled once per day");
+const w2 = blankVault(T0); ensureMissions(w2, T0, 3); t(w2.missions.list.map(m => m.id).join() === mx, "same seed, same missions (auditable)");
+const fresh = w.missions.list.find(m => m.kind === "fresh");
+t(fresh.modes.length >= 1 && fresh.modes.every(m => MODE_META[m] && m !== "cardvault"), "'try a mode' lists modes not played in 7 days (Card Vault once it exists)");
+w = blankVault(T0); Object.keys(MODE_META).forEach(m => { w.modes[m] = T0 - 86400000; }); w.modes.imposter = T0 - 10 * 86400000; ensureMissions(w, T0, 4);
+t(eq(w.missions.list.find(m => m.kind === "fresh").modes, ["imposter"]), "only Imposter is stale -> that's the one");
+w = blankVault(T0); Object.keys(MODE_META).forEach((m, i) => { w.modes[m] = T0 - 3600000 * (i + 1); }); ensureMissions(w, T0, 4);
+t(w.missions.list.find(m => m.kind === "fresh").modes.length === 1, "everything played this week: the least recently played mode");
+const mis = id => Object.assign({}, id === "fresh" ? MISSIONS.fresh : MISSIONS.pool.find(m => m.id === id), { prog: 0, done: false });
+w = blankVault(T0); w.missions = { day: dayKey(T0), list: [Object.assign(mis("fresh"), { modes: ["feud"] }), mis("play2"), mis("top3")] };
+w.modes.feud = T0 - 30 * 86400000;
+applyGame(w, res("uno", [3, 1, 2, 4]), 1, T0, 1);
+t(!w.missions.list[0].done && w.missions.list[1].prog === 1 && w.missions.list[2].done, "UNO 3rd of 4: 'play 2' is 1/2, 'top 3 in a free-for-all' done");
+const c0 = w.coins; g = applyGame(w, res("feud", [1, 2]), 1, T0, 1);
+t(w.missions.list[0].done && w.missions.list[1].done && g.missions.length === 2 && w.coins === c0 + 60 + MISSIONS.fresh.coins + mis("play2").coins, "a Feud game finishes 'try a mode' and 'play 2'; mission coins come on top");
+const c1 = w.coins; applyGame(w, res("feud", [1, 2]), 1, T0, 1);
+t(w.coins - c1 === 60, "finished missions never pay twice");
+w = blankVault(T0); w.missions = { day: dayKey(T0), list: [mis("top3"), mis("team1")] };
+applyGame(w, res("feud", [1, 1, 1, 2, 2, 2], { teams: [{}] }), 1, T0, 1);
+t(!w.missions.list[0].done && w.missions.list[1].done, "a team game counts for 'win a team game', not for 'top 3 free-for-all'");
+w = blankVault(T0); w.missions = { day: dayKey(T0), list: [mis("squad4")] };
+applyGame(w, res("classic", [1, 2]), 1, T0, 1); t(!w.missions.list[0].done, "a 1v1 isn't a 4+ player game");
+w = blankVault(T0); w.missions = { day: dayKey(T0), list: [mis("play2")] };
+applyGame(w, res("uno", [1, 2], { duration: 10 }), 1, T0, 1); t(w.missions.list[0].prog === 0, "a game too short to pay doesn't count for missions either");
+t(missionEvent({ coins: 0, missions: { list: [mis("pack1")] } }, { pack: 1 }).length === 1, "pack / scratch / deck events can finish their missions (later phases)");
+
+sect("daily login streak");
+w = blankVault(T0); const days = Array.from({ length: 9 }, (_, i) => T0 + i * 86400000);
+const got = days.map(d => claimDaily(w, d).coins);
+t(eq(got, [30, 30, 40, 40, 50, 50, 100, 30, 30]), "30, 30, 40, 40, 50, 50, 100, then it repeats: " + got.join(","));
+t(claimDaily(w, days[8] + 3600000).error && w.daily.streak === 9, "once per day");
+t(loginState(w, days[8] + 2 * 86400000).lost && claimDaily(w, days[8] + 2 * 86400000).coins === 30 && w.daily.streak === 1, "a missed day resets the streak to day 1");
+t(dayBefore("2026-03-01") === "2026-02-28" && dayBefore("2026-01-01") === "2025-12-31", "calendar days (month and year changes)");
+const DST = new Date(2026, 2, 29, 0, 30).getTime(); t(dayBefore(dayKey(DST)) === "2026-03-28", "daylight-saving change");
+const wb = createBank(memoryBackend(), { now: () => T0 });
+const cl = await Promise.all([1, 2, 3].map(() => wb.apply("daily:" + dayKey(T0), "daily", (w, x) => claimDaily(w, x.now, x.log))));
+t(wb.coins() === VAULT.startCoins + 30 && cl.filter(x => !x.dup).length === 1, "three claims at once (double click, two tabs) pay once");
+t(wb.ledger().filter(l => l.kind === "daily").length === 1 && wb.ledger().some(l => l.kind === "daily" && l.d === 30), "logged once");
+const gb = createBank(memoryBackend(), { now: () => T0 }), rr = res("uno", [1, 2]);
+const two = await Promise.all([1, 2].map(() => gb.apply("game:ROOM:" + rr.key, "game", (w, x) => applyGame(w, rr, 1, x.now, 9, x.log))));
+t(two.filter(x => x.dup).length === 1 && gb.coins() === VAULT.startCoins + 40 + mc(two.find(x => !x.dup).result.missions), "the same game reported twice (reload, reconnect) pays once");
+t(nightPartyCoins(true, 4) === 140 && nightPartyCoins(false, 3) === 30, "Night Party hook: winner +100, +10 per stage");
 
 console.log(`\n${ok} passed, ${bad} failed`);
 process.exit(bad ? 1 : 0);

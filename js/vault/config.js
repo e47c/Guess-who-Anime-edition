@@ -39,18 +39,18 @@ export const EARN = {
 export const DAILY_LOGIN = [30, 30, 40, 40, 50, 50, 100];     // 7-day streak, then it repeats; a missed day resets it
 
 export const MISSIONS = {
-    perDay: 3,
+    perDay: 3,                                   // missions with `needs` appear once that part of the Vault exists
     freshModeDays: 7,                            // "try a mode you have not played in N days" (always one of the 3)
     pool: [
         { id: "play2",     text: "Play 2 games",                       kind: "play",     goal: 2, coins: 20 },
         { id: "play4",     text: "Play 4 games",                       kind: "play",     goal: 4, coins: 35 },
         { id: "win1",      text: "Win a game",                         kind: "win",      goal: 1, coins: 30 },
-        { id: "top3",      text: "Finish top 3 in a free-for-all",     kind: "top3ffa",  goal: 1, coins: 25 },
+        { id: "top3",      text: "Finish top 3 in a free-for-all (4+ players)",     kind: "top3ffa",  goal: 1, coins: 25 },
         { id: "squad4",    text: "Play a game with 4+ players",        kind: "squad",    goal: 1, coins: 25 },
-        { id: "pack1",     text: "Open a pack",                        kind: "pack",     goal: 1, coins: 20 },
-        { id: "scratch1",  text: "Scratch a card",                     kind: "scratch",  goal: 1, coins: 20 },
-        { id: "battle1",   text: "Win a card battle",                  kind: "cvwin",    goal: 1, coins: 40 },
-        { id: "deck1",     text: "Build or edit a deck",               kind: "deck",     goal: 1, coins: 20 },
+        { id: "pack1",     text: "Open a pack",                        kind: "pack",     goal: 1, coins: 20, needs: "packs" },
+        { id: "scratch1",  text: "Scratch a card",                     kind: "scratch",  goal: 1, coins: 20, needs: "scratch" },
+        { id: "battle1",   text: "Win a card battle",                  kind: "cvwin",    goal: 1, coins: 40, needs: "battle" },
+        { id: "deck1",     text: "Build or edit a deck",               kind: "deck",     goal: 1, coins: 20, needs: "decks" },
         { id: "team1",     text: "Win a team game",                    kind: "teamwin",  goal: 1, coins: 35 }
     ],
     fresh: { id: "fresh", text: "Play a mode you haven't played in 7 days", kind: "fresh", goal: 1, coins: 40 }

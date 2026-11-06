@@ -263,7 +263,7 @@ Picked under **Game type** in the lobby (Classic / Contest; default Classic). Ev
 ## Arcade Vault (economy) · in progress
 
 Being built in phases: coins (AAP Coins), daily rewards, missions, a shop, scratch cards, series packs, a card
-collection and decks, and Anime Card Vault (mode 9, a card battle). Phase 1 is the plumbing:
+collection and decks, and Anime Card Vault (mode 9, a card battle).
 
 - **Every mode reports one standard result** when a match ends: `{ key, mode, players, placements (ties share a place),
   scores, teams?, duration, settings }`. It is built by `js/vault/result.js` from the room's own final state, so it never
@@ -277,6 +277,18 @@ collection and decks, and Anime Card Vault (mode 9, a card battle). Phase 1 is t
   rules only allow writes under `rooms/`. Every change goes through `bank.apply(opId, ...)`: idempotent (an operation id
   pays once), atomic across tabs (Web Locks), never below 0 coins, and logged with its seed in a ledger. A server backend
   can replace the local one without touching the callers.
+- **Earning coins (phase 2):** the coin chip on the home screen and in the lobby opens the Vault (Rewards tab for now).
+  - A finished game pays by placement: with 8 players 40, 34, 28, 24, 20, 16, 13, 10; with fewer an even spread from 40 to 10.
+    Players who share a place (a tie, or a whole team) get the average of the places they cover. x0.75 for short modes,
+    x1.5 for long ones (lengths in `MODE_META`). A pop-up shows what you got and why.
+  - Anti-farming: only with 2+ different accounts, only if the game lasted the mode's minimum (short 1 min, medium 2.5,
+    long 4), and at most 600 coins from games per day. Spectators earn nothing.
+  - Daily login: 30, 30, 40, 40, 50, 50, 100, then it repeats; a missed day starts over. The bonus sheet opens once a day
+    on the home screen (never inside a room) and stays claimable in the Vault.
+  - Daily missions: 3 a day from the pool in `config.js`, one always "play a mode you haven't played in 7 days". They pay
+    the moment they're done. Missions about packs, scratch cards, decks and card battles only appear once those exist.
+  - The Rewards tab also lists today's game coins against the cap and a coin history (every roll with its seed).
+  - The Night Party bonus (winner +100, +10 per stage) has a hook (`nightPartyCoins`) for the tournament builder.
 - Tests: `node tools/vault-test.mjs`.
 
 ## Customising

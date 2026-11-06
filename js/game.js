@@ -26,7 +26,7 @@ import * as DRAFT from "./draft/draft.js?v=6";
 import * as FEUD from "./feud/feud.js?v=6";
 import * as LIKELY from "./feud/likely.js?v=3";
 import * as SKETCH from "./sketch/sketch.js?v=8";
-import * as VAULT from "./vault/vault.js?v=1";
+import * as VAULT from "./vault/vault.js?v=2";
 import { resultOf, resultToDb, resultFromDb } from "./vault/result.js?v=1";
 import { initCine, cineHook, cineHas } from "./cine/engine.js?v=12";
 import { hand as cineHand } from "./cine/hands.js?v=11";
@@ -3379,7 +3379,7 @@ function closeOverlay(id) {
     if (i >= 0) { const o = overlayStack.splice(i, 1)[0]; if (o.focus && o.focus.focus) try { o.focus.focus({ preventScroll: true }); } catch (e) {} }
 }
 window.closeOverlay = closeOverlay;
-function closeAllOverlays() { ["pause", "settings", "profile", "confirm"].forEach(id => $(id).classList.add("hidden")); overlayStack.length = 0; $("emotePanel").classList.add("hidden"); }
+function closeAllOverlays() { ["pause", "settings", "profile", "confirm", "vault", "daily"].forEach(id => $(id).classList.add("hidden")); overlayStack.length = 0; $("emotePanel").classList.add("hidden"); }
 let confirmResolve = null;
 function uiConfirm({ title, text, ok = "OK", cancel = "Cancel", danger = false, info = false }) {
     if (confirmResolve) confirmResolve(false);
@@ -3557,6 +3557,7 @@ window.joinRoom = async function () {
 
 /* ---------- lobby ---------- */
 function openLobby() {
+    closeOverlay("daily");      // the daily bonus waits in the Vault; it never covers a room
     setRoomCode(room);
     try { history.replaceState(null, "", location.pathname + "?room=" + room); } catch (e) {}
     listenToRoom();
@@ -4117,7 +4118,7 @@ function route(d) {
         if ($("lobby").classList.contains("hidden")) { resetMatchState(); showOnly("lobby"); seatSig = ""; }
         lastStatus = st; lobbyRender(d); return;
     }
-    if (lastStatus === "waiting" || lastStatus === "") { resetMatchState(); }
+    if (lastStatus === "waiting" || lastStatus === "") { resetMatchState(); closeOverlay("vault"); }
     lastStatus = st;
     if (spec) { showGwSpec(d); return; }
     matchIntro(d);
@@ -4645,6 +4646,7 @@ async function initApp() {
     $("homeTitle").addEventListener("click", () => { const lg = $("homeTitle"); lg.classList.remove("zap"); void lg.offsetWidth; lg.classList.add("zap"); clearTimeout(logoTimer); logoTimer = setTimeout(() => { logoTaps = 0; }, 900); if (++logoTaps >= 5) { logoTaps = 0; secretPower(["PLUS ULTRA!", "DATTEBAYO!", "BANKAI!", "KAMEHAMEHA!", "DOMAIN EXPANSION!"][(Math.random() * 5) | 0]); } else sfx("tick"); });
     initGallery(ANIME_LIBRARY, Object.fromEntries(Object.keys(HB_SERIES).map(k => [k, HB_SERIES[k].label])));
     setProfileHooks({ sfx: sfx, toast: toast, onAchievement: achToast });
+    VAULT.initVault({ openOverlay, closeOverlay, sfx, toast, inRoom: () => !!room, hasName: () => !!profile.get().name });
     bindUpload(); bindSettings(); syncDock(); renderProfileCard(); buildHomeModes();
     $("name").value = profile.get().name || "";
     $("joinCode").addEventListener("keydown", e => { if (e.key === "Enter") joinRoom(); });
@@ -4655,6 +4657,7 @@ async function initApp() {
     if (window.__splashDone || !$("boot")) audio.music.play("lobby"); else document.addEventListener("splashdone", () => { if (!room) audio.music.play("lobby"); }, { once: true });
     const boot = $("boot");       // the splash (index.html) leaves once it has played or been skipped, and the app is ready
     if (boot) { boot.classList.add("ready"); const go = () => { boot.classList.add("out"); setTimeout(() => boot.remove(), 650); }; if (window.__splashDone) go(); else document.addEventListener("splashdone", go, { once: true }); }
+    { const daily = () => setTimeout(() => VAULT.maybeShowDaily(), 1600); if (window.__splashDone) daily(); else document.addEventListener("splashdone", daily, { once: true }); }    // once a day, on the home screen
     try { const n = sessionStorage.getItem("gw_notice"); if (n) { sessionStorage.removeItem("gw_notice"); setTimeout(() => toast(n), 400); } } catch (e) {}
     if (!user) { toast("Couldn't reach the game server. Check your connection and reload."); return; }
 
