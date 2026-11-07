@@ -44,7 +44,7 @@ export const NIGHT_PARTY = {
     },
 
     /* AAP Coins on top of each stage's normal coins (stages pay through the usual per-game grants, no daily limit) */
-    coins: { winner: 100, perStage: 10, minPlayers: 2, minMinutes: 5 },
+    coins: { winner: 100, perStage: 10, minPlayers: 2 },
     winnerCosmetic: null,                        // HOOK: an earn-only cosmetic id given to tournament winners (not built yet)
 
     /* the live chart */

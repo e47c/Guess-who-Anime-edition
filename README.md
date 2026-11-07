@@ -319,7 +319,7 @@ hidden by the interface, as in the other modes.
   stores it in `rooms/<code>/lastResult`. Per-mode metadata (players, teams, FFA, 1v1, length, fast) is `MODE_META`.
 - **Earning coins.** By placement: 40, 34, 28, 24, 20, 16, 13, 10 with 8 players, an even spread from 40 to 10 with
   fewer; ties and teams share the average of the places they cover; x0.75 short / x1 medium / x1.5 long. Only with 2+
-  accounts and only past the mode's minimum length; no daily limit. Daily login 30, 30, 40, 40, 50, 50, 100
+  accounts; any finished game pays, however short; no daily limit. Daily login 30, 30, 40, 40, 50, 50, 100
   (a missed day resets it). 3 daily missions, one always "play a mode you haven't played in 7 days". Night Party bonus:
   winner +100, +10 per stage played (`js/party/config.js`).
 - **Shop.** Season 1 skins: each tier (Iron 150 ... Prismatic 3000) as a **Frame** ("Iron Frame - Season 1") and a

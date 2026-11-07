@@ -38,7 +38,8 @@ recomputes them every time, so the scoring can always be redone from the stored 
 - Removed: the cap logic (`applyGame`), its config value (`EARN.dailyGameCap`), the per-day counter in the saved
   Vault (`earn`; old saves drop it on load, coins untouched), the "/ 600" bar and the "daily cap" text in the Daily
   drawer. No mission mentioned it.
-- Kept: a game pays only with 2+ real players (distinct accounts) and past the mode's minimum length.
+- Kept: a game pays only with 2+ real players (distinct accounts). (2026-11-07: the minimum game length was removed
+  too, for games and for the Night Party bonus: if a game ended, it pays.)
 - Nothing else read the cap. A full search of js/, tools/, README and index.html came up empty after the change.
 - The Daily drawer still shows "Coins from games today", now a plain stat summed from the coin ledger.
 
@@ -175,8 +176,8 @@ Checklist: [x] 3 lanes / 8 lanes, the stage list (np3, np8); [x] the scoreboard 
   says so).
 - Winner screen: the champion, the named reward, the final chart; then BACK TO THE LOBBY with everyone still in it.
 - Coins: every stage's game pays its normal coins (no daily limit); on top the winner +100 and every participant +10
-  per stage played, once per tournament (bank operation `party:<room>:<id>`), only with 2+ real players and a
-  tournament of at least `coins.minMinutes`.
+  per stage played, once per tournament (bank operation `party:<room>:<id>`), only with 2+ real players (no minimum
+  length).
 - Profile: Tournaments won / played and the last 10 (name, reward, winner, date) in the profile sheet; the "Night Party
   Winner" achievement. Daily mission "Finish a Night Party" (+40). Hook: `NIGHT_PARTY.winnerCosmetic` +
   `winnerCosmeticHook` in economy.js for an earn-only winner cosmetic (not built).

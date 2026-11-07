@@ -11,14 +11,14 @@
    Every coin change goes through bank.apply(opId, ...), so a reload, a reconnect or a double click
    never pays twice.
    ===================================================================== */
-import { createBank, localBackend } from "./store.js?v=8";
-import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=8";
-import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=7";
+import { createBank, localBackend } from "./store.js?v=9";
+import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=9";
+import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=8";
 import { newSeed } from "./rng.js?v=1";
-import { grantStarter, recordBattle, grantToken, activeDeck, deckProblem } from "./packs.js?v=6";
-import { publicLook } from "./shop.js?v=6";
-import { initOpening } from "./opening.js?v=5";
-import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=6";
+import { grantStarter, recordBattle, grantToken, activeDeck, deckProblem } from "./packs.js?v=7";
+import { publicLook } from "./shop.js?v=7";
+import { initOpening } from "./opening.js?v=6";
+import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=7";
 import { motionOK } from "../fx.js";
 
 export const bank = createBank(localBackend());
@@ -244,7 +244,7 @@ function rewardsTab() {
     // earnings today + rules
     const ec = mk("section", "vt-card vt-earn"), today = gameCoinsOn(bank.ledger(), dayKey(now));
     const eh = mk("header", "vt-ch"); eh.append(mk("b", null, "Coins from games today"), mk("small", null, fmt(today)));
-    ec.append(eh, mk("p", "vt-rule", "Every finished game with 2+ players pays by placement: 1st 40 down to last 10 (ties and teams share their places), ×0.75 for short games, ×1.5 for long ones. A game has to last a minimum time to pay. There is no daily limit."));
+    ec.append(eh, mk("p", "vt-rule", "Every finished game with 2+ players pays by placement: 1st 40 down to last 10 (ties and teams share their places), ×0.75 for short games, ×1.5 for long ones. A game doesn't have to last a minimum time to pay: if a game ended, it pays. There is no daily limit."));
     wrap.appendChild(ec);
     // history
     const hc = mk("details", "vt-card vt-hist"); hc.appendChild(mk("summary", null, "Coin history"));

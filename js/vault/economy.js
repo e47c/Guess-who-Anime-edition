@@ -9,12 +9,12 @@
    2. Each player gets the average of the position values they cover. Position values: the 8-player
       table with 8 players, otherwise an even spread from 40 (1st) to 10 (last).
    3. x the length multiplier of the mode (short 0.75, medium 1, long 1.5), rounded.
-   4. Paid only if: 2+ real players (distinct accounts) and the game lasted the mode's minimum length.
+   4. Paid only if: 2+ real players (distinct accounts). Every finished game pays, however short it was.
       There is no daily limit on coins from games.
    ===================================================================== */
-import { EARN, DAILY_LOGIN, MISSIONS, MODE_META, BATTLE } from "./config.js?v=8";
+import { EARN, DAILY_LOGIN, MISSIONS, MODE_META, BATTLE } from "./config.js?v=9";
 import { rngFrom, shuffleWith } from "./rng.js?v=1";
-import { NIGHT_PARTY } from "../party/config.js?v=1";
+import { NIGHT_PARTY } from "../party/config.js?v=2";
 
 /* parts of the Vault that exist so far (missions that need a missing part are never rolled) */
 export const FEATURES = new Set(["games"]);
@@ -47,8 +47,6 @@ export const lengthOf = mode => mode === "cardvault" ? BATTLE.length : (MODE_MET
 export function gameValid(r) {
     const uids = new Set(r.players.map(p => p.uid).filter(Boolean));
     if (uids.size < EARN.minRealPlayers) return { ok: false, why: "needs " + EARN.minRealPlayers + "+ real players" };
-    const min = EARN.minSeconds[lengthOf(r.mode)] || 0;
-    if (r.duration < min) return { ok: false, why: "game too short (under " + (min >= 60 ? Math.round(min / 60 * 10) / 10 + " min" : min + " s") + ")" };
     return { ok: true };
 }
 /* coins one player gets for one game */
@@ -133,13 +131,12 @@ export function claimDaily(w, now, log) {
 export const gameCoinsOn = (ledger, day) => (ledger || []).reduce((s, l) => s + (l.kind === "game" && dayKey(l.t) === day ? Number(l.d) || 0 : 0), 0);
 
 /* ---------- Night Party bonus coins (on top of each stage's normal coins) ----------
-   winner + perStage x the stages this player played. Pays only when the tournament had 2+ real players (accounts)
-   and lasted the minimum length; at most once per tournament (the bank's operation id). */
+   winner + perStage x the stages this player played. Pays only when the tournament had 2+ real players (accounts);
+   no minimum length; at most once per tournament (the bank's operation id). */
 const NPC = NIGHT_PARTY.coins;
 export const nightPartyCoins = (won, stages) => (won ? NPC.winner : 0) + NPC.perStage * Math.max(0, stages | 0);
 export function nightPartyValid(o) {
     if ((o.players | 0) < NPC.minPlayers) return { ok: false, why: "needs " + NPC.minPlayers + "+ real players" };
-    if ((Number(o.seconds) || 0) < NPC.minMinutes * 60) return { ok: false, why: "tournament too short (under " + NPC.minMinutes + " min)" };
     if ((o.stages | 0) < 1) return { ok: false, why: "no stage played" };
     return { ok: true };
 }

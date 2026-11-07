@@ -13,7 +13,7 @@
       average of those positions' base points (4v4: 1st team ~8.07, 2nd ~2.93).
    3. x the stage weight, added to the pool. Exact values are kept; ties are decided on exact values (eps).
    ===================================================================== */
-import { NIGHT_PARTY as NP } from "./config.js?v=1";
+import { NIGHT_PARTY as NP } from "./config.js?v=2";
 
 const near = (a, b) => Math.abs(a - b) < NP.eps;
 const arr = v => Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : [];

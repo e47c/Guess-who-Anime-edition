@@ -38,7 +38,7 @@ export const EARN = {
     top: 40, bottom: 10,                         // fewer players: spread evenly between these
     lengthMult: { short: 0.75, medium: 1, long: 1.5 },
     minRealPlayers: 2,                           // distinct accounts in the match
-    minSeconds: { short: 60, medium: 150, long: 240 }    // a game shorter than this pays nothing (no daily limit)
+    // every finished game pays, however short; no daily limit
     // Night Party bonus coins: js/party/config.js (NIGHT_PARTY.coins)
 };
 export const DAILY_LOGIN = [30, 30, 40, 40, 50, 50, 100];     // 7-day streak, then it repeats; a missed day resets it

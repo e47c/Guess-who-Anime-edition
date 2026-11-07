@@ -3,14 +3,14 @@
 // atomic, never negative), the seeded RNG, the config. Phase 2: coins per placement, anti-farming, the daily
 // cap, missions and the login streak.
 import { resultOf, resultToDb, resultFromDb, placeRows, RESULT_MODES, battleResultOf } from "../js/vault/result.js";
-import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=8";
+import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=9";
 import { rngFrom, newSeed, pickWeighted, shuffleWith } from "../js/vault/rng.js?v=1";
-import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=8";
-import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, nightPartyValid, applyNightParty, gameCoinsOn, FEATURES } from "../js/vault/economy.js?v=7";
-import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=6";
-import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordBattle, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=6";
+import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=9";
+import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, nightPartyValid, applyNightParty, gameCoinsOn, FEATURES } from "../js/vault/economy.js?v=8";
+import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=7";
+import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordBattle, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=7";
 import { CARDS, BY_SERIES, CARD_SERIES } from "../js/vault/carddb.js?v=3";
-import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=8";
+import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=9";
 
 let ok = 0, bad = 0;
 const t = (c, m) => { if (c) ok++; else { bad++; console.log("  ✘", m); } };
@@ -99,7 +99,7 @@ t(MODE_META.cardvault.name === "Anime TCG", "the ninth mode is called Anime TCG"
     const pay = applyGame(w, br, 3, NOW, 7, null);
     t(pay.place === 1 && pay.coins === Math.round(40 * EARN.lengthMult.short), "the winner of a 3-minute duel is paid like any short game");
     w = blankVault(NOW); const quick = battleResultOf(Object.assign({}, node, { t0: NOW - 30000 }), lobbyRoom, "bx3", NOW);
-    t(applyGame(w, quick, 3, NOW, 7, null).coins === 0, "a battle under the minimum length pays nothing");
+    t(applyGame(w, quick, 3, NOW, 7, null).coins === Math.round(40 * EARN.lengthMult.short), "a 30-second battle pays like any other (no minimum length)");
 }
 
 sect("Firebase round trip");
@@ -168,7 +168,7 @@ t(gameCoins(res("classic", [1, 2]), 1) === 30 && gameCoins(res("classic", [1, 2]
 t(gameCoins(res("feud", [1, 2]), 1) === 60 && gameCoins(res("uno", [1, 2, 3]), 2) === 25, "long x1.5 (Feud win 60), medium x1");
 t(!gameValid(res("uno", [1, 2], { players: [{ slot: 1, uid: "same" }, { slot: 2, uid: "same" }] })).ok, "one account twice is not 2 real players");
 t(!gameValid(res("uno", [1, 2], { players: [{ slot: 1, uid: "u1" }, { slot: 2, uid: "" }] })).ok, "an unknown account doesn't count");
-t(!gameValid(res("uno", [1, 2], { duration: EARN.minSeconds.medium - 1 })).ok && gameValid(res("uno", [1, 2], { duration: EARN.minSeconds.medium })).ok, "a game shorter than the minimum pays nothing");
+t(gameValid(res("uno", [1, 2], { duration: 1 })).ok && gameValid(res("uno", [1, 2], { duration: 0 })).ok && !("minSeconds" in EARN), "no minimum length: a finished game pays however short (the config value is gone)");
 
 sect("paying a game");
 const T0 = new Date(2026, 10, 6, 12).getTime();
@@ -181,7 +181,8 @@ t(w.missions.list.filter(m => m.kind === "fresh").length === 1 && new Set(w.miss
 t(w.missions.list.every(m => !MISSIONS.pool.find(p => p.id === m.id && p.needs)), "no mission for parts of the Vault that don't exist yet (packs, decks...)");
 t(Number(w.modes.uno) === T0, "the mode is marked as played");
 const cBefore = w.coins; g = applyGame(w, res("uno", [1, 2], { duration: 20 }), 2, T0, 1);
-t(g.coins === 0 && /too short/.test(g.why) && w.coins === cBefore && !g.missions.length, "too short: nothing, with the reason");
+t(g.coins === 10 && !g.why && w.coins === cBefore + 10 + g.missions.reduce((s2, m) => s2 + m.coins, 0), "a 20-second game pays in full (2nd of 2: +10)");
+t(applyGame(blankVault(T0), res("uno", [1, 2], { players: [{ slot: 1, uid: "u1" }, { slot: 2, uid: "u1" }] }), 1, T0, 1).coins === 0, "still: one real account playing alone pays nothing");
 w = blankVault(T0); w.earn = { day: dayKey(T0), games: 590 };          // a save from before the cap was removed
 g = applyGame(w, res("feud", [1, 2]), 1, T0, 5);
 t(g.coins === 60 && g.raw === 60 && !g.why && !("earn" in w), "no daily cap: an old save's cap counter is ignored and dropped, the game pays in full");
@@ -218,7 +219,7 @@ t(!w.missions.list[0].done && w.missions.list[1].done, "a team game counts for '
 w = blankVault(T0); w.missions = { day: dayKey(T0), list: [mis("squad4")] };
 applyGame(w, res("classic", [1, 2]), 1, T0, 1); t(!w.missions.list[0].done, "a 1v1 isn't a 4+ player game");
 w = blankVault(T0); w.missions = { day: dayKey(T0), list: [mis("play2")] };
-applyGame(w, res("uno", [1, 2], { duration: 10 }), 1, T0, 1); t(w.missions.list[0].prog === 0, "a game too short to pay doesn't count for missions either");
+applyGame(w, res("uno", [1, 2], { duration: 10 }), 1, T0, 1); t(w.missions.list[0].prog === 1, "a 10-second game counts for missions too");
 t(missionEvent({ coins: 0, missions: { list: [mis("pack1")] } }, { pack: 1 }).length === 1, "pack / scratch / deck events can finish their missions (later phases)");
 
 sect("daily login streak");
@@ -243,7 +244,7 @@ t(nightPartyCoins(true, 4) === 140 && nightPartyCoins(false, 3) === 30, "Night P
     t(o.coins === 160 && wv.coins === c0 + 160 + o.missions.reduce((s, m) => s + m.coins, 0), "Night Party winner of 6 stages: +160 (+ the mission if rolled)");
     wv = blankVault(T0); o = applyNightParty(wv, { won: false, stages: 5, players: 8, seconds: 3600 }, T0, 9); t(o.coins === 50, "a participant of 5 stages: +50");
     t(applyNightParty(blankVault(T0), { won: true, stages: 3, players: 1, seconds: 3600 }, T0, 9).coins === 0 && /2\+/.test(nightPartyValid({ players: 1, seconds: 9999, stages: 2 }).why), "one real player: nothing (anti-farming)");
-    t(applyNightParty(blankVault(T0), { won: true, stages: 3, players: 4, seconds: 60 }, T0, 9).coins === 0, "a 1-minute tournament: nothing (minimum length)");
+    t(applyNightParty(blankVault(T0), { won: true, stages: 3, players: 4, seconds: 60 }, T0, 9).coins === 130, "a 1-minute tournament pays too (no minimum length)");
     t(applyNightParty(blankVault(T0), { won: false, stages: 0, players: 4, seconds: 3600 }, T0, 9).coins === 0, "no stage played: nothing");
     wv = blankVault(T0); wv.missions = { day: dayKey(T0), seed: 1, list: [Object.assign({}, MISSIONS.pool.find(m => m.id === "party1"), { prog: 0, done: false })] };
     o = applyNightParty(wv, NPO, T0, 9); t(o.missions.length === 1 && o.missions[0].id === "party1", "the 'Finish a Night Party' daily mission completes");

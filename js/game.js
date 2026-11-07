@@ -20,19 +20,19 @@ import {
 
 import { audio } from "./audio.js?v=3";
 import { ambient, titleCard, shake, ring, burstText, countUp, flyClone, motionOK, setReduced, isReduced } from "./fx.js";
-import { profile, avatarEl, seatCard, passCard, styleName, styleTitle, initGallery, setProfileHooks, renderProfileCard } from "./profile.js?v=7";
-import * as WARD from "./wardrobe.js?v=1";
-import { showResults, closeResults } from "./results.js?v=5";
+import { profile, avatarEl, seatCard, passCard, styleName, styleTitle, initGallery, setProfileHooks, renderProfileCard } from "./profile.js?v=8";
+import * as WARD from "./wardrobe.js?v=2";
+import { showResults, closeResults } from "./results.js?v=6";
 import * as DRAFT from "./draft/draft.js?v=7";
 import * as FEUD from "./feud/feud.js?v=7";
 import * as LIKELY from "./feud/likely.js?v=4";
 import * as SKETCH from "./sketch/sketch.js?v=9";
-import * as VAULT from "./vault/vault.js?v=9";
-import * as SHOP from "./vault/shoppage.js?v=1";
-import * as CV from "./cardvault/cardvault.js?v=6";
-import * as NP from "./party/party.js?v=2";
+import * as VAULT from "./vault/vault.js?v=10";
+import * as SHOP from "./vault/shoppage.js?v=2";
+import * as CV from "./cardvault/cardvault.js?v=7";
+import * as NP from "./party/party.js?v=3";
 import { resultOf, resultToDb, resultFromDb } from "./vault/result.js?v=4";
-import { stageMeta, normalizeSettings, teamPatch } from "./party/stages.js?v=3";
+import { stageMeta, normalizeSettings, teamPatch } from "./party/stages.js?v=4";
 import { initCine, cineHook, cineHas } from "./cine/engine.js?v=14";
 import { hand as cineHand } from "./cine/hands.js?v=11";
 import * as CK from "./cine/kit.js?v=11";

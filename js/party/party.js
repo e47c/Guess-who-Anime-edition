@@ -16,9 +16,9 @@
             winner   the winner screen (then back to the lobby)
    Sudden death rounds are extra stages after the plan (weight 0, only the tied players).
    ===================================================================== */
-import { NIGHT_PARTY as NP } from "./config.js?v=1";
-import { stageIds, stageMeta, normalizeSettings, formatOf, stageFits, fastStages, estMinutes, estTotal } from "./stages.js?v=3";
-import { standings, topTied, leadGap, lateStart, seedOrder, splitTeams, makeBracket, normBracket, nextMatch, recordWin, bracketDone, bracketPlacements, matchesLeft, adjustPlacements, sdWinners, BYE } from "./scoring.js?v=1";
+import { NIGHT_PARTY as NP } from "./config.js?v=2";
+import { stageIds, stageMeta, normalizeSettings, formatOf, stageFits, fastStages, estMinutes, estTotal } from "./stages.js?v=4";
+import { standings, topTied, leadGap, lateStart, seedOrder, splitTeams, makeBracket, normBracket, nextMatch, recordWin, bracketDone, bracketPlacements, matchesLeft, adjustPlacements, sdWinners, BYE } from "./scoring.js?v=2";
 
 let X = null;
 const $ = id => document.getElementById(id);
@@ -722,7 +722,7 @@ function winnerCard(d, np, host) {
     const sdN = resList(np).filter(k => resOf(np)[k].sd).length;
     if (sdN) card.appendChild(el("p", "np-note", "Won after " + sdN + " sudden-death round" + (sdN > 1 ? "s" : "") + (np.flip ? " (still tied after " + NP.maxSuddenRounds + ": decided by a coin flip)" : "") + "."));
     const me = rows.find(r => r.id === X.uid());
-    if (me) card.appendChild(el("p", "np-note", "You finished " + (me.tied ? "T" : "") + ORD(me.rank) + " · Night Party bonus: " + (id === X.uid() ? NP.coins.winner + " + " : "") + NP.coins.perStage + " × " + me.played + " stages (if the night counts: 2+ players, " + NP.coins.minMinutes + "+ min)."));
+    if (me) card.appendChild(el("p", "np-note", "You finished " + (me.tied ? "T" : "") + ORD(me.rank) + " · Night Party bonus: " + (id === X.uid() ? NP.coins.winner + " + " : "") + NP.coins.perStage + " × " + me.played + " stages (with 2+ players)."));
     if (host) card.appendChild(btn("BACK TO THE LOBBY", "alt", npLobby)); else card.appendChild(el("p", "np-wait", "The host takes everyone back to the lobby."));
     if (!pm[id]) card.appendChild(el("small", "np-note", "(The winner has left the room.)"));
     return card;
