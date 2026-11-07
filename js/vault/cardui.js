@@ -156,7 +156,8 @@ export function packEl(series, kind = "normal", o = {}) {
     const label = mk("div", "vp-label"); label.append(mk("b", null, (o.cards || (kind === "premium" ? 6 : 5)) + " CARDS"), mk("small", null, kind === "premium" ? "PREMIUM PACK" : "NORMAL PACK"));
     body.append(mk("i", "vp-base"), big, mk("b", "vp-kanji", T.kanji), title, strip, label,
         mk("i", "vp-crimp top"), mk("i", "vp-crimp bot"), mk("i", "vp-seam"), mk("i", "vp-puff"), mk("i", "vp-crinkle"), mk("i", "vp-spec"), mk("i", "vp-shine"), mk("i", "vp-rim"));
-    el.appendChild(body);
+    const shadow = mk("i", "vp-shadow"), sh = mk("i"); sh.style.clipPath = body.style.clipPath; shadow.appendChild(sh); shadow.setAttribute("aria-hidden", "true");
+    el.append(shadow, body);
     return el;
 }
 /* the pointer / finger moves the light over foil and holo */

@@ -7,8 +7,12 @@
    ===================================================================== */
 
 /* ---------- the pack ---------- */
-.vpack { --pw: 190px; --mx: 50%; --my: 32%; position: relative; width: var(--pw); aspect-ratio: 5 / 8; font-size: calc(var(--pw) / 12); color: var(--ink, #fff); isolation: isolate;
-    filter: drop-shadow(0 1.1em 1.1em rgba(0,0,0,.55)) drop-shadow(0 .2em .25em rgba(0,0,0,.4)); }
+/* PERFORMANCE: nothing inside a pack is repainted while it moves. The pointer light (.vp-spec) and the Premium shine
+   (.vp-shine) are oversized layers moved with transform (GPU only), and the shadow is its own static blurred element
+   (.vp-shadow), not a filter on the whole pack (a filter is re-run whenever anything inside changes). */
+.vpack { --pw: 190px; --mx: 50%; --my: 32%; position: relative; width: var(--pw); aspect-ratio: 5 / 8; font-size: calc(var(--pw) / 12); color: var(--ink, #fff); isolation: isolate; }
+.vp-shadow { position: absolute; inset: 0; z-index: -1; pointer-events: none; transform: translateY(.75em) scale(.98); filter: blur(.55em); opacity: .62; }
+.vp-shadow > i { position: absolute; inset: 0; background: #000; }
 .vp-body { position: absolute; inset: 0; overflow: hidden; border-radius: .12em; }
 .vp-body > * { position: absolute; pointer-events: none; }
 /* coloured foil: the series colours + its motif, partly matte */
@@ -48,7 +52,9 @@
     background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.014 .05' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeDiffuseLighting lighting-color='%23fff' surfaceScale='3.6'%3E%3CfeDistantLight azimuth='225' elevation='40'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23c)'/%3E%3C/svg%3E") 0 0 / 240px 240px,
                 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 120px 120px; }
 /* the light: a specular spot + streak where the pointer / tilt puts it */
-.vp-spec { inset: 0; z-index: 5; background: radial-gradient(ellipse 42% 28% at var(--mx) var(--my), rgba(255,255,255,.5), transparent 70%), linear-gradient(115deg, transparent calc(var(--mx) - 16%), rgba(255,255,255,.22) var(--mx), transparent calc(var(--mx) + 16%)); mix-blend-mode: overlay; }
+.vp-spec { left: -50%; top: -50%; width: 200%; height: 200%; z-index: 5; will-change: transform;
+    background: radial-gradient(ellipse 21% 14% at 50% 50%, rgba(255,255,255,.5), transparent 70%), linear-gradient(115deg, transparent 42%, rgba(255,255,255,.22) 50%, transparent 58%);
+    transform: translate(calc((var(--mx) - 50%) * .5), calc((var(--my) - 50%) * .5)); mix-blend-mode: overlay; }
 .vp-shine { inset: 0; z-index: 5; }
 .vp-rim { inset: 0; z-index: 6; box-shadow: inset 0 0 0 .07em rgba(255,255,255,.35), inset .3em 0 .45em -.25em rgba(255,255,255,.4), inset -.3em 0 .45em -.25em rgba(0,0,0,.45), inset 0 -.4em .6em -.4em rgba(0,0,0,.5); }
 /* Normal: partly matte */
@@ -62,9 +68,12 @@
 .vpack.k-premium .vp-title small, .vpack.k-premium .vp-label small, .vpack.k-premium .vp-strip small { color: #3a2300; text-shadow: 0 .05em 0 rgba(255,255,255,.5); }
 .vpack.k-premium .vp-crimp { background: repeating-linear-gradient(90deg, #fff6c8 0 .08em, #8a5a10 .08em .18em), linear-gradient(180deg, rgba(255,255,255,.3), rgba(0,0,0,.25)); }
 .vpack.k-premium .vp-spec { mix-blend-mode: screen; opacity: .85; }
-.vpack.k-premium .vp-shine { background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.75) 47%, rgba(255,240,190,.4) 50%, transparent 58%) 0 0 / 300% 100%; mix-blend-mode: overlay; animation: vpShine 2.8s ease-in-out infinite; }
+.vpack.k-premium .vp-shine { left: -100%; right: auto; width: 300%; will-change: transform; background: linear-gradient(105deg, transparent 38%, rgba(255,250,225,.42) 47%, rgba(255,240,190,.2) 50%, transparent 58%); animation: vpShine 2.8s ease-in-out infinite; }
+/* the Packs Store shows 18 Premium packs: their shine runs on the one you point at; the tear-off strip never shines */
+.vt-pcell .vpack.k-premium .vp-shine, .pk-strip .vpack .vp-shine { animation-play-state: paused; }
+.vt-pcell:hover .vpack.k-premium .vp-shine, .vt-pcell:focus-within .vpack.k-premium .vp-shine { animation-play-state: running; }
 .vpack.k-premium .vp-crinkle { opacity: .7; mix-blend-mode: overlay; }
-@keyframes vpShine { 0% { background-position: 100% 0; } 65%, 100% { background-position: -100% 0; } }
+@keyframes vpShine { 0% { transform: translateX(33.3%); } 65%, 100% { transform: translateX(-33.3%); } }
 .vp-big .ke-menace { color: inherit; }
 
 /* ---------- the opening ---------- */

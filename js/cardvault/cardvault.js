@@ -22,8 +22,8 @@ import { newBattle, act, resolveRound, alive, handOf, lifeOf, due, applyDue, nor
 import { ABILITIES } from "./abilities.js?v=2";
 import { BATTLE } from "../vault/config.js?v=10";
 import { CARDS } from "../vault/carddb.js?v=3";
-import { cardEl } from "../vault/cardui.js?v=7";
-import { inspect } from "../vault/opening.js?v=7";
+import { cardEl } from "../vault/cardui.js?v=8";
+import { inspect } from "../vault/opening.js?v=8";
 import { rngFrom, newSeed, shuffleWith } from "../vault/rng.js?v=1";
 import { battleResultOf, resultToDb, resultFromDb } from "../vault/result.js?v=5";
 import { el, srvNow, presentIn, optButtons } from "../feud/common.js?v=4";

@@ -21,7 +21,7 @@ import {
 import { audio } from "./audio.js?v=3";
 import { ambient, titleCard, shake, ring, burstText, countUp, flyClone, motionOK, setReduced, isReduced } from "./fx.js";
 import { profile, avatarEl, seatCard, passCard, styleName, styleTitle, initGallery, setProfileHooks, renderProfileCard } from "./profile.js?v=9";
-import * as WARD from "./wardrobe.js?v=3";
+import * as WARD from "./wardrobe.js?v=4";
 import { showResults, closeResults } from "./results.js?v=7";
 import * as DRAFT from "./draft/draft.js?v=7";
 import * as FEUD from "./feud/feud.js?v=7";
@@ -29,7 +29,7 @@ import * as LIKELY from "./feud/likely.js?v=4";
 import * as SKETCH from "./sketch/sketch.js?v=9";
 import * as VAULT from "./vault/vault.js?v=11";
 import * as SHOP from "./vault/shoppage.js?v=3";
-import * as CV from "./cardvault/cardvault.js?v=8";
+import * as CV from "./cardvault/cardvault.js?v=9";
 import * as NP from "./party/party.js?v=4";
 import { resultOf, resultToDb, resultFromDb } from "./vault/result.js?v=5";
 import { stageMeta, normalizeSettings, teamPatch } from "./party/stages.js?v=5";

@@ -17,8 +17,8 @@ import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, mis
 import { newSeed } from "./rng.js?v=1";
 import { grantStarter, recordBattle, activeDeck, deckProblem } from "./packs.js?v=8";
 import { publicLook } from "./shop.js?v=8";
-import { initOpening } from "./opening.js?v=7";
-import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=8";
+import { initOpening } from "./opening.js?v=8";
+import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=9";
 import { motionOK } from "../fx.js";
 
 export const bank = createBank(localBackend());

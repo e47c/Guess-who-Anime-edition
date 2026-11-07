@@ -15,7 +15,7 @@ import { bank } from "./vault/vault.js?v=11";
 import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, owns, equip, publicLook } from "./vault/shop.js?v=8";
 import { SKINS } from "./vault/config.js?v=10";
 import { CARD_SERIES } from "./vault/carddb.js?v=3";
-import { theme } from "./vault/cardui.js?v=7";
+import { theme } from "./vault/cardui.js?v=8";
 
 const $ = id => document.getElementById(id);
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
