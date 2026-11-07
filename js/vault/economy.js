@@ -12,7 +12,7 @@
    4. Paid only if: 2+ real players (distinct accounts). Every finished game pays, however short it was.
       There is no daily limit on coins from games.
    ===================================================================== */
-import { EARN, DAILY_LOGIN, MISSIONS, MODE_META, BATTLE } from "./config.js?v=9";
+import { EARN, DAILY_LOGIN, MISSIONS, MODE_META, BATTLE } from "./config.js?v=10";
 import { rngFrom, shuffleWith } from "./rng.js?v=1";
 import { NIGHT_PARTY } from "../party/config.js?v=2";
 

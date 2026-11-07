@@ -43,6 +43,9 @@
 .vcard.down .vc-binfo { display: none; }
 .vc-front, .vc-back { position: absolute; inset: 0; border-radius: .55em; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; background: #0c0a10; box-shadow: 0 .4em 1.2em rgba(0,0,0,.5); }
 .vc-back { transform: rotateY(180deg); }
+/* the face is its own blend group inside the 3D card: without this, Chrome drops the holo's mix-blend-mode inside
+   preserve-3d and the foil paints as a flat layer on top instead of lighting up the card's art and frame */
+.vc-front { transform: translateZ(.01px); }
 .vcard.back .vc-cover { border-radius: .55em; box-shadow: 0 .4em 1.2em rgba(0,0,0,.5); }
 
 .vc-bg { position: absolute; inset: 0; background: var(--motif, linear-gradient(160deg, var(--c1), var(--c2))); background-size: cover; background-position: center; }
@@ -125,19 +128,18 @@
 .vcard.r-epic .vc-frame { padding: .14em; background: conic-gradient(from var(--ea, 0deg), transparent 0 70%, #ff4fa0 80%, #fff 85%, #ff1f5a 90%, transparent 100%) border-box; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: vcCircuit 3.2s linear infinite; }
 @property --ea { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
 @keyframes vcCircuit { to { --ea: 360deg; } }
-.vcard.r-epic .vc-bg { transform: translate(calc(var(--ry) * .5), calc(var(--rx) * -.5)) scale(1.08); }
 .vcard.r-epic .vc-art img { scale: calc(var(--fz, 1) * 1.06); }
 /* Legendary: ornate embossed gold, 3-layer depth (background / character / foreground), floating particles, foil name */
 .vcard.r-legendary { --frame: #ffd76a; }
 .vcard.r-legendary .vc-front { box-shadow: inset 0 0 0 .2em #7a5a12, inset 0 0 0 .38em #f6d36b, inset 0 0 0 .48em #a87b18, inset 0 0 1.2em rgba(255,210,90,.45), 0 .4em 1.2em rgba(0,0,0,.5), 0 0 1em rgba(255,200,80,.4); }
-.vcard.r-legendary .vc-bg { filter: blur(.35em) saturate(1.3) brightness(.7); transform: translate(calc(var(--ry) * .6), calc(var(--rx) * -.6)) scale(1.15); }
+.vcard.r-legendary .vc-bg { filter: blur(.35em) saturate(1.3) brightness(.7); transform: scale(1.15); }
 .vcard.r-legendary .vc-bg::after { background: radial-gradient(circle at 50% 35%, rgba(255,220,120,.25), rgba(0,0,0,.6) 75%); }
 .vcard.r-legendary .vc-art { background: transparent; }
 .vcard.r-legendary .vc-art img { scale: calc(var(--fz, 1) * 1.04); }
 .vcard.r-legendary .vc-name { background: linear-gradient(90deg, #a87b18, #fff3b0 25%, #d4a017 45%, #fff8d0 60%, #b8860b 80%, #ffe38a) 0 0 / 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; animation: vcFoil 4s linear infinite; }
 .vcard.r-legendary .vc-name::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, transparent, rgba(30,18,0,.8) 12% 88%, transparent); }
 @keyframes vcFoil { to { background-position: 200% 0; } }
-.vc-fg { position: absolute; inset: 0; z-index: 3; pointer-events: none; transform: translate(calc(var(--ry) * -.9), calc(var(--rx) * .9)); }
+.vc-fg { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
 .vc-fg i { position: absolute; left: calc(8% + var(--i) * 10%); bottom: 32%; width: .3em; height: .3em; border-radius: 50%; background: #fff3b0; box-shadow: 0 0 .5em #ffd76a; opacity: 0; animation: vcMote 3.4s ease-in calc(var(--i) * .37s) infinite; }
 @keyframes vcMote { 0% { opacity: 0; transform: translateY(0); } 25% { opacity: .9; } 100% { opacity: 0; transform: translateY(-9em) translateX(.8em); } }
 /* Mythic: no frame; the border dissolves into a void / glitch, full art, the card breathes */
@@ -150,32 +152,65 @@
 .vcard.r-mythic .vc-name { color: #f1e6ff; text-shadow: .06em 0 #ff2bd6, -.06em 0 #2bf5ff, 0 0 .5em rgba(170,120,255,.8); background: none; }
 .vcard.r-mythic .vc-abil { background: rgba(15,8,30,.82); color: #e8dcff; box-shadow: inset 0 0 0 .08em rgba(180,140,255,.5); }
 .vcard.r-mythic .vc-abil b { color: #c9a6ff; }
-@keyframes vcBreathe { 50% { transform: scale(1.018); box-shadow: 0 0 2.2em rgba(170,110,255,.75), 0 .4em 1.2em rgba(0,0,0,.6); } }
-@keyframes vcGlitch { 0%, 88%, 100% { clip-path: none; transform: none; } 90% { clip-path: inset(12% 0 70% 0); transform: translateX(.2em); } 93% { clip-path: inset(60% 0 22% 0); transform: translateX(-.25em); } 96% { clip-path: inset(35% 0 45% 0); transform: translateX(.12em); } }
+@keyframes vcBreathe { 50% { box-shadow: 0 0 2.2em rgba(170,110,255,.75), 0 .4em 1.2em rgba(0,0,0,.6); } }
+@keyframes vcGlitch { 0%, 88%, 100% { opacity: 1; } 90% { opacity: .35; } 93% { opacity: 1; } 96% { opacity: .55; } }
 /* a completed series in the collection book: subtle gold edge */
 .vcard.gold .vc-front { outline: .12em solid #ffd76a; outline-offset: -.12em; }
 
-/* ---------- holo: a series pattern that shifts with the light ---------- */
-.vcard.holo .vc-holo { opacity: .55; mix-blend-mode: color-dodge; background-position: var(--mx) var(--my), center; background-size: 220% 220%, auto;
-    background-image: linear-gradient(115deg, #ff3cac 0%, #ffd23f 20%, #3cffd0 40%, #3c8cff 60%, #b63cff 80%, #ff3cac 100%), var(--holo); filter: saturate(1.4); }
+/* ---------- holo: the foil IS the card's surface ----------
+   One layer (.vc-holo) blended into the card with color-dodge: black where there is no foil (so it changes nothing),
+   saturated rainbow bands elsewhere, which only brighten and tint what is already there (the art's light parts, the
+   frame's metal) instead of covering it. The bands sweep with the light / tilt (--mx / --my, set by the pointer, the
+   phone or the inspect view; cardui.js), the hue turns with the angle (--px), the series pattern is etched into the
+   foil (fixed on the card), a fine glitter twinkles as it moves, and the glare becomes a specular highlight. Less foil
+   over the face so it always reads. Every rarity can be holo. Reduced effects: the same foil, still. */
+.vcard.holo { --face-mask: radial-gradient(ellipse 37% 26% at 50% 35%, rgba(0,0,0,.1) 0 55%, #000 100%);
+    --text-mask: linear-gradient(180deg, #000 0 62%, rgba(0,0,0,.3) 63.5% 72%, rgba(0,0,0,.1) 73.5% 92%, #000 94%);      /* name row + ability box: a trace of foil only, the text stays clean */
+    --glitter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.25' numOctaves='1' seed='11'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 16 -12.5'/%3E%3C/filter%3E%3Crect width='96' height='96' filter='url(%23g)'/%3E%3C/svg%3E"); }
+.vcard.holo .vc-holo { opacity: .9; mix-blend-mode: color-dodge;
+    background:
+        var(--glitter) var(--my) var(--mx) / 4.5em 4.5em,
+        var(--holo, none) center / var(--hs, auto),
+        repeating-linear-gradient(115deg, #000 0%, #000 3%, hsl(330 95% 34%) 6%, hsl(40 98% 36%) 9%, hsl(150 90% 28%) 12%, hsl(200 95% 36%) 15%, hsl(265 90% 38%) 18%, #000 21%, #000 25%) var(--mx) var(--my) / 300% 300%;
+    background-blend-mode: screen, overlay, normal;
+    filter: brightness(.7) contrast(1.4) saturate(1.3) hue-rotate(calc(var(--px, 0) * 80deg));
+    -webkit-mask-image: var(--face-mask), var(--text-mask); -webkit-mask-composite: source-in; mask-image: var(--face-mask), var(--text-mask); mask-composite: intersect;
+    transition: background-position .12s linear; }
+.vcard.holo.r-mythic { --face-mask: radial-gradient(ellipse 34% 23% at 50% 34%, rgba(0,0,0,.12) 0 55%, #000 100%); }
+/* dark parts of the card can't be dodged (black stays black), so a faint iridescent sheen (screen) catches the light there */
+.vc-sheen { position: absolute; inset: 0; z-index: 6; pointer-events: none; border-radius: inherit; }
+.vcard.holo .vc-sheen { opacity: .24; mix-blend-mode: screen;
+    background: var(--holo, none) center / var(--hs, auto),
+        repeating-linear-gradient(115deg, transparent 0 3%, hsl(330 90% 58%) 6%, hsl(40 95% 58%) 9%, hsl(150 85% 52%) 12%, hsl(200 92% 58%) 15%, hsl(265 85% 64%) 18%, transparent 21% 25%) var(--mx) var(--my) / 300% 300%;
+    background-blend-mode: overlay, normal;
+    -webkit-mask-image: var(--face-mask), var(--text-mask); -webkit-mask-composite: source-in; mask-image: var(--face-mask), var(--text-mask); mask-composite: intersect;
+    transition: background-position .12s linear; }
+/* the specular highlight: a hot spot that slides with the light */
+.vcard.holo .vc-glare { opacity: .85; mix-blend-mode: overlay; background: radial-gradient(farthest-corner circle at var(--mx) var(--my), rgba(255,255,255,.85) 0%, rgba(255,255,255,.3) 16%, transparent 46%); }
 .vcard.holo .vc-holo::after { content: "HOLO"; position: absolute; right: 7%; top: 61%; font: 700 .42em/1 var(--f-mono); letter-spacing: .2em; color: #fff; opacity: .8; }
-.h-waves     { --holo: repeating-radial-gradient(circle at 50% 120%, rgba(255,255,255,.5) 0 .2em, transparent .2em .8em); }
-.h-spirals   { --holo: repeating-conic-gradient(from 0deg at 50% 40%, rgba(255,255,255,.45) 0 6deg, transparent 6deg 18deg); }
-.h-stars     { --holo: radial-gradient(circle, rgba(255,255,255,.7) 0 6%, transparent 7%) 0 0 / 1.6em 1.6em; }
-.h-brush     { --holo: repeating-linear-gradient(70deg, rgba(255,255,255,.4) 0 .5em, transparent .5em 1.6em); }
-.h-petals    { --holo: radial-gradient(ellipse 40% 20% at 50% 50%, rgba(255,255,255,.6), transparent 70%) 0 0 / 1.5em 1.2em; }
-.h-moon      { --holo: radial-gradient(circle at 60% 40%, transparent 0 .5em, rgba(255,255,255,.5) .5em .7em, transparent .7em) 0 0 / 1.8em 1.8em; }
-.h-bricks    { --holo: repeating-linear-gradient(0deg, rgba(255,255,255,.35) 0 .1em, transparent .1em 1em); }
-.h-bolts     { --holo: repeating-linear-gradient(-60deg, transparent 0 .8em, rgba(255,255,255,.5) .8em 1em); }
-.h-suits     { --holo: linear-gradient(45deg, rgba(255,255,255,.4) 25%, transparent 25% 75%, rgba(255,255,255,.4) 75%) 0 0 / 1em 1em; }
-.h-feathers  { --holo: repeating-linear-gradient(160deg, rgba(255,255,255,.35) 0 .15em, transparent .15em .9em); }
-.h-teeth     { --holo: linear-gradient(135deg, rgba(255,255,255,.5) 25%, transparent 25%) 0 0 / .9em .9em; }
-.h-clovers   { --holo: radial-gradient(circle, rgba(255,255,255,.55) 0 18%, transparent 20%) 0 0 / 1.1em 1.1em; }
-.h-menacing  { --holo: repeating-linear-gradient(45deg, rgba(255,255,255,.4) 0 .3em, transparent .3em 1.2em); }
-.h-clock     { --holo: repeating-radial-gradient(circle at 50% 40%, rgba(255,255,255,.45) 0 .12em, transparent .12em 1em); }
-.h-flames    { --holo: repeating-radial-gradient(ellipse 30% 60% at 50% 110%, rgba(255,255,255,.4) 0 .3em, transparent .3em 1em); }
-.h-splats    { --holo: radial-gradient(circle, rgba(255,255,255,.55) 0 12%, transparent 13%) 0 0 / 1.9em 1.4em; }
-.h-wind      { --holo: repeating-linear-gradient(-20deg, rgba(255,255,255,.5) 0 .12em, transparent .12em 1.2em); }
+/* series patterns etched into the foil (image + tile size) */
+.h-waves     { --holo: repeating-radial-gradient(circle at 50% 120%, rgba(255,255,255,.55) 0 .16em, transparent .16em .75em); }
+.h-spirals   { --holo: repeating-conic-gradient(from 0deg at 50% 40%, rgba(255,255,255,.4) 0 5deg, transparent 5deg 16deg), repeating-radial-gradient(circle at 50% 40%, rgba(255,255,255,.3) 0 .12em, transparent .12em .8em); }
+.h-stars     { --holo: radial-gradient(circle, rgba(255,255,255,.75) 0 7%, transparent 8%), conic-gradient(from 45deg, transparent 0 20%, rgba(255,255,255,.3) 20% 30%, transparent 30% 70%, rgba(255,255,255,.3) 70% 80%, transparent 80%); --hs: 1.6em 1.6em; }
+.h-brush     { --holo: repeating-linear-gradient(70deg, rgba(255,255,255,.45) 0 .45em, transparent .45em 1.5em); }
+.h-petals    { --holo: radial-gradient(ellipse 42% 18% at 50% 50%, rgba(255,255,255,.7), transparent 70%); --hs: 1.5em 1.1em; }
+.h-moon      { --holo: radial-gradient(circle at 60% 40%, transparent 0 .45em, rgba(255,255,255,.6) .45em .62em, transparent .62em); --hs: 1.8em 1.8em; }
+.h-bricks    { --holo: repeating-linear-gradient(0deg, rgba(255,255,255,.4) 0 .1em, transparent .1em 1em), repeating-linear-gradient(90deg, rgba(255,255,255,.22) 0 .1em, transparent .1em 2em); }
+.h-bolts     { --holo: repeating-linear-gradient(-60deg, transparent 0 .8em, rgba(255,255,255,.55) .8em 1em); }
+.h-suits     { --holo: linear-gradient(45deg, rgba(255,255,255,.45) 25%, transparent 25% 75%, rgba(255,255,255,.45) 75%); --hs: 1em 1em; }
+.h-feathers  { --holo: repeating-linear-gradient(160deg, rgba(255,255,255,.4) 0 .14em, transparent .14em .9em); }
+.h-teeth     { --holo: linear-gradient(135deg, rgba(255,255,255,.55) 25%, transparent 25%); --hs: .9em .9em; }
+.h-clovers   { --holo: radial-gradient(circle, rgba(255,255,255,.6) 0 18%, transparent 20%); --hs: 1.1em 1.1em; }
+.h-menacing  { --holo: repeating-linear-gradient(45deg, rgba(255,255,255,.45) 0 .28em, transparent .28em 1.2em); }
+.h-clock     { --holo: repeating-radial-gradient(circle at 50% 40%, rgba(255,255,255,.5) 0 .11em, transparent .11em 1em); }
+.h-flames    { --holo: repeating-radial-gradient(ellipse 30% 60% at 50% 110%, rgba(255,255,255,.45) 0 .28em, transparent .28em 1em); }
+.h-splats    { --holo: radial-gradient(circle, rgba(255,255,255,.6) 0 12%, transparent 13%); --hs: 1.9em 1.4em; }
+.h-wind      { --holo: repeating-linear-gradient(-20deg, rgba(255,255,255,.55) 0 .11em, transparent .11em 1.2em); }
+
+/* ---------- thickness: a real card has an edge (slices of card stock between the faces; cardui.js thicken) ---------- */
+.vcard.thick .vc-front { transform: translateZ(.09em); }
+.vcard.thick .vc-back { transform: rotateY(180deg) translateZ(.09em); }
+.vc-edge { position: absolute; inset: 0; border-radius: .55em; background: linear-gradient(90deg, #b9b2a2, #ece6d6 50%, #b9b2a2); transform: translateZ(var(--z)); pointer-events: none; }
 
 /* ---------- card back (series design or sleeve) ---------- */
 .vc-cover { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: .3em; background: var(--motif, linear-gradient(160deg, var(--c1), var(--c2))); color: var(--ink); box-shadow: inset 0 0 0 .3em rgba(0,0,0,.35), inset 0 0 0 .45em rgba(255,255,255,.25); overflow: hidden; }
@@ -208,6 +243,8 @@
 body.fx-lite .vcard *, body.fx-lite .vcard, body.fx-lite .vpack *, body.fx-lite .pk-packwrap, body.fx-lite .pk-special, body.fx-lite .pk-special *, body.fx-lite .pk-deck .vcard { animation: none !important; }
 body.fx-lite .vc-inner { transition-duration: .01s !important; }
 body.fx-lite .vc-fg, body.fx-lite .vc-glare, body.fx-lite .vp-shine { display: none; }
+body.fx-lite .vcard.holo .vc-glare { display: block; --mx: 32%; --my: 24%; }      /* reduced effects: a still foil, lit from one side */
+body.fx-lite .vcard.holo .vc-holo, body.fx-lite .vcard.holo .vc-sheen { transition: none; --mx: 32%; --my: 24%; }
 body.fx-lite .pk-open.shake .pk-stage, body.fx-lite .pk-open.flash::after { animation: none !important; }
 body.fx-lite .pk-special { animation: none !important; opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .vcard *, .vpack *, .pk-packwrap { animation: none !important; } }

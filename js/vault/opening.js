@@ -14,9 +14,9 @@
    7. summary: every card, NEW tags, duplicates turning into shards, the pity counter
    Reduced effects: static foil, no float, no shake, a few flakes, a simple flip, no canvas.
    ===================================================================== */
-import { cardEl, packEl, theme, seriesVars, packClip } from "./cardui.js?v=6";
+import { cardEl, packEl, theme, seriesVars, packClip, thicken } from "./cardui.js?v=7";
 import { CARDS, RARITY_NAMES } from "./carddb.js?v=3";
-import { PACKS, OPENING as O } from "./config.js?v=9";
+import { PACKS, OPENING as O } from "./config.js?v=10";
 import { motionOK } from "../fx.js";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -88,7 +88,7 @@ export function openPack(res, { onDone, onNext } = {}) {
     // the cards, face down inside the pack (lowest rarity on top, the best last)
     const cards = res.cards.map(c => Object.assign({}, c)), els = [];
     cards.forEach((c, k) => {
-        const el = cardEl(c.id, { holo: !!c.h, size: "lg", isNew: !!c.isNew, sleeve: X.sleeve() }); el.classList.add("down");
+        const el = thicken(cardEl(c.id, { holo: !!c.h, size: "lg", isNew: !!c.isNew, sleeve: X.sleeve() })); el.classList.add("down");
         el.style.setProperty("--k", cards.length - 1 - k); el.style.zIndex = String(100 - k); el.setAttribute("tabindex", "-1");
         deck.appendChild(el); els.push(el);
     });
@@ -158,6 +158,17 @@ export function openPack(res, { onDone, onNext } = {}) {
         deck.addEventListener("pointerdown", e => { down = true; px = e.clientX; py = e.clientY; });
         deck.addEventListener("pointerup", e => { if (!down) return; down = false; if (deck.dataset.held) return; const dx = e.clientX - px; act(Math.abs(dx) > 40 ? Math.sign(dx) : -1); });
         holdToInspect(deck, () => { const el = els[idx]; return el && !el.classList.contains("down") ? cards[idx] : null; });
+        // look around the revealed card: the whole card tilts as one rigid object, the foil light follows
+        let tq = null, tr = 0;
+        const tiltTo = () => { tr = 0; const el = els[idx]; if (!el || el.classList.contains("down") || !tq) return; const [x, y] = tq;
+            el.style.setProperty("--ry", (x * 22).toFixed(1) + "deg"); el.style.setProperty("--rx", (-y * 18).toFixed(1) + "deg");
+            el.style.setProperty("--mx", ((x + .5) * 100).toFixed(1) + "%"); el.style.setProperty("--my", ((y + .5) * 100).toFixed(1) + "%"); el.style.setProperty("--px", x.toFixed(3)); el.style.setProperty("--py", y.toFixed(3)); };
+        stage.addEventListener("pointermove", e => {
+            if (phase !== "flip" || !fx) return; const el = els[idx]; if (!el || el.classList.contains("down")) return;
+            const r = el.getBoundingClientRect(); tq = [Math.max(-.5, Math.min(.5, (e.clientX - r.left) / r.width - .5)), Math.max(-.5, Math.min(.5, (e.clientY - r.top) / r.height - .5))];
+            el.classList.add("live"); if (!tr) tr = requestAnimationFrame(tiltTo);
+        });
+        stage.addEventListener("pointerleave", () => { const el = els[idx]; if (!el) return; ["--rx", "--ry", "--mx", "--my", "--px", "--py"].forEach(k => el.style.removeProperty(k)); });
         setHint();
     }
     function setHint() {
@@ -169,7 +180,7 @@ export function openPack(res, { onDone, onNext } = {}) {
         if (busy || phase !== "flip") return;
         const el = els[idx]; if (!el) return;
         if (el.classList.contains("down")) { flip(el, cards[idx]); return; }
-        el.style.setProperty("--throw", d || -1); el.classList.add("gone"); X.sfx("card");
+        el.style.setProperty("--throw", d || -1); el.classList.remove("live"); ["--rx", "--ry"].forEach(k => el.style.removeProperty(k)); el.classList.add("gone"); X.sfx("card");
         const mini = cardEl(cards[idx].id, { holo: !!cards[idx].h, size: "xs" }); row.appendChild(mini);
         idx++;
         if (idx >= els.length) setTimeout(summary, fx ? 380 : 10);
@@ -255,14 +266,13 @@ export function holdToInspect(host, which) {
     host.addEventListener("contextmenu", e => e.preventDefault());
 }
 
-/* ---------- inspect: the card follows the pointer / the phone's tilt in 3D; light, holo parallax, thickness; tap to turn ---------- */
+/* ---------- inspect: the card follows the pointer / the phone's tilt in 3D as one rigid card (thickness, light, the holo foil moves with the angle); tap to turn ---------- */
 export function inspect(id, o = {}) {
     if (document.querySelector(".vc-inspect")) document.querySelector(".vc-inspect").remove();
     const c = CARDS[id]; if (!c) return;
     const root = mk("div", "vc-inspect"); root.setAttribute("role", "dialog"); root.setAttribute("aria-label", "Inspect " + c.n);
     const el = cardEl(id, Object.assign({ size: "lg", sleeve: X.sleeve() }, o)); el.classList.add("tilting");
-    const inner = el.querySelector(".vc-inner");
-    if (inner) [-.07, -.035, 0, .035, .07].forEach(z => { const e = mk("i", "vc-edge"); e.style.setProperty("--z", z + "em"); inner.prepend(e); });     // the card's edge, seen when it's tilted
+    thicken(el);      // the card's edge, seen when it's tilted: it turns as one solid card
     const tip = mk("p", "vc-ins-tip", motionOK() ? "Drag to tilt the card · tap to turn it over" : "Tap to turn the card over");
     const bar = mk("div", "vc-ins-bar"), turn = mk("button", "btn ghost sm", "Turn over"), shut = mk("button", "btn sm", "Close");
     turn.type = shut.type = "button";

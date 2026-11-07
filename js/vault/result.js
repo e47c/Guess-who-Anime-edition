@@ -20,7 +20,7 @@ const SETTINGS = {
     classic: ["animes", "boardSize"], headbanz: ["animes", "difficulty", "rounds"], imposter: ["animes", "difficulty", "laps"],
     uno: ["animes", "unoDeck", "unoSp"], draft: ["animes", "draftType", "draftFmt", "draftRoles"], feud: ["animes", "feudRounds", "feudTimer"],
     likely: ["animes", "likelyPlay", "likelyRounds", "likelyTimer"], sketch: ["animes", "sketchRounds", "sketchTimer", "sketchDiff", "sketchMode"],
-    cardvault: ["cvFormat", "cvTimer", "cvPack"]
+    cardvault: ["cvFormat", "cvTimer"]
 };
 
 /* rows sorted best-first + a "same as the row before" test -> shared places */
@@ -136,7 +136,7 @@ export function battleResultOf(b, d, bid, now = Date.now()) {
         placements: rows.map(r => ({ slot: r.p, place: r.place })).sort((a, c) => a.place - c.place || a.slot - c.slot),
         scores: Object.fromEntries(rows.map(r => [r.p, r.score])),
         duration: Math.max(0, Math.round((endedAt - startedAt) / 1000)), startedAt, endedAt,
-        settings: { cvFormat: rows.length > 2 ? "ffa" : "duel", cvTimer: num(b.timer), cvPack: b.pack ? 1 : 0 }
+        settings: { cvFormat: rows.length > 2 ? "ffa" : "duel", cvTimer: num(b.timer) }
     };
 }
 

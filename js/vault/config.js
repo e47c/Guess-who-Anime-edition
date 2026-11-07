@@ -147,7 +147,6 @@ export const BATTLE = {
     pickSeconds: 30,                              // auto-pick when it runs out
     reconnectGrace: 20,                           // seconds a disconnected player is waited for before auto-picks
     length: "short",                              // for the coin multiplier (a duel takes 2-4 minutes)
-    winnerPackOption: true,                       // host setting: "winner picks a free pack of any series"
     challenge: { expireSeconds: 60, keepOverMinutes: 10 },   // an unanswered challenge expires; finished battles are cleared after this
     statTotal: { common: [11, 12], uncommon: [11, 12], rare: [11, 12], ultra: [11, 12], epic: [11, 12], legendary: [11, 12], mythic: [12, 13] }   // Power + Defense per rarity (nearly flat on purpose)
 };

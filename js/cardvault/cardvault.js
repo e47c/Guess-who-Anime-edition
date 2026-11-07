@@ -18,14 +18,14 @@
    mode here: the site has no server to keep secrets from a player reading the database.
    Practice vs CPU runs the same engine locally (no coins).
    ===================================================================== */
-import { newBattle, act, resolveRound, alive, handOf, lifeOf, due, applyDue, normalize, cpuPick, autoPick, REVEAL_MS, arr } from "./engine.js?v=7";
+import { newBattle, act, resolveRound, alive, handOf, lifeOf, due, applyDue, normalize, cpuPick, autoPick, REVEAL_MS, arr } from "./engine.js?v=8";
 import { ABILITIES } from "./abilities.js?v=2";
-import { BATTLE } from "../vault/config.js?v=9";
+import { BATTLE } from "../vault/config.js?v=10";
 import { CARDS } from "../vault/carddb.js?v=3";
-import { cardEl } from "../vault/cardui.js?v=6";
-import { inspect } from "../vault/opening.js?v=6";
+import { cardEl } from "../vault/cardui.js?v=7";
+import { inspect } from "../vault/opening.js?v=7";
 import { rngFrom, newSeed, shuffleWith } from "../vault/rng.js?v=1";
-import { battleResultOf, resultToDb, resultFromDb } from "../vault/result.js?v=4";
+import { battleResultOf, resultToDb, resultFromDb } from "../vault/result.js?v=5";
 import { el, srvNow, presentIn, optButtons } from "../feud/common.js?v=4";
 
 const GT = "cardvault";
@@ -34,8 +34,8 @@ const pk = p => "p" + p;
 let X = null;
 const CH = () => Object.assign({ expireSeconds: 60, keepOverMinutes: 10 }, BATTLE.challenge || {});
 const timerOf = d => [20, 30, 45].includes(Number(d && d.cvTimer)) ? Number(d.cvTimer) : BATTLE.pickSeconds;
-export const cvPrefs = p => ({ cvTimer: [20, 30, 45].includes(Number(p.cvTimer)) ? Number(p.cvTimer) : BATTLE.pickSeconds, cvPack: p.cvPack ? 1 : 0 });
-export const cvPrefsOf = d => ({ cvTimer: timerOf(d), cvPack: d && d.cvPack ? 1 : 0 });
+export const cvPrefs = p => ({ cvTimer: [20, 30, 45].includes(Number(p.cvTimer)) ? Number(p.cvTimer) : BATTLE.pickSeconds });
+export const cvPrefsOf = d => ({ cvTimer: timerOf(d) });
 const vaultOn = d => !!d && d.gameType === GT && (!d.status || d.status === "waiting");
 const ss = { get(k) { try { return JSON.parse(sessionStorage.getItem(k) || "[]"); } catch (e) { return []; } }, set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
 
@@ -46,7 +46,6 @@ export function initCardVault(ctx) {
             const d = X.data(); if (!d || !X.amHost() || d.status !== "waiting") return;
             X.sfx("pick");
             if (k === "timer") X.lobbySet({ cvTimer: Number(v) });
-            if (k === "pack") X.lobbySet({ cvPack: d.cvPack ? 0 : 1 });
         },
         cvEnterVault: () => X.openVault()
     });
@@ -83,7 +82,7 @@ export async function cvChallenge(opps) {
     if (busyIn(d, me)) { X.toast("You're already in a challenge or a battle."); return false; }
     const busy = opps.filter(p => busyIn(d, p)); if (busy.length) { X.toast(busy.map(p => X.pName(d, p)).join(", ") + (busy.length > 1 ? " are" : " is") + " already in a battle."); return false; }
     const bid = "b" + srvNow().toString(36) + me;
-    try { await X.update(X.ref(X.db, "rooms/" + X.room() + "/cvb/" + bid), { from: me, to: opps, acc: { [pk(me)]: deck }, st: "invite", at: srvNow(), timer: timerOf(d), pack: d.cvPack ? 1 : 0 }); }
+    try { await X.update(X.ref(X.db, "rooms/" + X.room() + "/cvb/" + bid), { from: me, to: opps, acc: { [pk(me)]: deck }, st: "invite", at: srvNow(), timer: timerOf(d) }); }
     catch (e) { console.error(e); X.toast("Could not send the challenge."); return false; }
     X.sfx("ready"); return true;
 }
@@ -196,7 +195,7 @@ function renderInvites(d) {
         const txt = el("div", "cv-invtxt");
         if (b.st === "live") { txt.append(el("b", null, "⚔ Your battle is still on"), el("small", null, "vs " + who.map(p => X.pName(d, p)).join(", ") + " · your cards are auto-picked when the timer runs out")); row.append(txt, btnEl("Return", "alt sm", () => cvReturn(b.bid))); }
         else if (b.from !== me && !mineAcc) {
-            txt.append(el("b", null, "⚔ " + X.pName(d, b.from) + " challenges you"), el("small", null, fmt + (who.length > 1 ? " with " + who.filter(p => p !== b.from).map(p => X.pName(d, p)).join(", ") : "") + " · " + (Number(b.timer) || BATTLE.pickSeconds) + " s picks" + (b.pack ? " · winner gets a free pack" : "") + " · " + left + " s"));
+            txt.append(el("b", null, "⚔ " + X.pName(d, b.from) + " challenges you"), el("small", null, fmt + (who.length > 1 ? " with " + who.filter(p => p !== b.from).map(p => X.pName(d, p)).join(", ") : "") + " · " + (Number(b.timer) || BATTLE.pickSeconds) + " s picks" + " · " + left + " s"));
             row.append(txt, btnEl("Accept", "alt sm", () => cvAccept(b.bid)), btnEl("Decline", "ghost sm", () => cvDecline(b.bid)));
         } else {
             const wait = seatsOf(b).filter(p => !b.acc[pk(p)]);
@@ -213,7 +212,6 @@ export function cvHint() { return "Everyone gets their own Anime TCG page: Packs
 export function cvReq(d) { return { ok: true, msg: "ANIME TCG is open: everyone has their own Anime TCG page. Battles are challenges from the Battle tab" }; }
 export function cvLobby(d, lock) {
     optButtons($("cvTimerBtns"), [20, 30, 45], timerOf(d), lock, v => v + " s", v => window.setCvOpt("timer", v));
-    const pb = $("cvPackBtn"); pb.textContent = d.cvPack ? "On: the winner picks a free pack" : "Off"; pb.classList.toggle("selected", !!d.cvPack); pb.disabled = lock;
     const mine = X.activeDeck();
     $("cvMyDeck").textContent = mine ? "Your battle deck: " + mine.name : "You need a 10-card deck to battle: build one in Anime TCG's Decks tab.";
     $("cvHint").textContent = "Battles: pick a card in secret, everyone flips together, damage = Power minus the opposing Defense, then abilities. 1v1: " + BATTLE.duel.life + " life. Challenge 2+ players for a free-for-all (" + BATTLE.ffa.life + " life, pick a target too).";

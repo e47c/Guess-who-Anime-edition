@@ -3,14 +3,14 @@
 // atomic, never negative), the seeded RNG, the config. Phase 2: coins per placement, anti-farming, the daily
 // cap, missions and the login streak.
 import { resultOf, resultToDb, resultFromDb, placeRows, RESULT_MODES, battleResultOf } from "../js/vault/result.js";
-import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=9";
+import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=10";
 import { rngFrom, newSeed, pickWeighted, shuffleWith } from "../js/vault/rng.js?v=1";
-import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=9";
-import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, nightPartyValid, applyNightParty, gameCoinsOn, FEATURES } from "../js/vault/economy.js?v=8";
-import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=7";
-import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordBattle, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=7";
+import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=10";
+import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, nightPartyValid, applyNightParty, gameCoinsOn, FEATURES } from "../js/vault/economy.js?v=9";
+import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=8";
+import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordBattle, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=8";
 import { CARDS, BY_SERIES, CARD_SERIES } from "../js/vault/carddb.js?v=3";
-import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=9";
+import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=10";
 
 let ok = 0, bad = 0;
 const t = (c, m) => { if (c) ok++; else { bad++; console.log("  ✘", m); } };
@@ -85,12 +85,12 @@ t(MODE_META.cardvault.name === "Anime TCG", "the ninth mode is called Anime TCG"
 {
     const lobbyRoom = Object.assign({ status: "waiting", gameType: "cardvault" }, players(4));
     t(resultOf(lobbyRoom, null, NOW) === null, "the Vault lobby itself never reports a match");
-    const node = { from: 3, to: [1], timer: 30, pack: 1, at: NOW - 200000, t0: NOW - 180000, end: NOW, uids: { p1: "u1", p3: "u3" },
+    const node = { from: 3, to: [1], timer: 30, at: NOW - 200000, t0: NOW - 180000, end: NOW, uids: { p1: "u1", p3: "u3" },
         s: { phase: "over", players: [3, 1], names: { p1: "P1", p3: "P3" }, places: [{ p: 3, place: 1, life: 9 }, { p: 1, place: 2, life: 0 }] } };
     const br = battleResultOf(node, lobbyRoom, "bx1", NOW);
     t(br && br.key === "cardvault:bx1" && br.mode === "cardvault", "battle result keyed per battle id");
     t(places(br) === "3:1 1:2" && br.players.length === 2 && br.players.every(p => p.uid), "only the two duelists are in it, with their uids");
-    t(br.duration === 180 && br.settings.cvFormat === "duel" && br.settings.cvTimer === 30 && br.settings.cvPack === 1, "duration from the battle's own start; its settings");
+    t(br.duration === 180 && br.settings.cvFormat === "duel" && br.settings.cvTimer === 30 && !("cvPack" in br.settings), "duration from the battle's own start; its settings (no free-pack setting any more)");
     t(battleResultOf(Object.assign({}, node, { s: Object.assign({}, node.s, { phase: "pick" }) }), lobbyRoom, "bx1", NOW) === null, "no result while the battle runs");
     t(eq(resultFromDb(JSON.parse(JSON.stringify(resultToDb(br)))), br), "a battle result survives the Firebase round trip");
     const ffa = battleResultOf({ from: 1, to: [2, 4], t0: NOW - 90000, end: NOW, s: { phase: "over", players: [1, 2, 4], names: {}, places: [{ p: 4, place: 1, life: 3 }, { p: 1, place: 2, life: 0 }, { p: 2, place: 2, life: 0 }] } }, lobbyRoom, "bx2", NOW);

@@ -11,14 +11,14 @@
    Every coin change goes through bank.apply(opId, ...), so a reload, a reconnect or a double click
    never pays twice.
    ===================================================================== */
-import { createBank, localBackend } from "./store.js?v=9";
-import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=9";
-import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=8";
+import { createBank, localBackend } from "./store.js?v=10";
+import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=10";
+import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=9";
 import { newSeed } from "./rng.js?v=1";
-import { grantStarter, recordBattle, grantToken, activeDeck, deckProblem } from "./packs.js?v=7";
-import { publicLook } from "./shop.js?v=7";
-import { initOpening } from "./opening.js?v=6";
-import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=7";
+import { grantStarter, recordBattle, activeDeck, deckProblem } from "./packs.js?v=8";
+import { publicLook } from "./shop.js?v=8";
+import { initOpening } from "./opening.js?v=7";
+import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=8";
 import { motionOK } from "../fx.js";
 
 export const bank = createBank(localBackend());
@@ -44,10 +44,9 @@ async function payGame(r, ctx) {
     if (!me || (ctx.uid && me.uid && me.uid !== ctx.uid)) return;          // spectators and other seats earn nothing here
     const res = await bank.apply("game:" + ctx.room + ":" + r.key, "game", (w, x) => {
         const out = applyGame(w, r, ctx.me, x.now, newSeed(), x.log);
-        if (r.mode === "cardvault") {          // the cards you played count toward their "veteran" mark; the optional free pack for the winner
+        if (r.mode === "cardvault") {          // the cards you played count toward their "veteran" mark
             const place = (r.placements.find(p => p.slot === ctx.me) || {}).place;
             recordBattle(w, ctx.cvUsed || [], place === 1);
-            if (place === 1 && r.settings && r.settings.cvPack) { grantToken(w, "normal", 1); out.token = 1; x.log({ kind: "token", d: 0, info: "free pack (battle win)" }); }
         }
         return out;
     });
@@ -82,7 +81,6 @@ function coinPop(o) {
     el.appendChild(mk("small", "cp-l", line));
     if (o.why) el.appendChild(mk("small", "cp-why", (o.coins ? "Cut: " : "No coins: ") + o.why));
     (o.missions || []).forEach(m => el.appendChild(mk("small", "cp-m", "✔ " + m.text + "  +" + m.coins)));
-    if (o.token) el.appendChild(mk("small", "cp-m", "🎁 Free pack of any series: open it in Anime TCG's Packs Store"));
     el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
     if (o.coins) X.sfx("coin"); else X.sfx("tick");
     clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("show"), 5200 + (o.missions || []).length * 900);

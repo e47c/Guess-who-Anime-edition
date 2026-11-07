@@ -355,8 +355,7 @@ hidden by the interface, as in the other modes.
   together, clash: damage = Power - Defense, then abilities, in the order written at the top of
   `js/cardvault/engine.js`. 1v1: 20 life, hand 4, draw 1; free-for-all (3-8): 25 life and a target. Pick timer with
   auto-pick, one grace pause for a disconnect, battle log. A player can leave the battle screen (their cards are then
-  auto-picked) and return from the Battle tab. The host's lobby settings set the pick timer and "winner picks a free
-  pack". Switching the lobby to another mode stops unfinished battles (no coins; the host is asked first). Practice
+  auto-picked) and return from the Battle tab. The host's lobby settings set the pick timer. Switching the lobby to another mode stops unfinished battles (no coins; the host is asked first). Practice
   vs CPU from the Battle tab (no coins).
 - **Trades.** In a room, Collection › Trade with friends: up to 5 cards each way; the cards are locked while the offer is
   open and each side swaps its own cards exactly once. Cards only.
@@ -378,6 +377,10 @@ hidden by the interface, as in the other modes.
   better makes the stack glow first), reactions by rarity (Legendary / Mythic: a canvas cinematic), hold to inspect
   (3D tilt, light, holo parallax, card thickness), summary with NEW, shards and the pity counter. Sounds are generated
   (Web Audio). Timings in `OPENING` (config). The pull is rolled and saved before the animation. Dev page: `dev/pack.html`.
+- **Holo cards.** The foil is the card's own surface: a color-dodge layer that lights up the art and frame (plus a faint sheen
+  on dark parts), rainbow bands that sweep with the tilt, the series pattern etched in, glitter and a moving specular
+  highlight; less foil over faces and text. Every rarity can be holo; a holo duplicate gives double shards. Cards turn
+  as one rigid object with a card-stock edge. Review page: `dev/holo.html`.
 - **Close room** (host, from the lobby, the in-game menu or the Anime TCG page): after a confirmation the room is deleted
   from the database. Every client returns to the main menu ("The host closed the room.") and the code can't be joined
   again. Leaving clients cancel their own disconnect flag before the page unloads, and the host deletes once more a

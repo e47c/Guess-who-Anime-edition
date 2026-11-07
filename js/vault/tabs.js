@@ -5,12 +5,12 @@
    Every action is an intent sent to the bank (bank.apply with an operation id), so a double click or a second tab
    can never pay twice; the button's operation id only changes after the action went through.
    ===================================================================== */
-import { PACKS, SHARDS, RARITY_ORDER, DECK, TRADE, BATTLE } from "./config.js?v=9";
-import { rollPack, unopened, markOpened, owned, isHolo, ownedIds, seriesDone, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem } from "./packs.js?v=7";
-import { cvChallenge, cvBattles, busyIn, seatsOf, cvWatch, cvReturn, cvDeckOf, locOf } from "../cardvault/cardvault.js?v=7";
+import { PACKS, SHARDS, RARITY_ORDER, DECK, TRADE, BATTLE } from "./config.js?v=10";
+import { rollPack, unopened, markOpened, owned, isHolo, ownedIds, seriesDone, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem } from "./packs.js?v=8";
+import { cvChallenge, cvBattles, busyIn, seatsOf, cvWatch, cvReturn, cvDeckOf, locOf } from "../cardvault/cardvault.js?v=8";
 import { CARDS, BY_SERIES, CARD_SERIES, CARD_COUNT, RARITY_NAMES, ARCHETYPES, TOTAL_CARDS } from "./carddb.js?v=3";
-import { cardEl, packEl, theme } from "./cardui.js?v=6";
-import { openPack, inspect, holdToInspect } from "./opening.js?v=6";
+import { cardEl, packEl, theme } from "./cardui.js?v=7";
+import { openPack, inspect, holdToInspect } from "./opening.js?v=7";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 const btn = (txt, cls, fn) => { const b = mk("button", "btn " + (cls || ""), txt); b.type = "button"; if (fn) b.onclick = fn; return b; };
@@ -314,7 +314,7 @@ function battleTab() {
     const pr = mk("div", "vt-row vt-bgo");
     pr.appendChild(btn("Practice vs CPU", "ghost", () => { if (bad) { toast(bad === "No deck" ? "Build a 10-card deck first (Decks tab)." : bad); return; } x.startPractice && x.startPractice(); }));
     v.appendChild(pr);
-    v.appendChild(mk("p", "vt-rule", "Challenges expire after " + ((BATTLE.challenge || {}).expireSeconds || 60) + " s. The host's lobby settings set the pick timer (" + (Number(rd.cvTimer) || BATTLE.pickSeconds) + " s) and \"winner picks a free pack\" (" + (rd.cvPack ? "on" : "off") + "). Battles pay placement coins like every mode (1 minute or longer); the cards you played count toward their Veteran mark (" + DECK.veteranWins + " wins). Practice never pays. You can go back to the lobby at any time."));
+    v.appendChild(mk("p", "vt-rule", "Challenges expire after " + ((BATTLE.challenge || {}).expireSeconds || 60) + " s. The host's lobby settings set the pick timer (" + (Number(rd.cvTimer) || BATTLE.pickSeconds) + " s). Battles pay placement coins like every mode; the cards you played count toward their Veteran mark (" + DECK.veteranWins + " wins). Practice never pays. You can go back to the lobby at any time."));
     return v;
 }
 /* what each tab reads from the room: the page only redraws a tab when this changes */
@@ -324,7 +324,7 @@ export function roomSig(tab, d) {
     if (tab === "battle") {
         const slots = x && x.activeSlots ? x.activeSlots(d) : [];
         return JSON.stringify([slots.map(p => { const n = d["player" + p] || {}; return [p, n.name, n.col, n.sf, n.bg, n.ttl, n.lvl, n.uc, n.ts, n.av && (n.av.u || n.av.g || (n.av.d || "").length)]; }),
-            d.vloc || {}, Object.keys(d.cvDeck || {}).filter(k => arrv((d.cvDeck[k] || {}).cards).length === 10), d.cvTimer, d.cvPack,
+            d.vloc || {}, Object.keys(d.cvDeck || {}).filter(k => arrv((d.cvDeck[k] || {}).cards).length === 10), d.cvTimer,
             Object.entries(d.cvb || {}).map(([k, b]) => [k, b && b.st, Object.keys((b && b.acc) || {}).length, b && b.s && b.s.round])]);
     }
     if (tab === "collection") return JSON.stringify([colView, Object.entries(d.trades || {}).map(([k, t]) => [k, t && t.st]), colView === "trade" ? Object.values(d.binder || {}).map(b => String(b).length) : 0, x && x.activeSlots ? x.activeSlots(d) : []]);

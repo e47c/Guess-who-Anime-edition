@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Holo Review (dev)</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Permanent+Marker&family=Special+Elite&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/base.css?v=13">
+<link rel="stylesheet" href="../css/cards.css?v=4">
+<link rel="stylesheet" href="../css/packs.css?v=2">
+<style>
+/* DEV ONLY: holo cards of every rarity, next to the same card without holo, to review the foil. Not linked from the game. */
+body { margin: 0; padding: 16px; background: #0b0810; color: #eee; font: 500 14px/1.4 Inter, sans-serif; }
+h1 { margin: 0 0 6px; font: 400 26px/1 'Dela Gothic One'; }
+p.lead { margin: 0 0 10px; color: #bbb; max-width: 900px; }
+.bar { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 10px 0; background: #0b0810; }
+.bar button { padding: 6px 10px; border-radius: 6px; border: 1px solid #555; background: #1c1824; color: #eee; font: 600 13px Inter; cursor: pointer; }
+.bar button.on { background: #b38bff; color: #120820; }
+.pad { position: relative; width: 120px; height: 80px; border-radius: 8px; background: radial-gradient(circle, #2a2440, #15111f); box-shadow: inset 0 0 0 1px #555; cursor: crosshair; touch-action: none; }
+.pad i { position: absolute; width: 12px; height: 12px; margin: -6px; border-radius: 50%; background: #ffd76a; pointer-events: none; }
+h2 { margin: 22px 0 8px; font: 600 22px/1 Teko; letter-spacing: .06em; text-transform: uppercase; }
+.row { display: flex; flex-wrap: wrap; gap: 18px; }
+.pair { display: grid; grid-template-columns: auto auto; gap: 8px; align-items: end; padding: 8px; border-radius: 10px; background: #15111f; }
+.pair > small { grid-column: 1 / -1; font: 600 11px/1.2 'JetBrains Mono'; color: #aaa; }
+.cell { display: grid; justify-items: center; gap: 4px; }
+.cell > small { font: 700 10px/1 'JetBrains Mono'; color: #888; }
+.cell.holo > small { color: #ffd76a; }
+.stage .vcard { --cw: 170px; cursor: zoom-in; }
+.stage .vc-inner { transition: transform .12s ease-out; }
+</style>
+</head>
+<body>
+<h1>Holo review · dev</h1>
+<p class="lead">Every rarity as a holo card (left) next to the same card without holo (right), from series with different etched patterns.
+Move the pointer over a card, drag the angle pad, or turn on the sweep: the foil should move across the card's own art and frame, the series pattern
+should catch the light, the glitter should twinkle and the face should stay clear. Click a card to inspect it (drag to tilt). Reduced effects = a still foil.</p>
+<div class="bar">
+<span>Angle</span><div class="pad" id="pad"><i></i></div>
+<button id="sweep">Sweep</button><button id="lite">Reduced effects</button><button id="big">Bigger cards</button>
+<span id="info"></span>
+</div>
+<div id="out" class="stage"></div>
+<script type="module">
+import { CARDS, CARD_SERIES } from "../js/vault/carddb.js?v=3";
+import { cardEl, theme } from "../js/vault/cardui.js?v=7";
+import { inspect } from "../js/vault/opening.js?v=7";
+const RN = ["Common", "Uncommon", "Rare", "Ultra Rare", "Epic", "Legendary", "Mythic"];
+const SER = ["naruto", "onepiece", "demonslayer", "dragonball", "jjk", "bleach", "jojo", "hxh"];
+const out = document.getElementById("out"), all = [];
+for (let r = 0; r <= 6; r++) {
+    out.insertAdjacentHTML("beforeend", "<h2>" + RN[r] + "</h2>");
+    const row = document.createElement("div"); row.className = "row"; out.appendChild(row);
+    const picks = SER.map(s => Object.values(CARDS).find(c => c.s === s && c.r === r)).filter(Boolean).slice(0, 3);
+    picks.forEach(c => {
+        const pair = document.createElement("div"); pair.className = "pair";
+        [true, false].forEach(h => {
+            const cell = document.createElement("div"); cell.className = "cell" + (h ? " holo" : "");
+            const el = cardEl(c.id, { holo: h, size: "md" }); el.onclick = () => inspect(c.id, { holo: h });
+            cell.append(el, Object.assign(document.createElement("small"), { textContent: h ? "HOLO" : "normal" })); pair.appendChild(cell); all.push(el);
+        });
+        pair.appendChild(Object.assign(document.createElement("small"), { textContent: c.n + " · " + theme(c.s).label + " · pattern: " + theme(c.s).holo }));
+        row.appendChild(pair);
+    });
+}
+const setAngle = (x, y) => all.forEach(el => {          // x, y in -0.5 .. 0.5: the same variables the game sets from the tilt
+    el.style.setProperty("--ry", (x * 30).toFixed(1) + "deg"); el.style.setProperty("--rx", (-y * 24).toFixed(1) + "deg");
+    el.style.setProperty("--mx", ((x + .5) * 100).toFixed(1) + "%"); el.style.setProperty("--my", ((y + .5) * 100).toFixed(1) + "%");
+    el.style.setProperty("--px", x.toFixed(3)); el.style.setProperty("--py", y.toFixed(3));
+});
+const pad = document.getElementById("pad"), dot = pad.querySelector("i");
+const fromPad = e => { const r = pad.getBoundingClientRect(), x = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), y = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)); dot.style.left = x * 100 + "%"; dot.style.top = y * 100 + "%"; setAngle(x - .5, y - .5); };
+let dragging = false; pad.onpointerdown = e => { dragging = true; pad.setPointerCapture(e.pointerId); fromPad(e); }; pad.onpointermove = e => { if (dragging) fromPad(e); }; pad.onpointerup = () => { dragging = false; };
+dot.style.left = "50%"; dot.style.top = "50%";
+let sw = 0; const sweepBtn = document.getElementById("sweep");
+sweepBtn.onclick = () => { if (sw) { cancelAnimationFrame(sw); sw = 0; sweepBtn.classList.remove("on"); return; } sweepBtn.classList.add("on"); const t0 = performance.now(); const tick = now => { const t = (now - t0) / 2600; setAngle(Math.sin(t * Math.PI) * .45, Math.cos(t * Math.PI * .7) * .35); sw = requestAnimationFrame(tick); }; sw = requestAnimationFrame(tick); };
+const liteBtn = document.getElementById("lite"); liteBtn.onclick = () => { document.body.classList.toggle("fx-lite"); liteBtn.classList.toggle("on"); };
+const bigBtn = document.getElementById("big"); bigBtn.onclick = () => { bigBtn.classList.toggle("on"); all.forEach(el => el.style.setProperty("--cw", bigBtn.classList.contains("on") ? "260px" : "")); };
+document.getElementById("info").textContent = all.length / 2 + " cards, " + RN.length + " rarities";
+window.__holoAngle = setAngle;
+</script>
+</body>
+</html>

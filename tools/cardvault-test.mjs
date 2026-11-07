@@ -1,8 +1,8 @@
 // ANIME TCG card-battle engine tests + balance simulation: node tools/cardvault-test.mjs [--sims N]
-import { newBattle, act, resolveRound, alive, handOf, lifeOf, autoPick, due, applyDue, playOut, cpuPick, allPicked, REVEAL_MS } from "../js/cardvault/engine.js?v=7";
+import { newBattle, act, resolveRound, alive, handOf, lifeOf, autoPick, due, applyDue, playOut, cpuPick, allPicked, REVEAL_MS } from "../js/cardvault/engine.js?v=8";
 import { ABILITIES, ARCHETYPES, RARITY_NAMES } from "../js/cardvault/abilities.js?v=2";
 import { CARDS, BY_SERIES_RARITY, CARD_SERIES, TOTAL_CARDS } from "../js/vault/carddb.js?v=3";
-import { BATTLE } from "../js/vault/config.js?v=9";
+import { BATTLE } from "../js/vault/config.js?v=10";
 import { rngFrom, shuffleWith } from "../js/vault/rng.js?v=1";
 
 let ok = 0, bad = 0;

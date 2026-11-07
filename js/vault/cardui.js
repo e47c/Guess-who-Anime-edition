@@ -7,7 +7,7 @@
    Rarity is readable without colour: the number and shape of the rarity gems + the rarity word.
    ===================================================================== */
 import { CARDS, RARITY_NAMES } from "./carddb.js?v=3";
-import { CARD_ART } from "./config.js?v=9";
+import { CARD_ART } from "./config.js?v=10";
 import { ABILITIES, abilityText } from "../cardvault/abilities.js?v=2";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -109,7 +109,9 @@ export function cardEl(id, o = {}) {
     const foot = mk("div", "vc-foot"); foot.append(mk("span", "vc-no", c.no), mk("span", "vc-arch", c.a), mk("span", "vc-ser", theme(c.s).short)); f.appendChild(foot);
     if (o.isNew) f.appendChild(mk("span", "vc-new", "NEW"));
     if (o.veteran) { const v = mk("span", "vc-vet", "★"); v.title = "Veteran: in 10+ winning battles"; foot.prepend(v); }
-    f.append(mk("div", "vc-holo"), mk("div", "vc-glare"));
+    f.append(mk("div", "vc-holo"));
+    if (o.holo) f.appendChild(mk("div", "vc-sheen"));      // holo: the faint sheen over the dark parts (css/cards.css)
+    f.appendChild(mk("div", "vc-glare"));
     // back (shown when the card is turned: the info side)
     const b = mk("div", "vc-back");
     b.appendChild(coverEl(c.s, o.sleeve));
@@ -167,4 +169,33 @@ export function bindShine(el, opts = {}) {
     const off = () => { if (opts.tilt) { el.style.setProperty("--rx", "0deg"); el.style.setProperty("--ry", "0deg"); } };
     el.addEventListener("pointermove", on); el.addEventListener("pointerleave", off);
     return () => { el.removeEventListener("pointermove", on); el.removeEventListener("pointerleave", off); };
+}
+
+/* ---------- one solid card: thickness ----------
+   Card-stock slices between the two faces (inside .vc-inner, which keeps 3D), so a tilted card shows a real edge and
+   turns as one rigid object. Used by the inspect view and the pack opening. */
+export function thicken(el) {
+    const inner = el && el.querySelector(".vc-inner"); if (!inner || el.classList.contains("thick")) return el;
+    [-.07, -.035, 0, .035, .07].forEach(z => { const e = mk("i", "vc-edge"); e.style.setProperty("--z", z + "em"); inner.prepend(e); });
+    el.classList.add("thick");
+    return el;
+}
+/* ---------- holo light: the foil follows the pointer over any holo card (collection, decks, summary, battles).
+   The inspect view and the pack opening drive the same variables from the tilt. Off under Reduced effects. ---------- */
+if (typeof document !== "undefined") {
+    let raf = 0, card = null, pt = null;
+    const reduced = () => document.body && document.body.classList.contains("fx-lite");
+    const put = () => { raf = 0; if (!card || !pt || !card.isConnected) return; const r = card.getBoundingClientRect(); if (!r.width) return;
+        const x = Math.max(0, Math.min(1, (pt[0] - r.left) / r.width)), y = Math.max(0, Math.min(1, (pt[1] - r.top) / r.height));
+        card.style.setProperty("--mx", (x * 100).toFixed(1) + "%"); card.style.setProperty("--my", (y * 100).toFixed(1) + "%"); card.style.setProperty("--px", (x - .5).toFixed(3)); card.style.setProperty("--py", (y - .5).toFixed(3)); };
+    document.addEventListener("pointermove", e => {
+        const c = e.target && e.target.closest ? e.target.closest(".vcard.holo") : null;
+        if (!c || reduced() || c.closest(".vc-inspect") || c.closest(".pk-deck")) return;      // those two drive it themselves
+        card = c; pt = [e.clientX, e.clientY]; if (!raf) raf = requestAnimationFrame(put);
+    }, { passive: true });
+    document.addEventListener("pointerout", e => {
+        const c = e.target && e.target.closest ? e.target.closest(".vcard.holo") : null;
+        if (!c || c.contains(e.relatedTarget) || c.closest(".vc-inspect") || c.closest(".pk-deck")) return;
+        ["--mx", "--my", "--px", "--py"].forEach(k => c.style.removeProperty(k)); if (card === c) card = null;
+    }, { passive: true });
 }
