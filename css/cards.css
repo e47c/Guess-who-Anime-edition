@@ -116,11 +116,17 @@
 .vcard.r-rare .vc-front { box-shadow: inset 0 0 0 .26em #1a5fd1, inset .12em .12em 0 .3em rgba(200,235,255,.8), inset -.12em -.12em 0 .3em rgba(5,30,90,.8), 0 .4em 1.2em rgba(0,0,0,.5), 0 0 .6em rgba(80,170,255,.35); }
 .vcard.r-rare .vc-frame { background: linear-gradient(120deg, transparent 30%, rgba(190,235,255,.28) 45%, transparent 46%, transparent 52%, rgba(190,235,255,.18) 58%, transparent 60%) calc(var(--mx) * 1.6 - 60%) 0 / 200% 100%; mix-blend-mode: screen; }
 /* Ultra Rare: silver + violet, shattered angular edges; the character breaks out of the frame */
-.vcard.r-ultra { --frame: #d6c7ff; }
-.vcard.r-ultra .vc-front { clip-path: polygon(0 4%, 4% 0, 30% 0, 33% 1.5%, 36% 0, 96% 0, 100% 4%, 100% 40%, 98.5% 43%, 100% 46%, 100% 96%, 96% 100%, 64% 100%, 61% 98.5%, 58% 100%, 4% 100%, 0 96%, 0 62%, 1.5% 59%, 0 56%);
+.vcard.r-ultra { --frame: #d6c7ff;
+    /* the shattered silhouette is the card's physical outline: the front, the back and the card-stock edge all share it.
+       The back sits inside the card turned 180°, so it gets the mirror image, which lands on exactly the same outline. */
+    --cut: polygon(0 4%, 4% 0, 30% 0, 33% 1.5%, 36% 0, 96% 0, 100% 4%, 100% 40%, 98.5% 43%, 100% 46%, 100% 96%, 96% 100%, 64% 100%, 61% 98.5%, 58% 100%, 4% 100%, 0 96%, 0 62%, 1.5% 59%, 0 56%);
+    --cut-back: polygon(100% 4%, 96% 0, 70% 0, 67% 1.5%, 64% 0, 4% 0, 0 4%, 0 40%, 1.5% 43%, 0 46%, 0 96%, 4% 100%, 36% 100%, 39% 98.5%, 42% 100%, 96% 100%, 100% 96%, 100% 62%, 98.5% 59%, 100% 56%); }
+.vcard.r-ultra .vc-front { clip-path: var(--cut);
     box-shadow: inset 0 0 0 .26em #8e7cc3, inset 0 0 0 .4em #e9e9f2; background: linear-gradient(160deg, #2a2240, #0c0a14); }
 .vcard.r-ultra .vc-art { overflow: visible; z-index: 3; }
 .vcard.r-ultra .vc-art img { height: 122%; margin-top: -22%; clip-path: inset(-30% 0 0 0 round .25em); -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 16%); mask-image: linear-gradient(180deg, transparent 0, #000 16%); }
+.vcard.r-ultra .vc-back { clip-path: var(--cut-back); }
+.vcard.r-ultra .vc-edge { clip-path: var(--cut); }
 .vcard.r-ultra .vc-frame::before { box-shadow: 0 0 0 .14em #e9e9f2, 0 0 .5em rgba(180,140,255,.7); clip-path: polygon(0 18%, 100% 18%, 100% 100%, 0 100%); }
 /* Epic: crimson + magenta glowing frame, energy running along the border, 2-layer parallax art */
 .vcard.r-epic { --frame: #ff4fa0; }
