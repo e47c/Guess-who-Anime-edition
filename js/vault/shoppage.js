@@ -8,9 +8,9 @@
    shows the result on the Arcade Pass preview. The try-on and every preview is the credit-card Arcade Pass.
    Every purchase is an intent sent to the bank (bank.apply with an operation id): a double click never pays twice.
    ===================================================================== */
-import { SKINS, SCRATCH } from "./config.js?v=10";
-import { SKIN_ITEMS, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=8";
-import { bank, vaultEvent } from "./vault.js?v=12";
+import { SKINS, SCRATCH } from "./config.js?v=11";
+import { SKIN_ITEMS, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=9";
+import { bank, vaultEvent } from "./vault.js?v=13";
 import { newSeed } from "./rng.js?v=1";
 import { motionOK } from "../fx.js";
 

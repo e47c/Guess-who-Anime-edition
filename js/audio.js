@@ -151,6 +151,9 @@ const FX = {
     chainbreak(o, t) { V.snare(o, t, .9, .25); [94, 99, 103, 108, 111].forEach((m, i) => V.bell(o, t + i * .035, m, .5, .9)); V.sweep(o, t, 6000, 1500, .4, .7, 3); V.kick(o, t, .5); },
     creak(o, t) { V.sweep(o, t, 420, 160, .9, .28, 7); V.sweep(o, t + .35, 300, 120, .7, .2, 9); },
     shatter(o, t) { V.snare(o, t, 1, .5); V.sweep(o, t, 9000, 2500, .5, 1, 1.5); V.hat(o, t + .02, 1, true); [96, 100, 103, 108].forEach((m, i) => V.bell(o, t + .03 + i * .04, m, .5, 1)); V.kick(o, t, .7); },
+    // the card reader under the Arcade Pass: the card slides in (a click, then a beep), and is ejected
+    cardIn(o, t) { V.sweep(o, t, 2600, 700, .16, .45, 2); V.hat(o, t + .14, .7); V.pluck(o, t + .15, 62, .04, .8, "square", 1600, 0); V.pluck(o, t + .24, 93, .12, .5, "square", 5200, .1); },
+    cardOut(o, t) { V.pluck(o, t, 60, .04, .7, "square", 1500, 0); V.hat(o, t, .55); V.sweep(o, t + .03, 700, 2800, .22, .45, 2); },
     coin(o, t) { V.pluck(o, t, 83, .07, .7, "square", 5200, 0); V.pluck(o, t + .07, 88, .4, .7, "square", 5200, .2); },
     // cinematic layer for the special-card scenes
     boom(o, t) { V.kick(o, t, 1.5); V.tom(o, t, 48, 1.3); V.sweep(o, t, 1800, 120, .9, .9, 1); V.pad(o, t, [28, 35], .9, 2.4, 260); },

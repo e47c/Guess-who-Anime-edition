@@ -87,6 +87,22 @@ export const SKINS = {
     pauseOffscreen: true                         // animated frames / backgrounds pause while scrolled out of view
 };
 
+/* ---------- A3b. The card reader under the Arcade Pass (main menu): pick the pass up, insert it, the Wardrobe opens ----------
+   Read by js/cardslot.js. Times in ms. */
+export const CARD_SLOT = {
+    doubleTapMs: 340,       // two clicks / taps on the pass within this = pick it up
+    holdMs: 400,            // or press and hold it this long (touch / pen)
+    liftScale: 1.06,        // the card grows a little while held
+    maxTiltDeg: 12,         // tilt from movement speed while held
+    snapPx: 70,             // the card's bottom edge within this of the slot (and lined up) = the snap zone
+    returnMs: 460,          // released away from the slot: glide back and settle
+    insertMs: 900,          // align + slide into the slot
+    openDelayMs: 140,       // after the card is in and the beep plays, before the Wardrobe opens
+    ejectMs: 700,           // the Wardrobe closed: out of the slot and back onto the menu
+    visibleShare: 0.16,     // how much of the card still sticks out of the slot
+    hintFadeAfter: 3        // the "Double-click the card, or tap here" hint fades after this many uses
+};
+
 /* ---------- A4. Scratch cards (rolled before the scratch UI; scratching only reveals) ---------- */
 export const SCRATCH = {
     tiers: {      // odds = reward rarity; types = what kind of reward (title, title skin, username colour/effect)

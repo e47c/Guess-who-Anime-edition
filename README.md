@@ -288,7 +288,11 @@ shadow, a golden EMV chip on the right): the picture with the equipped frame, th
 card, the name with its username style, the title with its title skin, the level and the XP bar. The same function
 draws the main menu card, the Wardrobe preview and the Shop try-on; the background skin is the same CSS as the lobby
 seats (`.sbg[data-bg=<tier>]` in `css/vault.css`), so the pass and the lobby card always match. The stats sit below the
-card and Edit player card is its own button under it.
+card, and under it the **card reader** (`js/cardslot.js`, labelled EDIT PLAYER CARD) replaces the old button: double-click
+/ double-tap the pass (or press and hold it on touch) to pick it up, drop it on the reader's slot (a green glow marks the
+snap zone) and it slides in, beeps and opens the Wardrobe; closing the Wardrobe ejects it back onto the menu. Clicking the
+reader (or Enter / Space on it) does the same insert without dragging. Reduced effects: a quick fade and the Wardrobe
+opens at once. Timings and the hint-fade count: `CARD_SLOT` in `js/vault/config.js`.
 
 The **Anime TCG** is ONE page (`#arcadeVault`, `js/vault/vault.js` + `tabs.js`, `css/tcg.css`; internal id
 `cardvault`, saved data unchanged) with four tabs: Packs Store (a booster shelf), Collection (a binder with 9-pocket
@@ -440,7 +444,7 @@ player count, with the estimated duration. START NIGHT PARTY whenever everyone i
 
 - **Main menu** (`css/menu.css`; the cards and panel are built by `buildHomeModes` / `pickGuide` in `js/game.js`).
   - **Hero:** the logo, the tagline, the **Shop** storefront tile (deliberately unlike the game tiles: landscape, an awning, neon lettering, "NOT A GAME · SHOP"), **Host a party** (*insert coin*: a coin drops into the slot and the credit counter ticks before the room is made), the six-cell room-code entry, and the counts (games, players, one room code). Fire is used as light: a slow ember glow along the floor and embers drifting up.
-  - **Arcade Pass:** the credit-card player card (see "The Arcade Pass" above), Edit player card under it (opens the Wardrobe), then the hi-score stats. The ANIME TCG button sits under Host a party / Join.
+  - **Arcade Pass:** the credit-card player card (see "The Arcade Pass" above), the card reader under it (insert the pass to open the Wardrobe), then the hi-score stats. The ANIME TCG button sits under Host a party / Join.
   - **The 10 game tiles:** two balanced rows of 5 (2 columns x 5 rows on phones), the same poster tiles in the lobby's mode picker (plus who voted, the cursors and SELECTED). Anime TCG is a holo-framed trading card with a card back peeking out; Night Party a festival night with string lights.
   - **Pick your game / How to play:** one card per mode, then the How to Play panel for the picked one (the same rules as the in-room rules sheet, each with a short headline, plus player count and format). The cards are a tablist (arrow keys, Home, End); the last pick is remembered. **Host a … party** opens a room already on that game.
   - **Each mode has its own skin**, shared by its card and its panel: Guess Who a noir case file with a magnifying glass and yellow evidence markers; Headbanz a polaroid pinned to a cork case board with typewriter type; Imposter a dark camera feed with scanlines and a glitch; Anime UNO a playing card ringed in the four deck colours; Anime Draft a foil trading card with rarity gems; Anime Feud a blue studio panel ringed with marquee bulbs; Most Likely two sides split by a burning seam with a VS badge; Anime Sketch a taped sheet with a pencil-sketch picture and marker lettering. Adding a mode = an entry in `MODES`, `RULES` and `GUIDE` (game.js) and one `[data-mode]` block in `menu.css`.

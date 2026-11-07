@@ -8,7 +8,7 @@ missions, ledger) and the profile (`gw_profile_v1`) keep the same keys and shape
 
 | Area | Now |
 |---|---|
-| Arcade Pass | A credit card (1.586:1, rounded corners, edge highlight, shadow, golden EMV chip on the right): picture with the equipped frame, equipped background over the whole card, name with its username style, title with its title skin, level and XP bar. One renderer (`passCard`, js/profile.js) for the menu, the Wardrobe preview and the Shop try-on; the background is the lobby seat's skin CSS (`.sbg[data-bg]`). Stats below the card, Edit player card as its own button under it. |
+| Arcade Pass | A credit card (1.586:1, rounded corners, edge highlight, shadow, golden EMV chip on the right): picture with the equipped frame, equipped background over the whole card, name with its username style, title with its title skin, level and XP bar. One renderer (`passCard`, js/profile.js) for the menu, the Wardrobe preview and the Shop try-on; the background is the lobby seat's skin CSS (`.sbg[data-bg]`). Stats below the card; the EDIT PLAYER CARD card reader under it (see the card-slot follow-up below). |
 | Wardrobe | "Edit player card" (js/wardrobe.js): display name, profile picture (+ accent colour, upload), Frame, Background, Title, Title skins, Username styles, Card sleeves, plus your record. Owned items selectable; the rest greyed out with where to get them ("Get it in the Shop" opens the Shop on that item). Live preview on the pass; Save profile applies, closing discards. |
 | Shop | Its own section (js/vault/shoppage.js): the storefront tile under the logo on the main menu, the Shop button in the lobby header, the CREDIT counter and the coin chip. Season 1 skins (bundle -20%) and scratch cards; prices, odds and refunds unchanged. Buying never equips; after every purchase and new scratch prize, Equip now (next to Keep browsing) equips it and shows it on the pass. Works with and without a room; closing it from the lobby returns to the same room. |
 | Anime TCG | The renamed Arcade Vault mode, four tabs (Packs Store, Collection, Decks, Battle), re-themed as a card table (playmat, card-back patterns, booster shelf, binder pages, deck boxes, a slot + Power / Defense curve deck builder, a duel board). Same two entry points (lobby mode with room and friends; the ANIME TCG button under Host / Join with HOST PARTY / JOIN). Card design and pack opening unchanged. |
@@ -56,3 +56,14 @@ By hand (screenshots in the scratchpad `ui/` folder):
   - The separate **Get in Shop** button opens the Shop on that item: a skin is tried on, and the scratch cards that can win it are highlighted.
   - The Shop opens above the Wardrobe; ‹ Wardrobe, the X or Esc go back with the unsaved draft intact. "Equip now" in the Shop is picked up by the draft.
 - Browser test: scratchpad pw/small4.mjs (41 checks).
+
+## Card slot (2026-11-07)
+The "Edit player card" button under the Arcade Pass is now an arcade card reader (js/cardslot.js, CSS in css/shop.css, config `CARD_SLOT` in js/vault/config.js).
+- **Pick up:** double-click / double-tap the pass, or press and hold it about 400 ms on touch. It lifts (bigger, tilted, shadow) and follows the pointer, tilting with the movement. It is a clone over the page; the real pass keeps its place, so nothing on the menu moves.
+- **Insert:** the slot glows while the card is held, and turns green when the card is close and lined up (the snap zone). Releasing there: the card lines up, slides into the slot, the lights go green, a generated beep-click plays and the Wardrobe rises from the reader.
+- **Eject:** closing the Wardrobe (Save, Cancel, X, Esc) slides the card out and back onto the pass with an eject sound, showing the look just saved.
+- **Fallbacks:** clicking / tapping the reader, or Enter / Space on it, runs the same insert with no dragging. Released away from the slot, or Esc: the card glides back. Pointer cancel, window blur, a hidden tab, resize / rotation or an overlay opening return it at once.
+- **While carrying:** no text selection, image drag, wheel / touch scrolling, or double-tap zoom; clicks on the menu are swallowed. Touch: a double-tap without moving keeps the card in the hand, and the next tap (on the slot) drops it there.
+- **Reduced effects:** no carry, tilt, shadow or slide: a quick fade, the beep, and the Wardrobe opens at once. Sounds follow the sound settings.
+- The hint ("Double-click the card, or tap here"; "Double-tap" on touch) fades after `hintFadeAfter` uses (stored in localStorage `aap_slot_uses`). The lobby has no Edit button, so the reader is on the main menu only.
+- Browser test: scratchpad pw/slot.mjs (67 checks).

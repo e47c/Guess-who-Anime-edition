@@ -7,7 +7,7 @@
    Rarity is readable without colour: the number and shape of the rarity gems + the rarity word.
    ===================================================================== */
 import { CARDS, RARITY_NAMES } from "./carddb.js?v=3";
-import { CARD_ART } from "./config.js?v=10";
+import { CARD_ART } from "./config.js?v=11";
 import { ABILITIES, abilityText } from "../cardvault/abilities.js?v=2";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };

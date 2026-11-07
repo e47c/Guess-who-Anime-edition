@@ -17,7 +17,7 @@
    Sudden death rounds are extra stages after the plan (weight 0, only the tied players).
    ===================================================================== */
 import { NIGHT_PARTY as NP } from "./config.js?v=2";
-import { stageIds, stageMeta, normalizeSettings, formatOf, stageFits, fastStages, estMinutes, estTotal } from "./stages.js?v=5";
+import { stageIds, stageMeta, normalizeSettings, formatOf, stageFits, fastStages, estMinutes, estTotal } from "./stages.js?v=6";
 import { standings, topTied, leadGap, lateStart, seedOrder, splitTeams, makeBracket, normBracket, nextMatch, recordWin, bracketDone, bracketPlacements, matchesLeft, adjustPlacements, sdWinners, BYE } from "./scoring.js?v=2";
 
 let X = null;

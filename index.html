@@ -25,7 +25,7 @@
 <link rel="stylesheet" href="css/packs.css?v=3">
 <link rel="stylesheet" href="css/cardvault.css?v=3">
 <link rel="stylesheet" href="css/party.css?v=2">
-<link rel="stylesheet" href="css/shop.css?v=2">
+<link rel="stylesheet" href="css/shop.css?v=3">
 <link rel="stylesheet" href="css/tcg.css?v=1">
 </head>
 <body class="anime-theme" data-scene="home">
@@ -171,7 +171,13 @@
 </section>
 <aside class="pass-wrap" id="profileCard" aria-label="Your Arcade Pass">
 <div id="pcPass" class="pc-pass"></div>
-<button class="btn ghost wide pass-edit" type="button" onclick="openProfile()">Edit player card</button>
+<button class="card-reader" id="cardReader" type="button" aria-label="Edit player card: insert your Arcade Pass to open the Wardrobe" aria-describedby="cardHint">
+<span class="cr-mouth" aria-hidden="true"><span class="cr-slit"></span></span>
+<span class="cr-leds" aria-hidden="true"><i></i><i></i><i></i></span>
+<span class="cr-label">EDIT PLAYER CARD</span>
+<span class="cr-ins" aria-hidden="true">▲ INSERT</span>
+<span class="cr-hint" id="cardHint">Double-click the card, or tap here</span>
+</button>
 <div class="pc-hs" aria-hidden="true">HI-SCORE TABLE</div>
 <div class="pc-stats" id="pcStats"></div>
 <input id="name" type="hidden">
@@ -621,7 +627,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=56"></script>
+<script type="module" src="js/game.js?v=57"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){

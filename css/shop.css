@@ -47,8 +47,69 @@
 /* the home column: the card, Edit player card right under it, then the stats */
 .pass-wrap { --ac: var(--red); display: grid; gap: 12px; align-content: start; width: 100%; }
 .pc-pass { width: 100%; }
-.pass-wrap .pass-edit { width: 100%; }
 .pass-wrap .pc-hs { margin: 6px 0 0; }
+
+/* ---------- the card reader under the pass (js/cardslot.js): "EDIT PLAYER CARD" ----------
+   A gunmetal arcade/ATM reader: the slot mouth on top (the card goes in there), lights + label under it. */
+.card-reader { --cr-glow: transparent; --cr-l1: #6b1010; --cr-l2: #3b2a08; --cr-l3: #0d2a14; position: relative; isolation: isolate;
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "mouth mouth mouth" "leds label ins" "hint hint hint"; align-items: center; gap: 9px 10px;
+    width: 100%; padding: 11px 14px 10px; border: 0; border-radius: 14px; cursor: pointer; text-align: left; color: #e9e2d0;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,.022) 0 1px, transparent 1px 3px), linear-gradient(180deg, #3b3734, #25211f 55%, #191615);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.2), inset 0 0 0 1px rgba(255,228,160,.24), inset 0 -2px 0 rgba(0,0,0,.55), 0 10px 24px rgba(0,0,0,.45);
+    touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; transition: box-shadow .25s, transform .2s var(--e-out); }
+/* screw heads in the bottom corners */
+.card-reader::before, .card-reader::after { content: ""; position: absolute; bottom: 8px; width: 6px; height: 6px; border-radius: 50%; z-index: -1;
+    background: radial-gradient(circle at 35% 35%, #8d8780, #3a3532 70%); box-shadow: 0 1px 0 rgba(255,255,255,.12), inset 0 0 0 1px rgba(0,0,0,.4); }
+.card-reader::before { left: 7px; } .card-reader::after { right: 7px; }
+.cr-mouth { grid-area: mouth; display: grid; align-items: center; height: 26px; padding: 0 9px; border-radius: 9px;
+    background: linear-gradient(180deg, #0c0a0a, #26221f); box-shadow: inset 0 2px 5px rgba(0,0,0,.85), inset 0 0 0 1px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.13); }
+.cr-slit { display: block; height: 6px; border-radius: 3px; background: #000;
+    box-shadow: inset 0 2px 3px #000, 0 0 0 1px rgba(255,255,255,.06), 0 0 12px 1px var(--cr-glow); transition: box-shadow .25s, background .25s; }
+.cr-leds { grid-area: leds; display: inline-flex; gap: 5px; }
+.cr-leds i { width: 8px; height: 8px; border-radius: 50%; background: var(--cr-l1); box-shadow: inset 0 1px 1px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.4); transition: background .2s, box-shadow .2s; }
+.cr-leds i:nth-child(2) { background: var(--cr-l2); } .cr-leds i:nth-child(3) { background: var(--cr-l3); }
+.cr-leds i:first-child { animation: crPulse 2.2s ease-in-out infinite; }
+@keyframes crPulse { 50% { background: #ff3b3b; box-shadow: 0 0 9px 2px rgba(255,59,59,.7), inset 0 1px 1px rgba(255,255,255,.3); } }
+.cr-label { grid-area: label; font: 700 13px/1.1 var(--f-ui); letter-spacing: .2em; color: var(--gold-bright); text-shadow: 0 0 8px rgba(240,200,105,.3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cr-ins { grid-area: ins; font: 700 10px/1 var(--f-mono); letter-spacing: .16em; color: rgba(233,226,208,.5); }
+.cr-hint { grid-area: hint; max-height: 3em; overflow: hidden; font: 500 12px/1.3 var(--f-ui); color: rgba(233,226,208,.62); transition: opacity .6s, max-height .6s, margin .6s; }
+.card-reader.no-hint .cr-hint { opacity: 0; max-height: 0; margin-top: -9px; }
+/* hover / focus: the reader lights up */
+.card-reader:hover, .card-reader:focus-visible { --cr-glow: rgba(240,200,105,.75); box-shadow: inset 0 1px 0 rgba(255,255,255,.24), inset 0 0 0 1px rgba(255,228,160,.55), inset 0 -2px 0 rgba(0,0,0,.55), 0 0 22px rgba(240,200,105,.2), 0 10px 24px rgba(0,0,0,.45); }
+.card-reader:hover .cr-leds i:nth-child(2), .card-reader:focus-visible .cr-leds i:nth-child(2) { background: #ffb21e; box-shadow: 0 0 8px rgba(255,178,30,.7); }
+.card-reader:hover .cr-ins, .card-reader:focus-visible .cr-ins { color: var(--gold-bright); }
+.card-reader:focus-visible { outline: 3px solid var(--gold-bright); outline-offset: 3px; }
+.card-reader:active { transform: translateY(1px); }
+/* the card is in the hand: the slot invites it; close and lined up (the snap zone): green guide glow */
+.card-reader.ready { --cr-glow: rgba(240,200,105,.8); }
+.card-reader.ready .cr-slit { animation: crReady 1s ease-in-out infinite; }
+@keyframes crReady { 50% { box-shadow: inset 0 2px 3px #000, 0 0 0 1px rgba(255,255,255,.08), 0 0 18px 4px var(--cr-glow); } }
+.card-reader.near { --cr-glow: rgba(61,255,138,.95); box-shadow: inset 0 1px 0 rgba(255,255,255,.2), inset 0 0 0 2px rgba(61,255,138,.75), 0 0 26px rgba(61,255,138,.35), 0 10px 24px rgba(0,0,0,.45); }
+.card-reader.near .cr-mouth { box-shadow: inset 0 2px 5px rgba(0,0,0,.85), inset 0 0 0 1px rgba(61,255,138,.6), 0 0 14px rgba(61,255,138,.35); }
+.card-reader.near .cr-ins { color: #3dff8a; }
+/* reading: all lights green */
+.card-reader.ok { --cr-glow: rgba(61,255,138,.95); }
+.card-reader.ok .cr-leds i { background: #3dff8a !important; box-shadow: 0 0 9px 2px rgba(61,255,138,.65) !important; animation: none; }
+.card-reader.ok .cr-label { color: #b8ffd2; text-shadow: 0 0 10px rgba(61,255,138,.5); }
+.card-reader.busy { pointer-events: none; }
+body.fx-lite .cr-leds i:first-child, body.fx-lite .card-reader.ready .cr-slit { animation: none; }
+/* the pass on the menu: double-click / double-tap / hold picks it up (no browser double-tap zoom, no callout) */
+.pc-pass { touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.pc-pass img { -webkit-user-drag: none; }
+.pc-pass.cs-away { visibility: hidden; }
+.pc-pass.cs-fade .pass { animation: csFade .35s ease both; }
+@keyframes csFade { 40% { opacity: .25; } }
+/* the card on the move (a clone over the page; the real pass keeps its place in the layout) */
+.cs-ghost { position: absolute; z-index: 210; pointer-events: none; transform-origin: 50% 50%; will-change: transform, clip-path; isolation: isolate; }
+.cs-ghost .pass { transition: none !important; }
+.cs-ghost::before { content: ""; position: absolute; left: 7%; right: 7%; top: 18%; bottom: -2%; z-index: -1; border-radius: 18px; background: rgba(0,0,0,.6); filter: blur(16px); opacity: 0; transform: translateY(10px); transition: opacity .25s, transform .25s; }
+.cs-ghost.held::before { opacity: 1; transform: translateY(30px) scale(1.04); }
+body.cs-carry { touch-action: none; overscroll-behavior: none; cursor: grabbing; }
+body.cs-carry, body.cs-carry * { -webkit-user-select: none !important; user-select: none !important; }
+/* the Wardrobe rises out of the reader */
+#profile.ov-reader .sheet { animation: crOpen .5s var(--e-out) both; transform-origin: 50% 100%; }
+@keyframes crOpen { from { opacity: 0; transform: translateY(34vh) scale(.9, .72); } 55% { opacity: 1; } }
+body.fx-lite #profile.ov-reader .sheet { animation: none; }
 .pass-wrap .pc-stats { margin-bottom: 0; }
 @media (max-width: 900px) { .pass-wrap { max-width: 460px; justify-self: center; } }
 
