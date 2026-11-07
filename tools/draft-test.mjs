@@ -1,7 +1,7 @@
 // Anime Draft: unit tests for the rules engine (no browser, no Firebase).
 // Run: node tools/draft-test.mjs
 import fs from "fs";
-import { buildDb, charRoles, roleSetFor, newMatch, act, actorOf, standings, autoMove, teamBreakdown, canPass, DRAFT_RULES } from "../js/draft/draft.js";
+import { buildDb, charRoles, roleSetFor, newMatch, act, actorOf, pickerOf, standings, autoMove, teamBreakdown, canPass, clashOf, clashTotal, DRAFT_RULES } from "../js/draft/draft.js";
 import { RARITIES, CHARS, ROLESETS } from "../js/draft/data.js";
 
 let ok = 0, bad = 0;
@@ -9,7 +9,8 @@ const t = (c, m) => { if (c) ok++; else { bad++; console.log("  ✘", m); } };
 const pop = JSON.parse(fs.readFileSync(new URL("../data/draft-pop.json", import.meta.url), "utf8"));
 const packs = JSON.parse(fs.readFileSync(new URL("../packs.json", import.meta.url), "utf8"));
 const db = buildDb(pop, packs), all = Object.values(db), N = all.length;
-const rarity = id => db[id].r, ctx = (present) => ({ present: present || (() => true), rarity });
+let clock = 1000;
+const rarity = id => db[id].r, ctx = (present) => ({ present: present || (() => true), rarity, now: clock });
 let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
 const S = (k, ...rest) => Object.assign({}, ...rest, { k });
 
@@ -45,41 +46,67 @@ const myth70 = { ...luffy, id: 2, r: 0, v: luffy.v.slice() }; myth70.v[0] = 70;
 const tb = id => teamBreakdown(s0, [id, 0, 0, 0, 0, 0], { 1: common100, 2: myth70 }).total;
 t(tb(1) === 100 && tb(2) === 78, "Common 100 Strength (100) beats Mythical 70 Strength (70 + 8)");
 
-/* ---- Build: 1v1 full match ---- */
-const pool1 = CHARS.onepiece.map(r => r[0]);
-let s = newMatch({ type: "build", series: ["onepiece"], classic: false, mid: 1, pool: pool1, sides: { L: [1], R: [2] }, rarity, rnd });
-t(s.phase === "blind" && s.turn === "L" && s.cur && s.rr.L === 1 && s.rr.R === 1, "Build starts: Left draws, blind, one reroll each");
-t(act(s, { k: "keep", by: 2 }, ctx()) === "It's not your turn.", "Right can't act on Left's turn");
-t(act(s, { k: "place", slot: 0, by: 1 }, ctx()) && s.phase === "blind", "can't place before deciding keep / reroll");
-const first = s.cur;
-t(act(s, { k: "reroll", by: 1 }, ctx()) === null && s.cur !== first && s.phase === "place" && s.rr.L === 0 && s.gone.includes(first), "reroll: discards, draws a new one, goes straight to placing");
-t(act(s, { k: "reroll", by: 1 }, ctx()) !== null, "no second reroll");
-t(act(s, { k: "place", slot: 3, by: 1 }, ctx()) === null && s.team.L[3] && s.turn === "R" && s.phase === "blind", "place → Right's turn (blind, Right still has its reroll)");
-t(act(s, { k: "keep", by: 2 }, ctx()) === null && s.phase === "place", "keep → place");
-t(act(s, { k: "place", slot: 9, by: 2 }, ctx()) !== null, "invalid slot rejected");
-act(s, { k: "place", slot: 0, by: 2 }, ctx());
-t(s.turn === "L" && s.phase === "place", "Left (reroll used) skips the blind step");
-t(act(s, { k: "place", slot: 3, by: 1 }, ctx()) === "That role is already filled.", "filled role rejected");
+/* ---- Build: 1v1, both sides pick at the same time ---- */
+const pool1 = CHARS.onepiece.map(r => r[0]), PICK = DRAFT_RULES.pickSec * 1000;
+let s = newMatch({ type: "build", series: ["onepiece"], classic: false, mid: 1, pool: pool1, sides: { L: [1], R: [2] }, rarity, rnd, now: clock });
+t(s.phase === "pick" && s.cur.L && s.cur.R && s.cur.L !== s.cur.R && s.rr.L === 1 && s.rr.R === 1, "Build starts: both sides have a pull at once, one reroll each");
+t(s.dl.L === clock + PICK && s.dl.R === clock + PICK, "a pick deadline per side (" + DRAFT_RULES.pickSec + " s)");
+t(act(s, { k: "place", slot: 0, by: 3 }, ctx()) === "You're watching this draft.", "a spectator can't pick");
+const l0 = s.cur.L, r0 = s.cur.R;
+t(act(s, { k: "place", slot: 2, by: 2 }, ctx()) === null && s.team.R[2] === r0 && s.cur.R && s.cur.R !== r0 && s.cur.L === l0, "Right places first: no waiting for Left; Right pulls its next card");
+clock += 5000;
+t(act(s, { k: "reroll", by: 1 }, ctx()) === null && s.cur.L !== l0 && s.rr.L === 0 && s.gone.includes(l0) && s.dl.L === clock + PICK, "Left rerolls: a fresh pull, a fresh timer");
+t(act(s, { k: "reroll", by: 1 }, ctx()) === "Your reroll is already used.", "one reroll per match");
+t(act(s, { k: "place", slot: 9, by: 1 }, ctx()) !== null, "invalid slot rejected");
+act(s, { k: "place", slot: 0, by: 1 }, ctx());
+t(act(s, { k: "place", slot: 0, by: 1 }, ctx()) === "That role is already filled.", "filled role rejected");
+const ev = JSON.stringify(s.ev);
+t(s.ev.k === "place" && !/"c"/.test(ev), "the place event doesn't name the character (" + ev + ")");
+// the host plays a timed-out / away side
+const before = s.team.L.filter(Number).length;
+t(act(s, autoMove(s, db, "L"), Object.assign(ctx(), { force: true })) === null && s.team.L.filter(Number).length === before + 1, "the host auto-places a side (timer out / away) in its best free role");
 let guard = 0;
-while (s.phase !== "over" && guard++ < 40) { const a = autoMove(s, db); a.by = actorOf(s); t(act(s, a, ctx()) === null, "auto move ok"); }
-t(s.phase === "over" && s.team.L.every(Boolean) && s.team.R.every(Boolean), "Build ends with all 12 roles filled");
+while (s.phase === "pick" && guard++ < 40) ["L", "R"].forEach(k => { if (s.cur[k]) act(s, { k: "place", slot: autoMove(s, db, k).slot, by: k === "L" ? 1 : 2 }, ctx()); });
+t(s.phase === "clash" && s.clash.at === clock && s.team.L.every(Boolean) && s.team.R.every(Boolean) && !s.cur.L && !s.cur.R, "both boards full → the clash starts (clash.at = now)");
+t(act(s, { k: "place", slot: 0, by: 1 }, ctx()) === "The clash is on.", "no picks during the clash");
+t(act(s, { k: "end" }, ctx()) !== null && s.phase === "clash", "only the host's forced move ends the clash");
 const used = s.team.L.concat(s.team.R).concat(s.gone);
 t(new Set(used).size === used.length, "no character drawn twice (incl. the rerolled one)");
 t(used.every(id => db[id].s === "onepiece"), "only characters from the ticked series");
+const K = clashOf(s, db);
+t(K.rows.length === 6 && K.rows.every((r, i) => r.L.stat === charRoles(db[s.team.L[i]], s.rs, false)[i].score && r.R.stat === charRoles(db[s.team.R[i]], s.rs, false)[i].score), "the clash compares each role's stat");
+t(K.rows.every(r => r.win === (r.L.stat > r.R.stat ? "L" : r.R.stat > r.L.stat ? "R" : "")), "higher stat wins the role, equal = draw");
+t(K.wins.L + K.wins.R === K.rows.filter(r => r.win).length && K.tot.L === K.rows.reduce((n, r) => n + r.L.stat, 0), "role wins + stat totals add up (" + K.wins.L + "-" + K.wins.R + ", " + K.tot.L + "-" + K.tot.R + ")");
+t(act(s, { k: "end" }, Object.assign(ctx(), { force: true })) === null && s.phase === "over", "the host ends the clash → over (the result is reported then)");
 const st = standings(s, db);
-t(st.length === 2 && st[0].total >= st[1].total && st[0].total === st[0].roles + st[0].bonus, "standings: total = roles + rarity, sorted");
-t(act(s, { k: "keep", by: 1 }, ctx()) === "The draft is over.", "no moves after the end");
+t(st.length === 2 && (K.winner ? st[0].key === K.winner && st[0].place === 1 && st[1].place === 2 : st[0].place === 1 && st[1].place === 1), "standings: the clash winner 1st, the loser 2nd (draw = both 1st)");
+t(act(s, { k: "place", slot: 0, by: 1 }, ctx()) === "The draft is over.", "no moves after the end");
+t(clashTotal() === DRAFT_RULES.clash.revealMs + 5 * DRAFT_RULES.clash.roleMs + DRAFT_RULES.clash.finalMs + DRAFT_RULES.clash.endMs, "clash length from the config");
 
-/* ---- Build: 2v2 rotation, away teammate skipped ---- */
-s = newMatch({ type: "build", series: ["naruto", "bleach"], classic: true, mid: 2, pool: CHARS.naruto.concat(CHARS.bleach).map(r => r[0]), sides: { L: [1, 3], R: [2, 4] }, rarity, rnd });
+/* ---- Build: the clash's tiebreaks (made-up stats) ---- */
+const fake = (id, v) => ({ id, n: "C" + id, s: "onepiece", v, r: 4 });
+const mk = (L, Rr) => { const d2 = {}, s2 = { rs: "onepiece", mixed: false, rar: {}, team: { L: [], R: [] } };
+    L.forEach((x, i) => { const v = Array(16).fill(1); [0, 1, 2, 3, 6, 7].forEach((j, k) => { v[j] = k === i ? x : 1; }); d2[100 + i] = fake(100 + i, v); s2.team.L.push(100 + i); });
+    Rr.forEach((x, i) => { const v = Array(16).fill(1); [0, 1, 2, 3, 6, 7].forEach((j, k) => { v[j] = k === i ? x : 1; }); d2[200 + i] = fake(200 + i, v); s2.team.R.push(200 + i); });
+    return clashOf(s2, d2); };
+let k1 = mk([90, 90, 90, 10, 10, 10], [10, 10, 10, 20, 20, 20]);
+t(k1.wins.L === 3 && k1.wins.R === 3 && k1.winner === "L" && k1.by === "total", "3-3 on roles: the higher total wins (" + k1.tot.L + "-" + k1.tot.R + ")");
+k1 = mk([50, 50, 50, 50, 50, 50], [50, 50, 50, 50, 50, 50]);
+t(k1.wins.L === 0 && k1.winner === "" && k1.by === "draw" && k1.rows.every(r => r.win === ""), "every role equal: all draws, totals equal → a draw");
+k1 = mk([60, 60, 60, 60, 10, 10], [50, 50, 50, 50, 90, 90]);
+t(k1.winner === "L" && k1.by === "roles" && k1.tot.R > k1.tot.L, "more roles beats a higher total (4-2)");
+
+/* ---- Build: 2v2, both sides at once, members rotate, an away teammate is skipped ---- */
+s = newMatch({ type: "build", series: ["naruto", "bleach"], classic: true, mid: 2, pool: CHARS.naruto.concat(CHARS.bleach).map(r => r[0]), sides: { L: [1, 3], R: [2, 4] }, rarity, rnd, now: clock });
 t(s.rs === "classic" && s.mixed, "Classic roles toggle replaces the role set");
-const order = [];
-while (s.phase !== "over") { const p = actorOf(s), a = autoMove(s, db); a.by = p; if (a.k === "place") order.push(p); act(s, a, ctx()); }
-t(order.length === 12 && order.join() === "1,2,3,4,1,2,3,4,1,2,3,4", "2v2: sides alternate, members rotate (" + order.join(",") + ")");
-s = newMatch({ type: "build", series: ["jjk"], classic: false, mid: 3, pool: CHARS.jjk.map(r => r[0]), sides: { L: [1, 3], R: [2, 4] }, rarity, rnd });
-act(s, { k: "keep", by: 1 }, ctx()); act(s, { k: "place", slot: 0, by: 1 }, ctx()); act(s, { k: "keep", by: 2 }, ctx()); act(s, { k: "place", slot: 0, by: 2 }, ctx());
-t(actorOf(s, p => p !== 3) === 1 && act(s, { k: "place", slot: 1, by: 3 }, ctx(p => p !== 3)) === "It's not your turn.", "an away teammate is skipped, the other member drafts");
-t(act(s, { k: "place", slot: 1 }, Object.assign(ctx(() => false), { force: true })) === null || s.phase === "blind", "the host can play an away side's move");
+const order = { L: [], R: [] };
+while (s.phase === "pick") ["L", "R"].forEach(k => { if (!s.cur[k]) return; const p = pickerOf(s, k); order[k].push(p); act(s, { k: "place", slot: autoMove(s, db, k).slot, by: p }, ctx()); });
+t(order.L.join() === "1,3,1,3,1,3" && order.R.join() === "2,4,2,4,2,4", "2v2: each side's members take turns (" + order.L.join("") + " / " + order.R.join("") + ")");
+s = newMatch({ type: "build", series: ["jjk"], classic: false, mid: 3, pool: CHARS.jjk.map(r => r[0]), sides: { L: [1, 3], R: [2, 4] }, rarity, rnd, now: clock });
+t(act(s, { k: "place", slot: 0, by: 3 }, ctx()) === "It's your teammate's pick.", "not your turn on your side");
+act(s, { k: "place", slot: 0, by: 1 }, ctx());
+t(pickerOf(s, "L", p => p !== 3) === 1 && act(s, { k: "place", slot: 1, by: 3 }, ctx(p => p !== 3)) === "It's your teammate's pick.", "an away teammate is skipped, the other member drafts");
+t(act(s, { k: "place", slot: 1, side: "R" }, Object.assign(ctx(() => false), { force: true })) === null && s.team.R[1], "the host can place for an away side");
 
 /* ---- Auction ---- */
 const poolA = CHARS.onepiece.concat(CHARS.naruto).map(r => r[0]);
