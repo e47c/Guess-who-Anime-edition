@@ -14,7 +14,7 @@ A browser party game for a squad of up to 8 friends with ten anime modes in one 
 | **Anime Feud** | 2–8 (Team vs Team) | *Game Show*: a classic blue TV studio, buzzer podiums, a marquee-bulb board; game-show sounds (answer ding, wrong-answer buzzer, applause, fanfare) and bouncy show music |
 | **Most Likely** | 2–8 (Team vs Team or Free For All) | *Hot Takes*: a dark, fiery argument (smoky glass, embers, two burning cards around a VS crest); fire crackle, clash hits, taiko and an aggressive drum-and-bass theme |
 | **Anime Sketch** | 2–8 (everyone draws in turn) | *Draw & Guess*: the art room after hours (a white sheet taped to a dark desk, sticky-note round counter, lined-paper word strip, marker lettering); pencil scribbles, a marimba "got it!", soft pops, a light lo-fi groove |
-| **Anime TCG** | 1–8, everyone at their own pace | *Card table*: picking it in the lobby gives every player their own Anime TCG page (Packs Store, Collection, Decks, Battle) on a playmat, with a binder, deck boxes and a duel board; card battles are challenges between players in the room, 1v1 or free-for-all, watchable by the rest |
+| **Anime TCG** | 1–8, everyone at their own pace | *Card table*: picking it in the lobby shows its panel with an **Enter Anime TCG** button that opens each player's own Anime TCG page (Packs Store, Collection, Decks, Battle) on a playmat, with a binder, deck boxes and a duel board; card battles are challenges between players in the room, 1v1 or free-for-all, watchable by the rest |
 | **Night Party** | 2–8 | *Festival night*: a tournament that runs the other modes as stages; see below |
 
 ## How the modes scale

@@ -208,8 +208,8 @@ function renderInvites(d) {
 const btnEl = (t, cls, fn) => { const b = el("button", "btn " + cls, t); b.type = "button"; b.onclick = fn; return b; };
 
 /* ---------------- lobby panel (host settings for every challenge in the room) ---------------- */
-export function cvHint() { return "Everyone gets their own Anime TCG page: Packs Store, Collection, Decks and Battle. Challenge anyone in the room from its Battle tab. Skins and scratch cards are in the Shop."; }
-export function cvReq(d) { return { ok: true, msg: "ANIME TCG is open: everyone has their own Anime TCG page. Battles are challenges from the Battle tab" }; }
+export function cvHint() { return "Press Enter Anime TCG to open your own page: Packs Store, Collection, Decks and Battle. Everyone enters on their own and comes back with ‹ Lobby. Challenge anyone in the room from its Battle tab. Skins and scratch cards are in the Shop."; }
+export function cvReq(d) { return { ok: true, msg: "ANIME TCG is open: press Enter Anime TCG for your own page. Battles are challenges from its Battle tab" }; }
 export function cvLobby(d, lock) {
     optButtons($("cvTimerBtns"), [20, 30, 45], timerOf(d), lock, v => v + " s", v => window.setCvOpt("timer", v));
     const mine = X.activeDeck();

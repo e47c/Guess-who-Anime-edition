@@ -45,3 +45,14 @@ By hand (screenshots in the scratchpad `ui/` folder):
 - [ ] A long name / title on the pass (ellipsis, no overlap with the chip)
 - [ ] The Shop and the Wardrobe on a real phone (scrolling, the sticky preview)
 - [ ] A real card battle on the new duel board
+
+## Follow-up (2026-11-07)
+- **Coin counters** (menu CREDIT, lobby chip) open the **Daily rewards** popup (balance, 7-day streak + Claim, today's 3 missions, coin history). It closes with the X, a tap outside or Esc, and never navigates. The Shop is reached only through the Shop tile and the lobby Shop button.
+- **ANIME TCG in the lobby** behaves like any mode: the host picks it (guests vote), and its panel shows **Enter Anime TCG**. Nobody is moved onto the TCG page automatically. Each player enters on their own and comes back with ‹ Lobby. HOST PARTY from the menu's Anime TCG page still lands on the page.
+- **Wardrobe = tabs:** Profile | Frames | Backgrounds | Titles | Title Skins | Username Styles | Card Sleeves | Achievements.
+  - Each tab is one grid of item cards with an Equipped badge, a lock on locked items, and an owned/total count on the tab.
+  - The pass stays pinned (beside the grid on desktop, compact above it on phones). The last tab is remembered.
+- **Locked items** only preview: a tap shows the item on the pass as "Preview only", with its name, rarity or tier, how to get it, and its price.
+  - The separate **Get in Shop** button opens the Shop on that item: a skin is tried on, and the scratch cards that can win it are highlighted.
+  - The Shop opens above the Wardrobe; ‹ Wardrobe, the X or Esc go back with the unsaved draft intact. "Equip now" in the Shop is picked up by the draft.
+- Browser test: scratchpad pw/small4.mjs (41 checks).

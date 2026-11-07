@@ -25,7 +25,7 @@
 <link rel="stylesheet" href="css/packs.css?v=3">
 <link rel="stylesheet" href="css/cardvault.css?v=3">
 <link rel="stylesheet" href="css/party.css?v=2">
-<link rel="stylesheet" href="css/shop.css?v=1">
+<link rel="stylesheet" href="css/shop.css?v=2">
 <link rel="stylesheet" href="css/tcg.css?v=1">
 </head>
 <body class="anime-theme" data-scene="home">
@@ -140,7 +140,7 @@
 <div id="home" class="screen">
 <div class="home-fire" aria-hidden="true"><i></i><i></i></div>
 <header class="home-top">
-<div class="home-top-r"><button class="credit" id="credit" type="button" onclick="openShop()" aria-label="Credit: your AAP Coins. Opens the Shop"><span>CREDIT</span><i class="coin-ico" aria-hidden="true"></i><b class="vault-bal">0</b></button>
+<div class="home-top-r"><button class="credit" id="credit" type="button" onclick="vaultChip()" aria-label="Credit: your AAP Coins. Opens Daily rewards" aria-haspopup="dialog"><span>CREDIT</span><i class="coin-ico" aria-hidden="true"></i><b class="vault-bal">0</b></button>
 <button class="icon-btn" onclick="openSettings()" aria-label="Settings">⚙</button></div>
 </header>
 <main class="home-main">
@@ -202,7 +202,7 @@
 <div class="lobby-title"><span class="logo-mini" role="img" aria-label="Anime Arcade Party"><svg class="aa-mark" viewBox="0 0 120 120" aria-hidden="true"><use href="#aa-mark"/></svg><b>ANIME</b><span class="lm-ap"><em>ARCADE</em><i>PARTY</i></span></span><small aria-hidden="true">PLAYER SELECT</small></div>
 <div class="lobby-top-actions">
 <button class="btn alt sm shop-btn" type="button" onclick="openShop()" aria-label="Shop"><span aria-hidden="true">店</span> Shop</button>
-<button class="vault-chip" type="button" onclick="vaultChip()" aria-label="Your AAP Coins (opens the Shop)"><i class="coin-ico" aria-hidden="true"></i><b class="vault-bal">0</b></button>
+<button class="vault-chip" type="button" onclick="vaultChip()" aria-label="Your AAP Coins (opens Daily rewards)" aria-haspopup="dialog"><i class="coin-ico" aria-hidden="true"></i><b class="vault-bal">0</b></button>
 <button class="icon-btn" onclick="openSettings()" aria-label="Settings">⚙</button>
 <button class="btn ghost sm" onclick="leaveRoom()">Leave</button>
 <button class="btn danger sm host-only" onclick="closeRoom()">Close room</button>
@@ -289,7 +289,7 @@
 <div><label class="field-label">Word difficulty</label><div class="sizes" id="skDiffBtns"></div></div></div>
 <p class="anime-hint" id="skHint"></p></div>
 <div id="cardvaultBox" class="field hidden av-lobby">
-<div class="av-lobby-hero"><span class="av-lobby-k" aria-hidden="true">札</span><div><b>ANIME TCG</b><p>Everyone gets their own Anime TCG page: Packs Store, Collection, Decks and Battle. Nobody is locked into one screen; come back here any time. Skins and scratch cards are in the Shop (top of the lobby).</p></div>
+<div class="av-lobby-hero"><span class="av-lobby-k" aria-hidden="true">札</span><div><b>ANIME TCG</b><p>Enter to open your own Anime TCG page: Packs Store, Collection, Decks and Battle. Everyone enters on their own and comes back here with ‹ Lobby, room and friends intact. Skins and scratch cards are in the Shop (top of the lobby).</p></div>
 <button class="btn alt av-enter" type="button" onclick="cvEnterVault()">Enter Anime TCG</button></div>
 <div class="fd-opts"><div><label class="field-label">Battle pick timer</label><div class="sizes" id="cvTimerBtns"></div></div></div>
 <p class="cv-mydeck" id="cvMyDeck"></p>
@@ -546,9 +546,10 @@
 <button class="sheet-x" onclick="closeOverlay('profile')" aria-label="Close">✕</button>
 <div class="sheet-kicker">PLAYER CARD</div>
 <h2 id="profileTitle">Wardrobe</h2>
+<nav id="wardTabs" class="wd-tabs" role="tablist" aria-label="Wardrobe categories"></nav>
 <div class="ward-grid">
-<div class="ward-side"><div id="wardPreview" class="ward-preview"></div><p class="anime-hint">Live preview: your Arcade Pass and your lobby card show exactly this. Nothing changes until you save.</p></div>
-<div id="wardBody" class="ward-body"></div>
+<aside class="ward-side" aria-label="Live preview"><div id="wardPreview" class="ward-preview"></div><div id="wardSel" class="wd-sel" aria-live="polite"></div></aside>
+<div id="wardBody" class="ward-body" role="tabpanel" tabindex="-1"></div>
 </div>
 <div class="sheet-foot"><button class="btn ghost" type="button" onclick="closeOverlay('profile')">Cancel</button><button class="btn" type="button" onclick="saveProfile()">Save profile</button></div>
 </div>
@@ -588,6 +589,7 @@
 <button class="sheet-x" onclick="closeOverlay('vaultRw')" aria-label="Close">✕</button>
 <div class="sheet-kicker">AAP COINS</div>
 <h2 id="vaultRwTitle">Daily rewards</h2>
+<div class="rw-bal" aria-live="polite"><small>YOUR BALANCE</small><span><i class="coin-ico" aria-hidden="true"></i><b class="vault-bal" id="rwBal">0</b></span><em>AAP Coins · spend them in the Shop</em></div>
 <div id="vaultRwBody" class="vt-body"></div>
 </div>
 </div>
@@ -619,7 +621,7 @@
 </div>
 <div id="toast" role="status"></div>
 
-<script type="module" src="js/game.js?v=55"></script>
+<script type="module" src="js/game.js?v=56"></script>
 <script>
 /* Inject logos into series tiles (lobby + rematch poll). Missing files keep the text name. */
 (function(){

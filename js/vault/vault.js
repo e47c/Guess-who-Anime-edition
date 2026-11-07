@@ -18,7 +18,7 @@ import { newSeed } from "./rng.js?v=1";
 import { grantStarter, recordBattle, activeDeck, deckProblem } from "./packs.js?v=8";
 import { publicLook } from "./shop.js?v=8";
 import { initOpening } from "./opening.js?v=8";
-import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=9";
+import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=10";
 import { motionOK } from "../fx.js";
 
 export const bank = createBank(localBackend());
@@ -113,12 +113,12 @@ const npPause = d => !!d && !!d.np && (!d.status || d.status === "waiting") && N
 let npOn = false;
 export const vaultCanOpen = d => npPause(d);
 /* game.js asks on every room update while the room is in the lobby: should this player see their Anime TCG page?
-   Yes as soon as the lobby is on ANIME TCG, until they go back to the lobby (then: the lobby's Enter button). */
+   Only after they pressed "Enter Anime TCG" (the lobby's ANIME TCG panel). Picking or voting for the mode never
+   moves anyone: like every other mode it only selects it and shows its panel. "‹ Lobby" goes back (room intact). */
 export function vaultWanted(d) {
     if (d && d.np) { if (!npPause(d)) npOn = false; return npOn; }       // Night Party: only during intermissions, only on request
     npOn = false;
     if (!vaultRoom(d)) { pageOn = false; pageDismissed = false; return false; }
-    if (!pageOn && !pageDismissed) { pageOn = true; bodySig = ""; }
     return pageOn;
 }
 export function openVault(which) {
@@ -142,7 +142,7 @@ export function vaultBack() {
 /* no-room context: HOST PARTY makes a room on ANIME TCG and lands on its page (createRoom in game.js);
    JOIN takes a code and lands in that room's lobby */
 export function landInLobby() { pageOn = false; pageDismissed = true; homeOpen = false; }
-export function arriveInVault() { pageOn = false; pageDismissed = false; homeOpen = false; bodySig = ""; }      // the room's Anime TCG page opens on arrival
+export function arriveInVault() { pageOn = true; pageDismissed = false; homeOpen = false; bodySig = ""; }      // HOST PARTY from the Anime TCG page itself: you stay on your page
 function hostParty() { X.sfx("coin"); X.hostParty(); }
 function joinParty(code) { code = String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6); if (code.length !== 6) { X.toast("Enter a 6-character room code."); return; } landInLobby(); X.joinParty(code); }
 /* draw the page; on room updates only a tab that reads the room is redrawn (Battle, trades) */
@@ -202,7 +202,17 @@ function renderCtx(force) {
 }
 const pageVisible = () => !!$("arcadeVault") && !$("arcadeVault").classList.contains("hidden");
 /* rewards drawer: daily streak, missions, coins from games today, coin history */
-function fillRewards() { const b = $("vaultRwBody"); if (b) { b.innerHTML = ""; b.appendChild(rewardsTab()); } }
+const rwOpen = () => !!$("vaultRw") && !$("vaultRw").classList.contains("hidden");
+function fillRewards() {
+    const b = $("vaultRwBody"); if (!b) return;
+    const hist = b.querySelector(".vt-hist"), keep = !!(hist && hist.open), y = b.closest(".sheet") ? b.closest(".sheet").scrollTop : 0;
+    b.innerHTML = ""; b.appendChild(rewardsTab());
+    if (keep) { const h = b.querySelector(".vt-hist"); if (h) h.open = true; }
+    if (b.closest(".sheet")) b.closest(".sheet").scrollTop = y;
+    const bal = $("rwBal"); if (bal) bal.textContent = fmt(bank.coins());
+}
+/* the Daily rewards popup (the coin counters on the menu and in the lobby, and the Shop's Daily button):
+   login streak + Claim, today's missions, the balance. A modal over the current screen: it never navigates. */
 export function openRewards() { rollToday(); fillRewards(); X.openOverlay("vaultRw"); }
 function streakTrack(st, big) {
     const row = mk("div", "vt-streak" + (big ? " big" : ""));
@@ -302,11 +312,11 @@ export function initVault(ctx) {
     if (!bank.get().starter) bank.apply("starter", "starter", (w, x) => grantStarter(w, newSeed(), "Starter deck", x.now));   // every new player: a free 10-card starter deck
     if (X.setLook) { const look = publicLook(bank.get()); X.setLook(look); }
     window.openVault = openVault; window.vaultBack = vaultBack; window.vaultRewards = openRewards;
-    /* the coin chips show the balance and open the Shop (where coins are spent on cosmetics) */
-    window.vaultChip = () => { if (window.openShop) window.openShop(); };
+    /* the coin counters (menu CREDIT, lobby chip) show the balance and open the Daily rewards popup; the Shop has its own buttons */
+    window.vaultChip = () => { X.sfx("click"); openRewards(); };
     window.vaultClaimDaily = async () => { const r = await doClaim(); if (r.ok) setTimeout(() => X.closeOverlay("daily"), motionOK() ? 900 : 200); };
     ["vaultRw", "daily"].forEach(id => { const o = $(id); if (o) o.addEventListener("click", e => { if (e.target === o) X.closeOverlay(id); }); });
-    bank.onChange(() => { renderChips(true); if (pageVisible()) renderVault(); });
+    bank.onChange(() => { renderChips(true); if (pageVisible()) renderVault(); if (rwOpen()) fillRewards(); });
     renderChips(false); rollToday();
 }
 export const vaultConfig = VCFG;

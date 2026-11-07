@@ -10,7 +10,7 @@
    ===================================================================== */
 import { SKINS, SCRATCH } from "./config.js?v=10";
 import { SKIN_ITEMS, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=8";
-import { bank, vaultEvent } from "./vault.js?v=11";
+import { bank, vaultEvent } from "./vault.js?v=12";
 import { newSeed } from "./rng.js?v=1";
 import { motionOK } from "../fx.js";
 
@@ -38,15 +38,31 @@ export function initShop(ctx) {
     const o = $("shop"); if (o) o.addEventListener("click", e => { if (e.target === o) closeShop(); });
 }
 export const isOpen = () => !!$("shop") && !$("shop").classList.contains("hidden");
-/* where = { tab: "skins" | "scratch", tier } (the Wardrobe's "Get it in the Shop" links come in with the item) */
+/* where = { tab: "skins" | "scratch", tier, slot, sct (scratch tier), from: "wardrobe", name }
+   The Wardrobe's "Get in Shop" button comes in with the item: the Shop opens on it (a skin tried on, or the scratch
+   cards that can win it highlighted) ABOVE the Wardrobe, so "‹ Wardrobe" (or ✕ / Esc) goes straight back to it. */
+let focus = null;
+const fromWardrobe = () => !!$("profile") && !$("profile").classList.contains("hidden");
 export function openShop(where) {
     where = where && typeof where === "object" ? where : {};
     if (where.tab === "scratch" || where.tab === "skins") view = where.tab;
-    if (where.tier && tierOf(where.tier)) { pv.sf = null; pv.bg = null; if (where.slot === "bg") pv.bg = where.tier; else pv.sf = where.tier; }
-    const back = $("shopBack"); if (back) back.textContent = X.inRoom() ? "‹ Lobby" : "‹ Menu";
+    pv.sf = null; pv.bg = null;
+    if (where.tier && tierOf(where.tier)) { if (where.slot === "bg") pv.bg = where.tier; else pv.sf = where.tier; }
+    focus = where.from === "wardrobe" && where.name ? { name: where.name, tab: view, sct: where.sct || null, item: where.item || null } : null;
+    const back = $("shopBack"); if (back) back.textContent = fromWardrobe() ? "‹ Wardrobe" : X.inRoom() ? "‹ Lobby" : "‹ Menu";
     X.sfx("start"); render(); X.openOverlay("shop");
     const b = $("shopBody"); if (b) b.scrollTop = 0;
-    if (where.tier) setTimeout(() => { const t = document.querySelector('#shopBody .vt-tier.tier-' + where.tier); if (t && t.scrollIntoView) t.scrollIntoView({ block: "center", behavior: motionOK() ? "smooth" : "auto" }); }, 80);
+    const target = where.tier ? '#shopBody .vt-tier.tier-' + where.tier : where.sct ? '#shopBody .vt-sct.t-' + where.sct : "";
+    if (target) setTimeout(() => { const t = document.querySelector(target); if (t && t.scrollIntoView) t.scrollIntoView({ block: "center", behavior: motionOK() ? "smooth" : "auto" }); }, 80);
+}
+/* "You came here for ..." line at the top of the Shop, when the Wardrobe sent you */
+function focusBar() {
+    if (!focus || focus.tab !== view) return null;
+    const d = mk("div", "sh-focus"), it = focus.item ? itemById(focus.item) : null;
+    d.append(mk("small", null, "FROM YOUR WARDROBE"), mk("b", null, focus.name));
+    d.appendChild(mk("span", null, view === "scratch" ? (it && owns(bank.get(), it.id) ? "You own it now. Go back to the Wardrobe to equip it." : "Won from the highlighted scratch cards (the prize is random).") : "Tried on below. Buy it, then tap Equip now or equip it back in the Wardrobe."));
+    const back = btn("‹ Back to the Wardrobe", "ghost sm", () => closeShop()); d.appendChild(back);
+    return d;
 }
 export function closeShop() { pv.sf = pv.bg = null; X.closeOverlay("shop"); }
 export function shopView() { return view; }
@@ -60,6 +76,7 @@ function render() {
         nav.appendChild(b);
     });
     const y = body.scrollTop; body.innerHTML = "";
+    const fb = fromWardrobe() ? focusBar() : null; if (fb) body.appendChild(fb);
     body.appendChild(view === "scratch" ? scratchView() : skinsView());
     body.scrollTop = y;
     const bal = $("shopBal"); if (bal) bal.textContent = fmt(bank.coins());
@@ -173,7 +190,7 @@ function bought(ids, o = {}) {
 function scratchView() {
     const v = mk("div", "vt-scratch");
     Object.entries(SCRATCH.tiers).forEach(([k, T]) => {
-        const c = mk("article", "vt-sct t-" + k);
+        const c = mk("article", "vt-sct t-" + k + (focus && fromWardrobe() && focus.item && (T.types[(itemById(focus.item) || {}).kind] || 0) > 0 && (T.odds[(itemById(focus.item) || {}).rarity] || 0) > 0 ? " hl" : ""));
         const face = mk("div", "sc-face t-" + k); face.append(mk("b", null, T.name.toUpperCase()), mk("small", null, "SCRATCH CARD"));
         const odds = Object.entries(T.odds).filter(([, p]) => p > 0).map(([r, p]) => r[0].toUpperCase() + r.slice(1) + " " + p + "%").join(" · ");
         const types = Object.keys(T.types).map(t => KIND_NAME[t] + "s").join(", ");
