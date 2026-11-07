@@ -63,8 +63,10 @@ t(act(s, { k: "place", slot: 0, by: 1 }, ctx()) === "That role is already filled
 const ev = JSON.stringify(s.ev);
 t(s.ev.k === "place" && !/"c"/.test(ev), "the place event doesn't name the character (" + ev + ")");
 // the host plays a timed-out / away side
-const before = s.team.L.filter(Number).length;
-t(act(s, autoMove(s, db, "L"), Object.assign(ctx(), { force: true })) === null && s.team.L.filter(Number).length === before + 1, "the host auto-places a side (timer out / away) in its best free role");
+const before = s.team.L.filter(Number).length, top = s.team.L.findIndex(x => !Number(x)), next = s.cur.L;
+t(DRAFT_RULES.pickSec === 60, "pick timer: 60 s");
+t(act(s, autoMove(s, db, "L"), Object.assign(ctx(), { force: true })) === null && s.team.L.filter(Number).length === before + 1 && s.team.L[top] === next, "timer out / away: the host puts the card in the first free role from the top (role " + (top + 1) + ")");
+t(autoMove(s, db, "L").slot === s.team.L.findIndex(x => !Number(x)), "the next auto-place is the next free role down");
 let guard = 0;
 while (s.phase === "pick" && guard++ < 40) ["L", "R"].forEach(k => { if (s.cur[k]) act(s, { k: "place", slot: autoMove(s, db, k).slot, by: k === "L" ? 1 : 2 }, ctx()); });
 t(s.phase === "clash" && s.clash.at === clock && s.team.L.every(Boolean) && s.team.R.every(Boolean) && !s.cur.L && !s.cur.R, "both boards full → the clash starts (clash.at = now)");

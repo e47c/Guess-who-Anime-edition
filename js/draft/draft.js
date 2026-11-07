@@ -24,7 +24,7 @@ export const DRAFT_RULES = {
     minRaise: 1,         // auction: a bid beats the current one by at least this much
     openMin: 1,          // auction: lowest opening bid
     rerolls: 1,          // build: per side, per match (swaps the current pull for a fresh one)
-    pickSec: 25,         // build: seconds to place each pulled card; then it goes to the best free role
+    pickSec: 60,         // build: seconds to place each pulled card; then it goes to the first free role, top to bottom
     awayMs: 8000,        // the host plays the turn of a player who has been offline this long
     leftMs: 1500,        // ... or who left the room
     // build: the clash timeline in ms (every screen plays it in sync from the same start; the match ends after it)
@@ -264,12 +264,11 @@ function newLot(s, rarity) {
     const c = draw(s, rarity); if (!c) { s.phase = "over"; s.lot = null; return; }
     s.opener = op; s.lot = { c, hi: 0, by: 0, turn: op, out: [] }; s.lotn = (Number(s.lotn) || 0) + 1; s.phase = "bid";
 }
-/* the move the host plays for an away player (or a Build pick timer that ran out): pass, or the best free role */
+/* the move the host plays for an away player (or a Build pick timer that ran out): Build = the first free role from
+   the top; Auction = pass, or the best free role */
 export function autoMove(s, db, side) {
     if (s.type === "build") {
-        const c = (db || DB)[Number((s.cur || {})[side])], t = arr(s.team[side]), sc = c ? charRoles(c, s.rs, !!s.mixed) : [];
-        let best = -1; t.forEach((x, i) => { if (!Number(x) && (best < 0 || (sc[i] || {}).score > (sc[best] || {}).score)) best = i; });
-        return { k: "place", slot: best, side };
+        return { k: "place", slot: arr(s.team[side]).findIndex(x => !Number(x)), side };
     }
     if (s.phase === "bid") return canPass(s, actorOf(s)) ? { k: "pass" } : { k: "bid", amount: R.openMin };
     const p = actorOf(s), key = "p" + p, c = (db || DB)[s.win.c];
@@ -877,7 +876,7 @@ function tickTimers() {
     });
 }
 
-/* host: a pick timer that ran out, or a picker who is away (left: leftMs, offline: awayMs) = the best free role;
+/* host: a pick timer that ran out, or a picker who is away (left: leftMs, offline: awayMs) = the first free role, top down;
    the clash over = the match ends (that's when the result is reported, coins and Night Party included) */
 function buildDuties(d, s) {
     const present = presentIn(d), t = now();
