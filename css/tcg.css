@@ -298,33 +298,49 @@ body.fx-lite .tp-float, body.fx-lite .tp-qscell { animation: none; }
 .tc-tgrid .vcard { cursor: pointer; } .tc-tgrid .vcard.picked { outline: 3px solid var(--t-gold); outline-offset: 2px; border-radius: 6px; } .tc-tgrid .vcard.dim { opacity: .45; }
 .tc-undo { animation: drBreath 1s ease-in-out infinite; }
 
-/* ---------- legacy tab styles (replaced tab by tab in phases 8-9) ---------- */
-/* ---------- Decks: deck boxes + a builder with slots and a curve ---------- */
-.tcg-page .vt-dk { position: relative; padding-top: 22px; border-radius: 16px 16px 12px 12px; background: linear-gradient(180deg, #2c1d57 0 16px, #1c1338 16px), #1c1338; box-shadow: inset 0 0 0 1px rgba(179,139,255,.4), inset 0 -4px 0 rgba(0,0,0,.35), 0 10px 22px rgba(0,0,0,.45); }
-.tcg-page .vt-dk::before { content: ""; position: absolute; left: 50%; top: 5px; width: 54px; height: 6px; margin-left: -27px; border-radius: 3px; background: rgba(232,194,106,.55); }
-.tcg-page .vt-dk.active { box-shadow: inset 0 0 0 2px #e8c26a, inset 0 -4px 0 rgba(0,0,0,.35), 0 0 22px rgba(232,194,106,.25); }
-.tcg-page .vt-dk .vt-dkrow { gap: 0; padding-left: 14px; }
-.tcg-page .vt-dk .vt-dkrow .vcard { margin-left: -14px; transform: rotate(calc((var(--k, 0) - 4.5) * 1.5deg)); box-shadow: -4px 0 8px rgba(0,0,0,.4); }
-.tcg-page .vt-dkslots { padding: 12px; border-radius: 14px; background: repeating-linear-gradient(45deg, rgba(179,139,255,.16) 0 2px, transparent 2px 12px), repeating-linear-gradient(-45deg, rgba(179,139,255,.16) 0 2px, transparent 2px 12px), linear-gradient(135deg, #2b1856, #160c30); box-shadow: inset 0 0 0 2px #0b0716, inset 0 0 0 3px rgba(232,194,106,.4); }
-.tcg-page .vt-dkempty { border-color: rgba(232,194,106,.4); color: rgba(232,194,106,.7); background: rgba(10,7,22,.65); }
-.vt-curve { display: grid; gap: 6px; margin: 10px 0; padding: 10px 12px; border-radius: 12px; background: rgba(10,7,22,.72); box-shadow: inset 0 0 0 1px rgba(179,139,255,.22); }
-.vt-cvt { font: 700 12px/1 var(--f-mono); letter-spacing: .24em; text-transform: uppercase; color: var(--t-gold, #e8c26a); }
-.vt-cvplot { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; height: 96px; align-items: end; }
-.vt-cvcol { position: relative; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr auto; align-items: end; gap: 0 2px; height: 100%; }
-.vt-cvn { grid-column: 1 / -1; text-align: center; font: 700 10px/1 var(--f-mono); color: #fff; min-height: 10px; }
-.vt-cvp, .vt-cvd { display: block; align-self: end; min-height: 2px; border-radius: 3px 3px 0 0; }
-.vt-cvp { background: linear-gradient(180deg, #ff9a5a, #e0482a); } .vt-cvd { background: linear-gradient(180deg, #8fd0ff, #3a7be0); }
-.vt-cvcol small { grid-column: 1 / -1; text-align: center; font: 700 10px/1.4 var(--f-mono); color: var(--muted); border-top: 1px solid rgba(255,255,255,.12); }
-.vt-cvkey { font: 600 11px/1 var(--f-ui); color: var(--muted); }
-
-/* ---------- Duel: a duel board ---------- */
-.tcg-page .vt-bhero { position: relative; overflow: hidden; background: radial-gradient(ellipse 60% 40% at 50% 50%, rgba(179,139,255,.16), transparent 70%), linear-gradient(180deg, #1a1236, #0f0a20); box-shadow: inset 0 0 0 1px rgba(232,194,106,.35); }
-.tcg-page .vt-bhero::before { content: ""; position: absolute; left: 6%; right: 6%; top: 50%; height: 0; border-top: 1px dashed rgba(232,194,106,.35); pointer-events: none; }
-.tcg-page .vt-bdeck { position: relative; padding: 10px; border-radius: 12px; background: rgba(10,7,22,.65); box-shadow: inset 0 0 0 1px rgba(179,139,255,.3); }
-/* the duel screen itself: playmat, a centre line, framed zones */
-#cardvault { background: radial-gradient(ellipse 70% 45% at 50% 50%, rgba(179,139,255,.14), transparent 70%), radial-gradient(circle at 1px 1px, rgba(255,255,255,.035) 1px, transparent 1.5px) 0 0 / 5px 5px, linear-gradient(180deg, #120c22, #07050f) !important; }
-#cardvault .cv-arena { background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(179,139,255,.14), transparent 75%), rgba(12,8,26,.7); box-shadow: inset 0 0 0 2px #241845, inset 0 0 0 3px rgba(232,194,106,.4); outline: 1px dashed rgba(232,194,106,.3); outline-offset: -10px; }
-#cardvault .cv-arena::before { content: ""; position: absolute; left: 4%; right: 4%; top: 50%; border-top: 1px solid rgba(232,194,106,.18); pointer-events: none; }
-#cardvault .cv-plate { box-shadow: inset 0 0 0 1px rgba(232,194,106,.28); }
-#cardvault .cv-plate.me { box-shadow: inset 0 0 0 2px var(--pc), 0 0 16px color-mix(in srgb, var(--pc) 30%, transparent); }
-body.fx-lite .tcg-page .av-bg::before, body.fx-lite .tcg-page .av-bg::after { display: none; }
+/* ---------- Decks (js/vault/tab-decks.js) ---------- */
+.td { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--t-4); } .td > * { min-width: 0; }
+.td-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: var(--t-3); }
+.td-slot { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "cover info" "cover btns"; gap: 8px 14px; padding: 12px; border: 0; border-radius: var(--t-r3); background: var(--t-panel); box-shadow: var(--t-ring); color: inherit; text-align: left; }
+.td-slot.active { box-shadow: inset 0 0 0 2px var(--t-gold), 0 0 22px rgba(233,196,92,.18); } .td-slot.bad { box-shadow: inset 0 0 0 1px rgba(255,90,95,.45); }
+.td-slot.empty { display: grid; grid-template-columns: 1fr; grid-template-areas: none; place-items: center; align-content: center; min-height: 160px; cursor: pointer; border: 2px dashed rgba(174,183,196,.25); background: transparent; color: var(--t-muted); }
+.td-slot.empty:hover { border-color: var(--t-gold); color: var(--t-text); } .td-slot.empty .tcg-ico { width: 34px; height: 34px; } .td-slot.empty b { font: 600 22px/1 var(--t-head); text-transform: uppercase; }
+.td-cover { grid-area: cover; position: relative; } .td-cover .vcard { --cw: 96px; position: relative; z-index: 1; }
+.td-stack { position: absolute; left: 5px; top: 5px; width: 96px; aspect-ratio: 63 / 88; border-radius: 8px; background: #1a2533; box-shadow: 3px 3px 0 #121a24, 6px 6px 0 #0d141d; }
+.td-info { grid-area: info; display: grid; gap: 6px; align-content: start; } .td-name { font: 600 24px/1 var(--t-head); letter-spacing: .03em; } .td-info small { color: var(--t-muted); font: 500 12px/1.3 var(--t-ui); } .td-info .tcg-pill { justify-self: start; }
+.td-btns { grid-area: btns; display: flex; flex-wrap: wrap; gap: 6px; align-content: end; }
+/* the builder */
+.td-build { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--t-3); }
+.td-btop { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; } .td-bname { flex: 1 1 220px; font-size: 18px !important; font-weight: 700 !important; }
+.td-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: var(--t-4); } @media (max-width: 960px) { .td-cols { grid-template-columns: 1fr; } }
+.td-list, .td-pool { display: grid; align-content: start; gap: 10px; padding: 12px; border-radius: var(--t-r3); background: var(--t-panel); box-shadow: var(--t-ring); min-width: 0; }
+.td-list h3, .td-sub { margin: 0; font: 600 20px/1 var(--t-head); letter-spacing: .05em; text-transform: uppercase; } .td-sub { font-size: 15px; color: var(--t-gold); }
+.td-dslots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.td-ds { position: relative; display: grid; place-items: center; aspect-ratio: 63 / 88; border-radius: 8px; background: rgba(0,0,0,.3); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); container-type: inline-size; transition: transform .14s, opacity .14s; }
+.td-ds > span { font: 700 12px/1 var(--t-mono); color: rgba(255,255,255,.2); } .td-ds.full { cursor: pointer; } .td-ds.full:hover { transform: translateY(-2px); } .td-ds .vcard { --cw: 96cqw; } .td-ds.leaving { transform: scale(.6); opacity: 0; }
+.td-coverbtn { position: absolute; right: 2px; top: 2px; z-index: 3; width: 22px; height: 22px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; cursor: pointer; background: rgba(0,0,0,.6); color: #888; } .td-coverbtn .tcg-ico { width: 14px; height: 14px; --ic-ac: #555; } .td-coverbtn.on .tcg-ico { --ic-ac: var(--t-gold); }
+.td-stats { display: grid; gap: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.06); }
+.td-rar { display: flex; flex-wrap: wrap; gap: 6px; } .td-rp { display: inline-flex; align-items: center; gap: 4px; font: 700 13px/1 var(--t-mono); } .td-rp .tcg-ico { width: 16px; height: 16px; }
+.td-types { margin: 0; font: 500 13px/1.3 var(--t-ui); color: var(--t-muted); }
+.td-curve { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; height: 92px; align-items: end; }
+.td-cv { display: grid; grid-template-rows: auto 1fr auto; height: 100%; align-items: end; justify-items: center; gap: 2px; } .td-cv i { display: block; width: 70%; min-height: 2px; border-radius: 3px 3px 0 0; background: linear-gradient(180deg, #ff9a5a, #c2280f); } .td-cv b { font: 700 10px/1 var(--t-mono); } .td-cv small { font: 700 9px/1 var(--t-mono); color: var(--t-muted); }
+.td-warn { display: flex; gap: 6px; margin: 0; font: 600 12px/1.35 var(--t-ui); color: #ffcf8a; } .td-warn .tcg-ico { width: 16px; height: 16px; flex: none; }
+.td-filters { display: flex; flex-wrap: wrap; gap: 6px; } .td-filters input { flex: 1 1 140px; }
+.td-pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; max-height: 70vh; overflow: auto; padding: 4px; }
+.td-pc { position: relative; display: grid; justify-items: center; gap: 3px; cursor: pointer; } .td-pc .vcard { --cw: 100%; max-width: 112px; } .td-pc small { font: 700 10px/1.2 var(--t-mono); color: var(--t-muted); text-align: center; }
+.td-pc.in .vcard { opacity: .45; } .td-pc.in::after { content: ""; position: absolute; inset: 0; border-radius: 8px; box-shadow: inset 0 0 0 2px var(--t-gold); pointer-events: none; }
+.td-pc.locked { cursor: default; } .td-pc.locked .vcard { filter: grayscale(1) brightness(.5); }
+.td-intag { position: absolute; top: 40%; padding: 3px 6px; border-radius: 6px; background: var(--t-gold); color: #1d1404 !important; }
+/* ---------- Duel tab (js/vault/tab-duel.js) ---------- */
+.tdu { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--t-4); } .tdu > * { min-width: 0; }
+.tdu-deck { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; }
+.tdu-cover .vcard { --cw: 100px; } .tdu-dinfo { display: grid; gap: 8px; justify-items: start; } .tdu-dinfo > small:first-child { font: 700 11px/1 var(--t-mono); letter-spacing: .24em; color: var(--t-gold); } .tdu-dinfo > small { color: var(--t-muted); }
+.tdu-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--t-3); }
+.tdu-mode, .tdu-friends, .tdu-live, .tdu-recent { display: grid; gap: 8px; align-content: start; }
+.tdu-mt { display: flex; align-items: center; gap: 8px; font: 600 22px/1 var(--t-head); letter-spacing: .05em; text-transform: uppercase; } .tdu-mt .tcg-ico { width: 24px; height: 24px; color: var(--t-gold); }
+.tdu-mine { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px; border-radius: var(--t-r2); background: rgba(89,208,255,.08); box-shadow: inset 0 0 0 1px rgba(89,208,255,.4); }
+.tdu-players { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.tdu-pl { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-radius: var(--t-r2); cursor: pointer; text-align: left; color: inherit; background: rgba(255,255,255,.04); box-shadow: var(--t-ring); }
+.tdu-pl > div { display: grid; gap: 3px; min-width: 0; } .tdu-pl b { font: 700 15px/1.1 var(--t-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .tdu-pl small { font: 500 12px/1 var(--t-ui); color: var(--t-muted); }
+.tdu-pl.on { box-shadow: inset 0 0 0 2px var(--t-gold); background: rgba(233,196,92,.1); } .tdu-pl.busy { opacity: .5; } .tdu-chk .tcg-ico { width: 20px; height: 20px; }
+.tdu-lrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.05); font: 500 14px/1.3 var(--t-ui); } .tdu-lrow small { color: var(--t-muted); }

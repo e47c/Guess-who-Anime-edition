@@ -8,11 +8,11 @@
    (collection number, rarity). Rarity is readable without colour: the number of stars and the rarity word.
    The card turns as one rigid object (no layer slides; at most a hair of depth on Legendary / Mythic in the inspector).
    ===================================================================== */
-import { CARDS, RARITY_NAMES, RARITY_KEYS } from "./carddb.js?v=5";
+import { CARDS, RARITY_NAMES, RARITY_KEYS } from "./carddb.js?v=6";
 import { icon, KEYWORD_ICON } from "./icons.js?v=2";
 import { corner } from "./cardstyle.js?v=1";
-import { CARD_ART } from "./config.js?v=14";
-import { ABILITIES, abilityText } from "../cardvault/abilities.js?v=3";
+import { CARD_ART } from "./config.js?v=15";
+import { ABILITIES, abilityText } from "../cardvault/abilities.js?v=4";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 const svg = (paths, vb = "0 0 100 100") => `<svg viewBox="${vb}" aria-hidden="true">${paths}</svg>`;

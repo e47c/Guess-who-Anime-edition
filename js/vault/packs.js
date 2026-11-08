@@ -13,8 +13,8 @@
    5. the cards go into the collection right away (the opening animation only reveals them), in reveal order:
       lowest rarity first, best last.
    ===================================================================== */
-import { PACKS, SHARDS, RARITY_ORDER, DECK, TRADE } from "./config.js?v=14";
-import { CARDS, BY_SERIES, BY_SERIES_RARITY, CARD_SERIES } from "./carddb.js?v=5";
+import { PACKS, SHARDS, RARITY_ORDER, DECK, TRADE } from "./config.js?v=15";
+import { CARDS, BY_SERIES, BY_SERIES_RARITY, CARD_SERIES } from "./carddb.js?v=6";
 import { rngFrom, pickWeighted, pickInt, shuffleWith } from "./rng.js?v=2";
 
 export const owned = (w, id) => { const c = (w.cards || {})[id]; return !!c && (c.n > 0 || c.h > 0); };
@@ -97,30 +97,45 @@ export function grantStarter(w, seed, by, now) {
     arches.forEach(a => { const id = pool.find(x => CARDS[x].a === a && !pick.includes(x) && !series[CARDS[x].s]); if (id) take(id); });
     for (const id of pool) { if (pick.length >= DECK.starterCount) break; if (!pick.includes(id) && (series[CARDS[id].s] || 0) < 2) take(id); }
     pick.forEach(id => addCard(w, id, false, "Starter deck", now));
-    w.starter = 1;
+    w.starter = 1; w.decks20 = 1;
     const deck = { id: "starter", name: "Starter Deck", cards: pick.slice() };
     w.decks = [deck].concat((w.decks || []).filter(d => d.id !== "starter")); w.activeDeck = "starter";
     return { seed, cards: pick };
 }
 
-/* ---------- decks ---------- */
-export function deckProblem(w, cards) {
-    const ids = (cards || []).map(Number);
-    if (ids.length !== DECK.size) return "A deck has exactly " + DECK.size + " cards (" + ids.length + " now).";
-    if (new Set(ids).size !== ids.length) return "Each card can be in a deck only once.";
-    const miss = ids.filter(id => !CARDS[id] || !owned(w, id));
-    if (miss.length) return "You don't own " + miss.map(id => (CARDS[id] || { n: "card " + id }).n).join(", ") + " any more.";
+/* ---------- decks: 20 cards, 1 copy per character, up to DECK.maxActions Action cards (DECK.actionCopies of each,
+   unlocked by level). Cards: character ids (numbers) and Action cards ("a:<id>"). ---------- */
+const isA = x => /^a:/.test(String(x));
+export const ACTION_LEVELS = {};          // filled by js/duel/cards.js (id -> level needed); kept here so the bank stays pure
+export function setActionLevels(map) { Object.assign(ACTION_LEVELS, map); }
+export function deckProblem(w, cards, lvl = 99) {
+    const list = (cards || []).map(x => isA(x) ? String(x) : Number(x));
+    if (list.length !== DECK.size) return "Deck needs " + DECK.size + " cards (" + list.length + " now).";
+    const chars = list.filter(x => !isA(x)), acts = list.filter(isA);
+    if (new Set(chars).size !== chars.length) return "Max " + DECK.maxCopies + " copy of each character.";
+    const miss = chars.filter(id => !CARDS[id] || !owned(w, id));
+    if (miss.length) return "You don't own " + miss.slice(0, 3).map(id => (CARDS[id] || { n: "card " + id }).n).join(", ") + (miss.length > 3 ? " and " + (miss.length - 3) + " more" : "") + ".";
+    if (acts.length > DECK.maxActions) return "Max " + DECK.maxActions + " Action cards (" + acts.length + " now).";
+    const per = {}; acts.forEach(a => { per[a] = (per[a] || 0) + 1; });
+    const over = Object.keys(per).find(a => per[a] > DECK.actionCopies); if (over) return "Max " + DECK.actionCopies + " copies of each Action card.";
+    const locked = Object.keys(per).find(a => ACTION_LEVELS[a.slice(2)] == null || ACTION_LEVELS[a.slice(2)] > lvl); if (locked) return "An Action card in this deck isn't unlocked yet (level " + (ACTION_LEVELS[locked.slice(2)] || "?") + ").";
     return "";
 }
-export function saveDeck(w, deck) {
+export function saveDeck(w, deck, lvl = 99) {
     const name = String(deck.name || "").trim().slice(0, 24) || "Deck";
-    const p = deckProblem(w, deck.cards); if (p) return { error: p };
+    const p = deckProblem(w, deck.cards, lvl); if (p) return { error: p };
     const list = (w.decks || []).slice(), i = list.findIndex(d => d.id === deck.id);
-    if (i < 0 && list.length >= DECK.maxDecks) return { error: "You can keep " + DECK.maxDecks + " decks. Delete one first." };
-    const d = { id: deck.id || "d" + Date.now().toString(36), name, cards: deck.cards.map(Number) };
+    if (i < 0 && list.length >= DECK.maxDecks) return { error: "You have " + DECK.maxDecks + " deck slots. Delete one first." };
+    const d = { id: deck.id || "d" + Date.now().toString(36), name, cards: deck.cards.map(x => isA(x) ? String(x) : Number(x)), cover: Number(deck.cover) || 0 };
     if (i < 0) list.push(d); else list[i] = d;
     w.decks = list; if (!w.activeDeck) w.activeDeck = d.id;
     return { deck: d };
+}
+export function renameDeck(w, id, name) { const d = (w.decks || []).find(x => x.id === id); if (!d) return { error: "No such deck" }; w.decks = w.decks.map(x => x.id === id ? Object.assign({}, x, { name: String(name || "").trim().slice(0, 24) || x.name }) : x); return { id }; }
+export function copyDeck(w, id) {
+    const d = (w.decks || []).find(x => x.id === id); if (!d) return { error: "No such deck" };
+    if ((w.decks || []).length >= DECK.maxDecks) return { error: "You have " + DECK.maxDecks + " deck slots. Delete one first." };
+    const c = Object.assign({}, d, { id: "d" + Date.now().toString(36), name: (d.name + " copy").slice(0, 24) }); w.decks = w.decks.concat(c); return { deck: c };
 }
 export function deleteDeck(w, id) {
     w.decks = (w.decks || []).filter(d => d.id !== id);
@@ -130,6 +145,31 @@ export function deleteDeck(w, id) {
 export function setActiveDeck(w, id) { if (!(w.decks || []).some(d => d.id === id)) return { error: "No such deck" }; w.activeDeck = id; return { id }; }
 export const activeDeck = w => (w.decks || []).find(d => d.id === w.activeDeck) || (w.decks || [])[0] || null;
 function fixDecks(w) { (w.decks || []).forEach(d => { d.bad = deckProblem(w, d.cards) ? 1 : 0; }); }
+/* the move to 20-card decks: 10 more starter cards for everyone who had the starter deck, then every deck under
+   20 cards is padded from the player's own collection (low rarities first), level-1 Action cards if they still run
+   short, and flagged "needs review". Nothing is removed. */
+export const STARTER_ACTIONS = ["a:secondwind", "a:battlecry", "a:parry"];
+export function migrateDecks20(w, seed, now) {
+    if (w.decks20) return { already: 1 };
+    let gift = [];
+    if (w.starter) {
+        const rng = rngFrom(seed), pool = shuffleWith(rng, Object.values(CARDS).filter(c => c.r <= 1 && !owned(w, c.id)).map(c => c.id));
+        const series = {}; pool.forEach(id => { if (gift.length < DECK.starterCount - 10 && (series[CARDS[id].s] || 0) < 2) { gift.push(id); series[CARDS[id].s] = (series[CARDS[id].s] || 0) + 1; } });
+        gift.forEach(id => addCard(w, id, false, "Starter deck", now));
+    }
+    w.decks = (w.decks || []).map(d => {
+        const cards = (d.cards || []).map(x => isA(x) ? String(x) : Number(x)); if (cards.length >= DECK.size) return d;
+        const add = (d.id === "starter" ? gift : []).filter(id => !cards.includes(id));
+        add.forEach(id => { if (cards.length < DECK.size) cards.push(id); });
+        const spare = ownedIds(w).filter(id => !cards.includes(id)).sort((a, b) => CARDS[a].r - CARDS[b].r || (CARDS[b].pow + CARDS[b].def) - (CARDS[a].pow + CARDS[a].def));
+        spare.forEach(id => { if (cards.length < DECK.size - 2) cards.push(id); });
+        let k = 0; while (cards.length < DECK.size && k < 12) { const a = STARTER_ACTIONS[k % STARTER_ACTIONS.length]; if (cards.filter(x => x === a).length < DECK.actionCopies && cards.filter(isA).length < DECK.maxActions) cards.push(a); k++; }
+        spare.forEach(id => { if (cards.length < DECK.size && !cards.includes(id)) cards.push(id); });
+        return Object.assign({}, d, { cards, review: 1 });
+    });
+    w.decks20 = 1;
+    return { gift, decks: (w.decks || []).length };
+}
 
 /* ---------- after a card duel: wins per card (the cosmetic "veteran" mark at 10) ---------- */
 export function recordDuel(w, played, won) {

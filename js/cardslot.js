@@ -10,7 +10,7 @@
    The card on the move is a clone ("ghost") laid over the page; the real pass stays in the layout (hidden), so
    nothing else on the menu moves. Timings + the hint count: CARD_SLOT in js/vault/config.js.
    ===================================================================== */
-import { CARD_SLOT as C } from "./vault/config.js?v=14";
+import { CARD_SLOT as C } from "./vault/config.js?v=15";
 
 const $ = id => document.getElementById(id);
 const USES = "aap_slot_uses";

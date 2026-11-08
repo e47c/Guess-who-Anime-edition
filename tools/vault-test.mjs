@@ -3,14 +3,14 @@
 // atomic, never negative), the seeded RNG, the config. Phase 2: coins per placement, anti-farming, the daily
 // cap, missions and the login streak.
 import { resultOf, resultToDb, resultFromDb, placeRows, RESULT_MODES, duelResultOf } from "../js/vault/result.js";
-import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=14";
+import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=15";
 import { rngFrom, newSeed, pickWeighted, shuffleWith } from "../js/vault/rng.js?v=2";
-import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=14";
-import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, nightPartyValid, applyNightParty, gameCoinsOn, FEATURES } from "../js/vault/economy.js?v=13";
-import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=12";
-import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordDuel, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=12";
-import { CARDS, BY_SERIES, CARD_SERIES } from "../js/vault/carddb.js?v=5";
-import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=14";
+import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=15";
+import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, nightPartyValid, applyNightParty, gameCoinsOn, FEATURES } from "../js/vault/economy.js?v=14";
+import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=13";
+import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordDuel, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=13";
+import { CARDS, BY_SERIES, CARD_SERIES } from "../js/vault/carddb.js?v=6";
+import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=15";
 
 let ok = 0, bad = 0;
 const t = (c, m) => { if (c) ok++; else { bad++; console.log("  ✘", m); } };
@@ -338,13 +338,13 @@ t(seriesDone(w, "windbreaker") && w.inv.sl_windbreaker === 1, "completing a seri
 sect("starter deck and decks");
 w = blankVault(T0); const st0 = grantStarter(w, 11, "Starter deck", T0);
 const sc0 = st0.cards.map(id => CARDS[id]);
-t(st0.cards.length === 10 && sc0.every(c => c.r <= 1) && new Set(sc0.map(c => c.s)).size >= 5 && new Set(sc0.map(c => c.a)).size === 7, "10 Common/Uncommon cards from 5+ series, all 7 archetypes");
+t(st0.cards.length === DECK.starterCount && DECK.starterCount === DECK.size && sc0.every(c => c.r <= 1) && new Set(sc0.map(c => c.s)).size >= 5 && new Set(sc0.map(c => c.a)).size === 7, DECK.starterCount + " Common/Uncommon cards from 5+ series, all 7 archetypes");
 t(activeDeck(w).id === "starter" && !deckProblem(w, activeDeck(w).cards), "it's saved as the active deck, ready to duel");
 t(grantStarter(w, 12).error && w.decks.length === 1, "only once");
 t(w.coins === VAULT.startCoins && VAULT.startCoins === 100, "plus the 100 starting coins");
-t(saveDeck(w, { name: "x", cards: st0.cards.slice(0, 9) }).error && saveDeck(w, { name: "x", cards: st0.cards.slice(0, 9).concat([st0.cards[0]]) }).error, "exactly 10 different cards");
+t(saveDeck(w, { name: "x", cards: st0.cards.slice(0, DECK.size - 1) }).error && saveDeck(w, { name: "x", cards: st0.cards.slice(0, DECK.size - 1).concat([st0.cards[0]]) }).error, "exactly " + DECK.size + " cards, 1 copy of each character");
 const notMine = Object.keys(CARDS).map(Number).find(id => !owned(w, id));
-t(/don't own/.test(saveDeck(w, { name: "x", cards: st0.cards.slice(0, 9).concat([notMine]) }).error), "only cards you own");
+t(/don't own/.test(saveDeck(w, { name: "x", cards: st0.cards.slice(0, DECK.size - 1).concat([notMine]) }).error), "only cards you own");
 const sd = saveDeck(w, { name: "Second", cards: st0.cards.slice().reverse() });
 t(!sd.error && w.decks.length === 2 && !setActiveDeck(w, sd.deck.id).error && activeDeck(w).name === "Second", "save more decks, pick the active one");
 deleteDeck(w, sd.deck.id); t(w.decks.length === 1 && activeDeck(w).id === "starter", "delete a deck: the active one falls back");

@@ -54,8 +54,8 @@ export const MISSIONS = {
         { id: "squad4",    text: "Play a game with 4+ players",        kind: "squad",    goal: 1, coins: 25 },
         { id: "pack1",     text: "Open a pack",                        kind: "pack",     goal: 1, coins: 20, needs: "packs" },
         { id: "scratch1",  text: "Scratch a card",                     kind: "scratch",  goal: 1, coins: 20, needs: "scratch" },
-        { id: "duel1",   text: "Win a card duel",                  kind: "cvwin",    goal: 1, coins: 40, needs: "duel" },
-        { id: "deck1",     text: "Build or edit a deck",               kind: "deck",     goal: 1, coins: 20, needs: "decks" },
+        { id: "duel1",     text: "Win an Anime TCG duel (not Practice)", kind: "cvwin",    goal: 1, coins: 40, needs: "duel" },
+        { id: "deck1",     text: "Build or edit a 20-card deck",       kind: "deck",     goal: 1, coins: 20, needs: "decks" },
         { id: "team1",     text: "Win a team game",                    kind: "teamwin",  goal: 1, coins: 35 },
         { id: "party1",    text: "Finish a Night Party",               kind: "party",    goal: 1, coins: 40, needs: "party" }
     ],
@@ -155,7 +155,7 @@ export const CARD_ART = {
 };
 
 /* ---------- A7. Decks ---------- */
-export const DECK = { size: 10, maxCopies: 1, starterCount: 10, maxDecks: 8, veteranWins: 10 };
+export const DECK = { size: 20, maxCopies: 1, maxActions: 6, actionCopies: 2, starterCount: 20, maxDecks: 6, veteranWins: 10 };     // 20 cards, 1 copy per character, up to 6 Action cards (2 of each), 6 deck slots
 export const TRADE = { maxCards: 5, maxOpen: 3, undoSec: 10 };     // undoSec: after an offer is accepted, either side can undo for this long      // cards per side of one offer, open offers per player
 
 /* ---------- B. ANIME TCG card duels (challenges from the Vault's Duel tab) ---------- */
@@ -177,7 +177,8 @@ export const DUEL = {
         turnSec: 90,                              // a turn ends when this runs out (no forced attacks)
         responseSec: 6,                           // the other player's window to activate ONE Counter
         reconnectGrace: 20,                       // seconds a disconnected player's turn waits before it is ended for them
-        stalemate: { round: 20, loss: 300 },      // after this round, every player loses this much life at each End phase
+        stalemate: { round: 8, loss: 400, grow: 400 },      // the Final Clash: at the end of this round and each one after, everyone loses
+        stalemateFfa: { round: 5, loss: 400, grow: 400 },   //   loss + grow x (rounds since) life (FFA uses its own). Tuned with tools/duel-sim.mjs
         maxLog: 160, maxEvents: 80                // kept in the duel state
     },
     /* practice bots: chance to pick a weaker move, how often they attack into a risk, Counter use */

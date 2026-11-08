@@ -154,9 +154,11 @@ s = mk(); toTurn2(s); { const p = s.turnP; place(s, p, 0, 26);
 s = mk(); toTurn2(s); { const p = s.turnP, q = other(s, p); place(s, q, 0, 20); const u = give(s, p, 27); place(s, p, 0, 5);
     act(s, { by: p, k: "summon", u, pos: "atk", trib: [0] }); t(P(s, q).ch[0].sil === 1, "Silence on summon: the opposing best character's ability is off this turn");
 }
-/* ---- stalemate guard + turn timer ---- */
-s = mk(); { s.round = R.stalemate.round + 1; const a0 = lifeOf(s, 1), b0 = lifeOf(s, 2); endT(s);
-    t(lifeOf(s, 1) === a0 - R.stalemate.loss && lifeOf(s, 2) === b0 - R.stalemate.loss, "stalemate guard: after round " + R.stalemate.round + " everyone loses " + R.stalemate.loss + " at the End phase"); }
+/* ---- the Final Clash (end of each round from stalemate.round) + turn timer ---- */
+s = mk(); { const SG = R.stalemate; s.round = SG.round; const a0 = lifeOf(s, 1), b0 = lifeOf(s, 2); endT(s);
+    t(lifeOf(s, 1) === a0 && lifeOf(s, 2) === b0, "Final Clash: nothing in the middle of a round");
+    endT(s); t(lifeOf(s, 1) === a0 - SG.loss && lifeOf(s, 2) === b0 - SG.loss, "Final Clash: at the end of round " + SG.round + " everyone loses " + SG.loss);
+    endT(s); endT(s); t(lifeOf(s, 1) === a0 - 2 * SG.loss - SG.grow && lifeOf(s, 2) === b0 - 2 * SG.loss - SG.grow, "Final Clash: " + SG.grow + " more each round after"); }
 s = mk({ now: 0 }); { const p0 = s.turnP; tick(s, R.turnSec * 1000 - 1); t(s.turnP === p0, "the turn timer runs");
     tick(s, R.turnSec * 1000); t(s.turnP !== p0, "time up: the turn ends (" + R.turnSec + " s)"); }
 s = mk(); { const p0 = s.turnP; forceEnd(s, 0); t(s.turnP !== p0, "a disconnected player's turn is ended by the host"); }
@@ -179,10 +181,10 @@ endT(s); { const p = s.turnP, others = s.players.filter(q => q !== p); place(s, 
     act(s, { by: p, k: "attack", slot: 0, tp: q1, tslot: 0 });
     t(s.pending && s.pending.who === q1, "only the attacked player may respond"); act(s, { by: q1, k: "pass" });
     P(s, q2).life = 300; act(s, { by: p, k: "phase", to: "end" });
-    // q2 goes out on their own turn order? Make two players drop at once with the stalemate guard instead:
+    // (two players dropping at once is checked with the Final Clash below)
 }
 s = newDuel({ id: "f2", seed: 4, players: [1, 2, 3], decks: { p1: deckOf([]), p2: deckOf([]), p3: deckOf([]) }, names: {}, now: 0, rules: R });
-{ s.round = R.stalemate.round + 1; const p = s.turnP, others = s.players.filter(q => q !== p); others.forEach(q => { P(s, q).life = 200; }); endT(s);
+{ endT(s); endT(s); s.round = R.stalemateFfa.round; const p = s.turnP, others = s.players.filter(q => q !== p); others.forEach(q => { P(s, q).life = 200; }); endT(s);
     t(s.over && s.winner === p && others.every(q => s.place["p" + q] === 2), "two players out at once share 2nd place; the last one standing wins"); }
 s = newDuel({ id: "f3", seed: 5, players: [1, 2, 3, 4], decks: { p1: deckOf([]), p2: deckOf([]), p3: deckOf([]), p4: deckOf([]) }, names: {}, now: 0, rules: R });
 { const order = s.order.slice(); const out1 = order[1]; P(s, out1).life = 100; endT(s);            // order[1]'s turn now

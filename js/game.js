@@ -20,21 +20,21 @@ import {
 
 import { audio } from "./audio.js?v=4";
 import { ambient, titleCard, shake, ring, burstText, countUp, flyClone, motionOK, setReduced, isReduced } from "./fx.js";
-import { profile, avatarEl, seatCard, passCard, styleName, styleTitle, initGallery, setProfileHooks, renderProfileCard } from "./profile.js?v=13";
-import * as WARD from "./wardrobe.js?v=10";
-import * as SLOT from "./cardslot.js?v=4";
-import { showResults, closeResults } from "./results.js?v=11";
+import { profile, avatarEl, seatCard, passCard, styleName, styleTitle, initGallery, setProfileHooks, renderProfileCard } from "./profile.js?v=14";
+import * as WARD from "./wardrobe.js?v=11";
+import * as SLOT from "./cardslot.js?v=5";
+import { showResults, closeResults } from "./results.js?v=12";
 import * as DRAFT from "./draft/draft.js?v=9";
 import * as FEUD from "./feud/feud.js?v=7";
 import { srvNow } from "./feud/common.js?v=4";
 import * as LIKELY from "./feud/likely.js?v=4";
 import * as SKETCH from "./sketch/sketch.js?v=9";
-import * as VAULT from "./vault/vault.js?v=17";
-import * as SHOP from "./vault/shoppage.js?v=9";
-import * as CV from "./cardvault/cardvault.js?v=15";
-import * as NP from "./party/party.js?v=8";
+import * as VAULT from "./vault/vault.js?v=18";
+import * as SHOP from "./vault/shoppage.js?v=10";
+import * as CV from "./cardvault/cardvault.js?v=16";
+import * as NP from "./party/party.js?v=9";
 import { resultOf, resultToDb, resultFromDb } from "./vault/result.js?v=6";
-import { stageMeta, normalizeSettings, teamPatch } from "./party/stages.js?v=9";
+import { stageMeta, normalizeSettings, teamPatch } from "./party/stages.js?v=10";
 import { initCine, cineHook, cineHas } from "./cine/engine.js?v=15";
 import { hand as cineHand } from "./cine/hands.js?v=11";
 import * as CK from "./cine/kit.js?v=11";
@@ -3315,7 +3315,7 @@ const MODES = {
         art: ["images/anime/dragonball/db10.jpg", "images/anime/aot/aot6.jpg", "images/anime/dragonball/db12.jpg"] },
     sketch:   { key: "sk",  name: "Anime Sketch", tag: "DRAW & GUESS", kanji: "描", min: 2, max: 8, seats: "everyone draws in turn", short: "FFA", color: "#38d39f", sub: "Draw it. Guess it. Fast.", blurb: "Take turns drawing while everyone races to guess, or all draw one word and rate each other.",
         art: ["images/anime/naruto/na7.jpg", "images/anime/bleach/bc5.jpg", "images/anime/jjk/jk9.jpg"] },
-    cardvault: { key: "cv", name: "Anime TCG", tag: "CARD DUELS", kanji: "札", min: 1, max: 8, seats: "everyone, own deck", short: "Own pace", color: "#b38bff", sub: "Collect. Build. Duel.", blurb: "Open booster packs, fill your binder, build a 10-card deck and duel anyone in the room.",
+    cardvault: { key: "cv", name: "Anime TCG", tag: "CARD DUELS", kanji: "札", min: 1, max: 8, seats: "everyone, own deck", short: "Own pace", color: "#b38bff", sub: "Collect. Build. Duel.", blurb: "Open booster packs, fill your binder, build a 20-card deck and duel anyone in the room, 1v1 or free-for-all.",
         art: ["images/anime/jjk/jk12.jpg", "images/anime/dragonball/db7.jpg", "images/anime/naruto/na23.jpg"] },
     party:    { key: "np", name: "Night Party", tag: "TOURNAMENT", kanji: "宴", min: 2, max: 8, seats: "a tournament of the modes", short: "Tournament", color: "#ff9f43", sub: "Many games. One champion.", blurb: "Chain the other modes into a tournament: placements score points on a live race track, the winner takes the reward.",
         art: ["images/special/onepiece_ultimate.jpg", "images/anime/naruto/na9.jpg", "images/anime/jjk/jk19.jpg"] }
@@ -3330,7 +3330,7 @@ const RULES = {
     feud: ["Two teams (Team Crimson and Team Gold) and a hidden board of 5 to 8 ranked answers. Every round opens with a face-off: one player per team at the buzzers (they rotate), first to buzz answers.", "Top answer = control. Otherwise the other face-off player answers, and the higher answer wins control. The team in control chooses PLAY (answer the rest of the board) or PASS (the other team must play it).", "The playing team answers in turn; a wrong answer or running out of time is a strike. Three strikes and the other team gets ONE answer to steal the whole pot. Clearing the board banks it.", "One series ticked = questions about that series; two or more = an Anime Mix answered only from the ticked series. A tie after the last round plays one sudden-death question. Boards are Anime Arcade curated answers, not real survey results."],
     likely: ["Each duel shows two characters who are close on the question (who is smarter, lazier, more loyal...). Pick the one who is MORE likely.", "Team vs Team: both teams vote at the same moment; a team's pick is its majority (a split team goes with whoever voted first). Free For All: every player votes alone and keeps their own score.", "Everyone who picks the more likely character scores: 30 for a photo finish, 20 for a close call, 10 otherwise. Votes stay hidden until the reveal.", "One series ticked = that series' characters; two or more = an Anime Mix. A tie at the top after the last duel goes to up to three sudden-death duels. The right answer is our editors' pick (Anime Arcade curated rankings), not a survey result."],
     party: ["The host builds the night in the lobby: a tournament name, a reward (\"winner picks the next anime we watch\"), and a path of stages. Each stage is one of the other modes with its own rules and a weight (x1, x1.5, x2 or custom); the same mode can come back with different rules. Templates save a path for later.", "Everyone plays the stages in a row. Free-for-all modes seat everyone; team modes split the room into two balanced teams; 1v1 modes (Guess Who) run as a bracket inside the stage while the others watch.", "Only placements count: 1st gets 10 points down to 1 for last (shared places share their points), times the stage weight. A live race track shows everyone's pool after every stage.", "After the last stage the top pool wins the reward. A tie at the top plays sudden death: only the tied players, one round of a fast mode, until one is left. Every game still pays its normal coins; the winner gets +100 and everyone +10 per stage."],
-    cardvault: ["Pick ANIME TCG in the lobby like any mode: its panel has an Enter Anime TCG button that opens your own Anime TCG page (Packs Store, Collection, Decks, Duel). Everyone enters on their own, nobody is locked into one screen, and ‹ Lobby takes you back with the room intact (the host keeps picking modes from there).", "Packs Store: open per-series booster packs (one card per character, Common to Mythic) with coins or shards. Collection: your binder, one page per series; complete a series for a gold edge and its card sleeve, and trade cards with friends in the room.", "Decks: build 10-card decks in your deck boxes (everyone starts with a free Starter Deck); the deck builder shows the 10 slots and the Power / Defense curve. Your active deck is the one you bring to duels.", "Duel: pick one player (1v1, 20 life) or several (free-for-all, 25 life) and challenge them. Each round everyone picks a card in secret, all flip at once: damage = Power minus the opposing Defense, then abilities. Last one standing wins; anyone else can watch."],
+    cardvault: ["Pick ANIME TCG in the lobby like any mode: its panel has an Enter Anime TCG button that opens your own Anime TCG page (Packs Store, Collection, Decks, Duel). Everyone enters on their own, nobody is locked into one screen, and ‹ Lobby takes you back with the room intact (the host keeps picking modes from there).", "Packs Store: open per-series booster packs (one card per character, Common to Mythic) with coins or shards. Collection: your binder, one page per series; complete a series for a gold edge and its card sleeve, and trade cards with friends in the room.", "Decks: 20 cards, at most 1 copy of each character, plus up to 6 Action cards (2 of each) that unlock as you level up. Everyone starts with a free Starter Deck; the builder shows the ATK curve, warnings, a test hand and Auto-build. Your active deck is the one you bring to duels.", "Duel: challenge one player (1v1, 8000 life) or several (free-for-all, 6000 life). Each turn: draw, summon one character in Attack or Defense (Legendary and Mythic need a tribute), set or play Action cards, then attack. ATK beats DEF, abilities trigger on summon, attack or destruction, and the defender can answer with one Counter. A player at 0 life is out; the last one standing wins. New to it? Rookie Training (Duel tab) teaches it in six short lessons, and Practice vs Bot is always free."],
     sketch: ["Every round, each player draws once. On your turn you privately pick one of 3 random anime words (characters, objects or weapons, in any mix) and draw it; no letters or numbers. Drawer: Ctrl+Z undoes your last stroke.", "Everyone else types guesses in the chat. A right guess (one typo is fine on longer words) is never shown to the others, and neither is a guess that is close: you just score. First right guess +100, second +75, third +50, everyone after +25. The drawer gets +25 for each player who gets it.", "Stuck? After 20 s without a right guess a letter is revealed, then another every 15 s (1 letter for short words, 2 for medium, 3 for long). The turn ends when everyone has it or time runs out.", "One series ticked = words from that series; two or more = an Anime Mix. People who join during a match watch, and can join from the next round. Highest total after the last round wins.", "Contest (pick it under Game type): every round, everyone gets the same word and draws it at the same time on their own sheet; press Done to finish early. Then the drawings are shown big, one at a time and without names (15 s each, sooner once everyone has rated it): give every other drawing 1 to 5 stars (not your own); you can still change a star on an earlier one until rating ends. Names and stars are revealed with the results; the stars you receive are your points, and the highest total after the last round wins."]
 };
 function showRules(t) {
@@ -3688,7 +3688,7 @@ const GUIDE = {
     likely:   { fmt: "Teams or Free For All", steps: ["Two close picks", "Vote at the same time", "Closer call, bigger score", "Single anime or a Mix"] },
     sketch:   { fmt: "Everyone draws in turn", steps: ["Pick a word, draw it", "Guess fast, score more", "Letters when you're stuck", "Everyone draws each round"] },
     party:    { fmt: "Tournament", steps: ["Build the path", "Play stage by stage", "Placements score points", "The champion takes the reward"] },
-    cardvault: { fmt: "Collect, build, duel", steps: ["Your own TCG page", "Open booster packs", "Build a 10-card deck", "Duel anyone in the room"] }
+    cardvault: { fmt: "Collect, build, duel", steps: ["Your own TCG page", "Open booster packs", "Build a 20-card deck", "Duel 1v1 or free-for-all"] }
 };
 const NUMWORD = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
 const MODE_PICK_KEY = "aap_mode_pick";
@@ -4288,6 +4288,7 @@ function route(d) {
         lastStatus = st;
         // ANIME TCG: no shared screen. Each player sees their own Anime TCG page, their duel, a duel they watch, or the lobby.
         const bid = st === "waiting" ? CV.duelWanted(d) : null, vault = st === "waiting" && VAULT.vaultWanted(d);
+        if (CV.practicing() && st === "waiting" && (vault || !$("cardvault").classList.contains("hidden"))) { CV.cvLoc(d, "b"); return; }      // Practice vs Bot / Rookie Training: stay on the duel screen
         if (bid) { CV.cvLoc(d, "b"); CV.showDuel(d, bid); return; }
         if (vault) {
             if ($("arcadeVault").classList.contains("hidden")) { closeOverlay("pause"); showOnly("arcadeVault"); window.scrollTo(0, 0); }
@@ -4829,7 +4830,7 @@ async function initApp() {
         vaultReward: (tid, o) => VAULT.nightPartyReward(tid, o), openVault: () => VAULT.openVault(), recordNightParty: rec => { const a = profile.recordNightParty(rec); renderProfileCard(); return a; }, achToast });
     const refresh = () => { if (currentRoomData && !exiting) route(currentRoomData); };
     CV.initCardVault(Object.assign({}, feudCtx, { activeDeck: () => VAULT.activeDeckCards(), myName: () => profile.get().name, myPub: () => profile.public(), isHolo: id => !!((VAULT.bank.get().cards || {})[id] || {}).h,
-        report: duelReport, refresh, screen: () => currentScreen, inRoom: () => !!room, openVault: tab => VAULT.openVault(tab) }));
+        report: duelReport, refresh, screen: () => currentScreen, inRoom: () => !!room, openVault: tab => VAULT.openVault(tab), flyClone, level: () => profile.level() }));
     $("homeTitle").addEventListener("click", () => { const lg = $("homeTitle"); lg.classList.remove("zap"); void lg.offsetWidth; lg.classList.add("zap"); clearTimeout(logoTimer); logoTimer = setTimeout(() => { logoTaps = 0; }, 900); if (++logoTaps >= 5) { logoTaps = 0; secretPower(["PLUS ULTRA!", "DATTEBAYO!", "BANKAI!", "KAMEHAMEHA!", "DOMAIN EXPANSION!"][(Math.random() * 5) | 0]); } else sfx("tick"); });
     initGallery(ANIME_LIBRARY, Object.fromEntries(Object.keys(HB_SERIES).map(k => [k, HB_SERIES[k].label])));
     setProfileHooks({ sfx: sfx, toast: toast, onAchievement: achToast });

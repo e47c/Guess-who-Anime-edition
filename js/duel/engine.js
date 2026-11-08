@@ -20,7 +20,8 @@
        vs Defense: ATK > DEF: target destroyed, no damage (Pierce: the difference is dealt). Equal: nothing.
                    ATK < DEF: the attacker's owner loses the difference.
        Direct: the full ATK.
-   - End: "until end of turn" effects stop; after round `stalemate.round` every player loses `stalemate.loss`.
+   - End: "until end of turn" effects stop. The Final Clash: at the end of round `stalemate.round` (FFA: `stalemateFfa`)
+     and of every round after, every player loses `loss` life, plus `grow` more each round (knock-outs at once share a place).
    - Timer: when a turn's time runs out the turn ends (no forced attacks). Counters: when a player summons, plays a
      Support or declares an attack, the player it is aimed at (1v1: the opponent; free-for-all: the attacked player,
      or for summons / Supports the next player in turn order) gets ONE response window (DUEL.rules.responseSec) if they
@@ -112,12 +113,21 @@ function endTurn(s, now, why) {
     if (why) log(s, why);
     // "until end of turn" effects stop
     Object.values(s.P).forEach(pl => arr(pl.ch).forEach(c => { if (c) { c.buffs = arr(c.buffs).filter(b => b.dur !== "turn"); c.sil = 0; } }));
-    if (s.round > s.R.stalemate.round) {
-        const hit = alive(s); log(s, "Stalemate guard: everyone loses " + s.R.stalemate.loss + " life.");
-        hit.forEach(q => loseLife(s, q, s.R.stalemate.loss, "stalemate"));
+    const SG = (s.fmt === "ffa" && s.R.stalemateFfa) || s.R.stalemate || {};
+    if (s.round >= SG.round && closesRound(s)) {
+        // the Final Clash: at the end of round `round` and every round after, everyone loses life, more each round
+        const n = (SG.loss || 0) + (SG.grow || 0) * (s.round - SG.round);
+        log(s, "Final Clash: everyone loses " + n + " life.");
+        alive(s).forEach(q => loseLife(s, q, n, "stalemate"));
         lifeCheck(s, now); if (s.over || Number(s.turnP) !== p || s.phase !== "end") return;      // the turn player went out: the turn already passed
     }
     nextTurn(s, now);
+}
+/* true when the turn ending now is the last one of the round (the next turn starts a new round) */
+function closesRound(s) {
+    const al = alive(s), order = arr(s.order).map(Number), i = order.indexOf(Number(s.turnP));
+    for (let k = 1; k <= order.length; k++) { const q = order[(i + k) % order.length]; if (al.includes(q)) return q === s.first || (!al.includes(s.first) && q === al[0]); }
+    return false;
 }
 function nextTurn(s, now) {
     if (s.over) return;
@@ -133,18 +143,18 @@ export function statOf(s, p, slot) {
     let atk = d.atk, def = d.def;
     arr(c.buffs).forEach(b => { atk += b.atk || 0; def += b.def || 0; });
     if (c.swp) [atk, def] = [def, atk];
-    if (ab && ab.t === "cont") {
+    if (ab) {      // continuous traits can sit on any ability (a Pierce that also has an On attack effect, ...)
         if (ab.guard && c.pos === "def") def += ab.guard;
         if (ab.rage && behind(s, p)) { atk += ab.rage.atk || 0; def += ab.rage.def || 0; }
         if (ab.last && lifeOf(s, p) <= ab.last.th) { atk += ab.last.atk || 0; def += ab.last.def || 0; }
     }
     // auras from your other characters
-    arr(P(s, p).ch).forEach((o, i) => { if (!o || i === slot) return; const a2 = abil(s, o); if (a2 && a2.t === "cont" && a2.aura) { atk += a2.aura.atk || 0; def += a2.aura.def || 0; } });
+    arr(P(s, p).ch).forEach((o, i) => { if (!o || i === slot) return; const a2 = abil(s, o); if (a2 && a2.aura) { atk += a2.aura.atk || 0; def += a2.aura.def || 0; } });
     return { atk: Math.max(0, atk), def: Math.max(0, def) };
 }
 const abil = (s, c) => { if (!c || c.sil) return null; if (c.copy) return c.copy; const d = defOf(s, c.u); return d && d.ab || null; };
 const behind = (s, p) => opponents(s, p).some(q => lifeOf(s, q) > lifeOf(s, p));
-const hasCont = (s, c, k) => { const a = abil(s, c); return !!(a && a.t === "cont" && a[k]); };
+const hasCont = (s, c, k) => { const a = abil(s, c); return !!(a && a[k]); };
 export const pierces = (s, p, slot) => hasCont(s, arr(P(s, p).ch)[slot], "pierce");
 
 /* ---------- legality: every intent is checked here (the UI shows the reason when it is not allowed) ----------
@@ -342,7 +352,9 @@ function condOk(s, p, ab, u) {
     const c = ab.cond; if (!c) return true;
     if (c.behind && !behind(s, p)) return false;
     if (c.lifeLe != null && lifeOf(s, p) > c.lifeLe) return false;
-    if (c.combo) { const me = defOf(s, u); return arr(s.played).some(x => x !== u && !isAct(s, x) && (c.combo === "series" ? defOf(s, x).s === me.s : c.combo === "arch" ? defOf(s, x).a === me.a : (defOf(s, x).s === me.s || defOf(s, x).a === me.a))); }
+    // Combo: you control another character of the same series (or archetype, or either)
+    if (c.combo) { const me = defOf(s, u); return arr(P(s, p).ch).some(o => o && o.u !== u && (x => c.combo === "series" ? x.s === me.s : c.combo === "arch" ? x.a === me.a : (x.s === me.s || x.a === me.a))(defOf(s, o.u))); }
+    if (c.oppLifeLe != null && !opponents(s, p).some(q => lifeOf(s, q) <= c.oppLifeLe)) return false;
     return true;
 }
 

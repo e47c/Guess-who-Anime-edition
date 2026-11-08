@@ -1,81 +1,83 @@
 /* =====================================================================
-   ANIME TCG · CARD ABILITIES
-   One shared table, used by the card generator (tools/cards-build.mjs), the duel engine (engine.js)
-   and the card faces (text). Balance follows the RARITY OF THE ABILITY, not raw stats: every rarity has
-   nearly the same Power + Defense, rarer cards get more interesting or conditional effects.
+   ANIME TCG · CARD ABILITIES (the duel's timing system)
+   One shared table: the card generator (tools/cards-build.mjs assigns one per card by rarity tier and archetype), the
+   duel engine (js/duel/engine.js reads t / ops / continuous traits through js/duel/cards.js) and the card faces (text).
+   Design rule: every rarity has nearly the same ATK + DEF; rarer cards get MORE INTERESTING abilities, not bigger
+   numbers. Legendary and Mythic need a tribute to summon, so their abilities are the strongest.
 
-   Keywords: Pierce (ignore Defense), Guard (take less damage), Heal (restore life), Counter (send damage back),
-   Rage (bonus when behind), Combo (bonus if your previous card shared series / archetype), Silence (cancel the
-   opposing card's ability), Scout (see a card in their hand), Swap (exchange stats with the opposing card),
-   Last Stand (bonus at low life). Rarer cards combine them, copy abilities (Mirror) or redirect damage.
-
-   Timing words used on the cards: On reveal, On clash, On damage, On win, On defeat. The exact resolution
-   order is in engine.js (resolveRound).
-   "Behind" = less life than the player your card is fighting. Life thresholds are written for 20 life and
-   scale with the format's starting life (25 in free-for-all).
+   Timing (t): "summon" (On summon) · "attack" (On attack) · "attacked" (When attacked) · "destroyed" (When destroyed)
+   · "cont" (Continuous) · "opt" (Once per turn, in your Main phase).
+   Continuous traits (any ability may carry them): pierce · guard (+DEF in Defense position) · rage { atk, def } (while
+   you have less life than an opponent) · last { th, atk, def } (your life at or below th) · aura { atk, def } (your
+   other characters).
+   Operations (ops, in order): dmg { who: opp | self | attackerOwner | oppAll, n } · heal { n } · draw { n } ·
+   buff { tgt, atk, def, dur: turn | perm } · destroy { tgt } · silence { tgt } · swap { tgt } · pos { tgt, to } ·
+   scout { what: set | top | hand } · setDestroy · copy · negate (Counters only).
+   Targets are chosen by rule (written on the card): self · allies · others · myBest · oppBest (highest ATK) ·
+   oppWeak (lowest ATK) · oppAll · oppAtkPos · attacker · target · summoned.
+   Values are the shown ones (x100 of the stored stats); life is 8000.
    ===================================================================== */
 
 export const ARCHETYPES = ["Brawler", "Tank", "Speedster", "Trickster", "Healer", "Mage", "Support"];
 export const RARITY_KEYS = ["common", "uncommon", "rare", "ultra", "epic", "legendary", "mythic"];
 export const RARITY_NAMES = ["Common", "Uncommon", "Rare", "Ultra Rare", "Epic", "Legendary", "Mythic"];
 
-/* op fields read by the engine:
-   pierce (n | "all"), pierceVs {arch, v}, pierceRare {min, v}, guard, counter (flat), counterPct, heal (on reveal), healWin, healDefeat,
-   drainPct + drainMax (on win, heal part of the damage dealt), rage {pow, def, guard}, last {th, pow, def, guard},
-   combo {by: series|arch|either, pow, heal}, silence, silenceBonus (Power if the silenced card had an ability),
-   copy (Mirror), copyPow, swapPow, swapDef, flip (opposing card's Power <-> Defense), scout, drawWin, parting
-   (damage on defeat), recoil (life lost on defeat), cap (take at most this, the rest goes back), revealPow,
-   revealDef, perWin {pow, def, max}, behind {per, max} (+1 Power per `per` life behind), finisher {th, pow} */
 export const ABILITIES = {
     // ---------- Common: one keyword, small numbers ----------
-    c_pierce:  { tier: 0, kw: ["Pierce"],     noun: "Strike",   pierce: 1,                          text: "On clash: Pierce 1 (ignore 1 Defense)." },
-    c_guard:   { tier: 0, kw: ["Guard"],      noun: "Wall",     guard: 1,                           text: "On damage: Guard 1 (take 1 less)." },
-    c_heal:    { tier: 0, kw: ["Heal"],       noun: "Mend",     heal: 1,                            text: "On reveal: Heal 1 life." },
-    c_rage:    { tier: 0, kw: ["Rage"],       noun: "Fury",     rage: { pow: 2 },                   text: "On reveal: Rage, +2 Power when you're behind." },
-    c_combo:   { tier: 0, kw: ["Combo"],      noun: "Chain",    combo: { by: "series", pow: 2 },    text: "Combo: +2 Power if your previous card was from the same series." },
-    c_last:    { tier: 0, kw: ["Last Stand"], noun: "Grit",     last: { th: 6, pow: 2 },            text: "Last Stand: +2 Power at 6 life or less." },
+    c_pierce:  { tier: 0, kw: ["Pierce"], noun: "Strike", t: "cont", pierce: true,
+                 text: "Continuous: Pierce (attacking a Defense-position character, it deals the difference as damage)." },
+    c_guard:   { tier: 0, kw: ["Guard"], noun: "Wall", t: "cont", guard: 300, text: "Continuous: +300 DEF while in Defense position (Guard)." },
+    c_heal:    { tier: 0, kw: ["Heal"], noun: "Mend", t: "summon", ops: [{ op: "heal", n: 400 }], text: "On summon: restore 400 life (Heal)." },
+    c_rage:    { tier: 0, kw: ["Rage"], noun: "Fury", t: "cont", rage: { atk: 300 }, text: "Continuous: +300 ATK while you have less life than your opponent (Rage)." },
+    c_combo:   { tier: 0, kw: ["Combo"], noun: "Chain", t: "summon", cond: { combo: "series" }, ops: [{ op: "buff", tgt: "self", atk: 300, dur: "perm" }],
+                 text: "On summon: +300 ATK if you control another character of the same series (Combo)." },
+    c_last:    { tier: 0, kw: ["Last Stand"], noun: "Grit", t: "cont", last: { th: 3000, atk: 400 }, text: "Continuous: +400 ATK while your life is 3000 or less (Last Stand)." },
     // ---------- Uncommon ----------
-    u_pierce:  { tier: 1, kw: ["Pierce"],     noun: "Lance",    pierce: 2,                          text: "On clash: Pierce 2." },
-    u_guard:   { tier: 1, kw: ["Guard"],      noun: "Bastion",  guard: 2,                           text: "On damage: Guard 2." },
-    u_healwin: { tier: 1, kw: ["Heal"],       noun: "Recovery", healWin: 2, heal: 1,                text: "On reveal: Heal 1. On win: Heal 2 more." },
-    u_counter: { tier: 1, kw: ["Counter"],    noun: "Riposte",  counter: 1,                         text: "On damage: Counter 1 (deal 1 back)." },
-    u_combo:   { tier: 1, kw: ["Combo"],      noun: "Sync",     combo: { by: "arch", pow: 2 },      text: "Combo: +2 Power if your previous card had the same archetype." },
-    u_scout:   { tier: 1, kw: ["Scout"],      noun: "Insight",  scout: 1, revealDef: 1,             text: "On reveal: Scout one card in their hand, +1 Defense." },
+    u_pierce:  { tier: 1, kw: ["Pierce"], noun: "Lance", t: "attack", pierce: true, ops: [{ op: "buff", tgt: "self", atk: 200 }], text: "Pierce. On attack: +200 ATK until the end of the turn." },
+    u_guard:   { tier: 1, kw: ["Guard"], noun: "Bastion", t: "cont", guard: 500, text: "Continuous: +500 DEF while in Defense position (Guard)." },
+    u_healwin: { tier: 1, kw: ["Heal"], noun: "Recovery", t: "destroyed", ops: [{ op: "heal", n: 600 }], text: "When destroyed: restore 600 life (Heal)." },
+    u_counter: { tier: 1, kw: ["Counter"], noun: "Riposte", t: "attacked", ops: [{ op: "dmg", who: "attackerOwner", n: 300 }], text: "When attacked: the attacking player loses 300 life (Counter)." },
+    u_combo:   { tier: 1, kw: ["Combo"], noun: "Sync", t: "summon", cond: { combo: "arch" }, ops: [{ op: "buff", tgt: "self", atk: 400, dur: "perm" }],
+                 text: "On summon: +400 ATK if you control another character of the same archetype (Combo)." },
+    u_scout:   { tier: 1, kw: ["Scout"], noun: "Insight", t: "summon", ops: [{ op: "scout", what: "set" }, { op: "buff", tgt: "self", def: 200, dur: "perm" }],
+                 text: "On summon: look at one of the opponent's face-down cards (Scout) and gain +200 DEF." },
     // ---------- Rare: a condition or a second effect ----------
-    r_rage:    { tier: 2, kw: ["Rage"],       noun: "Berserk",  rage: { pow: 3 },                   text: "On reveal: Rage, +3 Power when you're behind." },
-    r_silence: { tier: 2, kw: ["Silence"],    noun: "Seal",     silence: 1,                         text: "On reveal: Silence the opposing card's ability." },
-    r_last:    { tier: 2, kw: ["Last Stand"], noun: "Resolve",  last: { th: 8, pow: 2, def: 2 },    text: "Last Stand: +2 Power and +2 Defense at 8 life or less." },
-    r_counter: { tier: 2, kw: ["Counter"],    noun: "Mirror Guard", counterPct: .5,                 text: "On damage: Counter half the damage you take (rounded up)." },
-    r_drain:   { tier: 2, kw: ["Heal"],       noun: "Siphon",   drainPct: .5, drainMax: 4,          text: "On win: Heal half the damage you dealt." },
-    r_hunter:  { tier: 2, kw: ["Pierce"],     noun: "Breaker",  pierce: 1, pierceVs: { arch: "Tank", v: 3 }, text: "On clash: Pierce 1, or Pierce 3 against a Tank." },
-    // ---------- Ultra Rare: combos, swaps, two-part effects ----------
-    x_swap:    { tier: 3, kw: ["Swap"],       noun: "Exchange", swapPow: 1,                         text: "On reveal: Swap Power with the opposing card." },
-    x_sealcut: { tier: 3, kw: ["Silence", "Pierce"], noun: "Severance", silence: 1, pierce: 1,      text: "On reveal: Silence the opposing card. On clash: Pierce 1." },
-    x_thorns:  { tier: 3, kw: ["Guard", "Counter"], noun: "Thorns", guard: 1, counter: 1,           text: "On damage: Guard 1 and Counter 1." },
-    x_combo:   { tier: 3, kw: ["Combo"],      noun: "Link",     combo: { by: "either", pow: 3 },    text: "Combo: +3 Power if your previous card shared its series or archetype." },
-    x_parting: { tier: 3, kw: ["Counter"],    noun: "Last Word", parting: 3, revealDef: 1,          text: "+1 Defense. On defeat: still deal 3 damage to the opponent." },
-    x_scout:   { tier: 3, kw: ["Scout"],      noun: "Foresight", scout: 1, drawWin: 1, revealPow: 1, text: "On reveal: Scout one of their cards, +1 Power. On win: draw a card." },
+    r_rage:    { tier: 2, kw: ["Rage"], noun: "Berserk", t: "cont", rage: { atk: 500 }, text: "Continuous: +500 ATK while you have less life than your opponent (Rage)." },
+    r_silence: { tier: 2, kw: ["Silence"], noun: "Seal", t: "summon", ops: [{ op: "silence", tgt: "oppBest" }], text: "On summon: silence the opposing character with the highest ATK until the end of the turn." },
+    r_last:    { tier: 2, kw: ["Last Stand"], noun: "Resolve", t: "cont", last: { th: 3000, atk: 300, def: 300 }, text: "Continuous: +300 ATK and +300 DEF while your life is 3000 or less (Last Stand)." },
+    r_counter: { tier: 2, kw: ["Counter"], noun: "Mirror Guard", t: "attacked", ops: [{ op: "dmg", who: "attackerOwner", n: 500 }], text: "When attacked: the attacking player loses 500 life (Counter)." },
+    r_drain:   { tier: 2, kw: ["Heal"], noun: "Siphon", t: "attack", ops: [{ op: "heal", n: 400 }], text: "On attack: restore 400 life (Heal)." },
+    r_hunter:  { tier: 2, kw: ["Pierce", "Rage"], noun: "Breaker", t: "cont", pierce: true, rage: { atk: 200 }, text: "Continuous: Pierce. +200 ATK while you have less life than your opponent (Rage)." },
+    // ---------- Ultra Rare: two-part effects ----------
+    x_swap:    { tier: 3, kw: ["Swap"], noun: "Exchange", t: "summon", ops: [{ op: "swap", tgt: "oppBest" }], text: "On summon: the opposing character with the highest ATK swaps its ATK and DEF (Swap)." },
+    x_sealcut: { tier: 3, kw: ["Silence", "Pierce"], noun: "Severance", t: "attack", pierce: true, ops: [{ op: "silence", tgt: "target" }], text: "Pierce. On attack: silence the character it attacks." },
+    x_thorns:  { tier: 3, kw: ["Guard", "Counter"], noun: "Thorns", t: "attacked", guard: 300, ops: [{ op: "dmg", who: "attackerOwner", n: 300 }], text: "+300 DEF in Defense position (Guard). When attacked: the attacking player loses 300 life (Counter)." },
+    x_combo:   { tier: 3, kw: ["Combo"], noun: "Link", t: "summon", cond: { combo: "either" }, ops: [{ op: "buff", tgt: "self", atk: 400, dur: "perm" }, { op: "draw", n: 1 }],
+                 text: "On summon: if you control another character of the same series or archetype, +400 ATK and draw a card (Combo)." },
+    x_parting: { tier: 3, kw: ["Counter"], noun: "Last Word", t: "destroyed", ops: [{ op: "dmg", who: "opp", n: 600 }], text: "When destroyed: the opponent loses 600 life." },
+    x_scout:   { tier: 3, kw: ["Scout"], noun: "Foresight", t: "opt", ops: [{ op: "scout", what: "set" }, { op: "buff", tgt: "self", atk: 300 }], text: "Once per turn: look at one of the opponent's face-down cards (Scout) and gain +300 ATK until the end of the turn." },
     // ---------- Epic: copying, redirects, conditional bonuses ----------
-    e_mirror:  { tier: 4, kw: ["Mirror"],     noun: "Mimicry",  copy: 1,                            text: "On reveal: copy the opposing card's ability (Mirror)." },
-    e_comboheal: { tier: 4, kw: ["Combo", "Heal"], noun: "Harmony", combo: { by: "series", pow: 2, heal: 2 }, revealDef: 1, text: "+1 Defense. Combo (same series): +2 Power and Heal 2." },
-    e_wrath:   { tier: 4, kw: ["Rage", "Guard"], noun: "Wrath", rage: { pow: 2, guard: 2 },         text: "On reveal: Rage, +2 Power and Guard 2 when you're behind." },
-    e_redirect: { tier: 4, kw: ["Counter"],    noun: "Redirect", cap: 3,                             text: "On damage: take at most 3; the rest is redirected to the attacker." },
-    e_twist:   { tier: 4, kw: ["Swap", "Pierce"], noun: "Twist", swapDef: 1, pierce: 1,             text: "On reveal: Swap Defense with the opposing card. On clash: Pierce 1." },
-    e_vampire: { tier: 4, kw: ["Heal"],       noun: "Feast",    drainPct: 1, drainMax: 4, revealDef: 1, text: "+1 Defense. On win: Heal all the damage you dealt (max 4)." },
-    // ---------- Legendary ----------
-    l_dominate:{ tier: 5, kw: ["Silence"],    noun: "Dominion", silence: 1, silenceBonus: 1,        text: "On reveal: Silence the opposing card; +1 Power if it was Rare or better." },
-    l_phoenix: { tier: 5, kw: ["Heal", "Last Stand"], noun: "Rebirth", healDefeat: 4, last: { th: 8, def: 2 }, text: "Last Stand: +2 Defense at 8 life or less. On defeat: Heal 4." },
-    l_bulwark: { tier: 5, kw: ["Counter", "Rage"], noun: "Aegis", counterPct: .5, rage: { guard: 2 }, text: "On damage: Counter half the damage you take. Rage: Guard 2 when you're behind." },
-    l_legend:  { tier: 5, kw: ["Combo"],      noun: "Legacy",   perWin: { pow: 1, def: 1, max: 3 },  text: "+1 Power and +1 Defense for every clash you've won this game (max +3)." },
-    l_finisher: { tier: 5, kw: ["Pierce"],     noun: "Finale",   pierce: 1, finisher: { th: 8, pow: 3 }, text: "On clash: Pierce 1; +3 Power if the opponent has 8 life or less." },
-    l_overdrive: { tier: 5, kw: ["Rage"],      noun: "Overdrive", revealPow: 2, recoil: 2,           text: "On reveal: +2 Power. On defeat: you lose 2 life." },
-    // ---------- Mythic: one of a kind ----------
-    m_domain: { tier: 6, kw: ["Silence", "Pierce"], noun: "Domain", silence: 1, pierceRare: { min: 2, v: 1 }, text: "On reveal: Silence the opposing card. On clash: Pierce 1 if it is Rare or better." },
-    m_rewind:  { tier: 6, kw: ["Mirror"],     noun: "Rewrite",  copy: 1, copyPow: 1,                text: "On reveal: copy the opposing card's ability, and its Power if higher." },
-    m_eclipse: { tier: 6, kw: ["Swap", "Pierce"], noun: "Eclipse", flip: 1, pierce: 1,              text: "On reveal: Swap the opposing card's Power and Defense. On clash: Pierce 1." },
-    m_eternal: { tier: 6, kw: ["Rage", "Heal"], noun: "Eternity", rage: { guard: 2 }, healWin: 3,   text: "Rage: Guard 2 when you're behind. On win: Heal 3." },
-    m_awaken:  { tier: 6, kw: ["Rage", "Last Stand"], noun: "Awakening", behind: { per: 3, max: 4 }, last: { th: 8, guard: 2 }, text: "Rage: +1 Power for every 3 life you're behind (max +4). Last Stand: Guard 2 at 8 or less." },
-    m_judgement: { tier: 6, kw: ["Counter"],   noun: "Judgement", cap: 3, counter: 1,                text: "On damage: take at most 3; the rest goes back to the attacker, plus Counter 1." },
+    e_mirror:  { tier: 4, kw: ["Mirror"], noun: "Mimicry", t: "summon", copyOnSummon: true, ops: [], text: "On summon: copy the ability of the opposing character with the highest ATK (Mirror)." },
+    e_comboheal: { tier: 4, kw: ["Combo", "Heal"], noun: "Harmony", t: "summon", cond: { combo: "series" }, ops: [{ op: "buff", tgt: "self", atk: 300, def: 300, dur: "perm" }, { op: "heal", n: 600 }],
+                 text: "On summon: if you control another character of the same series, +300 ATK, +300 DEF and restore 600 life (Combo)." },
+    e_wrath:   { tier: 4, kw: ["Rage"], noun: "Wrath", t: "cont", rage: { atk: 500, def: 300 }, text: "Continuous: +500 ATK and +300 DEF while you have less life than your opponent (Rage)." },
+    e_redirect: { tier: 4, kw: ["Counter"], noun: "Redirect", t: "attacked", ops: [{ op: "buff", tgt: "attacker", atk: -400 }], text: "When attacked: the attacker loses 400 ATK until the end of the turn (before damage)." },
+    e_twist:   { tier: 4, kw: ["Swap"], noun: "Twist", t: "summon", ops: [{ op: "pos", tgt: "oppBest", to: "def" }, { op: "buff", tgt: "oppBest", def: -300 }], text: "On summon: switch the opposing character with the highest ATK to Defense position; it loses 300 DEF until the end of the turn." },
+    e_vampire: { tier: 4, kw: ["Heal"], noun: "Feast", t: "attack", pierce: true, ops: [{ op: "heal", n: 500 }], text: "Pierce. On attack: restore 500 life (Heal)." },
+    // ---------- Legendary (1 tribute) ----------
+    l_dominate: { tier: 5, kw: ["Silence"], noun: "Dominion", t: "summon", ops: [{ op: "destroy", tgt: "oppWeak" }, { op: "silence", tgt: "oppBest" }], text: "On summon: destroy the opposing character with the lowest ATK, then silence the one with the highest ATK until the end of the turn." },
+    l_phoenix: { tier: 5, kw: ["Heal", "Last Stand"], noun: "Rebirth", t: "destroyed", last: { th: 4000, def: 800 }, ops: [{ op: "heal", n: 1200 }, { op: "draw", n: 1 }], text: "+800 DEF while your life is 4000 or less (Last Stand). When destroyed: restore 1200 life and draw a card." },
+    l_bulwark: { tier: 5, kw: ["Guard", "Counter"], noun: "Aegis", t: "attacked", guard: 800, ops: [{ op: "dmg", who: "attackerOwner", n: 400 }], text: "+800 DEF in Defense position (Guard). When attacked: the attacking player loses 400 life (Counter)." },
+    l_legend:  { tier: 5, kw: ["Combo"], noun: "Legacy", t: "cont", aura: { atk: 300 }, text: "Continuous: your other characters gain +300 ATK." },
+    l_finisher: { tier: 5, kw: ["Pierce"], noun: "Finale", t: "attack", pierce: true, ops: [{ op: "dmg", who: "opp", n: 500 }], text: "Pierce. On attack: the opponent loses 500 life." },
+    l_overdrive: { tier: 5, kw: ["Rage"], noun: "Overdrive", t: "summon", ops: [{ op: "buff", tgt: "self", atk: 900 }, { op: "dmg", who: "self", n: 300 }], text: "On summon: +900 ATK until the end of the turn; you lose 300 life." },
+    // ---------- Mythic (1 tribute): one of a kind ----------
+    m_domain:  { tier: 6, kw: ["Silence"], noun: "Domain", t: "summon", ops: [{ op: "silence", tgt: "oppAll" }, { op: "setDestroy" }], text: "On summon: silence every opposing character until the end of the turn and destroy one of the opponent's face-down cards." },
+    m_rewind:  { tier: 6, kw: ["Mirror"], noun: "Rewrite", t: "opt", ops: [{ op: "pos", tgt: "oppBest", to: "def" }, { op: "draw", n: 1 }], text: "Once per turn: switch the opposing character with the highest ATK to Defense position and draw a card." },
+    m_eclipse: { tier: 6, kw: ["Swap", "Pierce"], noun: "Eclipse", t: "summon", pierce: true, ops: [{ op: "swap", tgt: "oppAll" }], text: "Pierce. On summon: every opposing character swaps its ATK and DEF (Swap)." },
+    m_eternal: { tier: 6, kw: ["Rage", "Heal"], noun: "Eternity", t: "destroyed", rage: { atk: 600, def: 600 }, ops: [{ op: "heal", n: 1500 }, { op: "dmg", who: "opp", n: 500 }], text: "+600 ATK and +600 DEF while you have less life than your opponent (Rage). When destroyed: restore 1500 life; the opponent loses 500 life." },
+    m_awaken:  { tier: 6, kw: ["Rage", "Last Stand"], noun: "Awakening", t: "cont", rage: { atk: 400 }, last: { th: 4000, atk: 800 }, text: "Continuous: +400 ATK while you're behind (Rage); +800 ATK more while your life is 4000 or less (Last Stand)." },
+    m_judgement: { tier: 6, kw: ["Counter"], noun: "Judgement", t: "attacked", ops: [{ op: "destroy", tgt: "attacker" }], text: "When attacked: destroy the attacker before damage (Counter)." }
 };
 /* which abilities suit which archetype (per tier, in order of preference; the generator spreads them by id) */
 export const ARCH_PREF = {
@@ -91,8 +93,4 @@ export const ARCH_PREF = {
 export const POWER_WORD = { onepiece: "Haki", naruto: "Chakra", dragonball: "Ki", jjk: "Cursed", demonslayer: "Breath", bleach: "Reiatsu", aot: "Titan", mha: "Quirk", hxh: "Nen",
     deathnote: "Shinigami", chainsaw: "Devil", blackclover: "Grimoire", jojo: "Stand", rezero: "Divine", fireforce: "Pyro", frieren: "Mana", gachiakuta: "Jinki", windbreaker: "Street" };
 export const abilityName = (abId, series) => (POWER_WORD[series] || "Spirit") + " " + ((ABILITIES[abId] || {}).noun || "Art");
-export const abilityText = (abId, fmtLife = 20) => {
-    const a = ABILITIES[abId]; if (!a) return "";
-    if (fmtLife === 20) return a.text;
-    return a.text.replace(/(\d+) life or less|(\d+) or less/g, (m, x, y) => { const n = Number(x || y), v = Math.round(n * fmtLife / 20); return x ? v + " life or less" : v + " or less"; });
-};
+export const abilityText = abId => (ABILITIES[abId] || {}).text || "";

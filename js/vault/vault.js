@@ -11,14 +11,15 @@
    Every coin change goes through bank.apply(opId, ...), so a reload, a reconnect or a double click
    never pays twice.
    ===================================================================== */
-import { createBank, localBackend } from "./store.js?v=14";
-import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=14";
-import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=13";
+import { createBank, localBackend } from "./store.js?v=15";
+import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=15";
+import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=14";
 import { newSeed } from "./rng.js?v=2";
-import { grantStarter, recordDuel, activeDeck, deckProblem } from "./packs.js?v=12";
-import { publicLook } from "./shop.js?v=12";
-import { initOpening } from "./opening.js?v=13";
-import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig, addToDeck } from "./tabs.js?v=15";
+import { grantStarter, recordDuel, activeDeck, deckProblem, migrateDecks20, setActionLevels } from "./packs.js?v=13";
+import { ACTIONS } from "../duel/cards.js?v=1";
+import { publicLook } from "./shop.js?v=13";
+import { initOpening } from "./opening.js?v=14";
+import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig, addToDeck, closeTrainingOffer } from "./tabs.js?v=16";
 import { motionOK } from "../fx.js";
 import { icon } from "./icons.js?v=2";
 
@@ -137,7 +138,7 @@ export function openVault(which) {
 }
 /* leave Anime TCG: to the lobby (in a room) or to the main menu (no room) */
 export function vaultBack() {
-    X.sfx("close");
+    X.sfx("close"); closeTrainingOffer();
     if (!inRoom()) { homeOpen = false; X.showOnly("home"); return; }
     if (npOn) { npOn = false; X.refresh(); return; }
     pageOn = false; pageDismissed = true; X.refresh();
@@ -318,12 +319,15 @@ const H = {
     room: () => roomD, inRoom, addToDeck: id => addToDeck(id), hostParty: () => hostParty(), joinParty: c => { joinOpen = true; renderCtx(true); if (c) joinParty(c); else setTimeout(() => { const i = $("avJoinCode"); if (i) { i.scrollIntoView({ block: "center" }); i.focus(); } }, 30); }
 };
 export function roomSync(d) { tabsRoomSync(d); }
-export function activeDeckCards() { const w = bank.get(), d = activeDeck(w); return d && !deckProblem(w, d.cards) ? { name: d.name, cards: d.cards.slice() } : null; }
+export const playerLevel = () => ((X.level && X.level()) || {}).lvl || 1;
+export function activeDeckCards() { const w = bank.get(), d = activeDeck(w); return d && !deckProblem(w, d.cards, playerLevel()) ? { name: d.name, cards: d.cards.slice() } : null; }
 export function initVault(ctx) {
     X = Object.assign(X, ctx);
     initOpening({ sfx: X.sfx, crinkle: v => X.crinkle && X.crinkle(v), stamp: id => { const c = (bank.get().cards || {})[id]; return c ? { by: c.by, at: c.at } : null; }, sleeve: () => ((bank.get().equip || {}).sleeve || "").replace(/^sl_/, "") });
     initTabs(H);
-    if (!bank.get().starter) bank.apply("starter", "starter", (w, x) => grantStarter(w, newSeed(), "Starter deck", x.now));   // every new player: a free 10-card starter deck
+    setActionLevels(Object.fromEntries(Object.entries(ACTIONS).map(([k, a]) => [k, a.lvl])));
+    if (!bank.get().starter) bank.apply("starter", "starter", (w, x) => grantStarter(w, newSeed(), "Starter deck", x.now));
+    if (!bank.get().decks20) bank.apply("decks20", "decks", (w, x) => migrateDecks20(w, newSeed(), x.now));     // 10-card decks -> 20 (once)
     if (X.setLook) { const look = publicLook(bank.get()); X.setLook(look); }
     window.openVault = openVault; window.vaultBack = vaultBack; window.vaultRewards = openRewards;
     /* the coin counters (menu CREDIT, lobby chip) show the balance and open the Daily rewards popup; the Shop has its own buttons */

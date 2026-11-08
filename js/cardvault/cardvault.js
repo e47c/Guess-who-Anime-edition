@@ -1,81 +1,78 @@
 /* =====================================================================
-   ANIME TCG · CARD DUELS (the ninth lobby mode; internal id "cardvault", kept for saved data)
+   ANIME TCG · DUELS IN A ROOM (the ninth lobby mode; internal id "cardvault", kept for saved data)
    Picking ANIME TCG in the lobby doesn't start a shared match: every player gets their own Anime TCG page
    (js/vault/vault.js) and challenges others in the room from its Duel tab. Each challenge is its own duel,
    several can run at once, and anyone not in one keeps shopping, opening packs or watching.
-   Rules: engine.js (pure, tested in tools/cardvault-test.mjs). Card faces: ../vault/cardui.js.
+   The duel: js/duel/engine.js (rules, pure), js/duel/ui.js (the screen), js/duel/net.js (keys and encryption).
 
    Firebase (rooms/<code>):
-     cvb/<bid>   one challenge / duel: { from, to:[slots], acc:{pN: deck}, st, at, timer, pack, s, t0, end, uids, res }
+     cvb/<bid>   one challenge / duel: { from, to:[slots], acc:{pN: deck}, st, at, timer, host, t0, end, pub, pv:{pN}, sx, res, s }
                  st: invite -> live -> over, or declined / cancelled / expired / void.
                  The challenger writes the invite with their deck; each opponent accepts with theirs. The room HOST
-                 builds the duel once everyone accepted (seeded: the seed is kept in the node and in s.seed),
-                 resolves every round (all picked, or the timer ran out: auto-picks; one grace pause for a disconnect),
-                 and stores the standard result when it ends. A player only ever writes their own pick.
-     cvDeck/pN   each player's active deck ({name, cards}) while the lobby is on ANIME TCG (the Duel tab shows it).
+                 builds the duel (seeded), applies every intent, runs the timers, and publishes the views:
+                 pub = the spectators' view; pv/pN = player N's view, encrypted for N alone; sx = the full state,
+                 encrypted for the host's browser. When it ends: s = the placements summary, res = the standard result.
+     cvi/<bid>/pN/<n>   player N's intents (moves), applied in order by the host.
+     pk/pN       each player's public key (ECDH) for their private view.
+     cvDeck/pN   each player's active deck while the lobby is on ANIME TCG (the Duel tab shows it).
      vloc/pN     where each player is: "v" Anime TCG page, "b" a duel, "l" the lobby.
-   Hidden information is hidden by the interface (opponents' hands and picks are never drawn), like every other
-   mode here: the site has no server to keep secrets from a player reading the database.
-   Practice vs CPU runs the same engine locally (no coins).
+   Practice vs Bot runs the same engine locally (no coins, no stats, no missions).
    ===================================================================== */
-import { newDuel, act, resolveRound, alive, handOf, lifeOf, due, applyDue, normalize, cpuPick, autoPick, REVEAL_MS, arr } from "./engine.js?v=12";
-import { ABILITIES } from "./abilities.js?v=3";
-import { DUEL } from "../vault/config.js?v=14";
-import { CARDS } from "../vault/carddb.js?v=5";
-import { cardEl } from "../vault/cardui.js?v=13";
-import { inspect } from "../vault/opening.js?v=13";
-import { rngFrom, newSeed, shuffleWith } from "../vault/rng.js?v=2";
+import { newDuel, act, tick, forceEnd, viewFor, placements, useDefs, lifeOf, alive, P, arr } from "../duel/engine.js?v=1";
+import { DEFS, deckList, ACTIONS, ACTION_IDS } from "../duel/cards.js?v=1";
+import { botMove } from "../duel/bot.js?v=1";
+import { mountDuel } from "../duel/ui.js?v=1";
+import { myKeys, seal, open, sealFull, openFull, hasHostKey, cryptoOk } from "../duel/net.js?v=1";
+import { DUEL, DECK } from "../vault/config.js?v=15";
+import { CARDS } from "../vault/carddb.js?v=6";
+import { newSeed } from "../vault/rng.js?v=2";
 import { duelResultOf, resultToDb, resultFromDb } from "../vault/result.js?v=6";
 import { el, srvNow, presentIn, optButtons } from "../feud/common.js?v=4";
 
+useDefs(DEFS);
 const GT = "cardvault";
 const $ = id => document.getElementById(id);
 const pk = p => "p" + p;
 let X = null;
 const CH = () => Object.assign({ expireSeconds: 60, keepOverMinutes: 10 }, DUEL.challenge || {});
-const timerOf = d => [20, 30, 45].includes(Number(d && d.cvTimer)) ? Number(d.cvTimer) : DUEL.pickSeconds;
-export const cvPrefs = p => ({ cvTimer: [20, 30, 45].includes(Number(p.cvTimer)) ? Number(p.cvTimer) : DUEL.pickSeconds });
+const TIMERS = [60, 90, 120];
+const timerOf = d => TIMERS.includes(Number(d && d.cvTimer)) ? Number(d.cvTimer) : DUEL.rules.turnSec;
+export const cvPrefs = p => ({ cvTimer: TIMERS.includes(Number(p.cvTimer)) ? Number(p.cvTimer) : DUEL.rules.turnSec });
 export const cvPrefsOf = d => ({ cvTimer: timerOf(d) });
 const vaultOn = d => !!d && d.gameType === GT && (!d.status || d.status === "waiting");
 const ss = { get(k) { try { return JSON.parse(sessionStorage.getItem(k) || "[]"); } catch (e) { return []; } }, set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+const rulesFor = b => Object.assign({}, DUEL.rules, { turnSec: Number(b && b.timer) || DUEL.rules.turnSec });
 
 export function initCardVault(ctx) {
     X = ctx;
     Object.assign(window, {
-        setCvOpt(k, v) {
-            const d = X.data(); if (!d || !X.amHost() || d.status !== "waiting") return;
-            X.sfx("pick");
-            if (k === "timer") X.lobbySet({ cvTimer: Number(v) });
-        },
+        setCvOpt(k, v) { const d = X.data(); if (!d || !X.amHost() || d.status !== "waiting") return; X.sfx("pick"); if (k === "timer") X.lobbySet({ cvTimer: Number(v) }); },
         cvEnterVault: () => X.openVault()
     });
     closed = new Set(ss.get("aap_cv_closed"));
     setInterval(() => { if (invBox && !invBox.classList.contains("hidden")) renderInvites(X.data()); }, 1000);
+    if (cryptoOk()) myKeys();
 }
 
-/* ---------------- challenges / duels in the room ---------------- */
+/* ---------------- challenges ---------------- */
 const nodes = d => Object.entries((d && d.cvb) || {}).filter(([, b]) => b && typeof b === "object").map(([bid, b]) => Object.assign({}, b, { bid, from: Number(b.from), to: arr(b.to).map(Number), acc: b.acc || {} }));
 export const seatsOf = b => [b.from].concat(b.to);
 const OPEN = ["invite", "live"];
 export const cvDuels = d => nodes(d);
 export const busyIn = (d, p) => nodes(d).find(b => OPEN.includes(b.st) && seatsOf(b).includes(Number(p))) || null;
-const deckOf = (d, p) => { const v = (d.cvDeck || {})[pk(p)]; return v && arr(v.cards).length === 10 ? { name: String(v.name || "Deck"), cards: arr(v.cards).map(Number).filter(id => CARDS[id]) } : null; };
+const okDeck = cards => arr(cards).length === DECK.size;
+const deckOf = (d, p) => { const v = (d.cvDeck || {})[pk(p)]; return v && okDeck(v.cards) ? { name: String(v.name || "Deck"), cards: arr(v.cards).map(String) } : null; };
 export const cvDeckOf = deckOf;
 export const locOf = (d, p) => ((d && d.vloc) || {})[pk(p)] || "l";
 const inRoom = (d, p) => { const n = d && d["player" + p]; return !!n && !n.left; };
 async function nodeTx(bid, fn) {
-    try {
-        await X.runTransaction(X.ref(X.db, "rooms/" + X.room() + "/cvb/" + bid), cur => {
-            if (!cur) return;
-            const b = JSON.parse(JSON.stringify(cur));
-            if (fn(b) === false) return;
-            return b;
-        });
-    } catch (e) { console.error(e); X.toast("Could not send that. Try again."); }
+    try { await X.runTransaction(X.ref(X.db, "rooms/" + X.room() + "/cvb/" + bid), cur => { if (!cur) return; const b = JSON.parse(JSON.stringify(cur)); if (fn(b) === false) return; return b; }); }
+    catch (e) { console.error(e); X.toast("Could not send that. Try again."); }
 }
 export async function cvChallenge(opps) {
     const d = X.data(), me = X.me(); if (!vaultOn(d)) return false;
-    const deck = X.activeDeck(); if (!deck) { X.toast("You need a 10-card deck first: open the Decks tab."); return false; }
+    if (!cryptoOk()) { X.toast("This browser can't run secure duels (no Web Crypto)."); return false; }
+    const deck = X.activeDeck(); if (!deck) { X.toast("You need a valid " + DECK.size + "-card deck first: open the Decks tab."); return false; }
     opps = [...new Set(opps.map(Number))].filter(p => p !== me && X.activeSlots(d).includes(p));
     if (!opps.length) { X.toast("Pick who to challenge."); return false; }
     if (opps.length + 1 > DUEL.ffa.max) { X.toast("A duel holds up to " + DUEL.ffa.max + " players."); return false; }
@@ -88,88 +85,117 @@ export async function cvChallenge(opps) {
 }
 export async function cvAccept(bid) {
     const deck = X.activeDeck(), me = X.me();
-    if (!deck) { X.toast("You need a 10-card deck to accept: open the Decks tab."); X.openVault("decks"); return; }
+    if (!deck) { X.toast("You need a valid " + DECK.size + "-card deck to accept: open the Decks tab."); X.openVault("decks"); return; }
     X.sfx("ready");
     await nodeTx(bid, b => { if (b.st !== "invite" || !arr(b.to).map(Number).includes(me)) return false; b.acc = Object.assign({}, b.acc, { [pk(me)]: deck }); });
 }
 export const cvDecline = bid => { X.sfx("close"); return nodeTx(bid, b => { if (b.st !== "invite") return false; b.st = "declined"; b.by = X.me(); b.fin = srvNow(); }); };
 export const cvCancel = bid => { X.sfx("close"); return nodeTx(bid, b => { if (b.st !== "invite" || Number(b.from) !== X.me()) return false; b.st = "cancelled"; b.by = X.me(); b.fin = srvNow(); }); };
 
-/* ---------------- host duties: start accepted challenges, resolve rounds, expire, clean up ---------------- */
+/* ---------------- the host: build, run and publish duels ---------------- */
 let dutyT = 0;
-const dutyKeys = new Map();
+const HS = new Map();           // bid -> { s, busy, away: {pN: since} }
 export function cvDuties(d) {
     if (!X.amHost() || !d || !d.cvb) { clearInterval(dutyT); dutyT = 0; return; }
-    if (!dutyT) dutyT = setInterval(dutyCheck, 400);
+    if (!dutyT) dutyT = setInterval(dutyCheck, 300);
     dutyCheck();
 }
 function dutyCheck() {
     const d = X.data();
     if (!d || !X.amHost() || !d.cvb) { clearInterval(dutyT); dutyT = 0; return; }
-    const now = srvNow(), pres = presentIn(d), on = vaultOn(d), C = CH();
+    const now = srvNow(), on = vaultOn(d), C = CH();
     nodes(d).forEach(b => {
-        const seats = seatsOf(b); let kind = "";
+        const seats = seatsOf(b);
         if (b.st === "invite") {
-            if (!on || seats.some(p => !inRoom(d, p))) kind = "cancel";
-            else if (seats.every(p => b.acc[pk(p)])) kind = "build";
-            else if (now - Number(b.at) > C.expireSeconds * 1000) kind = "expire";
+            if (!on || seats.some(p => !inRoom(d, p))) simple(b.bid, "cancelled");
+            else if (seats.every(p => b.acc[pk(p)])) build(b, d, now);
+            else if (now - Number(b.at) > C.expireSeconds * 1000) simple(b.bid, "expired");
         } else if (b.st === "live") {
-            if (!on || seats.every(p => !inRoom(d, p))) kind = "void";
-            else if (b.s && b.s.phase === "over") kind = "finish";
-            else if (b.s && b.s.phase === "pick") { const k = due(normalize(JSON.parse(JSON.stringify(b.s))), now, pres); if (k) kind = "due"; }
-        } else if (now - Number(b.fin || b.end || b.at || 0) > C.keepOverMinutes * 60000) kind = "prune";
-        if (!kind) return;
-        const key = kind + ":" + (b.s ? [b.s.n, b.s.round, b.s.ext, b.s.dl].join(":") : b.st);
-        if (dutyKeys.get(b.bid) === key) return; dutyKeys.set(b.bid, key);
-        setTimeout(() => hostTx(b.bid, kind), 0);        // (deferred: a transaction inside the room listener re-fires it with an older snapshot)
+            if (!on || seats.every(p => !inRoom(d, p))) { simple(b.bid, "void"); return; }
+            run(b, d, now);
+        } else if (now - Number(b.fin || b.end || b.at || 0) > C.keepOverMinutes * 60000) { X.update(X.ref(X.db, "rooms/" + X.room()), { ["cvb/" + b.bid]: null, ["cvi/" + b.bid]: null }).catch(() => {}); }
     });
 }
-function hostTx(bid, kind) {
-    if (kind === "prune") return X.update(X.ref(X.db, "rooms/" + X.room() + "/cvb"), { [bid]: null }).catch(() => {});
-    return nodeTx(bid, b => {
-        const d = X.data(), now = srvNow(), pres = presentIn(d), seats = [Number(b.from)].concat(arr(b.to).map(Number));
-        if (kind === "cancel" || kind === "expire") { if (b.st !== "invite") return false; b.st = kind === "cancel" ? "cancelled" : "expired"; b.fin = now; return; }
-        if (kind === "void") { if (b.st !== "live") return false; b.st = "void"; b.fin = now; return; }
-        if (kind === "build") {
-            const acc = b.acc || {};
-            if (b.st !== "invite" || !seats.every(p => acc[pk(p)])) return false;
-            const decks = {}, names = {}, uids = {};
-            seats.forEach(p => { decks[pk(p)] = arr(acc[pk(p)].cards).map(Number).filter(id => CARDS[id]); names[pk(p)] = X.pName(d, p); uids[pk(p)] = String((d["player" + p] || {}).uid || ""); });
-            if (seats.some(p => new Set(decks[pk(p)]).size !== 10)) { b.st = "cancelled"; b.why = "deck"; b.fin = now; return; }
-            const seed = newSeed();
-            b.s = JSON.parse(JSON.stringify(newDuel({ mid: now, fmt: seats.length > 2 ? "ffa" : "duel", players: seats, decks, names, now, seed, pickMs: (Number(b.timer) || DUEL.pickSeconds) * 1000 })));
-            b.st = "live"; b.t0 = now; b.uids = uids; b.seed = seed;
-            return;
-        }
-        if (kind === "due" || kind === "finish") {
-            if (b.st !== "live" || !b.s) return false;
-            const s = normalize(b.s);
-            if (kind === "due") { const k = due(s, now, pres); if (!k) return false; applyDue(s, k, now, pres); }
-            b.s = JSON.parse(JSON.stringify(s));
-            if (s.phase === "over") { b.st = "over"; b.end = now; b.fin = now; const r = duelResultOf(b, d, bid, now); if (r) b.res = resultToDb(r); }
-        }
+const simpleSent = new Set();
+function simple(bid, st) { const k = bid + st; if (simpleSent.has(k)) return; simpleSent.add(k); setTimeout(() => nodeTx(bid, b => { if (!OPEN.includes(b.st)) return false; b.st = st; b.fin = srvNow(); }), 0); }
+function build(b, d, now) {
+    if (HS.has(b.bid)) return; const H = { s: null, busy: true, away: {} }; HS.set(b.bid, H);
+    const seats = seatsOf(b), decks = {}, names = {}, uids = {};
+    seats.forEach(p => { decks[pk(p)] = deckList(arr(b.acc[pk(p)].cards)); names[pk(p)] = X.pName(d, p); uids[pk(p)] = String((d["player" + p] || {}).uid || ""); });
+    if (seats.some(p => decks[pk(p)].length !== DECK.size)) { HS.delete(b.bid); simple(b.bid, "cancelled"); return; }
+    const seed = newSeed() >>> 0;
+    H.s = newDuel({ id: b.bid, players: seats, decks, names, now, seed, rules: rulesFor(b) });
+    H.s.inN = {}; H.s.used = {};
+    publish(b.bid, H, d, { st: "live", t0: now, uids, seed, host: X.me() }).finally(() => { H.busy = false; });
+}
+/* apply the players' intents (in order), the timers and the disconnect rule, then publish */
+function run(b, d, now) {
+    let H = HS.get(b.bid);
+    if (!H) {      // after a reload: the full state, if this browser is the one that started the duel
+        if (!hasHostKey(b.bid) || Number(b.host) !== X.me()) { simple(b.bid, "void"); return; }
+        H = { s: null, busy: true, away: {} }; HS.set(b.bid, H);
+        openFull(b.bid, b.sx).then(s => { if (!s) { simple(b.bid, "void"); return; } H.s = s; H.busy = false; });
+        return;
+    }
+    if (H.busy || !H.s) return;
+    const s = H.s, before = s.evn;
+    const intents = (d.cvi || {})[b.bid] || {};
+    seatsOf(b).forEach(p => {
+        const mine = intents[pk(p)] || {}, last = Number((s.inN || {})[pk(p)]) || 0;
+        Object.keys(mine).map(Number).filter(n => n > last).sort((a, c) => a - c).forEach(n => {
+            const a = Object.assign({}, mine[n], { by: p }); act(s, a, now); s.inN[pk(p)] = n;
+            if (a.k === "summon") { const u = s.cards[a.u]; if (u) s.used[pk(p)] = arr(s.used[pk(p)]).concat(u.id); }
+        });
     });
+    tick(s, now);
+    // a player who is gone: their turn ends after the grace time (and at once each turn while they stay away)
+    const tp = Number(s.turnP), pres = presentIn(d);
+    if (!s.over && tp) {
+        if (!pres(tp)) { H.away[pk(tp)] = H.away[pk(tp)] || now; if (now - H.away[pk(tp)] > DUEL.rules.reconnectGrace * 1000) { forceEnd(s, now); H.away[pk(tp)] = now; } }
+        else delete H.away[pk(tp)];
+        if (s.pending && !pres(Number(s.pending.who))) tick(s, Number(s.pending.dl));
+    }
+    if (s.evn !== before || Object.keys(intents).length) {
+        H.busy = true;
+        const patch = {}; if (s.over) Object.assign(patch, finishPatch(b, d, s, now));
+        publish(b.bid, H, d, patch).finally(() => { H.busy = false; });
+        // processed intents are cleared
+        const clr = {}; seatsOf(b).forEach(p => { Object.keys((intents[pk(p)] || {})).forEach(n => { if (Number(n) <= Number(s.inN[pk(p)])) clr["cvi/" + b.bid + "/" + pk(p) + "/" + n] = null; }); });
+        if (Object.keys(clr).length) X.update(X.ref(X.db, "rooms/" + X.room()), clr).catch(() => {});
+    }
+}
+function finishPatch(b, d, s, now) {
+    const summary = { phase: "over", names: s.names, places: placements(s).map(x => ({ p: x.slot, life: lifeOf(s, x.slot), place: x.place })), used: s.used };
+    const r = duelResultOf(Object.assign({}, b, { s: summary, end: now }), d, b.bid, now);
+    return { st: "over", end: now, fin: now, s: summary, res: r ? resultToDb(r) : null };
+}
+async function publish(bid, H, d, extra) {
+    const s = H.s, pks = d.pk || {};
+    const patch = Object.assign({ pub: viewFor(s, 0), sx: await sealFull(bid, s) }, extra || {});
+    for (const p of s.players) { const key = pks[pk(p)]; if (key) { const box = await seal(viewFor(s, p), key); if (box) patch["pv/" + pk(p)] = box; } }
+    const flat = {}; Object.entries(patch).forEach(([k, v]) => { flat["cvb/" + bid + "/" + k] = v; });
+    await X.update(X.ref(X.db, "rooms/" + X.room()), flat).catch(e => console.error(e));
 }
 
-/* ---------------- every room update: my deck, my coins, invitations ---------------- */
-let deckSent = "", locSent = "";
+/* ---------------- every room update: my key, my deck, my coins, invitations ---------------- */
+let deckSent = "", locSent = "", keySent = "";
 const paid = new Set();
 export function cvSync(d) {
     if (!X) return;
-    if (!d) { renderInvites(null); return; }      // left the room (or never in one): no challenge strip
+    if (!d) { renderInvites(null); return; }
     const me = X.me(), on = vaultOn(d);
     if (on) {
         const mine = X.activeDeck(), cur = (d.cvDeck || {})[pk(me)], want = mine ? JSON.stringify(mine) : "";
-        if (want && want !== deckSent && JSON.stringify({ name: cur && cur.name, cards: cur && arr(cur.cards).map(Number) }) !== want) { deckSent = want; X.update(X.ref(X.db, "rooms/" + X.room() + "/cvDeck/" + pk(me)), mine).catch(() => { deckSent = ""; }); }
+        if (want && want !== deckSent && JSON.stringify({ name: cur && cur.name, cards: cur && arr(cur.cards).map(String) }) !== want) { deckSent = want; X.update(X.ref(X.db, "rooms/" + X.room() + "/cvDeck/" + pk(me)), mine).catch(() => { deckSent = ""; }); }
+        if (cryptoOk()) myKeys().then(k => { if (!k) return; const ks = X.room() + JSON.stringify(k.pubJwk); if (keySent === ks || JSON.stringify((d.pk || {})[pk(me)]) === JSON.stringify(k.pubJwk)) return; keySent = ks; X.update(X.ref(X.db, "rooms/" + X.room() + "/pk"), { [pk(me)]: k.pubJwk }).catch(() => { keySent = ""; }); });
     }
     nodes(d).forEach(b => {
         if (b.st !== "over" || !b.res || !seatsOf(b).includes(me) || paid.has(b.bid)) return;
         paid.add(b.bid);
-        const r = resultFromDb(b.res); if (r) X.report(r, arr(((b.s || {}).used || {})[pk(me)]).map(Number));
+        const r = resultFromDb(b.res); if (r) X.report(r, arr(((b.s || {}).used || {})[pk(me)]).map(Number).filter(id => CARDS[id]));
     });
     renderInvites(d);
 }
-/* where I am (the Duel tab and the lobby seats show it) */
 export function cvLoc(d, loc) {
     if (!vaultOn(d)) { locSent = ""; return; }
     const me = X.me(), k = X.room() + ":" + me + ":" + loc;
@@ -178,7 +204,7 @@ export function cvLoc(d, loc) {
     X.update(X.ref(X.db, "rooms/" + X.room() + "/vloc"), { [pk(me)]: loc }).catch(() => { locSent = ""; });
 }
 
-/* the invitation strip: on the lobby and on the Anime TCG page (never over a duel) */
+/* the challenge strip: on the lobby and on the Anime TCG page (never over a duel) */
 let invBox = null;
 function renderInvites(d) {
     if (!invBox) { invBox = el("div", "cv-inv hidden"); invBox.id = "cvInvite"; invBox.setAttribute("role", "region"); invBox.setAttribute("aria-label", "Duel challenges"); invBox.setAttribute("aria-live", "polite"); document.body.appendChild(invBox); }
@@ -193,9 +219,9 @@ function renderInvites(d) {
         const left = Math.max(0, Math.ceil((C.expireSeconds * 1000 - (now - Number(b.at))) / 1000));
         const fmt = seatsOf(b).length > 2 ? "free-for-all (" + seatsOf(b).length + ")" : "1v1";
         const txt = el("div", "cv-invtxt");
-        if (b.st === "live") { txt.append(el("b", null, "⚔ Your duel is still on"), el("small", null, "vs " + who.map(p => X.pName(d, p)).join(", ") + " · your cards are auto-picked when the timer runs out")); row.append(txt, btnEl("Return", "alt sm", () => cvReturn(b.bid))); }
+        if (b.st === "live") { txt.append(el("b", null, "Your duel is still on"), el("small", null, "vs " + who.map(p => X.pName(d, p)).join(", ") + " · your turn ends by itself when its timer runs out")); row.append(txt, btnEl("Return", "alt sm", () => cvReturn(b.bid))); }
         else if (b.from !== me && !mineAcc) {
-            txt.append(el("b", null, "⚔ " + X.pName(d, b.from) + " challenges you"), el("small", null, fmt + (who.length > 1 ? " with " + who.filter(p => p !== b.from).map(p => X.pName(d, p)).join(", ") : "") + " · " + (Number(b.timer) || DUEL.pickSeconds) + " s picks" + " · " + left + " s"));
+            txt.append(el("b", null, X.pName(d, b.from) + " challenges you to a Duel"), el("small", null, fmt + (who.length > 1 ? " with " + who.filter(p => p !== b.from).map(p => X.pName(d, p)).join(", ") : "") + " · " + (Number(b.timer) || DUEL.rules.turnSec) + " s turns · " + left + " s"));
             row.append(txt, btnEl("Accept", "alt sm", () => cvAccept(b.bid)), btnEl("Decline", "ghost sm", () => cvDecline(b.bid)));
         } else {
             const wait = seatsOf(b).filter(p => !b.acc[pk(p)]);
@@ -207,22 +233,23 @@ function renderInvites(d) {
 }
 const btnEl = (t, cls, fn) => { const b = el("button", "btn " + cls, t); b.type = "button"; b.onclick = fn; return b; };
 
-/* ---------------- lobby panel (host settings for every challenge in the room) ---------------- */
-export function cvHint() { return "Press Enter Anime TCG to open your own page: Packs Store, Collection, Decks and Duel. Everyone enters on their own and comes back with ‹ Lobby. Challenge anyone in the room from its Duel tab. Skins and scratch cards are in the Shop."; }
+/* ---------------- lobby panel ---------------- */
+export function cvHint() { return "Press Enter Anime TCG to open your own page: Packs Store, Collection, Decks and Duel. Everyone enters on their own and comes back with ‹ Lobby. Challenge anyone in the room to a Duel from its Duel tab. Skins and scratch cards are in the Shop."; }
 export function cvReq(d) { return { ok: true, msg: "ANIME TCG is open: press Enter Anime TCG for your own page. Duels are challenges from its Duel tab" }; }
 export function cvLobby(d, lock) {
-    optButtons($("cvTimerBtns"), [20, 30, 45], timerOf(d), lock, v => v + " s", v => window.setCvOpt("timer", v));
+    optButtons($("cvTimerBtns"), TIMERS, timerOf(d), lock, v => v + " s", v => window.setCvOpt("timer", v));
     const mine = X.activeDeck();
-    $("cvMyDeck").textContent = mine ? "Your duel deck: " + mine.name : "You need a 10-card deck to duel: build one in Anime TCG's Decks tab.";
-    $("cvHint").textContent = "Duels: pick a card in secret, everyone flips together, damage = Power minus the opposing Defense, then abilities. 1v1: " + DUEL.duel.life + " life. Challenge 2+ players for a free-for-all (" + DUEL.ffa.life + " life, pick a target too).";
+    $("cvMyDeck").textContent = mine ? "Your duel deck: " + mine.name : "You need a valid " + DECK.size + "-card deck to duel: build one in Anime TCG's Decks tab.";
+    $("cvHint").textContent = "Duels: " + DUEL.rules.life + " life, a " + DECK.size + "-card deck, hand of " + DUEL.rules.hand + ". Summon characters, attack, play Support and Counter cards; the host's setting is the turn timer. Challenge 2+ players for a free-for-all (" + DUEL.rules.lifeFfa + " life).";
 }
 
 /* ---------------- which duel this player looks at ---------------- */
-let closed = new Set(), watching = "", viewing = "";
+let closed = new Set(), watching = "", viewing = "", ui = null, uiBid = "";
 const saveClosed = () => ss.set("aap_cv_closed", [...closed].slice(-40));
 export function duelWanted(d) {
+    if (practice) return null;
     if (!vaultOn(d)) { watching = ""; return null; }
-    const me = X.me(), list = nodes(d).filter(b => b.s);
+    const me = X.me(), list = nodes(d).filter(b => b.pub || b.s);
     const mine = list.filter(b => seatsOf(b).includes(me) && (b.st === "live" || b.st === "over") && !closed.has(b.bid)).sort((a, b) => Number(b.t0 || 0) - Number(a.t0 || 0))[0];
     if (mine) return mine.bid;
     if (watching && list.some(b => b.bid === watching)) return watching;
@@ -231,192 +258,97 @@ export function duelWanted(d) {
 export function cvWatch(bid) { watching = bid; closed.delete(bid); X.sfx("pick"); X.refresh(); }
 export function cvReturn(bid) { closed.delete(bid); saveClosed(); X.sfx("pick"); X.refresh(); }
 async function closeDuel(bid, live) {
-    if (live && !(await X.uiConfirm({ title: "Leave the duel screen?", text: "The duel goes on: when your timer runs out a card is picked for you. Come back any time from the Duel tab.", ok: "Leave" }))) return;
+    if (live && !(await X.uiConfirm({ title: "Leave the duel screen?", text: "The duel goes on: your turns end by themselves when the timer runs out. Come back any time from the Duel tab.", ok: "Leave" }))) return;
     closed.add(bid); saveClosed(); if (watching === bid) watching = ""; viewing = "";
     X.sfx("close"); X.refresh();
 }
+const intentN = { n: 0 };
+function sendIntent(bid, a) {
+    const me = X.me(), n = Math.max(Date.now(), intentN.n + 1); intentN.n = n;
+    const clean = JSON.parse(JSON.stringify(a)); delete clean.by;
+    return X.update(X.ref(X.db, "rooms/" + X.room() + "/cvi/" + bid + "/" + pk(me)), { [n]: clean }).then(() => null).catch(() => "Could not send that. Try again.");
+}
+function screenFor(bid, me, playing, d) {
+    if (ui && uiBid === bid) return ui;
+    if (ui) ui.destroy();
+    uiBid = bid;
+    ui = mountDuel($("cvWrap"), {
+        me: playing ? me : 0, defs: DEFS, names: p => X.pName(X.data(), p), pub: p => X.pPub(X.data(), p), avatar: (pub, n) => X.avatarEl(pub, { size: n }),
+        sfx: X.sfx, toast: X.toast, flyClone: X.flyClone, now: srvNow,
+        send: a => { if (!playing) return "You're watching."; return sendIntent(bid, a); },
+        onExit: () => closeDuel(bid, playing && (nodes(X.data()).find(x => x.bid === bid) || {}).st === "live"), exitLabel: playing ? "Leave" : "Back",
+        onRematch: playing ? async () => { const others = seatsOf(nodes(X.data()).find(x => x.bid === bid) || { from: me, to: [] }).filter(p => p !== me); if (await cvChallenge(others)) closeDuel(bid); } : null,
+        overNote: "Duels pay placement coins like every mode; the cards you summoned count toward their Veteran mark."
+    });
+    return ui;
+}
+let decoding = "";
 export function showDuel(d, bid) {
     X.showOnly("cardvault");
-    const b = nodes(d).find(x => x.bid === bid); if (!b || !b.s) return;
-    const s = normalize(JSON.parse(JSON.stringify(b.s)));
-    const me = X.me(), playing = arr(s.players).includes(me);
-    if (viewing !== bid) { viewing = bid; picked = { c: 0, t: 0 }; lastN = -1; }
-    const others = arr(s.players).filter(p => p !== me);
-    render($("cvWrap"), s, {
-        me: playing ? me : 0, pub: p => X.pPub(d, p), present: presentIn(d), room: true, holo: id => X.isHolo(id),
-        pick: (c, t) => pickTx(bid, c, t),
-        again: playing && b.st === "over" && others.every(p => inRoom(d, p)) ? async () => { if (await cvChallenge(others)) closeDuel(bid); } : null,
-        back: () => closeDuel(bid, playing && b.st === "live"), backLabel: playing && b.st === "live" ? "Leave duel screen" : "Back to Anime TCG"
-    });
-    $("cvTurnT").textContent = b.st === "void" ? "DUEL STOPPED" : s.phase === "over" ? "DUEL OVER" : "ROUND " + s.round + (s.fmt === "ffa" ? " · FREE-FOR-ALL" : " · 1V1");
-    $("cvStatus").textContent = !playing ? "Watching " + arr(s.players).map(p => s.names[pk(p)]).join(" vs ") : !alive(s).includes(me) ? "Knocked out: watching" : s.phase === "over" ? "" : (s.picks || {})[pk(me)] ? "Card locked in. Waiting for the others…" : "Pick a card" + (s.fmt === "ffa" ? " and a target" : "");
+    const b = nodes(d).find(x => x.bid === bid); if (!b) return;
+    const me = X.me(), playing = seatsOf(b).includes(me);
+    if (viewing !== bid) viewing = bid;
+    $("cvTurnT").textContent = b.st === "void" ? "DUEL STOPPED" : b.st === "over" ? "DUEL OVER" : seatsOf(b).length > 2 ? "FREE-FOR-ALL DUEL" : "DUEL";
+    if (b.st === "void") { $("cvStatus").textContent = "The duel was stopped (the host left or the mode changed). No coins."; return; }
+    const host = (d.pk || {})[pk(b.host)];
+    if (playing && b.pv && b.pv[pk(me)] && host) {
+        const k = JSON.stringify(b.pv[pk(me)]).slice(0, 80); if (decoding === k) return; decoding = k;
+        open(b.pv[pk(me)], host).then(view => { decoding = ""; if (!view) { $("cvStatus").textContent = "Couldn't read your hand (keys changed). Waiting for the next update…"; return; } if (viewing !== bid) return; screenFor(bid, me, true, d).update(view); $("cvStatus").textContent = view.over ? "" : Number(view.turnP) === me ? "Your turn" : "Opponent's turn"; });
+    } else if (b.pub) { screenFor(bid, me, false, d).update(b.pub); $("cvStatus").textContent = "Watching " + seatsOf(b).map(p => X.pName(d, p)).join(" vs "); }
+    else $("cvStatus").textContent = "Setting up the duel…";
 }
-async function pickTx(bid, c, t) {
-    const me = X.me();
-    try {
-        await X.runTransaction(X.ref(X.db, "rooms/" + X.room() + "/cvb/" + bid + "/s"), cur => {
-            if (!cur) return;
-            const st = normalize(JSON.parse(JSON.stringify(cur)));
-            if (act(st, { p: me, c, t })) return;
-            return JSON.parse(JSON.stringify(st));
-        });
-    } catch (e) { console.error(e); X.toast("Could not send that. Try again."); }
-}
-export function cvReset() { const o = $("cvOver"); if (o) o.remove(); }
+export function cvReset() { if (ui && !practice) { ui.destroy(); ui = null; uiBid = ""; } }
 
-/* ---------------- the duel view (rooms and practice share it) ---------------- */
-let picked = { c: 0, t: 0 }, lastN = -1, tickT = 0;
-function lifeBar(s, p) {
-    const w = el("div", "cv-life"), v = Math.max(0, lifeOf(s, p)), f = el("i"); f.style.width = Math.max(0, Math.min(100, v / s.max * 100)) + "%";
-    w.classList.toggle("low", v <= s.max * .3); w.append(f, el("b", null, v + " / " + s.max)); w.setAttribute("aria-label", v + " of " + s.max + " life");
-    return w;
-}
-function plate(s, p, o) {
-    const out = !alive(s).includes(p), pub = o.pub(p) || { name: s.names[pk(p)] }, pl = el("div", "cv-plate" + (out ? " out" : "") + (p === o.me ? " me" : "") + (picked.t === p ? " target" : ""));
-    pl.dataset.p = p; pl.style.setProperty("--pc", pub.col || "#e11b1b");
-    const top = el("div", "cv-ptop"); top.append(X.avatarEl(pub, { size: 34 }), el("b", null, s.names[pk(p)] || pub.name));
-    const st = el("small", "cv-pst");
-    st.textContent = out ? "KO" : s.phase === "over" ? "" : (s.picks || {})[pk(p)] ? "✓ picked" : !o.present(p) ? "away" : "thinking…";
-    top.appendChild(st);
-    pl.append(top, lifeBar(s, p), el("small", "cv-pcount", "Hand " + handOf(s, p).length + " · Deck " + arr(s.deck[pk(p)]).length));
-    if (s.fmt === "ffa" && o.me && p !== o.me && !out && alive(s).includes(o.me) && s.phase === "pick") { pl.tabIndex = 0; pl.setAttribute("role", "button"); pl.setAttribute("aria-label", "Target " + s.names[pk(p)]); pl.onclick = () => { picked.t = p; X.sfx("toggle"); rerender(); }; pl.onkeydown = e => { if (e.key === "Enter") pl.click(); }; }
-    return pl;
-}
-let lastArgs = null;
-const rerender = () => { if (lastArgs) render(...lastArgs); };
-function render(root, s, o) {
-    lastArgs = [root, s, o];
-    root.innerHTML = "";
-    const meAlive = o.me && alive(s).includes(o.me);
-    if (s.fmt === "ffa" && meAlive && (!picked.t || !alive(s).includes(picked.t) || picked.t === o.me)) picked.t = autoPick(s, o.me) ? autoPick(s, o.me).t : 0;
-    if (picked.c && !handOf(s, o.me).includes(picked.c)) picked.c = 0;
-    // opponents (or everyone when spectating)
-    const opp = el("div", "cv-opps"); arr(s.players).filter(p => p !== o.me).forEach(p => opp.appendChild(plate(s, p, o))); root.appendChild(opp);
-    // arena: the last reveal
-    const arena = el("div", "cv-arena"); root.appendChild(arena);
-    drawArena(arena, s, o);
-    // timer
-    const tm = el("div", "cv-timer"), tf = el("i"); tm.appendChild(tf); root.appendChild(tm);
-    clearInterval(tickT);
-    const tick = () => { if (!o.room || s.phase !== "pick" || !s.dl) { tm.classList.add("off"); return; } const now = o.room ? srvNow() : Date.now(), total = Number(s.pickMs) + REVEAL_MS, left = Math.max(0, Number(s.dl) - now); tf.style.width = Math.min(100, left / total * 100) + "%"; tm.classList.toggle("low", left < 6000); };
-    tick(); tickT = setInterval(tick, 250);
-    // me
-    if (o.me && s.phase !== "over") {
-        const mine = el("div", "cv-me");
-        mine.appendChild(plate(s, o.me, o));
-        const hand = el("div", "cv-hand"); hand.setAttribute("role", "listbox"); hand.setAttribute("aria-label", "Your hand");
-        const locked = !!(s.picks || {})[pk(o.me)], h = handOf(s, o.me);
-        h.forEach(id => {
-            const c = el("button", "cv-hcard" + (picked.c === id ? " sel" : "") + (locked && (s.picks[pk(o.me)] || {}).c === id ? " locked" : "")); c.type = "button";
-            c.setAttribute("role", "option"); c.setAttribute("aria-selected", String(picked.c === id));
-            c.appendChild(cardEl(id, { size: "sm", holo: o.holo ? o.holo(id) : false }));
-            c.disabled = !meAlive || s.phase !== "pick" || locked;
-            c.onclick = () => { if (picked.c === id) { play(); return; } picked.c = id; X.sfx("pick"); rerender(); };
-            let t = 0; c.addEventListener("pointerdown", () => { t = setTimeout(() => { c.dataset.held = 1; inspect(id); }, 450); });
-            ["pointerup", "pointerleave", "pointercancel"].forEach(ev => c.addEventListener(ev, () => clearTimeout(t)));
-            c.addEventListener("click", e => { if (c.dataset.held) { delete c.dataset.held; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
-            c.addEventListener("contextmenu", e => e.preventDefault());
-            hand.appendChild(c);
-        });
-        if (!h.length && meAlive) hand.appendChild(el("p", "vt-rule", "No cards left."));
-        mine.appendChild(hand);
-        const bar = el("div", "cv-bar");
-        const playB = el("button", "btn alt", locked ? "Locked in ✓" : picked.c ? "Play " + CARDS[picked.c].n + (s.fmt === "ffa" && picked.t ? " → " + s.names[pk(picked.t)] : "") : "Tap a card, tap again to play"); playB.type = "button";
-        playB.disabled = locked || !picked.c || !meAlive || s.phase !== "pick"; playB.onclick = play;
-        bar.appendChild(playB);
-        const sc = (s.scout || {})[pk(o.me)];
-        if (sc && Number(sc.r) === s.round - 1 && CARDS[sc.c]) bar.appendChild(el("small", "cv-scout", "Scout: " + s.names[pk(sc.from)] + " holds " + CARDS[sc.c].n));
-        mine.appendChild(bar);
-        root.appendChild(mine);
-    } else if (s.phase !== "over") root.appendChild(el("p", "cv-spec", "You're watching. Hands stay hidden; every card is shown when it's played."));
-    const tools = el("div", "cv-tools");
-    const logB = el("button", "btn ghost sm", "Duel log"); logB.type = "button"; logB.onclick = () => showLog(s); tools.appendChild(logB);
-    if (o.exit) { const ex = el("button", "btn ghost sm", "Leave practice"); ex.type = "button"; ex.onclick = o.exit; tools.appendChild(ex); }
-    if (o.back && s.phase !== "over") { const bk = el("button", "btn ghost sm", "‹ " + (o.backLabel || "Back to Anime TCG")); bk.type = "button"; bk.onclick = o.back; tools.appendChild(bk); }
-    root.appendChild(tools);
-    if (s.phase === "over") showOverPanel(root, s, o);
-    function play() {
-        if (!picked.c || (s.picks || {})[pk(o.me)]) return;
-        X.sfx("card"); o.pick(picked.c, picked.t);
-    }
-}
-function drawArena(arena, s, o) {
-    const L = s.last;
-    if (!L) { arena.appendChild(el("p", "cv-wait", s.phase === "over" ? "" : "Round " + s.round + ": everyone picks a card in secret. They flip together.")); return; }
-    const fresh = L.n !== lastN; lastN = L.n;
-    arena.appendChild(el("small", "cv-rlab", "ROUND " + L.r));
-    const row = el("div", "cv-plays" + (arr(L.plays).length > 2 ? " many" : ""));
-    arr(L.plays).forEach((pl, i) => {
-        const cell = el("div", "cv-play" + (pl.p === o.me ? " mine" : "")), c = CARDS[pl.c];
-        cell.appendChild(el("b", "cv-who", s.names[pk(pl.p)] + (s.fmt === "ffa" ? " → " + s.names[pk(pl.t)] : "")));
-        const card = cardEl(pl.c, { size: arr(L.plays).length > 2 ? "sm" : "md" });
-        if (fresh && motionOK()) { card.classList.add("down"); setTimeout(() => card.classList.remove("down"), 260 + i * 60); }
-        card.onclick = () => inspect(pl.c);
-        cell.appendChild(card);
-        const stats = el("small", "cv-pstats", pl.pow + " PWR / " + pl.def + " DEF" + (pl.sil ? " · silenced" : "") + (pl.cp ? " · copied " + ABILITIES[pl.cp].kw.join("/") : ""));
-        if (pl.pow !== c.pow || pl.def !== c.def) stats.classList.add("mod");
-        cell.appendChild(stats);
-        const dmg = (L.dmg || {})[pk(pl.p)] || 0, heal = (L.heal || {})[pk(pl.p)] || 0;
-        if (dmg) { const n = el("span", "cv-dmg", "−" + dmg); n.style.setProperty("--d", (900 + i * 80) + "ms"); cell.appendChild(n); }
-        if (heal) { const n = el("span", "cv-heal", "+" + heal); n.style.setProperty("--d", (1300 + i * 80) + "ms"); cell.appendChild(n); }
-        arr(L.banners).filter(b => b.p === pl.p).slice(0, 3).forEach((b, k) => { const bn = el("span", "cv-ban", b.text); bn.style.setProperty("--d", (600 + k * 260 + i * 90) + "ms"); bn.style.setProperty("--k", k); cell.appendChild(bn); });
-        if (arr(L.ko).includes(pl.p)) cell.appendChild(el("span", "cv-ko", "K.O."));
-        row.appendChild(cell);
-    });
-    arena.appendChild(row);
-    if (fresh) { X.sfx("clash"); if (arr(L.banners).length) setTimeout(() => X.sfx("ability"), 650); if (arr(L.ko).length) setTimeout(() => X.sfx("ko"), 1100); }
-}
-const motionOK = () => !document.body.classList.contains("fx-lite");
-function showLog(s) {
-    const ov = el("div", "cv-log"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "Duel log");
-    const box = el("div", "sheet cv-logbox"); box.appendChild(el("h2", null, "Duel log"));
-    const list = el("div", "cv-loglist");
-    arr(s.log).slice().reverse().forEach(r => { const g = el("section"); g.appendChild(el("b", null, r.r === "SD" ? "Sudden death" : "Round " + r.r)); arr(r.l).forEach(l => g.appendChild(el("p", null, l))); list.appendChild(g); });
-    if (!arr(s.log).length) list.appendChild(el("p", null, "Nothing yet."));
-    const c = el("button", "btn", "Close"); c.type = "button"; c.onclick = () => ov.remove();
-    box.append(list, c); ov.appendChild(box); ov.onclick = e => { if (e.target === ov) ov.remove(); };
-    document.body.appendChild(ov); c.focus();
-}
-const overSeen = new Set();
-function showOverPanel(root, s, o) {
-    const p = el("div", "cv-over"); p.id = o.room ? "cvOver" : "";
-    const win = arr(s.winners), draw = win.length > 1;
-    p.appendChild(el("b", "cv-otitle", draw ? "DRAW" : win[0] === o.me ? "VICTORY" : (s.names[pk(win[0])] || "?").toUpperCase() + " WINS"));
-    const list = el("ol", "cv-places");
-    arr(s.places).forEach(r => { const li = el("li", "cv-pl" + (r.p === o.me ? " me" : "")); li.append(el("b", null, "#" + r.place), X.avatarEl(o.pub(r.p) || { name: s.names[pk(r.p)] }, { size: 28 }), el("span", null, s.names[pk(r.p)]), el("small", null, Math.max(0, r.life) + " life")); list.appendChild(li); });
-    p.appendChild(list);
-    const b = el("div", "vt-row");
-    if (o.room) {
-        if (o.again) { const a = el("button", "btn alt", "Rematch"); a.type = "button"; a.onclick = o.again; b.appendChild(a); }
-        const l = el("button", "btn ghost", "Back to Anime TCG"); l.type = "button"; l.onclick = o.back; b.appendChild(l);
-    }
-    if (o.exit) { const a = el("button", "btn alt", "Play again"); a.type = "button"; a.onclick = o.again; const l = el("button", "btn ghost", "Leave"); l.type = "button"; l.onclick = o.exit; b.append(a, l); }
-    p.appendChild(b);
-    if (o.room && o.me) p.appendChild(el("small", "vt-rule", "Coins for your placement arrive as a pop-up (duels of 1 minute or more)."));
-    root.prepend(p);
-    if (o.fresh !== false && !overSeen.has(s.mid + ":" + (s.n || 0))) { overSeen.add(s.mid + ":" + (s.n || 0)); try { p.scrollIntoView({ block: "start", behavior: "smooth" }); } catch (e) {} }
-    if (!p.dataset.sfx) { p.dataset.sfx = 1; X.sfx(win.includes(o.me) && !draw ? "win" : "reveal"); }
-}
-
-/* ---------------- practice vs CPU (local, no coins) ---------------- */
+/* ---------------- Practice vs Bot (local; no coins, stats or missions) ---------------- */
 let practice = null;
-export function startPractice() {
-    const deck = X.activeDeck(); if (!deck) { X.toast("Build a 10-card deck first (Decks tab)."); return; }
-    const seed = newSeed(), rng = rngFrom(seed), pool = Object.values(CARDS).filter(c => c.r <= 2).map(c => c.id);
-    const cpuDeck = shuffleWith(rng, pool).slice(0, 10);
-    const host = el("div", "cv-solo"); host.id = "cvSolo"; host.setAttribute("role", "dialog"); host.setAttribute("aria-label", "Practice duel");
-    const head = el("div", "game-header"), hi = el("div", "game-header-inner"); hi.append(el("div", "turn", "PRACTICE · YOU VS CPU"), el("div", "status", "No coins in practice"));
-    head.appendChild(hi); const wrap = el("div", "cv-wrap"); host.append(head, wrap);
-    document.body.appendChild(host);
-    const me = 1, name = X.myName() || "You";
-    let s = newDuel({ mid: Date.now(), fmt: "duel", players: [1, 2], decks: { p1: deck.cards, p2: cpuDeck }, names: { p1: name, p2: "CPU" }, now: Date.now(), seed, pickMs: 60000 });
-    const pubs = { 1: X.myPub(), 2: { name: "CPU", col: "#7a5cff", av: { t: "g", g: "機", c: "#7a5cff" } } };
-    const o = { me, pub: p => pubs[p], present: () => true, room: false, holo: id => X.isHolo(id),
-        pick: (c) => { if (act(s, { p: 1, c })) return; draw(); setTimeout(() => { const m = cpuPick(s, 2, rng); if (m) act(s, { p: 2, c: m.c }); resolveRound(s, Date.now()); picked = { c: 0, t: 0 }; draw(); }, 500 + rng() * 700); },
-        again: () => { close(); startPractice(); }, exit: () => close() };
-    const draw = () => render(wrap, s, o);
-    const close = () => { clearInterval(tickT); host.remove(); practice = null; lastArgs = null; };
-    practice = { close }; lastN = -1; picked = { c: 0, t: 0 };
-    draw(); X.sfx("start");
-}
 export const practicing = () => !!practice;
+function botDeck(level) {
+    const ids = Object.keys(CARDS).map(Number), want = level === "hard" ? [2, 3, 4] : level === "normal" ? [1, 2, 3] : [0, 1];
+    const pool = ids.filter(id => want.includes(CARDS[id].r)).sort(() => Math.random() - .5).slice(0, DECK.size - 4);
+    const acts = ACTION_IDS.filter(a => ACTIONS[a].lvl <= (level === "hard" ? 10 : level === "normal" ? 5 : 2)).sort(() => Math.random() - .5).slice(0, 4);
+    return pool.map(String).concat(acts.map(a => "a:" + a));
+}
+export function startPractice(level = "normal", opts = {}) {
+    const deck = opts.deck || (X.activeDeck() || {}).cards;
+    if (!deck || deck.length !== DECK.size) { X.toast("Build a valid " + DECK.size + "-card deck first (Decks tab)."); return; }
+    // opts.bots > 1: a free-for-all practice (you + that many bots, all of the same level)
+    const me = 1, nb = Math.max(1, Math.min((DUEL.ffa.max || 8) - 1, Number(opts.bots) || 1)), bots = Array.from({ length: nb }, (_, i) => i + 2), bot = bots[0];
+    const LV = level[0].toUpperCase() + level.slice(1), BOT_NAMES = ["Kaze", "Rin", "Tetsu", "Mika", "Sora", "Jun", "Hana"];
+    const decks = { p1: deckList(deck) }, names = { p1: (X.myName && X.myName()) || "You" };
+    bots.forEach((q, i) => { decks[pk(q)] = deckList(i === 0 && opts.botDeck || botDeck(level)); names[pk(q)] = i === 0 && opts.botName || (nb > 1 ? "Bot " + BOT_NAMES[i] + " · " + LV : "Bot · " + LV); });
+    const s = newDuel({ id: "practice", players: [me].concat(bots), decks, names, now: Date.now(), seed: newSeed() >>> 0, rules: Object.assign({}, DUEL.rules, opts.rules || {}) });
+    practice = { s, level, bot, bots, me, timer: 0 };
+    X.showOnly("cardvault"); $("cvTurnT").textContent = opts.title || "PRACTICE VS BOT"; $("cvStatus").textContent = opts.status || "No coins, stats or missions";
+    if (ui) ui.destroy();
+    uiBid = "practice";
+    ui = mountDuel($("cvWrap"), {
+        me, defs: DEFS, names: p => s.names[pk(p)], pub: p => p === me && X.myPub ? X.myPub() : { name: s.names[pk(p)] }, avatar: (pub, n) => X.avatarEl(pub, { size: n }),
+        sfx: X.sfx, toast: X.toast, flyClone: X.flyClone, now: () => Date.now(),
+        send: a => { const r = act(s, Object.assign({}, a, { by: me }), Date.now()); if (!r) { push(); if (opts.onMove) opts.onMove(a, s); } return r; },
+        onExit: () => endPractice(), exitLabel: "Leave", onRematch: () => startPractice(level, opts),
+        overNote: "Practice pays no coins and counts for no stats or missions.",
+        extraTools: opts.extraTools
+    });
+    const push = () => { ui.update(viewFor(s, me)); botLoop(); };
+    function botLoop() {
+        clearTimeout(practice && practice.timer);
+        if (!practice || s.over) return;
+        const who = s.pending ? Number(s.pending.who) : Number(s.turnP);
+        if (!bots.includes(who)) return;
+        practice.timer = setTimeout(() => {
+            if (!practice || practice.s !== s || s.over) return;
+            const q = s.pending ? Number(s.pending.who) : Number(s.turnP); if (!bots.includes(q)) return;
+            const m = opts.botMove ? opts.botMove(s, q) : botMove(s, q, level, DEFS);
+            if (m && !act(s, Object.assign({}, m, { by: q }), Date.now())) push(); else { act(s, { by: q, k: s.pending ? "pass" : "phase", to: "end" }, Date.now()); push(); }
+        }, s.pending ? 900 : 650);
+    }
+    practice.tickT = setInterval(() => { if (!practice || practice.s !== s) return; if (tick(s, Date.now())) push(); }, 300);
+    practice.push = push;
+    push();
+    return { s, push, ui };
+}
+export function endPractice() {
+    if (!practice) return; clearTimeout(practice.timer); clearInterval(practice.tickT); practice = null;
+    if (ui) { ui.destroy(); ui = null; uiBid = ""; }
+    X.sfx("close"); X.openVault("duel");
+}

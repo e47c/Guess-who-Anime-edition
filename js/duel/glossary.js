@@ -9,7 +9,7 @@ export const KEYWORDS = {
     Heal: "Restores life points to you (never above your starting life).",
     Counter: "Strikes back: when this character is attacked, it deals damage to the attacking player.",
     Rage: "Gets stronger when you are behind: a bonus while you have less life than your opponent.",
-    Combo: "A bonus when you already played another card of the same series (or archetype) this turn.",
+    Combo: "A bonus when you control another character of the same series (or archetype, as written on the card).",
     Silence: "Shuts down an ability: the chosen character's ability does nothing until the end of the turn.",
     Scout: "Reveals hidden information: look at the top card of a deck, or at a face-down card.",
     Swap: "Exchanges values: switches a character's ATK and DEF, or two characters' stats.",
