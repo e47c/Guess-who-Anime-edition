@@ -27,3 +27,14 @@ is never reset: card ids are AniList character ids and no phase changes them.
 - Battle is Duel everywhere: tabs, buttons, texts, missions, code names and config keys (`DUEL` in config.js). Saved
   data is migrated: the wallet's duel record (was `battles`), today's "Win a card duel" mission (was `battle1`), the
   remembered tab.
+
+## Phase 3: Packs Store (done 2026-11-08)
+
+- `js/vault/tab-packs.js`: a rail of the 18 series (progress rings), a showcase with the series' Normal and Premium packs
+  side by side (large, floating, lit and tilted by the pointer), Buy & open, Open x5 (one by one with "Next pack (2 of 5)",
+  or a quick summary of all 25 cards), free packs, and a detail panel: odds per rarity with bars, both pity counters as
+  bars, "cards you still need X / Y", craft with shards (both tiers), and the series' card pool (owned cards, silhouettes
+  for missing ones, tap to inspect). Packs bought but not revealed are offered first (one by one or quick summary).
+- Packs: a character silhouette (three builds across the series), Premium gets a gem crest and the
+  "6 CARDS · 1 RARE+ GUARANTEED" banner. Roll logic, odds, prices, pity and shards unchanged.
+- The opening is the same (tear, burst, face-down stack, revealed card on top, inspect, reactions, summary).

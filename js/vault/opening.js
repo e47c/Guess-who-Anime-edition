@@ -14,7 +14,7 @@
    7. summary: every card, NEW tags, duplicates turning into shards, the pity counter
    Reduced effects: static foil, no float, no shake, a few flakes, a simple flip, no canvas.
    ===================================================================== */
-import { cardEl, packEl, theme, seriesVars, packClip, thicken } from "./cardui.js?v=11";
+import { cardEl, packEl, theme, seriesVars, packClip, thicken } from "./cardui.js?v=12";
 import { CARDS, RARITY_NAMES } from "./carddb.js?v=5";
 import { PACKS, OPENING as O } from "./config.js?v=13";
 import { motionOK } from "../fx.js";
@@ -239,7 +239,7 @@ export function openPack(res, { onDone, onNext } = {}) {
         const sh = tot.querySelector(".pk-sh"), total = Number(res.shards) || 0;
         if (total && fx) { const t0 = performance.now(); X.sfx("shard"); const step = now => { const k = Math.min(1, (now - t0) / 900); sh.textContent = "+" + Math.round(total * k); if (k < 1 && sh.isConnected) requestAnimationFrame(step); }; requestAnimationFrame(step); } else sh.textContent = "+" + total;
         const btns = mk("div", "pk-btns");
-        if (onNext) { const nx = mk("button", "btn alt"); nx.type = "button"; nx.append(document.createTextNode(onNext.label + " "), Object.assign(mk("span", "vt-price"), { innerHTML: '<i class="coin-ico"></i>' + (onNext.price || "") })); nx.onclick = () => { close(); onNext.fn(); }; btns.appendChild(nx); }
+        if (onNext) { const nx = mk("button", "btn alt"); nx.type = "button"; nx.append(document.createTextNode(onNext.label + (onNext.price ? " " : ""))); if (onNext.price) nx.appendChild(Object.assign(mk("span", "vt-price"), { innerHTML: '<i class="coin-ico"></i>' + onNext.price })); nx.onclick = () => { close(); onNext.fn(); }; btns.appendChild(nx); }
         const ok = mk("button", "btn", "Done"); ok.type = "button"; ok.onclick = close; btns.appendChild(ok);
         sum.appendChild(btns); stage.appendChild(sum);
         setTimeout(() => ok.focus(), 50);

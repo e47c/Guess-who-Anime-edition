@@ -10,7 +10,7 @@
    ===================================================================== */
 import { SKINS, SCRATCH } from "./config.js?v=13";
 import { SKIN_ITEMS, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=11";
-import { bank, vaultEvent } from "./vault.js?v=15";
+import { bank, vaultEvent } from "./vault.js?v=16";
 import { newSeed } from "./rng.js?v=2";
 import { motionOK } from "../fx.js";
 

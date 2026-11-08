@@ -40,6 +40,15 @@
 .vp-label { left: 0; right: 0; bottom: 9%; z-index: 2; display: grid; justify-items: center; gap: .15em; }
 .vp-label b { padding: .18em .6em; border-radius: .2em; background: rgba(0,0,0,.55); font: 700 .7em/1 var(--f-mono); letter-spacing: .2em; color: #fff; }
 .vp-label small { font: 700 .48em/1 var(--f-mono); letter-spacing: .3em; color: #fff; text-shadow: 0 .06em .1em rgba(0,0,0,.7); }
+/* the character silhouette (one of three builds per series) behind the title; Premium = gold embossed */
+.vp-sil { left: 12%; right: 12%; top: 18%; bottom: 13%; z-index: 1; color: color-mix(in srgb, var(--c2) 55%, #000); opacity: .42; }
+.vp-sil svg { width: 100%; height: 100%; fill: currentColor; display: block; }
+.vpack.k-premium .vp-sil { color: #7a5410; opacity: .35; filter: drop-shadow(.05em .05em 0 rgba(255,240,190,.6)) drop-shadow(-.04em -.04em 0 rgba(60,35,0,.5)); }
+/* Premium: a gem crest under the top seal and a ribbon banner */
+.vp-crest { left: 50%; top: 8.5%; width: 2.3em; height: 2.3em; z-index: 4; transform: translateX(-50%); filter: drop-shadow(0 .1em .15em rgba(0,0,0,.5)); }
+.vp-crest svg { width: 100%; height: 100%; display: block; }
+.vp-label.banner b { padding: .32em .9em; border-radius: .1em; font-size: .52em; letter-spacing: .14em; color: #3a2300; background: linear-gradient(180deg, #fff6d0, #e9c45c 55%, #a8781e); box-shadow: 0 .08em .15em rgba(0,0,0,.45), inset 0 .05em 0 #fff;
+    clip-path: polygon(0 0, 100% 0, 96% 50%, 100% 100%, 0 100%, 4% 50%); }
 /* crimped seals: ridged bands top and bottom (the zig-zag edge itself is the body's clip-path) */
 .vp-crimp { left: 0; right: 0; z-index: 3; height: 7%; background: repeating-linear-gradient(90deg, rgba(255,255,255,.34) 0 .14em, rgba(0,0,0,.28) .14em .32em), linear-gradient(180deg, rgba(255,255,255,.2), rgba(0,0,0,.25)); }
 .vp-crimp.top { top: 0; box-shadow: 0 .08em .12em rgba(0,0,0,.35); } .vp-crimp.bot { bottom: 0; box-shadow: 0 -.08em .12em rgba(0,0,0,.35); transform: scaleY(-1); }

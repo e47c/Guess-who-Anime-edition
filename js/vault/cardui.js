@@ -231,6 +231,15 @@ export function packClip(kind, amp = 1.6) {
     for (let i = 0; i <= n; i++) { const x = (i / n * 100).toFixed(2); top.push(x + "% " + (i % 2 ? 0 : amp) + "%"); bot.push((100 - i / n * 100).toFixed(2) + "% " + (100 - (i % 2 ? 0 : amp)) + "%"); }
     return "polygon(" + top.concat(bot).join(", ") + ")";
 }
+/* a character silhouette on the pack (our own drawings, one of three builds per series) */
+const PACK_SIL = {
+    spiky: '<path d="M10 120c2-26 18-40 40-40s38 14 40 40z"/><circle cx="50" cy="56" r="19"/><path d="M28 50 18 24l17 13 2-27 13 21 12-23 2 25 18-12-10 29z"/>',
+    hat: '<path d="M10 120c2-26 18-40 40-40s38 14 40 40z"/><circle cx="50" cy="60" r="18"/><path d="M8 47c0-5 19-8 42-8s42 3 42 8-19 7-42 7S8 52 8 47z"/><path d="M30 42c1-14 9-21 20-21s19 7 20 21z"/>',
+    long: '<path d="M10 120c2-26 18-40 40-40s38 14 40 40z"/><path d="M28 58c0-20 9-32 22-32s22 12 22 32v34c-7 6-37 6-44 0z"/>'
+};
+const SIL_OF = { onepiece: "hat", naruto: "spiky", dragonball: "spiky", jjk: "spiky", demonslayer: "long", bleach: "spiky", aot: "long", mha: "spiky", hxh: "spiky", deathnote: "long",
+    chainsaw: "spiky", blackclover: "spiky", jojo: "long", rezero: "long", fireforce: "spiky", frieren: "long", gachiakuta: "spiky", windbreaker: "long" };
+const PACK_GEM = '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3l14 10-5 22H11L6 13z" fill="#7a5410"/><path d="M20 6l11 8-4 18H13L9 14z" fill="url(#vpg)"/><path d="M9 14h22M13 32l7-26 7 26M20 6l-7 8 7 18 7-18z" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1"/><defs><linearGradient id="vpg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd1e8"/><stop offset=".45" stop-color="#e0245e"/><stop offset="1" stop-color="#5a0a2a"/></linearGradient></defs></svg>';
 const RCOL = ["#9aa1ab", "#b08d4a", "#4aa8ff", "#c9b6ff", "#ff4fa0", "#ffd76a", "#b06bff"];
 export function packEl(series, kind = "normal", o = {}) {
     const T = theme(series), el = mk("div", "vpack k-" + kind + " s-" + series); seriesVars(el, series);
@@ -240,7 +249,10 @@ export function packEl(series, kind = "normal", o = {}) {
     const title = mk("div", "vp-title f-" + T.font + (T.short.length > 9 ? " long" : "")); title.append(mk("small", null, "ANIME TCG"), mk("b", null, T.short));
     const strip = mk("div", "vp-strip"); const bars = mk("span", "vp-bars"); RCOL.forEach((c, i) => { const b = mk("i"); b.style.setProperty("--rc", c); b.style.setProperty("--i", i); bars.appendChild(b); }); strip.append(bars, mk("small", null, kind === "premium" ? "RARE OR BETTER INSIDE" : "COMMON → MYTHIC"));
     const label = mk("div", "vp-label"); label.append(mk("b", null, (o.cards || (kind === "premium" ? 6 : 5)) + " CARDS"), mk("small", null, kind === "premium" ? "PREMIUM PACK" : "NORMAL PACK"));
-    body.append(mk("i", "vp-base"), big, mk("b", "vp-kanji", T.kanji), title, strip, label,
+    const sil = mk("i", "vp-sil"); sil.innerHTML = '<svg viewBox="0 0 100 120" aria-hidden="true">' + PACK_SIL[SIL_OF[series] || "spiky"] + "</svg>";
+    if (kind === "premium") { const crest = mk("i", "vp-crest"); crest.innerHTML = PACK_GEM; body.appendChild(crest); label.firstChild.textContent = (o.cards || 6) + " CARDS · 1 RARE+ GUARANTEED"; label.classList.add("banner"); }
+    body.prepend(mk("i", "vp-base"), big, sil);
+    body.append(mk("b", "vp-kanji", T.kanji), title, strip, label,
         mk("i", "vp-crimp top"), mk("i", "vp-crimp bot"), mk("i", "vp-seam"), mk("i", "vp-puff"), mk("i", "vp-crinkle"), mk("i", "vp-spec"), mk("i", "vp-shine"), mk("i", "vp-rim"));
     const shadow = mk("i", "vp-shadow"), sh = mk("i"); sh.style.clipPath = body.style.clipPath; shadow.appendChild(sh); shadow.setAttribute("aria-hidden", "true");
     el.append(shadow, body);

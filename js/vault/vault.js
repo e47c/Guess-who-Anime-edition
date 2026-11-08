@@ -17,8 +17,8 @@ import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, mis
 import { newSeed } from "./rng.js?v=2";
 import { grantStarter, recordDuel, activeDeck, deckProblem } from "./packs.js?v=11";
 import { publicLook } from "./shop.js?v=11";
-import { initOpening } from "./opening.js?v=11";
-import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=13";
+import { initOpening } from "./opening.js?v=12";
+import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=14";
 import { motionOK } from "../fx.js";
 import { icon } from "./icons.js?v=2";
 

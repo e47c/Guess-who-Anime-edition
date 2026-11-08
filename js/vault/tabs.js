@@ -7,10 +7,11 @@
    ===================================================================== */
 import { PACKS, SHARDS, RARITY_ORDER, DECK, TRADE, DUEL } from "./config.js?v=13";
 import { rollPack, unopened, markOpened, owned, isHolo, ownedIds, seriesDone, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem } from "./packs.js?v=11";
-import { cvChallenge, cvDuels, busyIn, seatsOf, cvWatch, cvReturn, cvDeckOf, locOf } from "../cardvault/cardvault.js?v=13";
+import { cvChallenge, cvDuels, busyIn, seatsOf, cvWatch, cvReturn, cvDeckOf, locOf } from "../cardvault/cardvault.js?v=14";
 import { CARDS, BY_SERIES, CARD_SERIES, CARD_COUNT, RARITY_NAMES, ARCHETYPES, TOTAL_CARDS } from "./carddb.js?v=5";
-import { cardEl, packEl, theme } from "./cardui.js?v=11";
-import { openPack, inspect, holdToInspect } from "./opening.js?v=11";
+import { cardEl, packEl, theme } from "./cardui.js?v=12";
+import { inspect, holdToInspect } from "./opening.js?v=12";
+import { packsTab } from "./tab-packs.js?v=1";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 const btn = (txt, cls, fn) => { const b = mk("button", "btn " + (cls || ""), txt); b.type = "button"; if (fn) b.onclick = fn; return b; };
@@ -29,7 +30,7 @@ export function initTabs(h) { H = h; }
 
 export function renderTab(id, body, h) {
     H = h || H;
-    const f = { packs: packsTab, collection: collectionTab, decks: deckTab, duel: duelTab }[id];
+    const f = { packs: () => packsTab(H), collection: collectionTab, decks: deckTab, duel: duelTab }[id];
     if (f) body.appendChild(f());
 }
 const sub = (name, list, cur, onPick) => {
@@ -37,56 +38,6 @@ const sub = (name, list, cur, onPick) => {
     list.forEach(([k, l]) => { const b = mk("button", "vt-subtab" + (k === cur ? " on" : ""), l); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(k === cur)); b.onclick = () => { sfx("toggle"); onPick(k); }; nav.appendChild(b); });
     return nav;
 };
-
-/* =========================== PACKS =========================== */
-let packKind = "normal";
-function packsTab() {
-    const w = W(), v = mk("div", "vt-packs");
-    // status line: shards, free packs, pity
-    const st = mk("div", "vt-pstat");
-    st.innerHTML = '<span><i class="shard-ico"></i> <b>' + fmt(w.shards || 0) + '</b> shards</span>' + (((w.tokens || {}).normal || 0) ? '<span>🎁 <b>' + w.tokens.normal + '</b> free pack' + (w.tokens.normal > 1 ? "s" : "") + '</span>' : "");
-    const pn = PACKS.normal.pity.after - ((w.pity || {}).normal || 0), pp = PACKS.premium.pity.after - ((w.pity || {}).premium || 0);
-    st.appendChild(mk("small", null, "Ultra Rare+ guaranteed within " + pn + " Normal pack" + (pn === 1 ? "" : "s") + " · Legendary+ within " + pp + " Premium pack" + (pp === 1 ? "" : "s")));
-    v.appendChild(st);
-    const un = unopened(w);
-    if (un.length) {
-        const u = mk("div", "vt-card vt-unopened"); u.appendChild(mk("b", null, "Unopened: " + un.length));
-        un.forEach(p => { const b = btn(theme(p.series).label + (p.kind === "premium" ? " Premium" : ""), "alt sm", () => reveal(p)); u.appendChild(b); });
-        v.appendChild(u);
-    }
-    v.appendChild(sub("Pack", [["normal", "Normal · " + PACKS.normal.cards + " cards"], ["premium", "Premium · " + PACKS.premium.cards + " cards, Rare+"]], packKind, k => { packKind = k; H.rerender(); }));
-    const P = PACKS[packKind], grid = mk("div", "vt-pgrid");
-    CARD_SERIES.forEach(s => {
-        const c = mk("article", "vt-pcell"), have = BY_SERIES[s].filter(id => owned(w, id)).length;
-        const pk = packEl(s, packKind); pk.style.setProperty("--pw", "min(38vw, 150px)"); c.appendChild(pk);
-        c.appendChild(mk("small", "vt-pprog" + (have === CARD_COUNT[s] ? " done" : ""), have + " / " + CARD_COUNT[s] + (have === CARD_COUNT[s] ? " ✓" : "")));
-        const row = mk("div", "vt-pbuy");
-        const b1 = btn("", "alt sm", () => doPack(s, packKind, "coins")); b1.appendChild(coin(P.price)); b1.disabled = w.coins < P.price; row.appendChild(b1);
-        const b2 = btn("", "ghost sm", () => doPack(s, packKind, "shards")); b2.innerHTML = '<i class="shard-ico"></i> ' + P.shards; b2.title = "Craft with shards"; b2.disabled = (w.shards || 0) < P.shards; row.appendChild(b2);
-        if (packKind === "normal" && ((w.tokens || {}).normal || 0) > 0) row.appendChild(btn("Free", "sm", () => doPack(s, "normal", "token")));
-        c.appendChild(row); grid.appendChild(c);
-    });
-    v.appendChild(grid);
-    const odds = mk("details", "vt-card vt-odds-d"); odds.appendChild(mk("summary", null, "Odds, pity and shards"));
-    const tbl = mk("table", "vt-otbl"); tbl.innerHTML = "<tr><th>Rarity</th><th>Normal</th><th>Premium</th><th>Duplicate</th></tr>" + RARITY_ORDER.map((r, i) => "<tr><td>" + RARITY_NAMES[i] + "</td><td>" + PACKS.normal.odds[r] + "%</td><td>" + PACKS.premium.odds[r] + "%</td><td>" + SHARDS[r] + " shards</td></tr>").join("");
-    odds.append(tbl, mk("p", "vt-rule", "Odds are per card. Holo: " + PACKS.normal.holo * 100 + "% per card (Normal), " + PACKS.premium.holo * 100 + "% (Premium); a Holo duplicate gives double shards. Premium packs always hold a Rare or better. Pity: after " + PACKS.normal.pity.after + " Normal packs in a row without an Ultra Rare or better, the next one has one; after " + PACKS.premium.pity.after + " Premium packs without a Legendary or better, the next one has one. A pack only holds characters from its own series. Every pack is rolled with its own seed, saved in your coin history."));
-    v.appendChild(odds);
-    return v;
-}
-async function doPack(series, kind, via) {
-    const k = "pack-" + series + "-" + kind + "-" + via, op = intent(k), seed = H.newSeed(), by = X().profileName ? X().profileName() : "";
-    if (via === "coins" && !(await ask({ title: theme(series).label + " " + PACKS[kind].name + "?", text: fmt(PACKS[kind].price) + " AAP Coins · " + PACKS[kind].cards + " cards" + (kind === "premium" ? ", one Rare or better guaranteed" : "") + ".", ok: "Buy & open" }))) return;
-    const r = await H.act(op, via === "shards" ? "craft" : via === "token" ? "token" : "pack", (w, x) => rollPack(w, { series, kind, seed, via, by, now: x.now }));
-    if (!r.ok) { toast(r.error); return; }
-    used(k); H.event("pack", "ev:" + op);
-    reveal(r.result);
-}
-function reveal(res) {
-    openPack(res, {
-        onDone: () => { H.act("opened:" + res.seed, "opened", w => markOpened(w, res.seed)).then(() => H.rerender()); },
-        onNext: W().coins >= PACKS[res.kind].price ? { label: "Open another", price: PACKS[res.kind].price, fn: () => { H.act("opened:" + res.seed, "opened", w => markOpened(w, res.seed)).then(() => doPack(res.series, res.kind, "coins")); } } : null
-    });
-}
 
 /* =========================== COLLECTION =========================== */
 let colSeries = "", colRar = -1, colOwned = false, colView = "book";
