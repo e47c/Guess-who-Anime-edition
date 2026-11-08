@@ -5,7 +5,7 @@
    player node so everybody sees the same card in every mode.
    ===================================================================== */
 
-import { SKINS } from "./vault/config.js?v=12";
+import { SKINS } from "./vault/config.js?v=13";
 import { NIGHT_PARTY } from "./party/config.js?v=2";
 
 const KEY = "gw_profile_v1";
@@ -156,7 +156,7 @@ export function avatarEl(p, { size = 48, cls = "", badge = false } = {}) {
 }
 /* The player card exactly as the lobby draws it: the "1P" tag, the picture (with its frame), name, title and level.
    p.bg (Season background) restyles the whole panel: .sbg[data-bg] in css/vault.css, over the lobby's stripes.
-   Used by the lobby seats (game.js), the Anime TCG Battle tab, so they always match. */
+   Used by the lobby seats (game.js), the Anime TCG Duel tab, so they always match. */
 export function seatCard(p, { slot = 1, me = false, col = "", cls = "", size = 72 } = {}) {
     p = p || {};
     const s = document.createElement("div"), bg = COSM.test(p.bg || "") ? p.bg : "";

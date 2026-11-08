@@ -299,13 +299,13 @@ opens at once. Timings and the hint-fade count: `CARD_SLOT` in `js/vault/config.
 
 The **Anime TCG** is ONE page (`#arcadeVault`, `js/vault/vault.js` + `tabs.js`, `css/tcg.css`; internal id
 `cardvault`, saved data unchanged) with four tabs: Packs Store (a booster shelf), Collection (a binder with 9-pocket
-pages; trades), Decks (deck boxes; the builder shows the 10 slots and the Power / Defense curve) and Battle (a duel
+pages; trades), Decks (deck boxes; the builder shows the 10 slots and the Power / Defense curve) and Duel (a duel
 board). Two ways in:
 - **Main menu** (the ANIME TCG button under Host a party): no room. Instead of the room code and friends it shows
-  HOST PARTY (makes a room; you land on its Anime TCG page) and JOIN (a room code). Everything works except battles and
-  trades; the Battle tab says "Host a party or join one to battle". ‹ Menu goes back to the main menu.
+  HOST PARTY (makes a room; you land on its Anime TCG page) and JOIN (a room code). Everything works except duels and
+  trades; the Duel tab says "Host a party or join one to duel". ‹ Menu goes back to the main menu.
 - **A room's lobby**, by picking the ANIME TCG mode: every player gets their own page (no shared screen), with the
-  room code, the friends in the room (the Battle tab lists them) and, for the host, Close room. ‹ Lobby goes back (the
+  room code, the friends in the room (the Duel tab lists them) and, for the host, Close room. ‹ Lobby goes back (the
   lobby then shows ENTER ANIME TCG; the host keeps the normal mode controls).
 The ★ Daily button (on the Anime TCG page and in the Shop) opens the login streak, missions and coin history.
 **Every number** (prices, odds, rewards, pity, life totals, timers, mode lengths, challenge expiry, skin animation
@@ -318,7 +318,7 @@ so coins, cards, decks, cosmetics, pity counters, missions and streaks are kept 
 operation with an id, applied at most once (a double click, a reload or a second tab never pays twice), atomic across
 tabs (Web Locks), never below 0 coins, and logged in a ledger with the seed of every random roll (packs, scratch cards,
 missions, starter deck), so any roll can be replayed. A server backend can replace the browser one without touching
-the rest. In rooms the host resolves battles and stores every match result; hidden information (hands, picks) is
+the rest. In rooms the host resolves duels and stores every match result; hidden information (hands, picks) is
 hidden by the interface, as in the other modes.
 
 - **Results.** Every mode reports one standard result when a match ends: `{ key, mode, players, placements (ties share
@@ -353,22 +353,22 @@ hidden by the interface, as in the other modes.
   and shards. A rolled pack is saved before the animation, so a reload never re-rolls it.
 - **Collection and decks.** A book per series with completion (a finished series gets a gold edge and unlocks its card
   sleeve). Decks of exactly 10 different cards (up to 8 decks); everyone starts with a free Starter Deck (10
-  Common/Uncommon cards, 5+ series, all 7 archetypes) and 100 coins. Cards in 10 winning battles get a Veteran mark.
-- **Card battles (Battle tab).** The tab lists everyone in the room on their own lobby card (where they are, whether
+  Common/Uncommon cards, 5+ series, all 7 archetypes) and 100 coins. Cards in 10 winning duels get a Veteran mark.
+- **Card duels (Duel tab).** The tab lists everyone in the room on their own lobby card (where they are, whether
   they have a deck). Pick one player for a 1v1 or several for a free-for-all and challenge them; they accept or decline
-  in a strip at the bottom of the screen (60 s). Each challenge is its own battle in `rooms/<code>/cvb/<id>`, several can
-  run at once, and anyone else can watch. The room host builds each battle (seeded, the seed kept in the node), resolves
-  every round and stores one standard result per battle (`battleResultOf`, key `cardvault:<id>`). Pick in secret, flip
+  in a strip at the bottom of the screen (60 s). Each challenge is its own duel in `rooms/<code>/cvb/<id>`, several can
+  run at once, and anyone else can watch. The room host builds each duel (seeded, the seed kept in the node), resolves
+  every round and stores one standard result per duel (`duelResultOf`, key `cardvault:<id>`). Pick in secret, flip
   together, clash: damage = Power - Defense, then abilities, in the order written at the top of
   `js/cardvault/engine.js`. 1v1: 20 life, hand 4, draw 1; free-for-all (3-8): 25 life and a target. Pick timer with
-  auto-pick, one grace pause for a disconnect, battle log. A player can leave the battle screen (their cards are then
-  auto-picked) and return from the Battle tab. The host's lobby settings set the pick timer. Switching the lobby to another mode stops unfinished battles (no coins; the host is asked first). Practice
-  vs CPU from the Battle tab (no coins).
+  auto-pick, one grace pause for a disconnect, duel log. A player can leave the duel screen (their cards are then
+  auto-picked) and return from the Duel tab. The host's lobby settings set the pick timer. Switching the lobby to another mode stops unfinished duels (no coins; the host is asked first). Practice
+  vs CPU from the Duel tab (no coins).
 - **Trades.** In a room, Collection › Trade with friends: up to 5 cards each way; the cards are locked while the offer is
   open and each side swaps its own cards exactly once. Cards only.
-- **Balance.** `node tools/cardvault-test.mjs` simulates thousands of battles: in mixed decks a deck holding a given
+- **Balance.** `node tools/cardvault-test.mjs` simulates thousands of duels: in mixed decks a deck holding a given
   card wins 48% (Common) to 53% (Mythic) of the time and no ability falls outside 44-60%; an all-Common deck still beats an all-Legendary/Mythic one now and
-  then. Re-run it after changing an ability or `BATTLE.statTotal`.
+  then. Re-run it after changing an ability or `DUEL.statTotal`.
 - **Card faces** (`js/vault/cardui.js` + `css/cards.css`; one component everywhere: packs, collection, decks, duels, trades).
   - **Anatomy:** name bar (series seal + the name, shrunk and wrapped to two lines when long, never cut), the art window,
     big ATK / DEF plates (the stored values x100), the type line (1-7 rarity stars, archetype · series), the effect box

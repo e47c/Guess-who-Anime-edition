@@ -14,9 +14,9 @@
    7. summary: every card, NEW tags, duplicates turning into shards, the pity counter
    Reduced effects: static foil, no float, no shake, a few flakes, a simple flip, no canvas.
    ===================================================================== */
-import { cardEl, packEl, theme, seriesVars, packClip, thicken } from "./cardui.js?v=10";
-import { CARDS, RARITY_NAMES } from "./carddb.js?v=4";
-import { PACKS, OPENING as O } from "./config.js?v=12";
+import { cardEl, packEl, theme, seriesVars, packClip, thicken } from "./cardui.js?v=11";
+import { CARDS, RARITY_NAMES } from "./carddb.js?v=5";
+import { PACKS, OPENING as O } from "./config.js?v=13";
 import { motionOK } from "../fx.js";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };

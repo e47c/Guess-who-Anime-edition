@@ -1,6 +1,6 @@
 /* =====================================================================
    ANIME TCG · CARD ABILITIES
-   One shared table, used by the card generator (tools/cards-build.mjs), the battle engine (engine.js)
+   One shared table, used by the card generator (tools/cards-build.mjs), the duel engine (engine.js)
    and the card faces (text). Balance follows the RARITY OF THE ABILITY, not raw stats: every rarity has
    nearly the same Power + Defense, rarer cards get more interesting or conditional effects.
 

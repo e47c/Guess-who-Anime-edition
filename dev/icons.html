@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>TCG Icon Sheet (dev)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/cards.css?v=6">
+<style>
+/* DEV ONLY: the Anime TCG icon set (js/vault/icons.js) on dark and light, at 16 / 24 / 48 px */
+body { margin: 0; padding: 20px; background: #0d0a16; color: #eee; font: 500 14px/1.4 Inter, sans-serif; }
+h1 { margin: 0 0 4px; font: 700 24px/1 Inter; } p { color: #aaa; margin: 0 0 16px; }
+h2 { margin: 22px 0 10px; font: 700 13px/1 'JetBrains Mono'; letter-spacing: .2em; text-transform: uppercase; color: #e9c45c; }
+.g { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.c { display: grid; justify-items: center; gap: 8px; padding: 12px 6px 10px; border-radius: 12px; background: #17121f; box-shadow: inset 0 0 0 1px #2a2236; color: #e8e4f0; }
+.c.light { background: #f3efe6; color: #2a2234; box-shadow: inset 0 0 0 1px #d8d0c0; }
+.c .row { display: flex; align-items: center; gap: 10px; }
+.c .s16 .tcg-ico { width: 16px; height: 16px; } .c .s24 .tcg-ico { width: 24px; height: 24px; } .c .s48 .tcg-ico { width: 48px; height: 48px; }
+.c small { font: 600 10px/1 'JetBrains Mono'; color: inherit; opacity: .7; }
+.bar { margin-bottom: 10px; } .bar button { padding: 6px 10px; border-radius: 6px; border: 1px solid #555; background: #1c1824; color: #eee; font: 600 13px Inter; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>Anime TCG · icon sheet</h1>
+<p>One set, one style: 24 grid, 1.8 stroke, round joins, the gold accent shape. Shown at 16, 24 and 48 px.</p>
+<div class="bar"><button id="bg">Light background</button></div>
+<div id="out"></div>
+<script type="module">
+import { icon, ICON_GROUPS } from "../js/vault/icons.js?v=2";
+const out = document.getElementById("out"); let light = false;
+function draw() {
+    out.innerHTML = "";
+    Object.entries(ICON_GROUPS).forEach(([g, list]) => {
+        const h = document.createElement("h2"); h.textContent = g + " (" + list.length + ")"; out.appendChild(h);
+        const grid = document.createElement("div"); grid.className = "g";
+        list.forEach(n => { const c = document.createElement("div"); c.className = "c" + (light ? " light" : ""); c.innerHTML = '<div class="row"><span class="s16">' + icon(n) + '</span><span class="s24">' + icon(n) + '</span><span class="s48">' + icon(n) + "</span></div><small>" + n + "</small>"; grid.appendChild(c); });
+        out.appendChild(grid);
+    });
+    window.__icons = Object.values(ICON_GROUPS).flat().length;
+}
+document.getElementById("bg").onclick = () => { light = !light; draw(); };
+draw();
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 /* =====================================================================
    SEEDED RNG (one per roll)
-   Every random outcome in the Vault (pack, scratch card, mission pick, starter deck, battle auto-pick)
+   Every random outcome in the Vault (pack, scratch card, mission pick, starter deck, duel auto-pick)
    gets its own fresh 32-bit seed. The seed is written to the ledger with the result, so any roll can be
    replayed and audited: rngFrom(seed) always gives the same sequence (sfc32 seeded via splitmix32).
    ===================================================================== */

@@ -2,28 +2,29 @@
    ANIME TCG + ECONOMY · hub module (the internal id "cardvault" and the saved keys stay as they were)
    Owns the player's bank (storage layer, store.js), pays finished matches (the standard result from
    result.js, reported by game.js), the daily login bonus and daily missions (economy.js), and draws the
-   ANIME TCG page (#arcadeVault, tabs: Packs Store, Collection, Decks, Battle). ONE page, two ways in: the ANIME TCG
-   mode in a room's lobby (in-room: the room code, the friends in the room, battles), or the ANIME TCG button on the
-   main menu (no room: HOST PARTY and JOIN instead; everything but battles and trades works). The Shop is its own
+   ANIME TCG page (#arcadeVault, tabs: Packs Store, Collection, Decks, Duel). ONE page, two ways in: the ANIME TCG
+   mode in a room's lobby (in-room: the room code, the friends in the room, duels), or the ANIME TCG button on the
+   main menu (no room: HOST PARTY and JOIN instead; everything but duels and trades works). The Shop is its own
    section (shoppage.js) and the Wardrobe lives in the player card editor (js/wardrobe.js). Also: the CREDIT counter
    and coin chips (the AAP Coin balance, the only currency; they open the Shop), the daily-bonus sheet, the rewards
    drawer (streak, missions, coin history), the coin pop-up.
    Every coin change goes through bank.apply(opId, ...), so a reload, a reconnect or a double click
    never pays twice.
    ===================================================================== */
-import { createBank, localBackend } from "./store.js?v=12";
-import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=12";
-import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=11";
-import { newSeed } from "./rng.js?v=1";
-import { grantStarter, recordBattle, activeDeck, deckProblem } from "./packs.js?v=10";
-import { publicLook } from "./shop.js?v=10";
-import { initOpening } from "./opening.js?v=10";
-import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=12";
+import { createBank, localBackend } from "./store.js?v=13";
+import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=13";
+import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=12";
+import { newSeed } from "./rng.js?v=2";
+import { grantStarter, recordDuel, activeDeck, deckProblem } from "./packs.js?v=11";
+import { publicLook } from "./shop.js?v=11";
+import { initOpening } from "./opening.js?v=11";
+import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=13";
 import { motionOK } from "../fx.js";
+import { icon } from "./icons.js?v=2";
 
 export const bank = createBank(localBackend());
 export { MODE_META, FEATURES };
-["packs", "scratch", "decks", "battle", "party"].forEach(f => FEATURES.add(f));      // every part of the economy exists: their missions can roll
+["packs", "scratch", "decks", "duel", "party"].forEach(f => FEATURES.add(f));      // every part of the economy exists: their missions can roll
 
 const $ = id => document.getElementById(id);
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -46,7 +47,7 @@ async function payGame(r, ctx) {
         const out = applyGame(w, r, ctx.me, x.now, newSeed(), x.log);
         if (r.mode === "cardvault") {          // the cards you played count toward their "veteran" mark
             const place = (r.placements.find(p => p.slot === ctx.me) || {}).place;
-            recordBattle(w, ctx.cvUsed || [], place === 1);
+            recordDuel(w, ctx.cvUsed || [], place === 1);
         }
         return out;
     });
@@ -99,13 +100,15 @@ function renderChips(animate) {
         const chip = b.closest(".vault-chip"); if (chip) { chip.classList.remove(to > from ? "up" : "down", to > from ? "down" : "up"); void chip.offsetWidth; chip.classList.add(to > from ? "up" : "down"); }
     });
     const vb = $("vtBal"); if (vb) vb.textContent = fmt(to);
+    const vs = $("vtShards"); if (vs) vs.textContent = fmt(Number(bank.get().shards) || 0);
 }
 
 /* ---------- the Anime TCG page ---------- */
-const TABS = [{ id: "packs", name: "Packs Store", ico: "▣" }, { id: "collection", name: "Collection", ico: "❏" }, { id: "decks", name: "Decks", ico: "▤" }, { id: "battle", name: "Battle", ico: "⚔" }];
+const TABS = [{ id: "packs", name: "Packs Store", ico: "packs" }, { id: "collection", name: "Collection", ico: "collection" }, { id: "decks", name: "Decks", ico: "decks" }, { id: "duel", name: "Duel", ico: "duel" }];
+let slide = "";
 let tab = "packs", pageOn = false, pageDismissed = false, roomD = null, bodySig = "", homeOpen = false, joinOpen = false;
 const inRoom = () => !!(X.inRoom && X.inRoom());
-try { const t = localStorage.getItem("aap_vault_tab"); if (TABS.some(x => x.id === t)) tab = t; } catch (e) {}
+try { let t = localStorage.getItem("aap_vault_tab"); if (t === "battle") t = "duel"; if (TABS.some(x => x.id === t)) tab = t; } catch (e) {}
 const vaultRoom = d => !!d && !d.np && d.gameType === "cardvault" && (!d.status || d.status === "waiting");
 /* a Night Party in an intermission (or on its results / winner screen): anyone may open their own Anime TCG page */
 const NP_PAUSE = ["next", "match", "results", "failed", "winner"];
@@ -145,7 +148,7 @@ export function landInLobby() { pageOn = false; pageDismissed = true; homeOpen =
 export function arriveInVault() { pageOn = true; pageDismissed = false; homeOpen = false; bodySig = ""; }      // HOST PARTY from the Anime TCG page itself: you stay on your page
 function hostParty() { X.sfx("coin"); X.hostParty(); }
 function joinParty(code) { code = String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6); if (code.length !== 6) { X.toast("Enter a 6-character room code."); return; } landInLobby(); X.joinParty(code); }
-/* draw the page; on room updates only a tab that reads the room is redrawn (Battle, trades) */
+/* draw the page; on room updates only a tab that reads the room is redrawn (Duel, trades) */
 export function renderPage(d) {
     roomD = d || roomD;
     const sig = tab + "|" + roomSig(tab, roomD);
@@ -156,17 +159,20 @@ function renderVault() {
     const nav = $("vtTabs"), body = $("vtBody"); if (!nav || !body) return;
     bodySig = tab + "|" + roomSig(tab, roomD);
     nav.innerHTML = "";
-    TABS.forEach(t => {
-        const b = mk("button", "av-tab" + (t.id === tab ? " on" : "")); b.type = "button";
-        b.append(mk("i", "av-tico", t.ico), mk("span", null, t.name)); b.dataset.tab = t.id;
-        b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(t.id === tab));
-        b.onclick = () => { if (tab === t.id) return; tab = t.id; try { localStorage.setItem("aap_vault_tab", tab); } catch (e) {} X.sfx("toggle"); renderVault(); window.scrollTo(0, 0); };
+    TABS.forEach((t, i) => {
+        const b = mk("button", "tcg-tab" + (t.id === tab ? " on" : "")); b.type = "button";
+        b.innerHTML = icon(t.ico); b.appendChild(mk("span", null, t.name)); b.dataset.tab = t.id;
+        b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(t.id === tab)); b.tabIndex = t.id === tab ? 0 : -1;
+        b.onclick = () => { if (tab === t.id) return; const from = TABS.findIndex(x => x.id === tab); tab = t.id; slide = i > from ? "r" : "l"; try { localStorage.setItem("aap_vault_tab", tab); } catch (e) {} X.sfx("toggle"); renderVault(); window.scrollTo(0, 0); };
+        b.onkeydown = e => { const k = { ArrowRight: 1, ArrowLeft: -1 }[e.key]; if (!k) return; e.preventDefault(); const n = nav.children[(i + k + TABS.length) % TABS.length]; n.focus(); n.click(); };
         nav.appendChild(b);
     });
     const y = window.scrollY;
     body.innerHTML = "";
     renderTab(tab, body, H);
+    if (slide) { body.classList.remove("in-l", "in-r"); void body.offsetWidth; body.classList.add("in-" + slide); slide = ""; }
     body.dataset.tab = tab;
+    renderPass();
     if (Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y);
     const dot = $("avRwDot"); if (dot) dot.classList.toggle("hidden", loginState(bank.get(), Date.now()).claimed);
     renderCtx(true);
@@ -180,7 +186,7 @@ function renderCtx(force) {
     const slots = room && d && X.activeSlots ? X.activeSlots(d) : [];
     const sig = JSON.stringify([room, code, joinOpen, npOn, slots.map(p => { const n = d["player" + p] || {}; return [p, n.name, n.col, n.sf, n.av && (n.av.u || n.av.g)]; }), room && X.amHost && X.amHost()]);
     if (!force && sig === ctxSig) return; ctxSig = sig;
-    if (back) back.textContent = room ? (npOn ? "‹ Night Party" : "‹ Lobby") : "‹ Menu";
+    if (back) { back.innerHTML = icon("back"); back.appendChild(mk("span", null, room ? (npOn ? "Night Party" : "Lobby") : "Menu")); }
     if (rt) rt.textContent = room ? "ROOM " + code : "INSERT COIN";
     box.innerHTML = ""; box.classList.toggle("noroom", !room);
     if (room) {
@@ -199,6 +205,14 @@ function renderCtx(force) {
         f.onsubmit = e => { e.preventDefault(); joinParty(inp.value); };
         f.append(inp, go); box.appendChild(f);
     }
+}
+/* the compact Arcade Pass in the header (its equipped frame, background, name style, title, level) */
+let passSig = "";
+function renderPass() {
+    const box = $("tcgPass"); if (!box || !X.passCard || !X.profilePub) return;
+    const pub = X.profilePub(), lv = X.level ? X.level() : null, sig = JSON.stringify([pub, lv]);
+    if (sig === passSig && box.childElementCount) return; passSig = sig;
+    box.innerHTML = ""; box.appendChild(X.passCard(pub, { cls: "pass-mini", xp: lv }));
 }
 const pageVisible = () => !!$("arcadeVault") && !$("arcadeVault").classList.contains("hidden");
 /* rewards drawer: daily streak, missions, coins from games today, coin history */
@@ -318,5 +332,9 @@ export function initVault(ctx) {
     ["vaultRw", "daily"].forEach(id => { const o = $(id); if (o) o.addEventListener("click", e => { if (e.target === o) X.closeOverlay(id); }); });
     bank.onChange(() => { renderChips(true); if (pageVisible()) renderVault(); if (rwOpen()) fillRewards(); });
     renderChips(false); rollToday();
+    [["tcgCoinIco", "coin"], ["tcgShardIco", "shard"], ["tcgRwIco", "gift"]].forEach(([id, n]) => { const e = $(id); if (e) e.innerHTML = icon(n); });
+    // sound feedback: a soft tick when the pointer reaches a button (fine pointers only, throttled); presses play their own sounds
+    const page = $("arcadeVault"); let lastHover = null, lastT = 0;
+    if (page && window.matchMedia && matchMedia("(hover: hover)").matches) page.addEventListener("pointerover", e => { const b = e.target.closest && e.target.closest("button, .tcg-hov"); if (!b || b === lastHover || b.disabled) return; lastHover = b; const t = performance.now(); if (t - lastT > 90) { lastT = t; X.sfx("hover"); } });
 }
 export const vaultConfig = VCFG;

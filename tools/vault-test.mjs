@@ -2,15 +2,15 @@
 // Phase 1: the standard match result for every mode (from final room states), the storage layer (idempotent,
 // atomic, never negative), the seeded RNG, the config. Phase 2: coins per placement, anti-farming, the daily
 // cap, missions and the login streak.
-import { resultOf, resultToDb, resultFromDb, placeRows, RESULT_MODES, battleResultOf } from "../js/vault/result.js";
-import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=12";
-import { rngFrom, newSeed, pickWeighted, shuffleWith } from "../js/vault/rng.js?v=1";
-import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=12";
-import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, nightPartyValid, applyNightParty, gameCoinsOn, FEATURES } from "../js/vault/economy.js?v=11";
-import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=10";
-import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordBattle, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=10";
-import { CARDS, BY_SERIES, CARD_SERIES } from "../js/vault/carddb.js?v=4";
-import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=12";
+import { resultOf, resultToDb, resultFromDb, placeRows, RESULT_MODES, duelResultOf } from "../js/vault/result.js";
+import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=13";
+import { rngFrom, newSeed, pickWeighted, shuffleWith } from "../js/vault/rng.js?v=2";
+import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=13";
+import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, nightPartyValid, applyNightParty, gameCoinsOn, FEATURES } from "../js/vault/economy.js?v=12";
+import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=11";
+import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordDuel, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=11";
+import { CARDS, BY_SERIES, CARD_SERIES } from "../js/vault/carddb.js?v=5";
+import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=13";
 
 let ok = 0, bad = 0;
 const t = (c, m) => { if (c) ok++; else { bad++; console.log("  ✘", m); } };
@@ -78,7 +78,7 @@ sect("Anime Sketch");
 r = resultOf(room("sketch", 3, { sketch: { phase: "over", players: [1, 2, 3], score: { p1: 300, p2: 450, p3: 300 } } }), null, NOW);
 t(places(r) === "2:1 1:2 3:2", "classic and contest share the score table");
 
-sect("ANIME TCG battles (one result per challenge, not per room match)");
+sect("ANIME TCG duels (one result per challenge, not per room match)");
 r = resultOf(room("cardvault", 3, { cv: { phase: "over", places: [{ p: 2, place: 1, life: 7 }, { p: 1, place: 2, life: 0 }, { p: 3, place: 2, life: 0 }] } }), null, NOW);
 t(places(r) === "2:1 1:2 3:2", "elimination order with shared places");
 t(MODE_META.cardvault.name === "Anime TCG", "the ninth mode is called Anime TCG");
@@ -87,19 +87,19 @@ t(MODE_META.cardvault.name === "Anime TCG", "the ninth mode is called Anime TCG"
     t(resultOf(lobbyRoom, null, NOW) === null, "the Vault lobby itself never reports a match");
     const node = { from: 3, to: [1], timer: 30, at: NOW - 200000, t0: NOW - 180000, end: NOW, uids: { p1: "u1", p3: "u3" },
         s: { phase: "over", players: [3, 1], names: { p1: "P1", p3: "P3" }, places: [{ p: 3, place: 1, life: 9 }, { p: 1, place: 2, life: 0 }] } };
-    const br = battleResultOf(node, lobbyRoom, "bx1", NOW);
-    t(br && br.key === "cardvault:bx1" && br.mode === "cardvault", "battle result keyed per battle id");
+    const br = duelResultOf(node, lobbyRoom, "bx1", NOW);
+    t(br && br.key === "cardvault:bx1" && br.mode === "cardvault", "duel result keyed per duel id");
     t(places(br) === "3:1 1:2" && br.players.length === 2 && br.players.every(p => p.uid), "only the two duelists are in it, with their uids");
-    t(br.duration === 180 && br.settings.cvFormat === "duel" && br.settings.cvTimer === 30 && !("cvPack" in br.settings), "duration from the battle's own start; its settings (no free-pack setting any more)");
-    t(battleResultOf(Object.assign({}, node, { s: Object.assign({}, node.s, { phase: "pick" }) }), lobbyRoom, "bx1", NOW) === null, "no result while the battle runs");
-    t(eq(resultFromDb(JSON.parse(JSON.stringify(resultToDb(br)))), br), "a battle result survives the Firebase round trip");
-    const ffa = battleResultOf({ from: 1, to: [2, 4], t0: NOW - 90000, end: NOW, s: { phase: "over", players: [1, 2, 4], names: {}, places: [{ p: 4, place: 1, life: 3 }, { p: 1, place: 2, life: 0 }, { p: 2, place: 2, life: 0 }] } }, lobbyRoom, "bx2", NOW);
-    t(ffa.settings.cvFormat === "ffa" && ffa.players.every(p => p.uid) && places(ffa) === "4:1 1:2 2:2", "free-for-all battle, uids taken from the room when the node has none");
+    t(br.duration === 180 && br.settings.cvFormat === "duel" && br.settings.cvTimer === 30 && !("cvPack" in br.settings), "duration from the duel's own start; its settings (no free-pack setting any more)");
+    t(duelResultOf(Object.assign({}, node, { s: Object.assign({}, node.s, { phase: "pick" }) }), lobbyRoom, "bx1", NOW) === null, "no result while the duel runs");
+    t(eq(resultFromDb(JSON.parse(JSON.stringify(resultToDb(br)))), br), "a duel result survives the Firebase round trip");
+    const ffa = duelResultOf({ from: 1, to: [2, 4], t0: NOW - 90000, end: NOW, s: { phase: "over", players: [1, 2, 4], names: {}, places: [{ p: 4, place: 1, life: 3 }, { p: 1, place: 2, life: 0 }, { p: 2, place: 2, life: 0 }] } }, lobbyRoom, "bx2", NOW);
+    t(ffa.settings.cvFormat === "ffa" && ffa.players.every(p => p.uid) && places(ffa) === "4:1 1:2 2:2", "free-for-all duel, uids taken from the room when the node has none");
     let w = blankVault(NOW);
     const pay = applyGame(w, br, 3, NOW, 7, null);
     t(pay.place === 1 && pay.coins === Math.round(40 * EARN.lengthMult.short), "the winner of a 3-minute duel is paid like any short game");
-    w = blankVault(NOW); const quick = battleResultOf(Object.assign({}, node, { t0: NOW - 30000 }), lobbyRoom, "bx3", NOW);
-    t(applyGame(w, quick, 3, NOW, 7, null).coins === Math.round(40 * EARN.lengthMult.short), "a 30-second battle pays like any other (no minimum length)");
+    w = blankVault(NOW); const quick = duelResultOf(Object.assign({}, node, { t0: NOW - 30000 }), lobbyRoom, "bx3", NOW);
+    t(applyGame(w, quick, 3, NOW, 7, null).coins === Math.round(40 * EARN.lengthMult.short), "a 30-second duel pays like any other (no minimum length)");
 }
 
 sect("Firebase round trip");
@@ -339,7 +339,7 @@ sect("starter deck and decks");
 w = blankVault(T0); const st0 = grantStarter(w, 11, "Starter deck", T0);
 const sc0 = st0.cards.map(id => CARDS[id]);
 t(st0.cards.length === 10 && sc0.every(c => c.r <= 1) && new Set(sc0.map(c => c.s)).size >= 5 && new Set(sc0.map(c => c.a)).size === 7, "10 Common/Uncommon cards from 5+ series, all 7 archetypes");
-t(activeDeck(w).id === "starter" && !deckProblem(w, activeDeck(w).cards), "it's saved as the active deck, ready to battle");
+t(activeDeck(w).id === "starter" && !deckProblem(w, activeDeck(w).cards), "it's saved as the active deck, ready to duel");
 t(grantStarter(w, 12).error && w.decks.length === 1, "only once");
 t(w.coins === VAULT.startCoins && VAULT.startCoins === 100, "plus the 100 starting coins");
 t(saveDeck(w, { name: "x", cards: st0.cards.slice(0, 9) }).error && saveDeck(w, { name: "x", cards: st0.cards.slice(0, 9).concat([st0.cards[0]]) }).error, "exactly 10 different cards");
@@ -350,9 +350,9 @@ t(!sd.error && w.decks.length === 2 && !setActiveDeck(w, sd.deck.id).error && ac
 deleteDeck(w, sd.deck.id); t(w.decks.length === 1 && activeDeck(w).id === "starter", "delete a deck: the active one falls back");
 for (let i = 0; i < DECK.maxDecks; i++) saveDeck(w, { name: "D" + i, cards: st0.cards });
 t(w.decks.length === DECK.maxDecks && saveDeck(w, { name: "one too many", cards: st0.cards }).error, "up to " + DECK.maxDecks + " decks");
-for (let i = 0; i < 9; i++) recordBattle(w, [st0.cards[0]], true);
-t(!veteran(w, st0.cards[0]), "9 wins: not a veteran yet"); recordBattle(w, [st0.cards[0], st0.cards[0]], true); t(veteran(w, st0.cards[0]) && w.battles.w === 10, "10 winning battles: the Veteran mark");
-recordBattle(w, [st0.cards[1]], false); t(!veteran(w, st0.cards[1]) && w.battles.p === 11, "losses count as played only");
+for (let i = 0; i < 9; i++) recordDuel(w, [st0.cards[0]], true);
+t(!veteran(w, st0.cards[0]), "9 wins: not a veteran yet"); recordDuel(w, [st0.cards[0], st0.cards[0]], true); t(veteran(w, st0.cards[0]) && w.duels.w === 10, "10 winning duels: the Veteran mark");
+recordDuel(w, [st0.cards[1]], false); t(!veteran(w, st0.cards[1]) && w.duels.p === 11, "losses count as played only");
 
 sect("trades (cards only)");
 const A0 = blankVault(T0), B0 = blankVault(T0);

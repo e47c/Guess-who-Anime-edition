@@ -1,5 +1,5 @@
 /* =====================================================================
-   ANIME TCG · CARD BATTLE ENGINE (pure: no DOM, no Firebase; tested in tools/cardvault-test.mjs)
+   ANIME TCG · CARD DUEL ENGINE (pure: no DOM, no Firebase; tested in tools/cardvault-test.mjs)
    1v1 ("duel"): 10-card decks, 20 life, opening hand 4, draw 1 per round.
    Free-for-all ("ffa", 3-8 players): 25 life; every player also picks a target.
    The host runs every change inside a Firebase transaction; clients only send their pick.
@@ -22,17 +22,17 @@
    3. The game ends when one player is left, or every hand and deck is empty: then the higher life wins. A tie on
       life plays one sudden-death clash with each player's best card (no abilities); still tied = a draw.
    ===================================================================== */
-import { ABILITIES } from "./abilities.js?v=2";
-import { CARDS } from "../vault/carddb.js?v=4";
-import { BATTLE } from "../vault/config.js?v=12";
-import { rngFrom, shuffleWith } from "../vault/rng.js?v=1";
+import { ABILITIES } from "./abilities.js?v=3";
+import { CARDS } from "../vault/carddb.js?v=5";
+import { DUEL } from "../vault/config.js?v=13";
+import { rngFrom, shuffleWith } from "../vault/rng.js?v=2";
 
 export const arr = v => Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : [];
 const pk = p => "p" + p;
 export const REVEAL_MS = 4200;           // time the reveal animation gets before the next pick timer starts
 
-export function newBattle({ mid, fmt = "duel", players, decks, names = {}, now = 0, seed = 1, pickMs = BATTLE.pickSeconds * 1000 }) {
-    const F = fmt === "ffa" ? BATTLE.ffa : BATTLE.duel, rng = rngFrom(seed);
+export function newDuel({ mid, fmt = "duel", players, decks, names = {}, now = 0, seed = 1, pickMs = DUEL.pickSeconds * 1000 }) {
+    const F = fmt === "ffa" ? DUEL.ffa : DUEL.duel, rng = rngFrom(seed);
     const s = { v: 1, mid, fmt, players: players.map(Number), names: {}, max: F.life, life: {}, hand: {}, deck: {}, disc: {}, prev: {}, wins: {}, used: {}, picks: {}, away: {},
         round: 1, phase: "pick", pickMs, dl: now + pickMs, seed, n: 0, last: null, log: [], out: [], places: null, scout: {}, ext: 0 };
     s.players.forEach(p => {
@@ -201,7 +201,7 @@ export function resolveRound(s, now = 0) {
         disc[pk(p)] = arr(disc[pk(p)]).concat([c]); prev[pk(p)] = c; used[pk(p)] = arr(used[pk(p)]).concat([c]);
     });
     alive({ players: s.players, out: s.out }).forEach(p => {
-        const n = (BATTLE[s.fmt === "ffa" ? "ffa" : "duel"].draw) + (extraDraw[p] || 0), dk = arr(deck[pk(p)]).slice();
+        const n = (DUEL[s.fmt === "ffa" ? "ffa" : "duel"].draw) + (extraDraw[p] || 0), dk = arr(deck[pk(p)]).slice();
         hand[pk(p)] = arr(hand[pk(p)]).concat(dk.splice(0, n)); deck[pk(p)] = dk;
     });
     Object.assign(s, { hand, deck, disc, prev, used });
@@ -211,7 +211,7 @@ export function resolveRound(s, now = 0) {
     s.log = arr(s.log).concat([{ r: s.round, l: lines }]).slice(-40);
     s.picks = {};
     s.round = Number(s.round) + 1;
-    s.dl = now + REVEAL_MS + Number(s.pickMs || BATTLE.pickSeconds * 1000); s.ext = 0;
+    s.dl = now + REVEAL_MS + Number(s.pickMs || DUEL.pickSeconds * 1000); s.ext = 0;
     endCheck(s);
     return true;
 }
@@ -265,7 +265,7 @@ export function due(s, now, present = () => true) {
     return "resolve";
 }
 export function applyDue(s, kind, now, present = () => true) {
-    if (kind === "grace") { s.ext = s.round; s.dl = now + BATTLE.reconnectGrace * 1000; return true; }
+    if (kind === "grace") { s.ext = s.round; s.dl = now + DUEL.reconnectGrace * 1000; return true; }
     if (kind === "resolve") {
         alive(s).filter(p => !hasPicked(s, p) && !present(p)).forEach(p => { s.away = Object.assign({}, s.away, { [pk(p)]: 1 }); });
         return resolveRound(s, now);

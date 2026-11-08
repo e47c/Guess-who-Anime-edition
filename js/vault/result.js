@@ -121,10 +121,10 @@ export function resultOf(d, x, now = Date.now()) {
     return out;
 }
 
-/* ANIME TCG card battles are challenges between some of the players in a room (rooms/<code>/cvb/<bid>), not a
-   room-wide match, so they report one standard result per battle: key "cardvault:<bid>". b = the battle node
+/* ANIME TCG card duels are challenges between some of the players in a room (rooms/<code>/cvb/<bid>), not a
+   room-wide match, so they report one standard result per duel: key "cardvault:<bid>". b = the duel node
    ({ s: engine state, uids, t0, end, timer, pack }), d = the room (for uids of older nodes). Pure. */
-export function battleResultOf(b, d, bid, now = Date.now()) {
+export function duelResultOf(b, d, bid, now = Date.now()) {
     const s = b && b.s; if (!s || s.phase !== "over" || !bid) return null;
     const rows = arr(s.places).map(r => ({ p: num(r.p), score: num(r.life), place: num(r.place) }));
     if (!rows.length) return null;

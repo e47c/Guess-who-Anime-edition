@@ -12,8 +12,8 @@
    4. Paid only if: 2+ real players (distinct accounts). Every finished game pays, however short it was.
       There is no daily limit on coins from games.
    ===================================================================== */
-import { EARN, DAILY_LOGIN, MISSIONS, MODE_META, BATTLE } from "./config.js?v=12";
-import { rngFrom, shuffleWith } from "./rng.js?v=1";
+import { EARN, DAILY_LOGIN, MISSIONS, MODE_META, DUEL } from "./config.js?v=13";
+import { rngFrom, shuffleWith } from "./rng.js?v=2";
 import { NIGHT_PARTY } from "../party/config.js?v=2";
 
 /* parts of the Vault that exist so far (missions that need a missing part are never rolled) */
@@ -41,7 +41,7 @@ export function placeValues(placements) {
     }
     return out;
 }
-export const lengthOf = mode => mode === "cardvault" ? BATTLE.length : (MODE_META[mode] || {}).length || "medium";
+export const lengthOf = mode => mode === "cardvault" ? DUEL.length : (MODE_META[mode] || {}).length || "medium";
 
 /* can this game pay at all? */
 export function gameValid(r) {
@@ -59,7 +59,7 @@ export const myPlace = (r, slot) => (r.placements.find(p => p.slot === slot) || 
 /* ---------- daily missions ---------- */
 function staleModes(w, now) {
     const cut = now - MISSIONS.freshModeDays * 86400000;
-    return Object.keys(MODE_META).filter(m => (m !== "cardvault" || FEATURES.has("battle")) && !(Number((w.modes || {})[m]) > cut));
+    return Object.keys(MODE_META).filter(m => (m !== "cardvault" || FEATURES.has("duel")) && !(Number((w.modes || {})[m]) > cut));
 }
 /* rolls today's missions once (seeded; the seed goes in the ledger). Returns true if it rolled. */
 export function ensureMissions(w, now, seed, log) {
@@ -68,7 +68,7 @@ export function ensureMissions(w, now, seed, log) {
     const rng = rngFrom(seed);
     let stale = staleModes(w, now);
     if (!stale.length) {     // played everything this week: the least recently played mode
-        const all = Object.keys(MODE_META).filter(m => m !== "cardvault" || FEATURES.has("battle"));
+        const all = Object.keys(MODE_META).filter(m => m !== "cardvault" || FEATURES.has("duel"));
         stale = [all.sort((a, b) => (Number(w.modes[a]) || 0) - (Number(w.modes[b]) || 0))[0]];
     }
     const fresh = Object.assign({}, MISSIONS.fresh, { modes: shuffleWith(rng, stale).slice(0, 4), prog: 0, done: false });

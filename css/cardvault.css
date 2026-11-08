@@ -1,5 +1,5 @@
 /* =====================================================================
-   ARCADE VAULT (mode 9) · card battles: battle screen, practice overlay, lobby panel, menu + lobby skins.
+   ARCADE VAULT (mode 9) · card duels: duel screen, practice overlay, lobby panel, menu + lobby skins.
    Mobile first. Reduced effects: no flips, floating numbers or banners animation (they just appear).
    ===================================================================== */
 #cardvault { min-height: 100dvh; background: radial-gradient(ellipse at 50% 30%, rgba(120,70,220,.18), transparent 60%), radial-gradient(ellipse at 50% 100%, rgba(225,27,27,.12), transparent 60%), #08060c; }

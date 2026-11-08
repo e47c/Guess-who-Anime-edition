@@ -1,9 +1,9 @@
-// ANIME TCG card-battle engine tests + balance simulation: node tools/cardvault-test.mjs [--sims N]
-import { newBattle, act, resolveRound, alive, handOf, lifeOf, autoPick, due, applyDue, playOut, cpuPick, allPicked, REVEAL_MS } from "../js/cardvault/engine.js?v=10";
-import { ABILITIES, ARCHETYPES, RARITY_NAMES } from "../js/cardvault/abilities.js?v=2";
-import { CARDS, BY_SERIES_RARITY, CARD_SERIES, TOTAL_CARDS } from "../js/vault/carddb.js?v=4";
-import { BATTLE } from "../js/vault/config.js?v=12";
-import { rngFrom, shuffleWith } from "../js/vault/rng.js?v=1";
+// ANIME TCG card-duel engine tests + balance simulation: node tools/cardvault-test.mjs [--sims N]
+import { newDuel, act, resolveRound, alive, handOf, lifeOf, autoPick, due, applyDue, playOut, cpuPick, allPicked, REVEAL_MS } from "../js/cardvault/engine.js?v=11";
+import { ABILITIES, ARCHETYPES, RARITY_NAMES } from "../js/cardvault/abilities.js?v=3";
+import { CARDS, BY_SERIES_RARITY, CARD_SERIES, TOTAL_CARDS } from "../js/vault/carddb.js?v=5";
+import { DUEL } from "../js/vault/config.js?v=13";
+import { rngFrom, shuffleWith } from "../js/vault/rng.js?v=2";
 
 let ok = 0, bad = 0;
 const t = (c, m) => { if (c) ok++; else { bad++; console.log("  ✘", m); } };
@@ -16,7 +16,7 @@ const filler = () => plain().map(c => c.id);
 /* a duel where p1 plays card a and p2 card b this round (both first in hand) */
 function duel(a, b, o = {}) {
     const F = filler(), dA = [a].concat(F.filter(x => x !== a && x !== b).slice(0, 9)), dB = [b].concat(F.filter(x => x !== a && x !== b).slice(9, 18));
-    const s = newBattle({ mid: 1, fmt: "duel", players: [1, 2], decks: { p1: dA, p2: dB }, names: { p1: "A", p2: "B" }, seed: 5 });
+    const s = newDuel({ mid: 1, fmt: "duel", players: [1, 2], decks: { p1: dA, p2: dB }, names: { p1: "A", p2: "B" }, seed: 5 });
     s.hand.p1 = [a].concat(s.hand.p1.filter(x => x !== a)).slice(0, 4); s.hand.p2 = [b].concat(s.hand.p2.filter(x => x !== b)).slice(0, 4);
     if (o.life) { s.life.p1 = o.life[0]; s.life.p2 = o.life[1]; }
     if (o.prev) { s.prev.p1 = o.prev[0]; s.prev.p2 = o.prev[1]; }
@@ -30,7 +30,7 @@ sect("cards");
 t(TOTAL_CARDS === 831 && CARD_SERIES.length === 18, "831 cards in 18 series");
 t(CARD_SERIES.every(s => BY_SERIES_RARITY[s].every(list => list.length >= 1)), "every series has at least one card of every rarity (packs only drop their own series)");
 const tot = all.map(c => c.pow + c.def);
-t(all.every(c => { const [lo, hi] = BATTLE.statTotal[c.rk]; return c.pow + c.def >= lo && c.pow + c.def <= hi && c.pow >= 2 && c.def >= 1; }), "Power + Defense stay inside each rarity's (nearly flat) total");
+t(all.every(c => { const [lo, hi] = DUEL.statTotal[c.rk]; return c.pow + c.def >= lo && c.pow + c.def <= hi && c.pow >= 2 && c.def >= 1; }), "Power + Defense stay inside each rarity's (nearly flat) total");
 const avgT = r => { const l = all.filter(c => c.r === r); return (l.reduce((s, c) => s + c.pow + c.def, 0) / l.length).toFixed(2); };
 console.log("   average Power+Defense by rarity: " + RARITY_NAMES.map((n, r) => n + " " + avgT(r)).join(", "));
 t(all.every(c => ABILITIES[c.ab] && ABILITIES[c.ab].tier === c.r), "each card's ability matches its rarity tier");
@@ -41,7 +41,7 @@ const P8 = find(c => c.ab === "c_combo" && c.pow === 8), D3 = find(c => c.ab ===
 let s = duel(P8.id, D3.id);
 t(dmgTo(s, 2) === Math.max(0, P8.pow - D3.def) && dmgTo(s, 1) === Math.max(0, D3.pow - P8.def), "damage = Power - Defense, both ways at once: " + dmgTo(s, 2) + " / " + dmgTo(s, 1));
 t(lifeOf(s, 2) === 20 - dmgTo(s, 2) && handOf(s, 1).length === 4 && s.disc.p1.length === 1 && s.round === 2, "life down, played card discarded, drew back to 4");
-t(s.dl === REVEAL_MS + BATTLE.pickSeconds * 1000, "the next pick timer starts after the reveal");
+t(s.dl === REVEAL_MS + DUEL.pickSeconds * 1000, "the next pick timer starts after the reveal");
 
 sect("abilities");
 const pierce = byAb("u_pierce"), tank = all.filter(c => c.ab === "c_combo" && c.def >= 5).sort((a, b) => b.def - a.def)[0];
@@ -101,11 +101,11 @@ s = duel(domain.id, rareT.id);
 t(dmgTo(s, 2) === Math.max(0, domain.pow - Math.max(0, rareT.def - 1)), "...Pierce 1 against Rare or better");
 const scout = byAb("u_scout");
 s = duel(scout.id, D3.id);
-t(s.scout.p1 && s.scout.p1.from === 2 && handOf(newBattle({ mid: 1, players: [1, 2], decks: { p1: filler().slice(0, 10), p2: filler().slice(10, 20) } }), 1).length === 4, "Scout records one card from their hand (shown only to the scout)");
+t(s.scout.p1 && s.scout.p1.from === 2 && handOf(newDuel({ mid: 1, players: [1, 2], decks: { p1: filler().slice(0, 10), p2: filler().slice(10, 20) } }), 1).length === 4, "Scout records one card from their hand (shown only to the scout)");
 
 sect("a full duel");
 const rng = rngFrom(9), deckOf = (seed) => shuffleWith(rngFrom(seed), all.map(c => c.id)).slice(0, 10);
-s = newBattle({ mid: 2, fmt: "duel", players: [1, 2], decks: { p1: deckOf(1), p2: deckOf(2) }, names: { p1: "A", p2: "B" }, seed: 77 });
+s = newDuel({ mid: 2, fmt: "duel", players: [1, 2], decks: { p1: deckOf(1), p2: deckOf(2) }, names: { p1: "A", p2: "B" }, seed: 77 });
 t(handOf(s, 1).length === 4 && s.deck.p1.length === 6 && lifeOf(s, 1) === 20, "opening hand 4, 20 life");
 t(act(s, { p: 1, c: 999999 }) === "not in hand" && act(s, { p: 3, c: handOf(s, 1)[0] }) === "out", "illegal picks are refused");
 playOut(s, rng);
@@ -113,12 +113,12 @@ t(s.phase === "over" && s.places.length === 2 && s.round <= 11, "ends within 10 
 t(s.places[0].place === 1 && (s.places[1].place === 2 || s.places[1].place === 1), "placements: " + JSON.stringify(s.places));
 
 sect("timer, auto-pick, reconnects");
-s = newBattle({ mid: 3, fmt: "duel", players: [1, 2], decks: { p1: deckOf(3), p2: deckOf(4) }, now: 0, seed: 3 });
+s = newDuel({ mid: 3, fmt: "duel", players: [1, 2], decks: { p1: deckOf(3), p2: deckOf(4) }, now: 0, seed: 3 });
 act(s, { p: 1, c: handOf(s, 1)[0] });
 t(due(s, 1000) === null && due(s, s.dl) === "resolve", "waits for the timer, then resolves");
 t(due(s, s.dl, p => p !== 2) === "grace", "a player who just dropped gets one grace pause");
 applyDue(s, "grace", s.dl);
-t(s.dl === BATTLE.pickSeconds * 1000 + BATTLE.reconnectGrace * 1000 && due(s, s.dl - 1, p => p !== 2) === null, "+" + BATTLE.reconnectGrace + " s");
+t(s.dl === DUEL.pickSeconds * 1000 + DUEL.reconnectGrace * 1000 && due(s, s.dl - 1, p => p !== 2) === null, "+" + DUEL.reconnectGrace + " s");
 applyDue(s, due(s, s.dl, p => p !== 2), s.dl, p => p !== 2);
 t(s.round === 2 && s.away.p2 === 1 && s.log[0].l.some(l => /auto-pick/.test(l)), "then auto-picks and marks them away");
 act(s, { p: 1, c: handOf(s, 1)[0] });
@@ -129,7 +129,7 @@ const ap = autoPick(s, 1);
 t(ap && handOf(s, 1).includes(ap.c) && ap.c === handOf(s, 1).slice().sort((a, b) => (C(b).pow * 2 + C(b).def + C(b).r * .4) - (C(a).pow * 2 + C(a).def + C(a).r * .4) || a - b)[0], "auto-pick = the strongest card");
 
 sect("free-for-all");
-s = newBattle({ mid: 4, fmt: "ffa", players: [1, 2, 3, 4], decks: { p1: deckOf(5), p2: deckOf(6), p3: deckOf(7), p4: deckOf(8) }, seed: 4 });
+s = newDuel({ mid: 4, fmt: "ffa", players: [1, 2, 3, 4], decks: { p1: deckOf(5), p2: deckOf(6), p3: deckOf(7), p4: deckOf(8) }, seed: 4 });
 t(lifeOf(s, 3) === 25, "25 life");
 [1, 2, 3, 4].forEach(p => act(s, { p, c: handOf(s, p)[0], t: p === 1 ? 2 : 1 }));
 t(s.picks.p1.t === 2 && s.picks.p2.t === 1 && s.picks.p3.t === 1, "everyone picks a target");
@@ -146,7 +146,7 @@ const ko = arr2(s.out);
 function arr2(v) { return Array.isArray(v) ? v : Object.values(v || {}); }
 t(ko.every((o, i) => s.places.find(x => x.p === o.p)), "every knocked-out player is placed");
 // simultaneous knock-outs share a place
-s = newBattle({ mid: 5, fmt: "ffa", players: [1, 2, 3], decks: { p1: deckOf(9), p2: deckOf(10), p3: deckOf(11) }, seed: 6 });
+s = newDuel({ mid: 5, fmt: "ffa", players: [1, 2, 3], decks: { p1: deckOf(9), p2: deckOf(10), p3: deckOf(11) }, seed: 6 });
 s.life.p2 = 1; s.life.p3 = 1;
 [1, 2, 3].forEach(p => act(s, { p, c: handOf(s, p)[0], t: p === 1 ? 2 : 1 }));
 s.picks.p3 = { c: s.picks.p3.c, t: 1 }; s.picks.p2 = { c: s.picks.p2.c, t: 1 };
@@ -156,7 +156,7 @@ if (!alive(s).includes(2) && !alive(s).includes(3)) { playOut(s, rngFrom(1)); t(
 else ok++;
 
 sect("ties at the end");
-s = newBattle({ mid: 6, fmt: "duel", players: [1, 2], decks: { p1: filler().slice(0, 10), p2: filler().slice(0, 10) }, seed: 1 });
+s = newDuel({ mid: 6, fmt: "duel", players: [1, 2], decks: { p1: filler().slice(0, 10), p2: filler().slice(0, 10) }, seed: 1 });
 s.hand.p1 = []; s.hand.p2 = []; s.deck.p1 = []; s.deck.p2 = []; s.used.p1 = [P8.id]; s.used.p2 = [D3.id]; s.life.p1 = 5; s.life.p2 = 5;
 s.hand.p1 = [P8.id]; s.hand.p2 = [P8.id];
 s.life.p1 = 30; s.life.p2 = 30;
@@ -167,7 +167,7 @@ sect("balance (simulated games)");
 const N = Number((process.argv.find(a => a.startsWith("--sims=")) || "--sims=3000").split("=")[1]);
 const pool = r => all.filter(c => c.r === r).map(c => c.id);
 const randDeck = (g, rs) => { const out = new Set(); while (out.size < 10) { const r = rs[Math.floor(g() * rs.length)], p = pool(r); out.add(p[Math.floor(g() * p.length)]); } return [...out]; };
-function match(dA, dB, seed) { const st = newBattle({ mid: seed, players: [1, 2], decks: { p1: dA, p2: dB }, seed }); playOut(st, rngFrom(seed * 7 + 1)); return st.winners.length === 1 ? (st.winners[0] === 1 ? 1 : 0) : .5; }
+function match(dA, dB, seed) { const st = newDuel({ mid: seed, players: [1, 2], decks: { p1: dA, p2: dB }, seed }); playOut(st, rngFrom(seed * 7 + 1)); return st.winners.length === 1 ? (st.winners[0] === 1 ? 1 : 0) : .5; }
 const g = rngFrom(2026);
 let w = 0; for (let i = 0; i < N; i++) w += match(randDeck(g, [0]), randDeck(g, [6, 5]), i + 1);
 const cVsTop = w / N;

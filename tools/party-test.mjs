@@ -1,10 +1,10 @@
 /* Night Party unit tests: node tools/party-test.mjs
    Phase 1: the stage registry (metadata, settings schema, formats, fits, team patches) and its match with the
    standard result every mode reports. */
-import { MODE_META } from "../js/vault/config.js?v=12";
-import { RESULT_MODES, RESULT_SETTINGS } from "../js/vault/result.js?v=5";
+import { MODE_META } from "../js/vault/config.js?v=13";
+import { RESULT_MODES, RESULT_SETTINGS } from "../js/vault/result.js?v=6";
 import { basePoints, sharePoints, stagePoints, teamPlacements, adjustPlacements, standings, topTied, leadGap, lateStart, seedOrder, splitTeams, seedSlots, makeBracket, normBracket, nextMatch, recordWin, bracketDone, matchesLeft, bracketPlacements, sdWinners } from "../js/party/scoring.js?v=2";
-import { STAGE_SETTINGS, registerStage, stageIds, stageMeta, fastStages, normalizeSettings, defaultSettings, formatOf, stageFits, teamPatch, estMinutes, estTotal } from "../js/party/stages.js?v=7";
+import { STAGE_SETTINGS, registerStage, stageIds, stageMeta, fastStages, normalizeSettings, defaultSettings, formatOf, stageFits, teamPatch, estMinutes, estTotal } from "../js/party/stages.js?v=8";
 import { NIGHT_PARTY } from "../js/party/config.js?v=2";
 
 let pass = 0, fail = 0;
@@ -15,14 +15,14 @@ const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 sect("registry");
 const modes = Object.keys(MODE_META).filter(m => MODE_META[m].stage !== false);
 t(eq(stageIds().sort(), modes.slice().sort()), "every mode except Anime TCG is a stage (" + stageIds().join(", ") + ")");
-t(!stageMeta("cardvault") && MODE_META.cardvault.stage === false, "Anime TCG battles are not a stage yet");
+t(!stageMeta("cardvault") && MODE_META.cardvault.stage === false, "Anime TCG duels are not a stage yet");
 t(stageIds().every(id => RESULT_MODES.includes(id)), "every stage reports the standard result");
 t(stageIds().every(id => { const m = stageMeta(id); return m.min >= 2 && m.max <= 8 && m.min <= m.max && ["short", "medium", "long"].includes(m.length) && (m.teams || m.ffa || m.oneVone); }), "every stage has players, a length and at least one format");
 t(eq(fastStages().sort(), ["classic", "likely"]), "fast stages (tiebreaker pool): Guess Who and Most Likely");
 let threw = false; try { registerStage("broken", { name: "Broken" }); } catch (e) { threw = /missing/.test(e.message); }
 t(threw && !stageMeta("broken"), "registering a stage without its metadata is refused");
-const cv = registerStage("cvtest", { name: "Card Battle", min: 2, max: 2, oneVone: true, length: "short", fast: true, settings: { cvTimer: { choices: [20, 30, 45], def: 30 } } });
-t(stageMeta("cvtest") === cv && formatOf("cvtest", {}) === "duel" && stageFits("cvtest", {}, 8).ok && fastStages().includes("cvtest"), "a later stage (e.g. card battles) plugs in with one registerStage call");
+const cv = registerStage("cvtest", { name: "Card Duel", min: 2, max: 2, oneVone: true, length: "short", fast: true, settings: { cvTimer: { choices: [20, 30, 45], def: 30 } } });
+t(stageMeta("cvtest") === cv && formatOf("cvtest", {}) === "duel" && stageFits("cvtest", {}, 8).ok && fastStages().includes("cvtest"), "a later stage (e.g. card duels) plugs in with one registerStage call");
 
 sect("settings schema = the lobby keys");
 t(stageIds().filter(id => id !== "cvtest").every(id => eq(Object.keys(STAGE_SETTINGS[id]).sort(), RESULT_SETTINGS[id].slice().sort())), "each stage's settings are exactly the keys its result reports");

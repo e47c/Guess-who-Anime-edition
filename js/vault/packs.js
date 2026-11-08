@@ -13,9 +13,9 @@
    5. the cards go into the collection right away (the opening animation only reveals them), in reveal order:
       lowest rarity first, best last.
    ===================================================================== */
-import { PACKS, SHARDS, RARITY_ORDER, DECK, TRADE } from "./config.js?v=12";
-import { CARDS, BY_SERIES, BY_SERIES_RARITY, CARD_SERIES } from "./carddb.js?v=4";
-import { rngFrom, pickWeighted, pickInt, shuffleWith } from "./rng.js?v=1";
+import { PACKS, SHARDS, RARITY_ORDER, DECK, TRADE } from "./config.js?v=13";
+import { CARDS, BY_SERIES, BY_SERIES_RARITY, CARD_SERIES } from "./carddb.js?v=5";
+import { rngFrom, pickWeighted, pickInt, shuffleWith } from "./rng.js?v=2";
 
 export const owned = (w, id) => { const c = (w.cards || {})[id]; return !!c && (c.n > 0 || c.h > 0); };
 export const isHolo = (w, id) => !!((w.cards || {})[id] || {}).h;
@@ -123,9 +123,9 @@ export function setActiveDeck(w, id) { if (!(w.decks || []).some(d => d.id === i
 export const activeDeck = w => (w.decks || []).find(d => d.id === w.activeDeck) || (w.decks || [])[0] || null;
 function fixDecks(w) { (w.decks || []).forEach(d => { d.bad = deckProblem(w, d.cards) ? 1 : 0; }); }
 
-/* ---------- after a card battle: wins per card (the cosmetic "veteran" mark at 10) ---------- */
-export function recordBattle(w, played, won) {
-    w.battles = Object.assign({ p: 0, w: 0 }, w.battles); w.battles.p++; if (won) w.battles.w++;
+/* ---------- after a card duel: wins per card (the cosmetic "veteran" mark at 10) ---------- */
+export function recordDuel(w, played, won) {
+    w.duels = Object.assign({ p: 0, w: 0 }, w.duels); w.duels.p++; if (won) w.duels.w++;
     if (won) { w.cards = Object.assign({}, w.cards); [...new Set((played || []).map(Number))].forEach(id => { if (w.cards[id]) w.cards[id] = Object.assign({}, w.cards[id], { w: (Number(w.cards[id].w) || 0) + 1 }); }); }
     return { won: !!won };
 }

@@ -13,3 +13,17 @@ is never reset: card ids are AniList character ids and no phase changes them.
 - `tools/cards-build.mjs` re-run: only the old "fit" column changed (42 cards); ids, rarities, stats and abilities are
   identical.
 - Gallery `dev/cards.html` with automatic checks: every card passes at small, medium and large sizes except the 2 above.
+
+## Phase 2: page shell, design tokens, icon set, Battle -> Duel (done 2026-11-08)
+
+- One shell (`index.html` #arcadeVault, `js/vault/vault.js`, `css/tcg.css`): a card-table background (felt playmat,
+  stitched edge, play-zone rings, floating foil dust, vignette; still under Reduced effects), a header with the coin
+  balance, shards, a compact Arcade Pass and Daily rewards, the context bar (room code + friends, or HOST PARTY / JOIN),
+  and the tab bar Packs Store | Collection | Decks | Duel (icons, arrow keys, slide transitions, hover / press states,
+  a soft hover tick from the generated sounds).
+- Design tokens on `.tcg-page` (colours, spacing, radii, shadows, type) and shared components (panels, gold / steel
+  buttons, chips, pills, progress bars and rings, section headings, empty states).
+- The icon set (`js/vault/icons.js`, 79 icons in one style) with its sheet `dev/icons.html`.
+- Battle is Duel everywhere: tabs, buttons, texts, missions, code names and config keys (`DUEL` in config.js). Saved
+  data is migrated: the wallet's duel record (was `battles`), today's "Win a card duel" mission (was `battle1`), the
+  remembered tab.

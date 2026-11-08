@@ -18,7 +18,7 @@
      document first, so two tabs can't both spend the same coins.
    - A coin balance never goes below 0 (spend() refuses instead).
    ===================================================================== */
-import { VAULT } from "./config.js?v=12";
+import { VAULT } from "./config.js?v=13";
 
 export const VAULT_KEY = "aap_vault_v1";
 const DAY = 86400000;
@@ -38,7 +38,7 @@ export function blankVault(now = Date.now()) {
         cards: {}, shards: 0,                    // collection {id: {n, h, at, by, w}} + crafting shards
         decks: [], activeDeck: "", starter: 0,   // saved 10-card decks
         pending: [], tokens: {}, packsOpened: 0, // rolled-but-unrevealed packs, free pack tokens
-        locks: {}, battles: { p: 0, w: 0 }       // cards held in open trade offers, card battle record
+        locks: {}, duels: { p: 0, w: 0 }       // cards held in open trade offers, card duel record
     };
 }
 
@@ -137,5 +137,8 @@ export function migrate(d, now = Date.now()) {
     delete out.earn;                              // the old daily-cap counter (the cap was removed)
     out.ledger = Array.isArray(d.ledger) ? d.ledger : []; out.ops = d.ops && typeof d.ops === "object" ? d.ops : {};
     out.coins = Math.max(0, Math.round(Number(d.coins) || 0));
+    if (d.battles && !d.duels) out.duels = Object.assign({ p: 0, w: 0 }, d.battles);       // renamed (Battle -> Duel): keep the record
+    delete out.battles;
+    if (out.missions && Array.isArray(out.missions.list)) out.missions.list = out.missions.list.map(m => m && m.id === "battle1" ? Object.assign({}, m, { id: "duel1", text: "Win a card duel", needs: "duel" }) : m);
     return out;
 }

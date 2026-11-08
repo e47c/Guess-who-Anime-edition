@@ -9,10 +9,10 @@
      - whether it fits a player count (stageFits), and how a team split is written into the room (teamPatch).
    The room keys and the schema keys are the same ones result.js copies into a result's `settings`.
 
-   Adding a stage later (for example ANIME TCG card battles) = one registerStage(id, meta) call with its
+   Adding a stage later (for example ANIME TCG card duels) = one registerStage(id, meta) call with its
    metadata, settings schema and format; nothing else here changes.
    ===================================================================== */
-import { MODE_META } from "../vault/config.js?v=12";
+import { MODE_META } from "../vault/config.js?v=13";
 import { FEUD_RULES as R } from "../feud/engine.js?v=5";
 import { SK } from "../sketch/engine.js?v=5";
 import { NIGHT_PARTY as NP } from "./config.js?v=2";

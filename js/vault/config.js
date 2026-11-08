@@ -29,7 +29,7 @@ export const MODE_META = {
     feud:      { name: "Anime Feud",       min: 2, max: 8, teams: true,  ffa: false, oneVone: false, length: "long",   fast: false },
     likely:    { name: "Most Likely",      min: 2, max: 8, teams: true,  ffa: true,  oneVone: false, length: "medium", fast: true  },
     sketch:    { name: "Anime Sketch",     min: 2, max: 8, teams: false, ffa: true,  oneVone: false, length: "long",   fast: false },
-    cardvault: { name: "Anime TCG",     min: 2, max: 8, teams: false, ffa: true,  oneVone: true,  length: "short",  fast: true, stage: false }   // id kept for saved data; battles become a stage later
+    cardvault: { name: "Anime TCG",     min: 2, max: 8, teams: false, ffa: true,  oneVone: true,  length: "short",  fast: true, stage: false }   // id kept for saved data; duels become a stage later
 };
 
 /* ---------- A2. Earning coins ---------- */
@@ -54,7 +54,7 @@ export const MISSIONS = {
         { id: "squad4",    text: "Play a game with 4+ players",        kind: "squad",    goal: 1, coins: 25 },
         { id: "pack1",     text: "Open a pack",                        kind: "pack",     goal: 1, coins: 20, needs: "packs" },
         { id: "scratch1",  text: "Scratch a card",                     kind: "scratch",  goal: 1, coins: 20, needs: "scratch" },
-        { id: "battle1",   text: "Win a card battle",                  kind: "cvwin",    goal: 1, coins: 40, needs: "battle" },
+        { id: "duel1",   text: "Win a card duel",                  kind: "cvwin",    goal: 1, coins: 40, needs: "duel" },
         { id: "deck1",     text: "Build or edit a deck",               kind: "deck",     goal: 1, coins: 20, needs: "decks" },
         { id: "team1",     text: "Win a team game",                    kind: "teamwin",  goal: 1, coins: 35 },
         { id: "party1",    text: "Finish a Night Party",               kind: "party",    goal: 1, coins: 40, needs: "party" }
@@ -158,13 +158,13 @@ export const CARD_ART = {
 export const DECK = { size: 10, maxCopies: 1, starterCount: 10, maxDecks: 8, veteranWins: 10 };
 export const TRADE = { maxCards: 5, maxOpen: 3 };      // cards per side of one offer, open offers per player
 
-/* ---------- B. ANIME TCG card battles (challenges from the Vault's Battle tab) ---------- */
-export const BATTLE = {
+/* ---------- B. ANIME TCG card duels (challenges from the Vault's Duel tab) ---------- */
+export const DUEL = {
     duel: { life: 20, hand: 4, draw: 1 },
     ffa:  { life: 25, hand: 4, draw: 1, min: 3, max: 8 },
     pickSeconds: 30,                              // auto-pick when it runs out
     reconnectGrace: 20,                           // seconds a disconnected player is waited for before auto-picks
     length: "short",                              // for the coin multiplier (a duel takes 2-4 minutes)
-    challenge: { expireSeconds: 60, keepOverMinutes: 10 },   // an unanswered challenge expires; finished battles are cleared after this
+    challenge: { expireSeconds: 60, keepOverMinutes: 10 },   // an unanswered challenge expires; finished duels are cleared after this
     statTotal: { common: [11, 12], uncommon: [11, 12], rare: [11, 12], ultra: [11, 12], epic: [11, 12], legendary: [11, 12], mythic: [12, 13] }   // Power + Defense per rarity (nearly flat on purpose)
 };
