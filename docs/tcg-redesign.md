@@ -55,3 +55,31 @@ is never reset: card ids are AniList character ids and no phase changes them.
 - Trades: pick cards on both sides, a review of both sides (warnings: your only copy, a card you already own), send
   (your cards locked), the friend reviews and accepts, an undo window of `TRADE.undoSec` (10 s) for either side, then the
   swap. Cards only.
+
+## Phase 5: the duel engine (done 2026-11-08)
+
+`js/duel/engine.js`: pure functions (no DOM, no Firebase), numbers in `DUEL.rules` (js/vault/config.js), card
+definitions injected (`useDefs`: js/duel/cards.js in the game, synthetic cards in the tests). Seeded generator in the
+state (shuffles, coin toss), plain-sentence log, numbered events for the animations, `viewFor(s, p)` redacts hidden
+information (other hands, face-down cards, every deck order, the generator), `legalMoves` / `why` (the reason a move is
+not allowed), `preview` (the battle outcome in words), `tick` (response window and turn timer), `forceEnd` (a
+disconnected player's turn), `placements` (the standard result).
+
+Rules summary: life 8000 (FFA 6000) · deck 20, hand 5, draw 1 (not the first player on turn 1) · 3 Character Zones,
+3 Action Zones, Deck, Graveyard · phases Draw, Main, Battle, End · one Normal Summon a turn (Attack or Defense),
+Legendary / Mythic need 1 tribute · Support cards resolve at once, Counters are set face-down · one position switch a
+turn (not after attacking, not the turn it was summoned) · each Attack-position character attacks once; no attacks on
+turn 1 for the first player · damage: vs Attack the difference to the loser's owner (equal: both destroyed), vs Defense
+no damage unless Pierce, ATK < DEF hurts the attacker's owner, direct = full ATK · deck-out loses · turn timer 90 s
+(the turn just ends) · response window 6 s for ONE Counter, aimed at the player the action targets; Counters can't
+answer Counters · stalemate: after round 20, -300 life for everyone at each End phase · FFA: the attacker picks an
+opponent, only that player may answer, eliminations in order (simultaneous ones share a place).
+
+Resolution order: declare → response window (a Counter resolves first, may negate) → the action's abilities (On
+summon / Support effect / On attack, then When attacked) → battle damage → destroyed characters to the Graveyard and
+their When destroyed abilities (defender first) → life check.
+
+Tests: `node tools/duel-test.mjs` (73 checks: summon, tribute, positions, all 7 damage cases, Pierce, Guard, direct
+attack, once-per-turn attacks, deck-out, life 0, response windows (respond, pass, timeout, trigger matching, no
+Counter-on-Counter), Support, abilities by timing, stalemate guard, turn timer, disconnect, hidden information,
+determinism, legal moves, FFA targeting, shared places, elimination order).

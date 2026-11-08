@@ -166,5 +166,20 @@ export const DUEL = {
     reconnectGrace: 20,                           // seconds a disconnected player is waited for before auto-picks
     length: "short",                              // for the coin multiplier (a duel takes 2-4 minutes)
     challenge: { expireSeconds: 60, keepOverMinutes: 10 },   // an unanswered challenge expires; finished duels are cleared after this
-    statTotal: { common: [11, 12], uncommon: [11, 12], rare: [11, 12], ultra: [11, 12], epic: [11, 12], legendary: [11, 12], mythic: [12, 13] }   // Power + Defense per rarity (nearly flat on purpose)
+    statTotal: { common: [11, 12], uncommon: [11, 12], rare: [11, 12], ultra: [11, 12], epic: [11, 12], legendary: [11, 12], mythic: [12, 13] },  // ATK + DEF per rarity (stored small, shown x100; nearly flat on purpose)
+    /* the turn-based duel (js/duel/engine.js) */
+    rules: {
+        life: 8000, lifeFfa: 6000,                // starting life (1v1 / free-for-all)
+        hand: 5, draw: 1, deckSize: 20,           // opening hand, draw per turn (the first player skips it on turn 1)
+        zones: 3, actionZones: 3,                 // Character Zones and Action Zones per player
+        tribute: { legendary: 1, mythic: 1 },     // characters to sacrifice to Normal Summon one of these rarities
+        statScale: 100,                           // stored ATK / DEF are multiplied by this
+        turnSec: 90,                              // a turn ends when this runs out (no forced attacks)
+        responseSec: 6,                           // the other player's window to activate ONE Counter
+        reconnectGrace: 20,                       // seconds a disconnected player's turn waits before it is ended for them
+        stalemate: { round: 20, loss: 300 },      // after this round, every player loses this much life at each End phase
+        maxLog: 160, maxEvents: 80                // kept in the duel state
+    },
+    /* practice bots: chance to pick a weaker move, how often they attack into a risk, Counter use */
+    bots: { easy: { blunder: .35, risk: .2, counters: .4 }, normal: { blunder: .12, risk: .45, counters: .8 }, hard: { blunder: 0, risk: .7, counters: 1 } }
 };
