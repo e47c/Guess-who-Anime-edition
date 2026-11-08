@@ -21,6 +21,19 @@
 .dz-iacts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; width: 100%; } .dz-iacts .btn { flex: 1 1 auto; } .dz-iacts .btn.no { opacity: .55; }
 .dz-why { margin: 0; min-height: 1em; font: 600 13px/1.3 var(--f-ui); color: #ffb08a; text-align: center; }
 .dz-tools { grid-area: tools; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; }
+/* quick emotes: the picker under the tools, the bubble on a plate */
+.dz-tools { position: relative; }
+.dz-emp { position: absolute; top: calc(100% + 6px); left: 50%; z-index: 60; transform: translateX(-50%); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: min(300px, calc(100vw - 32px)); padding: 10px; border-radius: 14px; background: #0c1218; box-shadow: inset 0 0 0 1px rgba(233,196,92,.35), 0 12px 30px rgba(0,0,0,.55); }
+.dz-emo { display: grid; justify-items: center; gap: 4px; padding: 8px 4px; border: 0; border-radius: 10px; color: #e7ecf3; background: rgba(255,255,255,.05); font: 700 12px/1 var(--f-ui); cursor: pointer; }
+.dz-emo:hover, .dz-emo:focus-visible { background: rgba(233,196,92,.18); outline: none; }
+.dz-emo .tcg-ico { width: 26px; height: 26px; }
+.dz-emute { grid-column: 1 / -1; padding: 7px; border: 0; border-radius: 9px; color: #93a0b2; background: transparent; font: 600 12px/1 var(--f-ui); cursor: pointer; } .dz-emute.on { color: #ffb08a; }
+.dz-bub { position: absolute; top: -14px; right: 8px; z-index: 5; display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px 5px 7px; border-radius: 14px 14px 14px 4px; color: #0b1016; background: #f4e6b8; box-shadow: 0 4px 14px rgba(0,0,0,.45); font: 800 13px/1 var(--f-ui); pointer-events: none; }
+.dz-bub .tcg-ico { width: 20px; height: 20px; --ic-ac: #e08a2e; }
+.dz-bub.pop { animation: dzBub .32s cubic-bezier(.3,1.6,.5,1); }
+@keyframes dzBub { from { transform: scale(.4) translateY(8px); opacity: 0; } }
+.dz.lite .dz-bub.pop { animation: none; }
+@media (prefers-reduced-motion: reduce) { .dz-bub.pop { animation: none; } }
 /* plates */
 .dz-top { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .dz-plate { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 10px; min-width: 260px; padding: 8px 12px; border: 0; border-radius: 14px; color: inherit; text-align: left; background: rgba(8,14,20,.82); box-shadow: inset 0 0 0 1px rgba(174,183,196,.2); }
@@ -136,7 +149,8 @@ button.dz-plate { cursor: pointer; } .dz-plate.focus { box-shadow: inset 0 0 0 2
 @media (max-width: 900px) {
     .cv-wrap.dz { grid-template-columns: minmax(0, 1fr); grid-template-areas: "tools" "main"; padding-bottom: 12px; }
     #cardvault { --zw: clamp(46px, min(14vw, 7.4dvh), 80px); }
-    .dz-insp { position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 80; max-height: 56dvh; border-radius: 16px 16px 0 0; grid-template-columns: auto minmax(0, 1fr); justify-items: start; align-items: start; }
+    .dz-insp { position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 80; max-height: 62dvh; overflow-y: auto; padding-bottom: 64px;   /* room for the floating music / sound buttons */
+                border-radius: 16px 16px 0 0; grid-template-columns: auto minmax(0, 1fr); justify-items: start; align-items: start; }
     .dz-insp.empty { display: none; }
     .dz-insp .vcard { --cw: 110px; grid-row: span 3; }
     .dz-insp .dz-iclose { grid-column: 2; justify-self: end; }
@@ -145,6 +159,10 @@ button.dz-plate { cursor: pointer; } .dz-plate.focus { box-shadow: inset 0 0 0 2
     .dz-phases .dz-ph b { display: none; }
     .dz-plate { min-width: 0; flex: 1 1 160px; grid-template-columns: auto minmax(0, 1fr); padding: 6px 10px; } .dz-piles { grid-column: 1 / -1; flex-wrap: wrap; } .dz-top { width: 100%; } .dz-hbacks { display: none; }
     .dz-zone { width: calc(var(--zw) * 1.3); height: calc(var(--zw) * 1.42); }
+    /* the tools: one row of icons (the names stay for screen readers and as tooltips); Leave keeps its word */
+    .dz-tools { flex-wrap: nowrap; gap: 6px; }
+    .dz-tools > .btn:not(.dz-exit) .bl { display: none; }
+    .dz-tools > .btn:not(.dz-exit) { min-width: 44px; padding-inline: 10px; }
     /* free-for-all on a phone: the opponents in one strip that scrolls sideways (the page itself never does) */
     .dz.ffa .dz-top { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; padding: 9px 4px 4px 10px; scroll-padding-left: 10px; scroll-snap-type: x proximity; scrollbar-width: thin; }
     .dz.ffa .dz-plate:not(.me) { flex: 0 0 158px; scroll-snap-align: start; gap: 3px 8px; padding: 6px 8px; }

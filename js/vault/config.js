@@ -181,6 +181,8 @@ export const DUEL = {
         stalemateFfa: { round: 5, loss: 400, grow: 400 },   //   loss + grow x (rounds since) life (FFA uses its own). Tuned with tools/duel-sim.mjs
         maxLog: 160, maxEvents: 80                // kept in the duel state
     },
+    /* quick emotes in a duel: shown on the sender's plate for showSec; one every cooldownSec per player */
+    emotes: { list: [["nice", "Nice!"], ["wow", "Wow!"], ["oops", "Oops"], ["gg", "GG"], ["think", "Hmm…"], ["angry", "Grr!"]], cooldownSec: 4, showSec: 2.6 },
     /* practice bots: chance to pick a weaker move, how often they attack into a risk, Counter use */
     bots: { easy: { blunder: .35, risk: .2, counters: .4 }, normal: { blunder: .12, risk: .45, counters: .8 }, hard: { blunder: 0, risk: .7, counters: 1 } }
 };

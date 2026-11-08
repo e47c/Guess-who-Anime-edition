@@ -376,7 +376,9 @@ hidden by the interface, as in the other modes.
   the duel is void. One standard result per duel (`duelResultOf`, key `cardvault:<id>`), paid once. A turn lasts 90 s
   (the host's lobby setting: 60 / 90 / 120); a disconnected player gets a 20 s grace before their turn is ended.
   Rookie Training (6 scripted lessons, +100 coins the first time) and Practice vs Bot (Easy / Normal / Hard,
-  `js/duel/bot.js`) are free and pay nothing else. Switching the lobby to another mode stops unfinished duels (no
+  `js/duel/bot.js`; also a free-for-all against 3 bots) are free and pay nothing else. Quick emotes in any duel
+  (Nice!, Wow!, Oops, GG, Hmm…, Grr!: our own icons, a bubble on the sender's plate, one every 4 s, `DUEL.emotes`);
+  each player can turn other players' emotes off (kept on that device). Switching the lobby to another mode stops unfinished duels (no
   coins; the host is asked first).
 - **Trades.** In a room, Collection › Trade with friends: up to 5 cards each way; the cards are locked while the offer is
   open and each side swaps its own cards exactly once. Cards only.

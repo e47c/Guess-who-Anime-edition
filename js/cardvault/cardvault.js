@@ -19,11 +19,11 @@
    Practice vs Bot runs the same engine locally (no coins, no stats, no missions).
    ===================================================================== */
 import { newDuel, act, tick, forceEnd, viewFor, placements, useDefs, lifeOf, alive, P, arr } from "../duel/engine.js?v=1";
-import { DEFS, deckList, ACTIONS, ACTION_IDS } from "../duel/cards.js?v=1";
-import { botMove } from "../duel/bot.js?v=1";
-import { mountDuel } from "../duel/ui.js?v=1";
+import { DEFS, deckList, ACTIONS, ACTION_IDS } from "../duel/cards.js?v=2";
+import { botMove } from "../duel/bot.js?v=2";
+import { mountDuel } from "../duel/ui.js?v=2";
 import { myKeys, seal, open, sealFull, openFull, hasHostKey, cryptoOk } from "../duel/net.js?v=1";
-import { DUEL, DECK } from "../vault/config.js?v=15";
+import { DUEL, DECK } from "../vault/config.js?v=16";
 import { CARDS } from "../vault/carddb.js?v=6";
 import { newSeed } from "../vault/rng.js?v=2";
 import { duelResultOf, resultToDb, resultFromDb } from "../vault/result.js?v=6";
@@ -113,7 +113,7 @@ function dutyCheck() {
         } else if (b.st === "live") {
             if (!on || seats.every(p => !inRoom(d, p))) { simple(b.bid, "void"); return; }
             run(b, d, now);
-        } else if (now - Number(b.fin || b.end || b.at || 0) > C.keepOverMinutes * 60000) { X.update(X.ref(X.db, "rooms/" + X.room()), { ["cvb/" + b.bid]: null, ["cvi/" + b.bid]: null }).catch(() => {}); }
+        } else if (now - Number(b.fin || b.end || b.at || 0) > C.keepOverMinutes * 60000) { X.update(X.ref(X.db, "rooms/" + X.room()), { ["cvb/" + b.bid]: null, ["cvi/" + b.bid]: null, ["cve/" + b.bid]: null }).catch(() => {}); }
     });
 }
 const simpleSent = new Set();
@@ -276,6 +276,7 @@ function screenFor(bid, me, playing, d) {
         me: playing ? me : 0, defs: DEFS, names: p => X.pName(X.data(), p), pub: p => X.pPub(X.data(), p), avatar: (pub, n) => X.avatarEl(pub, { size: n }),
         sfx: X.sfx, toast: X.toast, flyClone: X.flyClone, now: srvNow,
         send: a => { if (!playing) return "You're watching."; return sendIntent(bid, a); },
+        emote: playing ? id => X.update(X.ref(X.db, "rooms/" + X.room() + "/cve/" + bid), { [pk(me)]: { e: id, t: srvNow() } }) : null,
         onExit: () => closeDuel(bid, playing && (nodes(X.data()).find(x => x.bid === bid) || {}).st === "live"), exitLabel: playing ? "Leave" : "Back",
         onRematch: playing ? async () => { const others = seatsOf(nodes(X.data()).find(x => x.bid === bid) || { from: me, to: [] }).filter(p => p !== me); if (await cvChallenge(others)) closeDuel(bid); } : null,
         overNote: "Duels pay placement coins like every mode; the cards you summoned count toward their Veteran mark."
@@ -283,9 +284,21 @@ function screenFor(bid, me, playing, d) {
     return ui;
 }
 let decoding = "";
+/* quick emotes: rooms/<code>/cve/<bid>/pN = { e, t }; each one shows once, old ones (before we looked) are skipped */
+const emoSeen = {};
+function deliverEmotes(d, bid) {
+    const list = (d.cve || {})[bid] || {}, now = srvNow(), win = ((DUEL.emotes || {}).showSec || 2.6) * 1000;
+    Object.entries(list).forEach(([k, x]) => {
+        const key = bid + "/" + k, t = Number(x && x.t) || 0; if (!t || t <= (emoSeen[key] || 0)) return;
+        emoSeen[key] = t;
+        if (Number(k.slice(1)) === X.me() || now - t > win || !ui || uiBid !== bid) return;   // my own were shown when I sent them
+        ui.emote(Number(k.slice(1)), String(x.e || ""));
+    });
+}
 export function showDuel(d, bid) {
     X.showOnly("cardvault");
     const b = nodes(d).find(x => x.bid === bid); if (!b) return;
+    setTimeout(() => deliverEmotes(d, bid), 0);
     const me = X.me(), playing = seatsOf(b).includes(me);
     if (viewing !== bid) viewing = bid;
     $("cvTurnT").textContent = b.st === "void" ? "DUEL STOPPED" : b.st === "over" ? "DUEL OVER" : seatsOf(b).length > 2 ? "FREE-FOR-ALL DUEL" : "DUEL";
@@ -327,12 +340,14 @@ export function startPractice(level = "normal", opts = {}) {
         send: a => { const r = act(s, Object.assign({}, a, { by: me }), Date.now()); if (!r) { push(); if (opts.onMove) opts.onMove(a, s); } return r; },
         onExit: () => endPractice(), exitLabel: "Leave", onRematch: () => startPractice(level, opts),
         overNote: "Practice pays no coins and counts for no stats or missions.",
+        emote: () => null,
         extraTools: opts.extraTools
     });
     const push = () => { ui.update(viewFor(s, me)); botLoop(); };
     function botLoop() {
         clearTimeout(practice && practice.timer);
-        if (!practice || s.over) return;
+        if (!practice) return;
+        if (s.over) { if (!practice.gg) { practice.gg = 1; const q = bots[Math.floor(Math.random() * bots.length)]; setTimeout(() => { if (practice && practice.s === s && ui) ui.emote(q, "gg"); }, 1400); } return; }
         const who = s.pending ? Number(s.pending.who) : Number(s.turnP);
         if (!bots.includes(who)) return;
         practice.timer = setTimeout(() => {

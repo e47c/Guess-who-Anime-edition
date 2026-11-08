@@ -8,12 +8,12 @@
    deck). Duplicates (a card owned both Normal and Holo): turn the extra copy into shards. Trades with friends in the
    room (cards only): pick, review both sides, send; the friend reviews and accepts; an undo window, then the swap.
    ===================================================================== */
-import { TRADE } from "./config.js?v=15";
-import { owned, isHolo, ownedIds, seriesDone, shardValue, convertDuplicate, lockTrade, unlockTrade, applyTrade, tradeProblem } from "./packs.js?v=13";
+import { TRADE } from "./config.js?v=16";
+import { owned, isHolo, ownedIds, seriesDone, shardValue, convertDuplicate, lockTrade, unlockTrade, applyTrade, tradeProblem } from "./packs.js?v=14";
 import { CARDS, BY_SERIES, CARD_SERIES, CARD_COUNT, RARITY_NAMES, ARCHETYPES, TOTAL_CARDS } from "./carddb.js?v=6";
-import { cardEl, theme, SHOW, abilityParts } from "./cardui.js?v=14";
-import { inspect } from "./opening.js?v=14";
-import { icon, RARITY_ICON, ARCH_ICON, KEYWORD_ICON } from "./icons.js?v=2";
+import { cardEl, theme, SHOW, abilityParts } from "./cardui.js?v=15";
+import { inspect } from "./opening.js?v=15";
+import { icon, RARITY_ICON, ARCH_ICON, KEYWORD_ICON } from "./icons.js?v=3";
 import { define } from "../duel/glossary.js?v=2";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };

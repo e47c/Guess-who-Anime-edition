@@ -5,7 +5,7 @@
    player node so everybody sees the same card in every mode.
    ===================================================================== */
 
-import { SKINS } from "./vault/config.js?v=15";
+import { SKINS } from "./vault/config.js?v=16";
 import { NIGHT_PARTY } from "./party/config.js?v=2";
 
 const KEY = "gw_profile_v1";

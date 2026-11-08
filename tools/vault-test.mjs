@@ -3,14 +3,14 @@
 // atomic, never negative), the seeded RNG, the config. Phase 2: coins per placement, anti-farming, the daily
 // cap, missions and the login streak.
 import { resultOf, resultToDb, resultFromDb, placeRows, RESULT_MODES, duelResultOf } from "../js/vault/result.js";
-import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=15";
+import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=16";
 import { rngFrom, newSeed, pickWeighted, shuffleWith } from "../js/vault/rng.js?v=2";
-import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=15";
-import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, nightPartyValid, applyNightParty, gameCoinsOn, FEATURES } from "../js/vault/economy.js?v=14";
-import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=13";
-import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordDuel, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=13";
+import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=16";
+import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, nightPartyValid, applyNightParty, gameCoinsOn, FEATURES } from "../js/vault/economy.js?v=15";
+import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=14";
+import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordDuel, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=14";
 import { CARDS, BY_SERIES, CARD_SERIES } from "../js/vault/carddb.js?v=6";
-import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=15";
+import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=16";
 
 let ok = 0, bad = 0;
 const t = (c, m) => { if (c) ok++; else { bad++; console.log("  ✘", m); } };

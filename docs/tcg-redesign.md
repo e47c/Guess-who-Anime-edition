@@ -129,3 +129,24 @@ another player's turn the board follows them. Attacking: every player you can hi
 only the attacked player gets the response window. A bot attacking another bot shows "X attacks Y". Knocked-out
 players see "You're out (#N)" and keep watching; places follow the elimination order (simultaneous ones share), shown
 on the end screen. Practice has a free-for-all too (you + 3 bots), and the bots go for the opponent with the least life.
+
+## Phase 11: emotes, polish, balance (done 2026-11-08)
+
+- **Quick emotes:** Nice!, Wow!, Oops, GG, Hmm…, Grr!, each with its own icon in the set (`em-*`, no emoji). The Emote
+  button in the duel tools opens the picker; the emote shows as a bubble on the sender's plate for `showSec` (2.6 s),
+  one every `cooldownSec` (4 s, "Emotes: wait N s"). Room transport: `rooms/<code>/cve/<bid>/pN = { e, t }` (one slot
+  per player, cleared with the duel and deleted with the room); old ones are never replayed. "Others' emotes: off"
+  mutes the other players on this device. In practice a bot says GG at the end.
+- **Reduced effects:** the duel screen's lite mode turns off the emote pop, the attack-target pulse, lunges, shakes
+  and flights (fades only); `prefers-reduced-motion` does the same.
+- **Mobile:** the duel tools are one row of icons on phones (names kept as tooltips and for screen readers), the
+  free-for-all plates are a sideways strip, and the card drawer leaves room for the floating music / sound buttons.
+  Checked at 390 × 844: no sideways page scroll.
+- **Balance from simulated matches** (`node tools/duel-sim.mjs`, bot-vs-bot with random real decks): with the old
+  stalemate guard (round 20, -300 each End phase) 46% of 1v1 duels and almost every free-for-all ended by deck-out,
+  and in a free-for-all the first player almost never won. Now the **Final Clash**: at the end of round 8 (free-for-all:
+  round 5) and every round after, everyone loses 400 life, 400 more each round (`DUEL.rules.stalemate` /
+  `stalemateFfa`). Bots in a free-for-all focus the opponent with the least life (before, they all hit the first one in
+  turn order). Result: 1v1 about 10 rounds, first player 46-48%; 4 players about 9 rounds, first player 25%; 8 players
+  about 9 rounds, 14% (fair: 50 / 25 / 12.5%); deck-out almost never decides a duel. Life 8000 / 6000, deck 20 and
+  ATK = pow × 100 are unchanged. Abilities 46-54% (see `docs/duel-cards.md`).

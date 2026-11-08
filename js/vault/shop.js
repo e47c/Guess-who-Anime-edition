@@ -5,7 +5,7 @@
    the wardrobe (what's equipped) and duplicate refunds. Cosmetics can't be traded or gifted.
    Inventory: w.inv[itemId] = 1. Equipped: w.equip = { sf, bg, title, ts, uc, sleeve } (item ids, "" = none).
    ===================================================================== */
-import { SKINS, SCRATCH } from "./config.js?v=15";
+import { SKINS, SCRATCH } from "./config.js?v=16";
 import { rngFrom, pickWeighted, pickInt } from "./rng.js?v=2";
 
 /* ---------- the catalogue ---------- */

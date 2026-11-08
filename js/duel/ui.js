@@ -11,11 +11,11 @@
    (flip + banner), life bars counting down, floating numbers. Skip animations; Reduced effects = fades only.
    ===================================================================== */
 import { why, legalMoves, preview, statOf, P as P0, opponents, lifeOf, alive, tributesFor, cardOf, pierces } from "./engine.js?v=1";
-import { DUEL } from "../vault/config.js?v=15";
-import { cardEl, theme, SHOW } from "../vault/cardui.js?v=14";
-import { icon, RARITY_ICON, KEYWORD_ICON } from "../vault/icons.js?v=2";
+import { DUEL } from "../vault/config.js?v=16";
+import { cardEl, theme, SHOW } from "../vault/cardui.js?v=15";
+import { icon, RARITY_ICON, KEYWORD_ICON } from "../vault/icons.js?v=3";
 import { define, PHASES, POSITIONS, KEYWORDS } from "./glossary.js?v=2";
-import { ACTIONS } from "./cards.js?v=1";
+import { ACTIONS } from "./cards.js?v=2";
 /* a missing player (a stale / partial view during a switch) renders as empty instead of throwing */
 const NOBODY = Object.freeze({ life: 0, ch: [], ac: [], hand: [], gy: [], deck: [] });
 const P = (v, p) => (v && v.P && P0(v, p)) || NOBODY;
@@ -24,7 +24,7 @@ const clashAt = v => { const SG = (v.fmt === "ffa" && DUEL.rules.stalemateFfa) |
 
 const arr = v => Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : [];
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
-const btn = (txt, cls, fn, ic) => { const b = mk("button", "btn " + (cls || "")); b.type = "button"; if (ic) b.innerHTML = icon(ic); b.appendChild(document.createTextNode(txt)); if (fn) b.onclick = fn; return b; };
+const btn = (txt, cls, fn, ic) => { const b = mk("button", "btn " + (cls || "")); b.type = "button"; if (ic) b.innerHTML = icon(ic); b.appendChild(mk("span", "bl", txt)); b.setAttribute("aria-label", txt); b.title = txt; if (fn) b.onclick = fn; return b; };
 const pk = p => "p" + p;
 const RCOL = ["#9aa1ab", "#c9b06a", "#4aa8ff", "#c9b6ff", "#ff4fa0", "#ffd76a", "#c58bff"];
 const lite = () => document.body.classList.contains("fx-lite");
@@ -65,8 +65,9 @@ export function mountDuel(root, o) {
     const main = mk("div", "dz-main"); main.append(top, board, mePlate, hand);
     root.append(main, insp, bar, fx);
     bar.append(btn("Log", "ghost sm", showLog, "log"), btn("Rules", "ghost sm", showRules, "help"), btn("Skip animations", "ghost sm dz-skip", () => { C.fast = !C.fast; root.querySelector(".dz-skip").classList.toggle("alt", C.fast); o.sfx("toggle"); }, "skip"));
+    if (o.emote) bar.appendChild(btn("Emote", "ghost sm dz-emb", e => { e.stopPropagation(); emotePicker(); }, "emote"));
     if (o.extraTools) o.extraTools(bar);
-    bar.appendChild(btn(o.exitLabel || "Leave", "ghost sm", () => o.onExit && o.onExit(), "back"));
+    bar.appendChild(btn(o.exitLabel || "Leave", "ghost sm dz-exit", () => o.onExit && o.onExit(), "back"));
 
     /* ---------- render ---------- */
     function update(view) {
@@ -106,6 +107,47 @@ export function mountDuel(root, o) {
         drawHand(L);
         drawInsp(L);
         drawWindow(L);
+        paintEmotes();
+    }
+    /* ---------- quick emotes: a bubble on the sender's plate; one every DUEL.emotes.cooldownSec; others can be muted ---------- */
+    const EMO = DUEL.emotes || { list: [], cooldownSec: 4, showSec: 2.6 };
+    const emoMuted = () => { try { return localStorage.getItem("aap_emote_mute") === "1"; } catch (e) { return false; } };
+    C.emo = {}; C.emoT = 0;
+    function emotePicker() {
+        const old = root.querySelector(".dz-emp"); if (old) { old.remove(); return; }
+        const box = mk("div", "dz-emp"); box.setAttribute("role", "menu");
+        EMO.list.forEach(([id, label]) => { const b = mk("button", "dz-emo"); b.type = "button"; b.innerHTML = icon("em-" + id); b.appendChild(mk("span", null, label)); b.setAttribute("role", "menuitem"); b.onclick = () => { box.remove(); sendEmote(id); }; box.appendChild(b); });
+        const mu = mk("button", "dz-emute" + (emoMuted() ? " on" : ""), emoMuted() ? "Others' emotes: off" : "Others' emotes: on"); mu.type = "button";
+        mu.onclick = () => { try { localStorage.setItem("aap_emote_mute", emoMuted() ? "0" : "1"); } catch (e) {} o.sfx("toggle"); box.remove(); emotePicker(); };
+        box.appendChild(mu);
+        bar.appendChild(box);
+        const off = ev => { if (!box.contains(ev.target)) { box.remove(); document.removeEventListener("pointerdown", off, true); } };
+        setTimeout(() => document.addEventListener("pointerdown", off, true), 0);
+    }
+    function sendEmote(id) {
+        const left = Math.ceil((C.emoT - Date.now()) / 1000);
+        if (left > 0) { o.toast && o.toast("Emotes: wait " + left + " s."); return; }
+        C.emoT = Date.now() + EMO.cooldownSec * 1000;
+        if (me()) showEmote(me(), id);
+        Promise.resolve(o.emote(id)).catch(() => {});
+    }
+    function showEmote(p, id) {
+        p = Number(p); if (!EMO.list.some(x => x[0] === id)) return;
+        if (p !== me() && emoMuted()) return;
+        const prev = C.emo[p]; if (prev) clearTimeout(prev.tm);
+        C.emo[p] = { id, fresh: 1, tm: setTimeout(() => { delete C.emo[p]; root.querySelectorAll('.dz-plate[data-p="' + p + '"] .dz-bub').forEach(x => x.remove()); }, EMO.showSec * 1000) };
+        o.sfx("emote"); paintEmotes();
+    }
+    function paintEmotes() {
+        Object.entries(C.emo).forEach(([p, e]) => {
+            root.querySelectorAll('.dz-plate[data-p="' + p + '"]').forEach(pl => {
+                pl.querySelectorAll(".dz-bub").forEach(x => x.remove());
+                const b = mk("span", "dz-bub" + (e.fresh ? " pop" : "")); b.innerHTML = icon("em-" + e.id); b.appendChild(mk("b", null, (EMO.list.find(x => x[0] === e.id) || [])[1] || ""));
+                b.setAttribute("role", "status"); b.setAttribute("aria-label", nm(p) + ": " + ((EMO.list.find(x => x[0] === e.id) || [])[1] || ""));
+                pl.appendChild(b);
+            });
+            e.fresh = 0;
+        });
     }
     function mat(side, p) {
         const counts = {}; Object.values(C.v.cards || {}).forEach(c => { if (Number(c.o) === Number(p) && !String(c.id).startsWith("a:")) { const d = o.defs.card(Number(c.id)); if (d) counts[d.s] = (counts[d.s] || 0) + 1; } });
@@ -116,6 +158,7 @@ export function mountDuel(root, o) {
         const v = C.v, pl = P(v, p) || {}, out = arr(v.out).includes(p), pub = o.pub ? o.pub(p) : null;
         const canHit = !mine && !out && C.mode === "attack" && C.sel && legal().some(x => x.k === "attack" && x.slot === C.sel.slot && x.tp === p);
         const box = mk(mine ? "div" : "button", "dz-plate" + (mine ? " me" : "") + (focus ? " focus" : "") + (out ? " out" : "") + (Number(v.turnP) === p ? " turn" : "") + (canHit ? " can-hit" : ""));
+        box.dataset.p = p;
         if (!mine) { box.type = "button"; box.onclick = () => { focusOpp = p; C.userFocus = 1; o.sfx("toggle"); draw(); }; box.setAttribute("aria-label", nm(p) + (canHit ? ": tap to attack this player" : ": show their side")); }
         if (v.fmt === "ffa") { const place = Number((v.place || {})[pk(p)]) || 0; box.appendChild(mk("span", "dz-seat" + (out ? " placed" : ""), out ? "#" + place : String(arr(v.order).map(Number).indexOf(p) + 1))); if (!out) box.lastChild.title = "Turn order"; }
         if (pub && o.avatar) box.appendChild(o.avatar(pub, 40)); else box.appendChild(mk("span", "dz-ava", (nm(p) || "?").slice(0, 1)));
@@ -391,5 +434,5 @@ export function mountDuel(root, o) {
     }
     /* the timers (turn, response window) */
     const tickT = setInterval(() => { root.querySelectorAll(".dz-timer").forEach(t => { const left = Math.max(0, Math.ceil((Number(t.dataset.dl) - (o.now ? o.now() : Date.now())) / 1000)); t.lastChild.textContent = left + " s"; t.classList.toggle("low", left <= 10); }); }, 250);
-    return { update, destroy() { clearInterval(tickT); root.innerHTML = ""; }, get sel() { return C.sel; }, select(s) { C.sel = s; draw(); }, root };
+    return { update, emote: showEmote, destroy() { clearInterval(tickT); Object.values(C.emo).forEach(e => clearTimeout(e.tm)); root.innerHTML = ""; }, get sel() { return C.sel; }, select(s) { C.sel = s; draw(); }, root };
 }

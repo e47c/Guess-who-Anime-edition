@@ -64,6 +64,13 @@ const P = {
     copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="1.8"/><path d="M5 15.5V6a1.5 1.5 0 0 1 1.5-1.5H16"/><rect class="ac" x="11.5" y="11.5" width="5" height="1.6" rx=".6"/>',
     trash: '<path d="M4.5 6.5h15M9 6.5V4.5h6v2M6.5 6.5l1 13.5h9l1-13.5"/><rect class="ac" x="11.2" y="10" width="1.6" height="6.5" rx=".6"/>',
     edit: '<path d="M4.5 19.5l1-4.2L16 4.8l3.2 3.2L8.7 18.5z"/><path class="ac" d="M14.2 6.6l3.2 3.2 1.8-1.8-3.2-3.2z"/>',
+    /* quick emotes (duels): one face per mood, same 24 grid / stroke as the rest */
+    "em-nice": '<path d="M7 11v9H4.5v-9z"/><path d="M7 19.5h9.2a2 2 0 0 0 2-1.6l1.1-5.3a2 2 0 0 0-2-2.4H14l.7-3.4a1.9 1.9 0 0 0-3.5-1.3L7 11"/><circle class="ac" cx="5.8" cy="17.6" r="1"/>',
+    "em-wow": '<circle cx="12" cy="12" r="8.6"/><path d="M7.6 8.2l2 .6M16.4 8.2l-2 .6"/><circle class="ac" cx="9" cy="10.6" r="1.1"/><circle class="ac" cx="15" cy="10.6" r="1.1"/><ellipse cx="12" cy="15.6" rx="1.9" ry="2.3"/>',
+    "em-oops": '<circle cx="12" cy="12" r="8.6"/><path d="M8 10h2.2M13.8 10H16M9 15.6c1.9-1.2 4.1-1.2 6 0"/><path class="ac" d="M18.2 5.2c.9 1.3 1.3 2.2 1.3 2.9a1.3 1.3 0 0 1-2.6 0c0-.7.4-1.6 1.3-2.9z"/>',
+    "em-gg": '<path d="M3 13.5l3.6-3.6 3 1 2.4-2.4a2 2 0 0 1 2.8 0l5.2 5.2"/><path d="M6.6 9.9 9.8 13a1.6 1.6 0 0 0 2.3-2.3"/><path d="M19.6 14l-4.9 4.9a1.6 1.6 0 0 1-2.3 0l-.6-.6M14.8 16.6l-1.8-1.8M17 14.4l-2-2"/><circle class="ac" cx="12" cy="4.4" r="1.2"/>',
+    "em-think": '<circle cx="11" cy="12" r="7.8"/><path d="M7.6 10h2M12.6 9.4l2 .8M8.4 15.4h4.2"/><circle class="ac" cx="19.2" cy="5.4" r="1.6"/><circle class="ac" cx="21" cy="9.4" r=".9"/>',
+    "em-angry": '<circle cx="12" cy="12" r="8.6"/><path d="M7.4 8.2l3 1.6M16.6 8.2l-3 1.6M8.8 16.4c2-1.4 4.4-1.4 6.4 0"/><circle class="ac" cx="9.2" cy="11.4" r="1.1"/><circle class="ac" cx="14.8" cy="11.4" r="1.1"/>',
     bot: '<rect x="5" y="7.5" width="14" height="11" rx="2.5"/><path d="M12 7.5V4M9 21h6"/><circle class="ac" cx="12" cy="3.6" r="1.3"/><circle class="ac" cx="9.4" cy="12.5" r="1.3"/><circle class="ac" cx="14.6" cy="12.5" r="1.3"/>',
     training: '<circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="5"/><circle class="ac" cx="12" cy="12" r="1.8"/>',
     ffa: '<circle cx="12" cy="7" r="2.5"/><circle cx="5.5" cy="15" r="2.5"/><circle cx="18.5" cy="15" r="2.5"/><path d="M10.5 9.2 7 13M13.5 9.2 17 13M8 15h8"/><circle class="ac" cx="12" cy="13.2" r="1.3"/>',
@@ -108,7 +115,8 @@ export const ICON_GROUPS = {
     "Duel field": ["life", "atk", "def", "deck", "graveyard", "tribute", "position", "timer", "log", "emote", "skip", "flip"],
     Economy: ["coin", "shard", "gift", "new", "star", "crown"],
     Tools: ["filter", "sort", "settings", "search", "grid", "binder", "trade", "back", "close", "info", "help", "lock", "check", "plus", "minus", "copy", "trash", "edit", "sound"],
-    Modes: ["bot", "training", "ffa", "friends"]
+    Modes: ["bot", "training", "ffa", "friends"],
+    Emotes: ["em-nice", "em-wow", "em-oops", "em-gg", "em-think", "em-angry"]
 };
 export const KEYWORD_ICON = { Pierce: "pierce", Guard: "guard", Heal: "heal", Counter: "counterkw", Rage: "rage", Combo: "combo", Silence: "silence", Scout: "scout", Swap: "swap", "Last Stand": "laststand", Mirror: "mirror" };
 export const ARCH_ICON = { Brawler: "brawler", Tank: "tank", Speedster: "speedster", Trickster: "trickster", Healer: "healer", Mage: "mage", Support: "supportarch" };
