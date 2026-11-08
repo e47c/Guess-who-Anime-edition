@@ -7,7 +7,7 @@
 <title>Card Gallery (dev)</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Special+Elite&family=Permanent+Marker&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/base.css?v=13">
-<link rel="stylesheet" href="../css/cards.css?v=6">
+<link rel="stylesheet" href="../css/cards.css?v=7">
 <link rel="stylesheet" href="../css/packs.css?v=5">
 <style>
 /* DEV ONLY (not linked from the game): the card style matrix for review, every card, every back, and the automatic
@@ -50,8 +50,8 @@ h2 { margin: 22px 0 8px; font: 600 22px/1 Teko; letter-spacing: .06em; text-tran
 <div id="out"></div>
 <script type="module">
 import { CARDS, BY_SERIES, BY_SERIES_RARITY, CARD_SERIES, RARITY_NAMES } from "../js/vault/carddb.js?v=5";
-import { cardEl, backCard, theme, fitText, windowRatio } from "../js/vault/cardui.js?v=12";
-import { CARD_ART } from "../js/vault/config.js?v=13";
+import { cardEl, backCard, theme, fitText, windowRatio } from "../js/vault/cardui.js?v=13";
+import { CARD_ART } from "../js/vault/config.js?v=14";
 const focus = await fetch("../data/card-focus.json").then(r => r.json()).catch(() => ({}));
 const fix = await fetch("../data/card-focus-fix.json").then(r => r.json()).catch(() => ({}));
 const st = { view: "matrix", holo: false, back: false };

@@ -13,7 +13,7 @@
    5. the cards go into the collection right away (the opening animation only reveals them), in reveal order:
       lowest rarity first, best last.
    ===================================================================== */
-import { PACKS, SHARDS, RARITY_ORDER, DECK, TRADE } from "./config.js?v=13";
+import { PACKS, SHARDS, RARITY_ORDER, DECK, TRADE } from "./config.js?v=14";
 import { CARDS, BY_SERIES, BY_SERIES_RARITY, CARD_SERIES } from "./carddb.js?v=5";
 import { rngFrom, pickWeighted, pickInt, shuffleWith } from "./rng.js?v=2";
 
@@ -38,6 +38,14 @@ export function removeCard(w, id, holo) {
     c[k] = 0; w.cards = Object.assign({}, w.cards, { [id]: c });
     if (!owned(w, id)) { delete w.cards[id]; fixDecks(w); }
     return true;
+}
+/* a card owned both Normal and Holo: the Normal copy becomes its shards (the Holo copy stays) */
+export function convertDuplicate(w, id) {
+    const c = (w.cards || {})[id]; if (!c || !(c.n > 0) || !(c.h > 0)) return { error: "Not a duplicate" };
+    if (Object.values(w.locks || {}).some(l => (l || []).some(x => Number(x.id) === Number(id) && !Number(x.h)))) return { error: "That copy is in an open trade offer" };
+    const sh = shardValue(id, false);
+    w.cards = Object.assign({}, w.cards, { [id]: Object.assign({}, c, { n: 0 }) }); w.shards = (Number(w.shards) || 0) + sh;
+    return { id, shards: sh };
 }
 /* completing a series unlocks its card sleeve */
 function checkSleeves(w, series) {

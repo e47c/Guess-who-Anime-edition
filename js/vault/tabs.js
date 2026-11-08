@@ -5,13 +5,14 @@
    Every action is an intent sent to the bank (bank.apply with an operation id), so a double click or a second tab
    can never pay twice; the button's operation id only changes after the action went through.
    ===================================================================== */
-import { PACKS, SHARDS, RARITY_ORDER, DECK, TRADE, DUEL } from "./config.js?v=13";
-import { rollPack, unopened, markOpened, owned, isHolo, ownedIds, seriesDone, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem } from "./packs.js?v=11";
-import { cvChallenge, cvDuels, busyIn, seatsOf, cvWatch, cvReturn, cvDeckOf, locOf } from "../cardvault/cardvault.js?v=14";
+import { PACKS, SHARDS, RARITY_ORDER, DECK, TRADE, DUEL } from "./config.js?v=14";
+import { rollPack, unopened, markOpened, owned, isHolo, ownedIds, seriesDone, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem } from "./packs.js?v=12";
+import { cvChallenge, cvDuels, busyIn, seatsOf, cvWatch, cvReturn, cvDeckOf, locOf } from "../cardvault/cardvault.js?v=15";
 import { CARDS, BY_SERIES, CARD_SERIES, CARD_COUNT, RARITY_NAMES, ARCHETYPES, TOTAL_CARDS } from "./carddb.js?v=5";
-import { cardEl, packEl, theme } from "./cardui.js?v=12";
-import { inspect, holdToInspect } from "./opening.js?v=12";
-import { packsTab } from "./tab-packs.js?v=1";
+import { cardEl, packEl, theme } from "./cardui.js?v=13";
+import { inspect, holdToInspect } from "./opening.js?v=13";
+import { packsTab } from "./tab-packs.js?v=2";
+import { collectionTab, collectionSig, collectionRoomSync } from "./tab-collection.js?v=1";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 const btn = (txt, cls, fn) => { const b = mk("button", "btn " + (cls || ""), txt); b.type = "button"; if (fn) b.onclick = fn; return b; };
@@ -30,7 +31,7 @@ export function initTabs(h) { H = h; }
 
 export function renderTab(id, body, h) {
     H = h || H;
-    const f = { packs: () => packsTab(H), collection: collectionTab, decks: deckTab, duel: duelTab }[id];
+    const f = { packs: () => packsTab(H), collection: () => collectionTab(H), decks: deckTab, duel: duelTab }[id];
     if (f) body.appendChild(f());
 }
 const sub = (name, list, cur, onPick) => {
@@ -38,50 +39,6 @@ const sub = (name, list, cur, onPick) => {
     list.forEach(([k, l]) => { const b = mk("button", "vt-subtab" + (k === cur ? " on" : ""), l); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(k === cur)); b.onclick = () => { sfx("toggle"); onPick(k); }; nav.appendChild(b); });
     return nav;
 };
-
-/* =========================== COLLECTION =========================== */
-let colSeries = "", colRar = -1, colOwned = false, colView = "book";
-function collectionTab() {
-    const w = W(), v = mk("div", "vt-col"), mine = ownedIds(w);
-    const head = mk("div", "vt-colhead");
-    head.append(mk("b", null, mine.length + " / " + TOTAL_CARDS + " cards"), mk("small", null, CARD_SERIES.filter(s => seriesDone(w, s)).length + " series complete"));
-    if (canTrade()) head.appendChild(btn("Trade with friends" + (incomingCount() ? " (" + incomingCount() + ")" : ""), "alt sm", () => { colView = "trade"; H.rerender(); }));
-    v.appendChild(head);
-    if (colView === "trade" && canTrade()) { v.appendChild(tradeView()); return v; }
-    colView = "book";
-    // the book: series with completion
-    const book = mk("div", "vt-book");
-    CARD_SERIES.forEach(s => {
-        const have = BY_SERIES[s].filter(id => owned(w, id)).length, done = have === CARD_COUNT[s];
-        const b = mk("button", "vt-bk" + (colSeries === s ? " on" : "") + (done ? " done" : "")); b.type = "button";
-        const T = theme(s); b.style.setProperty("--c1", T.c1); b.style.setProperty("--c3", T.c3);
-        const bar = mk("i", "vt-bkbar"); bar.style.setProperty("--p", (have / CARD_COUNT[s] * 100).toFixed(1) + "%");
-        b.append(mk("b", null, T.label), mk("small", null, have + "/" + CARD_COUNT[s] + (done ? " ✓" : "")), bar);
-        b.onclick = () => { colSeries = colSeries === s ? "" : s; sfx("toggle"); H.rerender(); };
-        book.appendChild(b);
-    });
-    v.appendChild(book);
-    const fl = mk("div", "vt-filters");
-    RARITY_NAMES.forEach((n, i) => { const b = mk("button", "chip-btn" + (colRar === i ? " on" : ""), n); b.type = "button"; b.onclick = () => { colRar = colRar === i ? -1 : i; H.rerender(); }; fl.appendChild(b); });
-    const ob = mk("button", "chip-btn" + (colOwned ? " on" : ""), "Owned only"); ob.type = "button"; ob.onclick = () => { colOwned = !colOwned; H.rerender(); }; fl.appendChild(ob);
-    v.appendChild(fl);
-    let ids = colSeries ? BY_SERIES[colSeries].slice() : mine.slice();
-    if (colRar >= 0) ids = ids.filter(id => CARDS[id].r === colRar);
-    if (colOwned || !colSeries) ids = ids.filter(id => owned(w, id));
-    ids.sort((a, b) => CARDS[a].s === CARDS[b].s ? CARDS[a].no.localeCompare(CARDS[b].no) : CARD_SERIES.indexOf(CARDS[a].s) - CARD_SERIES.indexOf(CARDS[b].s));
-    const grid = mk("div", "vt-cgrid");
-    if (!ids.length) grid.appendChild(mk("p", "vt-rule", colSeries ? "No cards match." : "Open packs to fill your book. Tap a series above to see every card in it (missing ones are shadows)."));
-    ids.slice(0, 400).forEach(id => {
-        const own = owned(w, id), c = (w.cards || {})[id] || {};
-        const el = cardEl(id, { size: "sm", holo: !!c.h, ghost: !own, gold: own && seriesDone(w, CARDS[id].s), veteran: veteran(w, id) });
-        if (own) { el.tabIndex = 0; el.onclick = () => inspect(id, { holo: !!c.h, stamp: { by: c.by, at: c.at }, veteran: veteran(w, id) }); el.onkeydown = e => { if (e.key === "Enter") el.click(); }; }
-        grid.appendChild(el);
-    });
-    if (ids.length > 400) grid.appendChild(mk("p", "vt-rule", "Showing 400 of " + ids.length + ". Pick a series or a rarity to narrow it down."));
-    v.appendChild(grid);
-    v.appendChild(mk("p", "vt-rule", "Tap a card to inspect it (drag to tilt, tap to turn it over). A completed series gets a gold edge and unlocks its card sleeve (equip it in the Wardrobe: Edit player card). Duplicates from packs turn into shards automatically."));
-    return v;
-}
 
 /* =========================== DECKS =========================== */
 let editing = null, dkSeries = "", dkRar = -1, dkArch = "";
@@ -278,115 +235,17 @@ export function roomSig(tab, d) {
             d.vloc || {}, Object.keys(d.cvDeck || {}).filter(k => arrv((d.cvDeck[k] || {}).cards).length === 10), d.cvTimer,
             Object.entries(d.cvb || {}).map(([k, b]) => [k, b && b.st, Object.keys((b && b.acc) || {}).length, b && b.s && b.s.round])]);
     }
-    if (tab === "collection") return JSON.stringify([colView, Object.entries(d.trades || {}).map(([k, t]) => [k, t && t.st]), colView === "trade" ? Object.values(d.binder || {}).map(b => String(b).length) : 0, x && x.activeSlots ? x.activeSlots(d) : []]);
+    if (tab === "collection") return collectionSig(d);
     return "";
 }
 
-/* =========================== TRADES (cards only, friends in the same room) =========================== */
-const pk = p => "p" + p;
-let tradeWith = 0, tGive = [], tGet = [], roomData = null;
-const others = () => { const x = X(); if (!x.room || !x.room() || !roomData) return []; return x.activeSlots(roomData).filter(p => p !== x.me()); };
-function canTrade() { return others().length > 0; }
-const binderOf = p => String(((roomData || {}).binder || {})[pk(p)] || "").split(",").filter(Boolean).map(s => { const [id, h] = s.split(":"); return { id: Number(id), h: Number(h) || 0 }; }).filter(x => CARDS[x.id]);
-const trades = () => Object.entries((roomData || {}).trades || {}).map(([tid, t]) => Object.assign({ tid }, t, { give: arrv(t.give), get: arrv(t.get) }));
-const arrv = v => Array.isArray(v) ? v : v ? Object.values(v) : [];
-function incomingCount() { const me = X().me && X().me(); return trades().filter(t => Number(t.to) === me && t.st === "open").length; }
-function tradeView() {
-    const w = W(), x = X(), me = x.me(), v = mk("div", "vt-trade");
-    v.appendChild(btn("‹ Back to the book", "ghost sm", () => { colView = "book"; H.rerender(); }));
-    const mine = trades().filter(t => Number(t.from) === me || Number(t.to) === me).filter(t => ["open", "accepted", "a-done"].includes(t.st));
-    if (mine.length) {
-        const sec = mk("section", "vt-card"); sec.appendChild(mk("b", null, "Offers"));
-        mine.forEach(t => {
-            const inc = Number(t.to) === me, row = mk("div", "vt-offer");
-            row.appendChild(mk("small", null, inc ? x.pName(roomData, Number(t.from)) + " offers you:" : "You offer " + x.pName(roomData, Number(t.to)) + ":"));
-            const g = mk("div", "vt-ocards"); (inc ? t.give : t.give).forEach(c => g.appendChild(cardEl(c.id, { size: "xs", holo: !!c.h })));
-            const r = mk("div", "vt-ocards"); t.get.forEach(c => r.appendChild(cardEl(c.id, { size: "xs", holo: !!c.h })));
-            row.append(g, mk("small", null, inc ? "for your:" : "for their:"), r);
-            const b = mk("div", "vt-row");
-            if (t.st !== "open") b.appendChild(mk("small", "vt-rule", "Swapping…"));
-            else if (inc) { b.append(btn("Accept", "alt sm", () => acceptTrade(t)), btn("Decline", "ghost sm", () => setTrade(t.tid, "declined"))); }
-            else b.appendChild(btn("Cancel offer", "ghost sm", () => setTrade(t.tid, "cancelled")));
-            row.appendChild(b); sec.appendChild(row);
-        });
-        v.appendChild(sec);
-    }
-    const ps = mk("div", "vt-row"); ps.appendChild(mk("small", null, "Trade with:"));
-    others().forEach(p => { const b = mk("button", "chip-btn" + (tradeWith === p ? " on" : ""), x.pName(roomData, p)); b.type = "button"; b.onclick = () => { tradeWith = p; tGive = []; tGet = []; H.rerender(); }; ps.appendChild(b); });
-    v.appendChild(ps);
-    if (!tradeWith || !others().includes(tradeWith)) { v.appendChild(mk("p", "vt-rule", "Pick a friend in this room. You choose up to " + TRADE.maxCards + " of your cards and up to " + TRADE.maxCards + " of theirs; they accept or decline. Cards only: cosmetics can't be traded.")); return v; }
-    const theirs = binderOf(tradeWith);
-    const col = (title, list, sel, max) => {
-        const s = mk("section", "vt-card vt-tcol"); s.appendChild(mk("b", null, title + " (" + sel.length + "/" + max + ")"));
-        const g = mk("div", "vt-cgrid tiny");
-        list.forEach(c => {
-            const on = sel.some(x2 => x2.id === c.id && x2.h === c.h), el = cardEl(c.id, { size: "xs", holo: !!c.h }); if (on) el.classList.add("picked");
-            if (c.dim) el.classList.add("dim");
-            el.onclick = () => { const i = sel.findIndex(x2 => x2.id === c.id && x2.h === c.h); if (i >= 0) sel.splice(i, 1); else if (sel.length < max) sel.push({ id: c.id, h: c.h }); H.rerender(); };
-            g.appendChild(el);
-        });
-        if (!list.length) g.appendChild(mk("p", "vt-rule", "Nothing to show."));
-        s.appendChild(g); return s;
-    };
-    const myList = ownedIds(w).flatMap(id => { const c = w.cards[id]; return [c.n ? { id, h: 0 } : null, c.h ? { id, h: 1 } : null].filter(Boolean); }).sort((a, b) => CARDS[b.id].r - CARDS[a.id].r);
-    const theirList = theirs.map(c => Object.assign({}, c, { dim: owned(w, c.id) ? 1 : 0 })).sort((a, b) => a.dim - b.dim || CARDS[b.id].r - CARDS[a.id].r);
-    if (!theirs.length) v.appendChild(mk("p", "vt-rule", x.pName(roomData, tradeWith) + "'s collection hasn't arrived yet (they need this version of the game)."));
-    const two = mk("div", "vt-tcols"); two.append(col("You give", myList, tGive, TRADE.maxCards), col("You get from " + x.pName(roomData, tradeWith), theirList, tGet, TRADE.maxCards));
-    v.appendChild(two);
-    v.appendChild(mk("p", "vt-rule", "Dimmed cards are ones you already own (you'd get shards for them)."));
-    v.appendChild(btn("Send offer", "alt", sendOffer));
-    return v;
-}
-async function sendOffer() {
-    const x = X(); if (!tGive.length && !tGet.length) { toast("Pick at least one card."); return; }
-    const tid = "t" + Date.now().toString(36) + x.me();
-    const r = await H.act("tradelock:" + tid, "tradelock", w => lockTrade(w, tid, tGive));
-    if (!r.ok) { toast(r.error); return; }
-    await x.update(x.ref(x.db, "rooms/" + x.room() + "/trades/" + tid), { from: x.me(), to: tradeWith, give: tGive, get: tGet, st: "open", at: Date.now() });
-    tGive = []; tGet = []; toast("Offer sent"); sfx("ready"); H.rerender();
-}
-async function acceptTrade(t) {
-    const x = X(), p = tradeProblem(W(), t.get);
-    if (p) { toast(p); return; }
-    const r = await H.act("tradelock:" + t.tid, "tradelock", w => lockTrade(w, t.tid, t.get));
-    if (!r.ok) { toast(r.error); return; }
-    await x.runTransaction(x.ref(x.db, "rooms/" + x.room() + "/trades/" + t.tid + "/st"), cur => cur === "open" ? "accepted" : undefined);
-    sfx("ready");
-}
-function setTrade(tid, st) { const x = X(); return x.runTransaction(x.ref(x.db, "rooms/" + x.room() + "/trades/" + tid + "/st"), cur => cur === "open" ? st : undefined); }
-/* every room update: publish my binder, run my side of the trades */
-let binderSent = "", binderT = 0;
-const tradeSeen = new Set();
-export function roomSync(d) {
-    roomData = d; const x = X && H ? X() : null; if (!x || !x.room || !x.room() || !d) return;
-    const me = x.me(), w = W();
-    const binder = ownedIds(w).flatMap(id => { const c = w.cards[id]; return [c.n ? id + ":0" : null, c.h ? id + ":1" : null].filter(Boolean); }).join(",");
-    const key = x.room() + "|" + binder;
-    if (binderSent !== key && (d.binder || {})[pk(me)] !== binder) { clearTimeout(binderT); binderT = setTimeout(() => { binderSent = key; x.update(x.ref(x.db, "rooms/" + x.room() + "/binder"), { [pk(me)]: binder }).catch(() => {}); }, 800); }
-    trades().forEach(t => {
-        const from = Number(t.from), to = Number(t.to), k = t.tid + ":" + t.st;
-        if (to === me && t.st === "open" && !tradeSeen.has(k)) { tradeSeen.add(k); x.toast(x.pName(d, from) + " sent you a card trade offer: Collection › Trade with friends"); }
-        if (from === me && t.st === "accepted" && !tradeSeen.has(k)) {
-            tradeSeen.add(k);
-            setTimeout(async () => {
-                const r = await H.act("trade:" + t.tid, "trade", (w2, xx) => applyTrade(w2, t.tid, t.give, t.get, x.pName(d, to) + " (trade)", xx.now));
-                if (r.ok) { await x.runTransaction(x.ref(x.db, "rooms/" + x.room() + "/trades/" + t.tid + "/st"), cur => cur === "accepted" ? "a-done" : undefined); if (!r.dup) { x.toast("Trade done with " + x.pName(d, to)); x.sfx("coin"); } }
-                else { x.toast("Trade failed: " + r.error); await setTrade(t.tid, "cancelled"); }
-                H.rerender();
-            }, 0);
-        }
-        if (to === me && t.st === "a-done" && !tradeSeen.has(k)) {
-            tradeSeen.add(k);
-            setTimeout(async () => {
-                const r = await H.act("trade:" + t.tid, "trade", (w2, xx) => applyTrade(w2, t.tid, t.get, t.give, x.pName(d, from) + " (trade)", xx.now));
-                if (r.ok) { await x.runTransaction(x.ref(x.db, "rooms/" + x.room() + "/trades/" + t.tid + "/st"), cur => cur === "a-done" ? "done" : undefined); if (!r.dup) { x.toast("Trade done with " + x.pName(d, from)); x.sfx("coin"); } }
-                H.rerender();
-            }, 0);
-        }
-        if ((t.st === "declined" || t.st === "cancelled") && (from === me || to === me) && (W().locks || {})[t.tid] && !tradeSeen.has(k)) {
-            tradeSeen.add(k);
-            setTimeout(() => H.act("tradeunlock:" + t.tid + ":" + t.st, "tradelock", w2 => unlockTrade(w2, t.tid)).then(() => H.rerender()), 0);
-            if (from === me && t.st === "declined") x.toast(x.pName(d, to) + " declined your trade.");
-        }
-    });
+/* the Collection and the trades: js/vault/tab-collection.js */
+export function roomSync(d) { roomData = d; collectionRoomSync(d, H); }
+let roomData = null;
+/* "Add to deck" from the inspector: open the active deck in the builder with the card in it */
+export function addToDeck(id) {
+    const w = W(), d = activeDeck(w);
+    editing = d ? { id: d.id, name: d.name, cards: d.cards.slice() } : { id: "", name: "Deck " + ((w.decks || []).length + 1), cards: [] };
+    if (!editing.cards.includes(id)) { if (editing.cards.length < DECK.size) editing.cards.push(id); else toast("That deck is full: take a card out to make room."); }
+    H.open("decks");
 }

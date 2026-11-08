@@ -14,9 +14,9 @@
    7. summary: every card, NEW tags, duplicates turning into shards, the pity counter
    Reduced effects: static foil, no float, no shake, a few flakes, a simple flip, no canvas.
    ===================================================================== */
-import { cardEl, packEl, theme, seriesVars, packClip, thicken } from "./cardui.js?v=12";
+import { cardEl, packEl, theme, seriesVars, packClip, thicken } from "./cardui.js?v=13";
 import { CARDS, RARITY_NAMES } from "./carddb.js?v=5";
-import { PACKS, OPENING as O } from "./config.js?v=13";
+import { PACKS, OPENING as O } from "./config.js?v=14";
 import { motionOK } from "../fx.js";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -280,7 +280,8 @@ export function inspect(id, o = {}) {
     const hasDO = typeof DeviceOrientationEvent !== "undefined" && matchMedia("(hover: none)").matches && motionOK();
     if (hasDO) { const m = mk("button", "btn ghost sm", "Tilt with my phone"); m.type = "button"; m.onclick = async () => { try { if (DeviceOrientationEvent.requestPermission) { const p = await DeviceOrientationEvent.requestPermission(); if (p !== "granted") { m.textContent = "Motion not allowed: drag instead"; return; } } addEventListener("deviceorientation", onDO); m.remove(); } catch (e) { m.textContent = "Drag to tilt"; } }; bar.appendChild(m); }
     bar.append(shut);
-    root.append(el, tip, bar);
+    if (o.panel) { const main = mk("div", "vc-ins-main"); main.append(el, tip, bar); root.classList.add("wide"); root.append(main, o.panel); }      // a side panel (Collection, Decks, the Duel); a bottom drawer on phones
+    else root.append(el, tip, bar);
     document.body.appendChild(root);
     X.sfx("open");
     let want = null, rafT = 0;

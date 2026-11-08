@@ -11,14 +11,14 @@
    Every coin change goes through bank.apply(opId, ...), so a reload, a reconnect or a double click
    never pays twice.
    ===================================================================== */
-import { createBank, localBackend } from "./store.js?v=13";
-import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=13";
-import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=12";
+import { createBank, localBackend } from "./store.js?v=14";
+import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=14";
+import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=13";
 import { newSeed } from "./rng.js?v=2";
-import { grantStarter, recordDuel, activeDeck, deckProblem } from "./packs.js?v=11";
-import { publicLook } from "./shop.js?v=11";
-import { initOpening } from "./opening.js?v=12";
-import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=14";
+import { grantStarter, recordDuel, activeDeck, deckProblem } from "./packs.js?v=12";
+import { publicLook } from "./shop.js?v=12";
+import { initOpening } from "./opening.js?v=13";
+import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig, addToDeck } from "./tabs.js?v=15";
 import { motionOK } from "../fx.js";
 import { icon } from "./icons.js?v=2";
 
@@ -315,7 +315,7 @@ export function maybeShowDaily() {
 const H = {
     bank, act: (opId, kind, fn) => bank.apply(opId, kind, fn), rerender: () => renderVault(), event: (k, op) => vaultEvent(k, op), x: () => X,
     setLook() { X.setLook && X.setLook(publicLook(bank.get())); }, newSeed, open: id => { tab = id; renderVault(); window.scrollTo(0, 0); },
-    room: () => roomD, inRoom, hostParty: () => hostParty(), joinParty: c => { joinOpen = true; renderCtx(true); if (c) joinParty(c); else setTimeout(() => { const i = $("avJoinCode"); if (i) { i.scrollIntoView({ block: "center" }); i.focus(); } }, 30); }
+    room: () => roomD, inRoom, addToDeck: id => addToDeck(id), hostParty: () => hostParty(), joinParty: c => { joinOpen = true; renderCtx(true); if (c) joinParty(c); else setTimeout(() => { const i = $("avJoinCode"); if (i) { i.scrollIntoView({ block: "center" }); i.focus(); } }, 30); }
 };
 export function roomSync(d) { tabsRoomSync(d); }
 export function activeDeckCards() { const w = bank.get(), d = activeDeck(w); return d && !deckProblem(w, d.cards) ? { name: d.name, cards: d.cards.slice() } : null; }

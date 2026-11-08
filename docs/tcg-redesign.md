@@ -38,3 +38,20 @@ is never reset: card ids are AniList character ids and no phase changes them.
 - Packs: a character silhouette (three builds across the series), Premium gets a gem crest and the
   "6 CARDS · 1 RARE+ GUARANTEED" banner. Roll logic, odds, prices, pity and shards unchanged.
 - The opening is the same (tear, burst, face-down stack, revealed card on top, inspect, reactions, summary).
+
+## Phase 4: Collection (done 2026-11-08)
+
+- `js/vault/tab-collection.js`: a binder (pages of 9 pockets with sleeve plastic, a spread of two pages on wide screens,
+  page-turn animation, Next / Previous, swipe and arrow keys) or a grid. Missing cards are silhouettes with their number,
+  rarity and a name hint (first letters). Search + filters (series, rarity, archetype, card type, owned / missing, Holo,
+  NEW = pulled in the last 3 days and not inspected yet) and sorting (number, rarity, ATK, DEF, name, recently pulled,
+  either direction). Progress: total %, a ring per series (tap = filter; a check when complete), the rarity breakdown,
+  the sleeves unlocked.
+- The inspector (`js/vault/opening.js` inspect, now with a side panel / phone bottom drawer): the 3D card + rarity,
+  ATK / DEF / archetype, the ability with keyword chips that explain themselves (`js/duel/glossary.js`), first pulled by,
+  copies, shard value, duels won, Add to deck (opens the builder with the card).
+- Duplicates & shards: cards owned both Normal and Holo give up the Normal copy for its shards (one, or all, with a
+  confirmation; never a copy locked in a trade offer). `convertDuplicate` in `js/vault/packs.js`.
+- Trades: pick cards on both sides, a review of both sides (warnings: your only copy, a card you already own), send
+  (your cards locked), the friend reviews and accepts, an undo window of `TRADE.undoSec` (10 s) for either side, then the
+  swap. Cards only.

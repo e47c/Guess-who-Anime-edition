@@ -1,8 +1,8 @@
 // ANIME TCG card-duel engine tests + balance simulation: node tools/cardvault-test.mjs [--sims N]
-import { newDuel, act, resolveRound, alive, handOf, lifeOf, autoPick, due, applyDue, playOut, cpuPick, allPicked, REVEAL_MS } from "../js/cardvault/engine.js?v=11";
+import { newDuel, act, resolveRound, alive, handOf, lifeOf, autoPick, due, applyDue, playOut, cpuPick, allPicked, REVEAL_MS } from "../js/cardvault/engine.js?v=12";
 import { ABILITIES, ARCHETYPES, RARITY_NAMES } from "../js/cardvault/abilities.js?v=3";
 import { CARDS, BY_SERIES_RARITY, CARD_SERIES, TOTAL_CARDS } from "../js/vault/carddb.js?v=5";
-import { DUEL } from "../js/vault/config.js?v=13";
+import { DUEL } from "../js/vault/config.js?v=14";
 import { rngFrom, shuffleWith } from "../js/vault/rng.js?v=2";
 
 let ok = 0, bad = 0;

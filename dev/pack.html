@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Special+Elite&family=Permanent+Marker&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/base.css?v=13">
 <link rel="stylesheet" href="../css/vault.css?v=5">
-<link rel="stylesheet" href="../css/cards.css?v=6">
+<link rel="stylesheet" href="../css/cards.css?v=7">
 <link rel="stylesheet" href="../css/packs.css?v=5">
 <style>
 /* DEV ONLY: one pack and one opening, with a chosen line-up, to review the look and every step. Not linked from the game.
@@ -46,9 +46,9 @@ h1 { margin: 0 0 4px; font: 400 26px/1 'Dela Gothic One'; }
 <div class="show" id="show"></div>
 <script type="module">
 import { CARD_SERIES, BY_SERIES_RARITY } from "../js/vault/carddb.js?v=5";
-import { packEl, theme, bindShine } from "../js/vault/cardui.js?v=12";
-import { openPack, initOpening } from "../js/vault/opening.js?v=12";
-import { SHARDS, RARITY_ORDER } from "../js/vault/config.js?v=13";
+import { packEl, theme, bindShine } from "../js/vault/cardui.js?v=13";
+import { openPack, initOpening } from "../js/vault/opening.js?v=13";
+import { SHARDS, RARITY_ORDER } from "../js/vault/config.js?v=14";
 import { audio } from "../js/audio.js?v=4";
 initOpening({ sfx: n => audio.sfx(n), crinkle: v => audio.crinkle(v), stamp: () => null, sleeve: () => "" });
 const $ = id => document.getElementById(id);

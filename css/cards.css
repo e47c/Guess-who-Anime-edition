@@ -317,6 +317,13 @@
 .vc-inspect .vcard { --cw: min(80vw, 360px, 62dvh); cursor: grab; }
 .vc-inspect .vcard .vc-inner { transition: transform .15s ease-out; }
 .vc-inspect .vcard.turned .vc-inner, .vc-inspect .vcard.flipping .vc-inner { transition: transform .55s cubic-bezier(.2,.8,.2,1); }
+/* with a side panel (Collection, Decks, the Duel): card + panel side by side; on phones the panel is a bottom drawer */
+.vc-inspect.wide { grid-template-columns: auto auto; justify-content: center; align-items: center; gap: 24px; }
+.vc-ins-main { display: grid; justify-items: center; gap: 14px; }
+.vc-inspect.wide .vcard { --cw: min(42vw, 340px, 60dvh); }
+@media (max-width: 760px) { .vc-inspect.wide { grid-template-columns: 1fr; align-content: start; justify-items: center; overflow-y: auto; padding-bottom: 0; touch-action: pan-y; }
+    .vc-inspect.wide .vcard { --cw: min(66vw, 280px, 46dvh); }
+    .vc-inspect.wide > aside { position: sticky; bottom: 0; width: 100%; max-height: none; border-radius: 16px 16px 0 0; } }
 .vc-ins-bar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .vc-ins-tip { margin: 0; font: 600 13px/1.4 var(--f-ui); color: rgba(255,255,255,.7); text-align: center; }
 

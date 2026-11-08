@@ -7,11 +7,11 @@
    Roll logic, odds, prices, pity and shards are unchanged (js/vault/packs.js rollPack). Every purchase is an intent
    (bank.apply with an operation id), so a double tap can never pay twice.
    ===================================================================== */
-import { PACKS, SHARDS, RARITY_ORDER } from "./config.js?v=13";
-import { rollPack, unopened, markOpened, owned, isHolo } from "./packs.js?v=11";
+import { PACKS, SHARDS, RARITY_ORDER } from "./config.js?v=14";
+import { rollPack, unopened, markOpened, owned, isHolo } from "./packs.js?v=12";
 import { CARDS, BY_SERIES, CARD_SERIES, CARD_COUNT, RARITY_NAMES } from "./carddb.js?v=5";
-import { cardEl, packEl, theme, bindShine, preloadArt } from "./cardui.js?v=12";
-import { openPack, inspect } from "./opening.js?v=12";
+import { cardEl, packEl, theme, bindShine, preloadArt } from "./cardui.js?v=13";
+import { openPack, inspect } from "./opening.js?v=13";
 import { icon, RARITY_ICON } from "./icons.js?v=2";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };

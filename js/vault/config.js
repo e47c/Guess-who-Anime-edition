@@ -156,7 +156,7 @@ export const CARD_ART = {
 
 /* ---------- A7. Decks ---------- */
 export const DECK = { size: 10, maxCopies: 1, starterCount: 10, maxDecks: 8, veteranWins: 10 };
-export const TRADE = { maxCards: 5, maxOpen: 3 };      // cards per side of one offer, open offers per player
+export const TRADE = { maxCards: 5, maxOpen: 3, undoSec: 10 };     // undoSec: after an offer is accepted, either side can undo for this long      // cards per side of one offer, open offers per player
 
 /* ---------- B. ANIME TCG card duels (challenges from the Vault's Duel tab) ---------- */
 export const DUEL = {
