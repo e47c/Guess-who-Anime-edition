@@ -167,7 +167,7 @@
 /* the row of revealed cards and the summary */
 .pk-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; padding: 0 12px 8px; min-height: 56px; }
 .pk-row .vcard { --cw: 44px; animation: pkSlide .35s cubic-bezier(.2,.8,.2,1) both; }
-.pk-row .vcard .vc-abil, .pk-row .vcard .vc-gems, .pk-row .vcard .vc-foot, .pk-row .vcard .vc-top, .pk-row .vcard .vc-name { display: none; }
+.pk-row .vcard .vc-abil, .pk-row .vcard .vc-foot, .pk-row .vcard .vc-type, .pk-row .vcard .vc-orn { display: none; }
 @keyframes pkSlide { from { opacity: 0; transform: translateY(30px) scale(.9); } }
 .pk-sum { width: min(980px, 100%); max-height: 100%; overflow: auto; padding: 8px 16px 16px; display: grid; gap: 14px; justify-items: center; align-content: start; }
 .pk-sum h3 { margin: 0; font: 400 clamp(26px, 6vw, 40px)/1 var(--f-title); text-shadow: 3px 3px 0 var(--red); }

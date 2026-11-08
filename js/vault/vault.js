@@ -11,14 +11,14 @@
    Every coin change goes through bank.apply(opId, ...), so a reload, a reconnect or a double click
    never pays twice.
    ===================================================================== */
-import { createBank, localBackend } from "./store.js?v=11";
-import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=11";
-import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=10";
+import { createBank, localBackend } from "./store.js?v=12";
+import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=12";
+import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=11";
 import { newSeed } from "./rng.js?v=1";
-import { grantStarter, recordBattle, activeDeck, deckProblem } from "./packs.js?v=9";
-import { publicLook } from "./shop.js?v=9";
-import { initOpening } from "./opening.js?v=9";
-import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=11";
+import { grantStarter, recordBattle, activeDeck, deckProblem } from "./packs.js?v=10";
+import { publicLook } from "./shop.js?v=10";
+import { initOpening } from "./opening.js?v=10";
+import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig } from "./tabs.js?v=12";
 import { motionOK } from "../fx.js";
 
 export const bank = createBank(localBackend());

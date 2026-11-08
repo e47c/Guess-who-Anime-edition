@@ -4,7 +4,7 @@
                  no ("042/066"), img (picture URL or ""),
                  fx, fy (the face centre in the picture, 0..1), fz (zoom), fit (show the whole picture), ar (picture width / height) }
    ===================================================================== */
-import { CARD_SERIES, CARD_COUNT, CARD_IMG, CARD_ROWS } from "./cards.js?v=2";
+import { CARD_SERIES, CARD_COUNT, CARD_IMG, CARD_ROWS } from "./cards.js?v=3";
 import { ARCHETYPES, RARITY_KEYS, RARITY_NAMES, abilityName } from "../cardvault/abilities.js?v=2";
 
 export const CARDS = {}, BY_SERIES = {}, BY_SERIES_RARITY = {};

@@ -19,6 +19,7 @@ const root = new URL("../", import.meta.url);
 const pop = JSON.parse(readFileSync(new URL("data/draft-pop.json", root), "utf8"));
 const packs = JSON.parse(readFileSync(new URL("packs.json", root), "utf8"));
 const IMG = "https://s4.anilist.co/file/anilistcdn/character/large/";
+const ART_FIX = (() => { try { return JSON.parse(readFileSync(new URL("data/card-art-fix.json", root), "utf8")); } catch (e) { return {}; } })();   // tools/card-art-audit.mjs --fix
 const fromPacks = {};
 Object.values(packs.series).forEach(sr => (sr.chars || []).forEach(c => { fromPacks[String(c[0]).slice(1)] = c[3] || ""; }));
 const LABEL = Object.fromEntries(Object.entries(packs.series).map(([k, v]) => [k, v.label]));
@@ -70,7 +71,7 @@ for (const s of SERIES) {
         });
     });
     list.sort((a, b) => a.r - b.r || a.n.localeCompare(b.n)).forEach((c, i) => { c.no = i + 1; c.of = N; });
-    list.forEach(c => { const p = pop.chars[c.id], f = (p && p[1]) || fromPacks[c.id] || ""; c.img = f && !/^http/.test(f) ? f : f; out.push(c); });
+    list.forEach(c => { const p = pop.chars[c.id], f = (ART_FIX[c.id] && ART_FIX[c.id].img) || (p && p[1]) || fromPacks[c.id] || ""; c.img = f; out.push(c); });
 }
 
 // ---------- face focal points (data/card-focus.json from tools/card-faces.py, hand fixes in data/card-focus-fix.json) ----------
@@ -81,19 +82,15 @@ const readJson = f => { try { return JSON.parse(readFileSync(new URL(f, root), "
 const FOCUS = readJson("data/card-focus.json"), FIX = readJson("data/card-focus-fix.json");
 const A = CARD_ART;
 function focusOf(id) {
+    // the face point and the picture's aspect; whether a window covers or fits is decided at runtime per window
+    // (js/vault/cardui.js artPlace, CARD_ART.maxCrop). Only a hand fix can force fit (1) or a zoom (z) here.
     const d = Object.assign({ w: 230, h: 345, fx: A.defaultFocus[0], fy: A.defaultFocus[1], fh: A.defaultFaceH, src: "none" }, FOCUS[id] || {}, FIX[id] || {});
     if (d.src === "default" && !FIX[id]) { d.fx = A.defaultFocus[0]; d.fy = A.defaultFocus[1]; d.fh = A.defaultFaceH; }
-    const r = d.w / d.h, k = r < A.artRatio ? A.artRatio / r : 1;          // k = how much taller the picture is than the window (cover)
-    const inWin = d.fh * k;                                                 // face height as a share of the window
-    let z = 1, fit = 0;
-    if (FIX[id] && FIX[id].z) z = FIX[id].z;
-    else if (inWin * A.faceMargin > 1 || k > A.maxCrop) fit = 1;            // the face (or the picture) can't fit: show it whole
-    else if (inWin < A.minFace && d.src === "det") z = Math.min(A.maxZoom, A.minFace / inWin); // a small, surely-detected face: zoom in on it
-    if (FIX[id] && FIX[id].fit != null) fit = FIX[id].fit;
+    const r = d.w / d.h, z = FIX[id] && FIX[id].z ? FIX[id].z : 1, fit = FIX[id] && FIX[id].fit != null ? FIX[id].fit : 0;
     return [Math.round(d.fx * 1000), Math.round(d.fy * 1000), Math.round(z * 100), fit, Math.round(r * 1000)];
 }
 const fitN = out.filter(c => c.img && focusOf(c.id)[3]).length, zoomN = out.filter(c => c.img && focusOf(c.id)[2] > 100).length;
-console.log("Face focus: " + Object.keys(FOCUS).length + " pictures measured, " + Object.keys(FIX).length + " hand fixes; " + fitN + " shown whole (fit), " + zoomN + " zoomed in");
+console.log("Face focus: " + Object.keys(FOCUS).length + " pictures measured, " + Object.keys(FIX).length + " hand fixes; " + fitN + " forced fit, " + zoomN + " zoomed in");
 
 // ---------- js/vault/cards.js ----------
 const rowsJs = out.map(c => JSON.stringify([c.id, SERIES.indexOf(c.s), c.n, c.r, ARCHETYPES.indexOf(c.a), c.pow, c.def, c.ab, c.no, c.img, ...focusOf(c.id)])).join(",\n");

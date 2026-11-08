@@ -3,11 +3,15 @@
    RARITY decides the frame's material, shape and effects; the SERIES decides colours, ornaments, the holo
    pattern, the card back and the pack art. No official logos: every series gets stylised text, colours and a
    simple emblem that evokes its mood.
-   Layers of a card (moved with CSS transforms): background, character, foreground, frame, effects.
-   Rarity is readable without colour: the number and shape of the rarity gems + the rarity word.
+   Anatomy (one component everywhere): name bar (series seal + the name, fitted, never cut), art window, ATK / DEF plates,
+   type line (rarity stars + archetype · series), effect box (keyword chips, timing tags, the ability), footer
+   (collection number, rarity). Rarity is readable without colour: the number of stars and the rarity word.
+   The card turns as one rigid object (no layer slides; at most a hair of depth on Legendary / Mythic in the inspector).
    ===================================================================== */
-import { CARDS, RARITY_NAMES } from "./carddb.js?v=3";
-import { CARD_ART } from "./config.js?v=11";
+import { CARDS, RARITY_NAMES, RARITY_KEYS } from "./carddb.js?v=4";
+import { icon, KEYWORD_ICON } from "./icons.js?v=1";
+import { corner } from "./cardstyle.js?v=1";
+import { CARD_ART } from "./config.js?v=12";
 import { ABILITIES, abilityText } from "../cardvault/abilities.js?v=2";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -54,81 +58,163 @@ export const SERIES_THEME = {
 };
 export const theme = s => SERIES_THEME[s] || SERIES_THEME.onepiece;
 export const seriesVars = (el, s) => { const T = theme(s); el.style.setProperty("--c1", T.c1); el.style.setProperty("--c2", T.c2); el.style.setProperty("--c3", T.c3); el.style.setProperty("--ink", T.ink); return el; };
-const GEM_SHAPE = ["●", "◆", "▲", "✦", "⬟", "★", "✸"];
-export const rarityMark = r => { const m = mk("span", "vc-rmark"); m.setAttribute("aria-label", RARITY_NAMES[r]); m.append(mk("i", null, GEM_SHAPE[r].repeat(Math.min(r + 1, 4)) + (r >= 4 ? "+" : "")), mk("b", null, RARITY_NAMES[r].toUpperCase())); return m; };
-const statGem = (cls, v, lbl) => { const g = mk("span", "gem " + cls); g.append(mk("b", null, String(v)), mk("small", null, lbl)); g.setAttribute("aria-label", lbl + " " + v); return g; };
-/* Place a picture so its face is whole and where the layout expects it (CARD_ART in config.js; numbers from cards.js).
-   The window's shape depends on the rarity: square (most), taller with the top 22% breaking out of the frame (Ultra Rare),
-   the whole card (Mythic). With object-fit: cover only one axis overflows; object-position on that axis puts the face
-   centre at targetY (or centred across), the zoom scales around the face, and fit shows the whole picture contained
-   over a blurred, darkened copy when the face or the picture can't fit. */
+/* ---------- the rarity star row: 1 star (Common) to 7 (Mythic); readable without colour ---------- */
+export const rarityMark = r => { const m = mk("span", "vc-stars n" + (r + 1)); m.setAttribute("aria-label", RARITY_NAMES[r]); m.title = RARITY_NAMES[r]; m.innerHTML = icon("star").repeat(r + 1); return m; };
+const statPlate = (cls, v, lbl) => { const g = mk("span", "vc-stat " + cls); g.innerHTML = icon(cls); g.appendChild(mk("b", null, String(v))); g.setAttribute("aria-label", lbl + " " + v); return g; };
+/* stored stats are small integers (2-9); the card shows them x100 (ATK 800) */
+export const SHOW = v => (Number(v) || 0) * 100;
+/* the timing words written in an ability's text become tags; its keywords become chips with their icon */
+const TIMING = /\b(On reveal|On clash|On damage|On win|On defeat|On summon|On attack|When attacked|When destroyed|Continuous|Once per turn)\b/gi;
+export function abilityParts(abId) {
+    const A = ABILITIES[abId] || { kw: [], text: "" }, t = A.text || "", tags = [];
+    (t.match(TIMING) || []).forEach(x => { const k = x[0].toUpperCase() + x.slice(1).toLowerCase(); if (!tags.includes(k)) tags.push(k); });
+    return { kw: A.kw || [], tags, text: t };
+}
+function abilityBox(c) {
+    const P = abilityParts(c.ab), box = mk("div", "vc-abil"), chips = mk("div", "vc-chips");
+    P.kw.forEach(k => { const ch = mk("span", "vc-kw"); ch.dataset.kw = k; ch.innerHTML = icon(KEYWORD_ICON[k] || "spirit"); ch.appendChild(mk("b", null, k)); chips.appendChild(ch); });
+    P.tags.forEach(k => { const ch = mk("span", "vc-tm"); ch.innerHTML = icon("timing"); ch.appendChild(mk("b", null, k)); chips.appendChild(ch); });
+    const txt = mk("p", "vc-abtxt"); txt.appendChild(mk("b", "vc-abname", c.abName + " "));
+    // the text, with each timing word in bold
+    let last = 0; P.text.replace(TIMING, (m, _g, at) => { if (at > last) txt.appendChild(document.createTextNode(P.text.slice(last, at))); txt.appendChild(mk("em", null, m)); last = at + m.length; return m; });
+    if (last < P.text.length) txt.appendChild(document.createTextNode(P.text.slice(last)));
+    const n = P.text.length + c.abName.length; box.classList.add(n < 62 ? "tl1" : n < 92 ? "tl2" : "tl3");
+    box.append(chips, txt);
+    return box;
+}
+/* Place a picture in its window (CARD_ART in config.js; face points from cards.js). Each rarity layout has its own window:
+   the standard portrait window, the taller Ultra Rare window whose top 22% breaks out of the frame, or the whole card
+   (Mythic). If filling the window ("cover") would cut off more than CARD_ART.maxCrop of the picture, the picture is
+   shown whole instead ("fit": contained over a blurred, darkened copy). Covered pictures are placed so the face centre
+   lands at targetY. a.dataset.mode / crop record what was done (the gallery checks them). */
 const clamp01 = v => Math.max(0, Math.min(1, v));
-export function artPlace(c, a, im) {
-    const W = CARD_ART, ultra = c.r === 3, mythic = c.r === 6;
-    const A = mythic ? W.cardRatio[0] / W.cardRatio[1] : ultra ? W.artRatio / 1.22 : W.artRatio;
-    const ty = mythic ? W.targetYMythic : ultra ? (.22 + W.targetY) / 1.22 : W.targetY;
-    const r = c.ar || 2 / 3, kk = r < A ? A / r : r / A;
+export const windowRatio = r => { const W = CARD_ART; return r === 6 ? W.cardRatio[0] / W.cardRatio[1] : r === 3 ? W.artRatio / 1.22 : W.artRatio; };
+export function artPlace(c, a, im, r) {
+    const W = CARD_ART; r = r == null ? c.r : r;
+    const A = windowRatio(r), ty = r === 6 ? W.targetYMythic : r === 3 ? (.22 + W.targetY) / 1.22 : W.targetY;
+    const ar = c.ar || 2 / 3, kk = ar < A ? A / ar : ar / A, crop = 1 - 1 / kk;
     a.style.setProperty("--art", "url(\"" + c.img + "\")");
-    if (c.fit || kk > W.maxCrop) { a.classList.add("fit"); return; }
+    if (c.fit || crop > W.maxCrop + 1e-6) { a.classList.add("fit"); a.dataset.mode = "fit"; a.dataset.crop = "0"; return; }
+    a.dataset.mode = "cover"; a.dataset.crop = crop.toFixed(3);
     let px = .5, py = .5, ox = c.fx, oy = .5;
-    if (r < A && kk > 1.001) { py = clamp01((kk * c.fy - ty) / (kk - 1)); oy = kk * c.fy - py * (kk - 1); }
-    else if (r > A && kk > 1.001) { px = clamp01((kk * c.fx - .5) / (kk - 1)); ox = kk * c.fx - px * (kk - 1); oy = c.fy; }
+    if (ar < A && kk > 1.001) { py = clamp01((kk * c.fy - ty) / (kk - 1)); oy = kk * c.fy - py * (kk - 1); }
+    else if (ar > A && kk > 1.001) { px = clamp01((kk * c.fx - .5) / (kk - 1)); ox = kk * c.fx - px * (kk - 1); oy = c.fy; }
     else oy = c.fy;
     im.style.objectPosition = (px * 100).toFixed(1) + "% " + (py * 100).toFixed(1) + "%";
     a.style.setProperty("--fo", (ox * 100).toFixed(1) + "% " + (oy * 100).toFixed(1) + "%");
+    a.dataset.fy = oy.toFixed(3);
     if (c.fz > 1) a.style.setProperty("--fz", String(c.fz));
 }
-function artLayer(c) {
+/* pictures: retried on failure, kept decoded for the pack opening (preloadArt), a series silhouette as the last resort */
+const artCache = new Map();
+export function preloadArt(ids) {
+    (ids || []).forEach(id => {
+        const c = CARDS[id]; if (!c || !c.img || artCache.has(c.img)) return;
+        const im = new Image(); im.decoding = "async"; im.referrerPolicy = "no-referrer"; im.src = c.img; artCache.set(c.img, im);
+        if (im.decode) im.decode().catch(() => {});
+        while (artCache.size > (CARD_ART.preloadMax || 240)) artCache.delete(artCache.keys().next().value);
+    });
+}
+const SILHOUETTE = '<svg class="vc-sil" viewBox="0 0 100 120" aria-hidden="true"><path d="M50 18a19 19 0 1 1 0 38 19 19 0 0 1 0-38zM12 120c2-31 19-48 38-48s36 17 38 48z" fill="currentColor"/></svg>';
+function placeholder(a, c) { a.classList.remove("fit"); a.classList.add("noimg"); a.dataset.mode = "placeholder"; a.innerHTML = SILHOUETTE; a.appendChild(mk("b", "vc-silname", c.n)); }
+function artLayer(c, r) {
     const a = mk("div", "vc-art");
-    if (c.img) { const im = new Image(); im.alt = ""; im.decoding = "async"; im.loading = "lazy"; im.referrerPolicy = "no-referrer"; im.draggable = false; artPlace(c, a, im); im.src = c.img; im.onerror = () => { im.remove(); a.classList.add("noimg"); a.textContent = c.n.split(/\s+/).map(w => w[0]).join("").slice(0, 2); }; a.appendChild(im); }
-    else { a.classList.add("noimg"); a.textContent = c.n.split(/\s+/).map(w => w[0]).join("").slice(0, 2); }
+    if (!c.img) { placeholder(a, c); return a; }
+    const im = new Image(); im.alt = ""; im.decoding = "async"; im.loading = "lazy"; im.referrerPolicy = "no-referrer"; im.draggable = false;
+    artPlace(c, a, im, r);
+    let tries = 0;
+    im.onerror = () => {
+        const d = (CARD_ART.retries || [])[tries++];
+        if (d == null) { im.remove(); placeholder(a, c); return; }
+        setTimeout(() => { if (im.isConnected || !a.isConnected) im.src = c.img + (c.img.includes("?") ? "&" : "?") + "r=" + tries; }, d);
+    };
+    if (artCache.has(c.img)) im.loading = "eager";
+    im.src = c.img;
+    a.appendChild(im);
     return a;
 }
+/* ---------- only cards on screen animate; names and effect text are fitted once a card is laid out ---------- */
+let visIO = null; const visSet = new Set();
+function watchVis(el) {
+    if (typeof IntersectionObserver === "undefined") { el.classList.add("vis"); return; }
+    if (!visIO) visIO = new IntersectionObserver(list => list.forEach(e => {
+        const t = e.target; t.classList.toggle("vis", e.isIntersecting);
+        if (e.isIntersecting && !t.dataset.fitted) fitText(t);
+        if (!t.isConnected) { visIO.unobserve(t); visSet.delete(t); }
+    }), { rootMargin: "160px" });
+    if (visSet.size > 500) visSet.forEach(x => { if (!x.isConnected) { visIO.unobserve(x); visSet.delete(x); } });
+    visSet.add(el); visIO.observe(el);
+}
+/* shrink (never cut) the name and the effect text until they fit their boxes. Scale-free: a multiplier on the em size. */
+export function fitText(card) {
+    const one = (node, v, min) => {
+        if (!node || !node.clientWidth) return true;
+        let k = 1; node.style.setProperty(v, "1");
+        while ((node.scrollWidth > node.clientWidth + 1 || node.scrollHeight > node.clientHeight + 1) && k > min) { k = Math.round((k - .06) * 100) / 100; node.style.setProperty(v, String(k)); }
+        return !(node.scrollWidth > node.clientWidth + 1 || node.scrollHeight > node.clientHeight + 1);
+    };
+    const okN = one(card.querySelector(".vc-name"), "--nf", .5), okT = one(card.querySelector(".vc-abtxt"), "--tf", .62);
+    if (card.clientWidth) card.dataset.fitted = okN && okT ? "1" : "over";
+}
 
-/* a card. o = { holo, size: "xs"|"sm"|"md"|"lg", isNew, gold (series complete), stamp: {by, at}, veteran, sleeve, faceDown, ghost (not owned) } */
+/* a card. o = { holo, size: "xs"|"sm"|"md"|"lg", isNew, gold (series complete), stamp: {by, at}, veteran, sleeve, faceDown,
+   ghost (not owned), as (preview: draw it with another rarity's design; the dev gallery) } */
 export function cardEl(id, o = {}) {
-    const c = CARDS[id]; const el = mk("div", "vcard r-" + (c ? c.rk : "common") + " sz-" + (o.size || "md"));
+    const c = CARDS[id], r = c ? (o.as != null ? o.as : c.r) : 0, rk = RARITY_KEYS[r] || "common";
+    const el = mk("div", "vcard r-" + rk + " sz-" + (o.size || "md"));
     if (!c) { el.classList.add("ghost"); return el; }
-    el.dataset.id = id; el.classList.add("s-" + c.s, "m-" + theme(c.s).motif, "h-" + theme(c.s).holo, "f-" + theme(c.s).font);
+    const T = theme(c.s);
+    el.dataset.id = id; el.classList.add("s-" + c.s, "m-" + T.motif, "h-" + T.holo, "f-" + T.font);
     if (o.holo) el.classList.add("holo"); if (o.gold) el.classList.add("gold"); if (o.ghost) el.classList.add("ghost"); if (o.faceDown) el.classList.add("down");
     seriesVars(el, c.s);
     el.setAttribute("role", "img");
-    el.setAttribute("aria-label", o.ghost ? "Not collected: " + c.no : c.n + ", " + RARITY_NAMES[c.r] + (o.holo ? " Holo" : "") + ", " + c.a + ", Power " + c.pow + ", Defense " + c.def + ". " + c.abName + ": " + ABILITIES[c.ab].text);
+    el.setAttribute("aria-label", o.ghost ? "Not collected: " + c.no : c.n + ", " + RARITY_NAMES[r] + (o.holo ? " Holo" : "") + ", " + c.a + ", ATK " + SHOW(c.pow) + ", DEF " + SHOW(c.def) + ". " + c.abName + ": " + ABILITIES[c.ab].text);
     const inner = mk("div", "vc-inner");
     // front
     const f = mk("div", "vc-front");
-    const bg = mk("div", "vc-bg"); if (c.r >= 5 && c.img) bg.style.backgroundImage = "url(\"" + c.img + "\")";
-    f.append(bg, artLayer(c));
-    if (c.r >= 5) { const fg = mk("div", "vc-fg"); for (let i = 0; i < 9; i++) { const d = mk("i"); d.style.setProperty("--i", i); fg.appendChild(d); } f.appendChild(fg); }
+    const bg = mk("div", "vc-bg"); if (r >= 5 && c.img) bg.style.backgroundImage = "url(\"" + c.img + "\")";
+    f.appendChild(bg);
+    const orn = mk("div", "vc-orn"); ["tl", "tr", "bl", "br"].forEach(k => { const i = mk("i", k); i.innerHTML = corner(c.s); orn.appendChild(i); }); f.appendChild(orn);
+    f.appendChild(artLayer(c, r));
+    if (r >= 4) f.appendChild(mk("div", "vc-artfx"));                         // Epic+: light foil blended into the art
+    if (r >= 5) { const fg = mk("div", "vc-fg"); for (let i = 0; i < 9; i++) { const d = mk("i"); d.style.setProperty("--i", i); fg.appendChild(d); } f.appendChild(fg); }
     f.appendChild(mk("div", "vc-frame"));
-    const top = mk("div", "vc-top"), seal = mk("span", "vc-seal"); seal.innerHTML = theme(c.s).emblem; seal.title = theme(c.s).label;
-    top.append(seal, rarityMark(c.r)); f.appendChild(top);
-    f.appendChild(mk("div", "vc-name", c.n));
-    const gems = mk("div", "vc-gems"); gems.append(statGem("pow", c.pow, "PWR"), statGem("def", c.def, "DEF")); f.appendChild(gems);
-    const ab = mk("div", "vc-abil"); ab.append(mk("b", null, c.abName), mk("small", null, abilityText(c.ab))); f.appendChild(ab);
-    const foot = mk("div", "vc-foot"); foot.append(mk("span", "vc-no", c.no), mk("span", "vc-arch", c.a), mk("span", "vc-ser", theme(c.s).short)); f.appendChild(foot);
+    // name bar: the series seal + the name (fitted, wraps to two lines, never cut)
+    const nb = mk("div", "vc-namebar"), seal = mk("span", "vc-seal"); seal.innerHTML = T.emblem; seal.title = T.label;
+    const L = c.n.length, nm = mk("b", "vc-name nl" + (L <= 11 ? 1 : L <= 16 ? 2 : L <= 22 ? 3 : 4), c.n);
+    nb.append(seal, nm); f.appendChild(nb);
+    const st = mk("div", "vc-stats"); st.append(statPlate("atk", SHOW(c.pow), "ATK"), statPlate("def", SHOW(c.def), "DEF")); f.appendChild(st);
+    const ty = mk("div", "vc-type"); ty.append(rarityMark(r), mk("span", "vc-arch", c.a + " · " + T.short)); f.appendChild(ty);
+    f.appendChild(abilityBox(c));
+    const foot = mk("div", "vc-foot"); foot.append(mk("span", "vc-no", "No. " + c.no), mk("span", "vc-ser", RARITY_NAMES[r] + (o.holo ? " · HOLO" : ""))); f.appendChild(foot);
     if (o.isNew) f.appendChild(mk("span", "vc-new", "NEW"));
-    if (o.veteran) { const v = mk("span", "vc-vet", "★"); v.title = "Veteran: in 10+ winning battles"; foot.prepend(v); }
-    f.append(mk("div", "vc-holo"));
+    if (o.veteran) { const v = mk("span", "vc-vet"); v.innerHTML = icon("star"); v.title = "Veteran: in 10+ winning duels"; foot.prepend(v); }
+    f.append(mk("div", "vc-shine"), mk("div", "vc-holo"));
     if (o.holo) f.appendChild(mk("div", "vc-sheen"));      // holo: the faint sheen over the dark parts (css/cards.css)
     f.appendChild(mk("div", "vc-glare"));
     // back (shown when the card is turned: the info side)
     const b = mk("div", "vc-back");
     b.appendChild(coverEl(c.s, o.sleeve));
     const info = mk("div", "vc-binfo");
-    info.append(mk("b", "vc-bname", c.n), mk("small", "vc-barch", c.a + " · " + RARITY_NAMES[c.r] + (o.holo ? " · Holo" : "")), mk("p", "vc-btxt", c.abName + ": " + ABILITIES[c.ab].text),
-        mk("small", "vc-bkw", ABILITIES[c.ab].kw.join(" · ")), mk("span", "vc-bno", "No. " + c.no + " · " + theme(c.s).label));
+    info.append(mk("b", "vc-bname", c.n), mk("small", "vc-barch", c.a + " · " + RARITY_NAMES[r] + (o.holo ? " · Holo" : "")),
+        mk("span", "vc-bstat", "ATK " + SHOW(c.pow) + " · DEF " + SHOW(c.def)), mk("p", "vc-btxt", c.abName + ": " + ABILITIES[c.ab].text),
+        mk("small", "vc-bkw", ABILITIES[c.ab].kw.join(" · ")), mk("span", "vc-bno", "No. " + c.no + " · " + T.label));
     if (o.stamp && o.stamp.by) info.appendChild(mk("span", "vc-stamp", "First pulled by " + o.stamp.by + (o.stamp.at ? " · " + new Date(o.stamp.at).toLocaleDateString() : "")));
-    if (o.veteran) info.appendChild(mk("span", "vc-stamp vet", "★ Veteran"));
+    if (o.veteran) info.appendChild(mk("span", "vc-stamp vet", "Veteran"));
     b.appendChild(info);
     inner.append(f, b); el.appendChild(inner);
+    watchVis(el);
     return el;
 }
-/* the plain back of a card (face down in packs and hands): the series design, or the equipped sleeve */
+/* the back of a card (face down in packs and hands; the info side's background): the series design or the equipped
+   sleeve: the series pattern, an inner frame with the series corner ornaments, a medallion with the emblem, the
+   series name in its lettering, the kanji and the ANIME TCG mark */
 export function coverEl(series, sleeve) {
     const s = sleeve && SERIES_THEME[sleeve] ? sleeve : series, T = theme(s);
-    const d = mk("div", "vc-cover m-" + T.motif + (sleeve ? " sleeved" : "")); seriesVars(d, s);
-    const e = mk("span", "vc-cemb"); e.innerHTML = T.emblem; d.append(e, mk("b", "vc-ctxt f-" + T.font, T.short), mk("i", "vc-ck", T.kanji));
+    const d = mk("div", "vc-cover s-" + s + " m-" + T.motif + " h-" + T.holo + (sleeve ? " sleeved" : "")); seriesVars(d, s);
+    const orn = mk("div", "vc-orn"); ["tl", "tr", "bl", "br"].forEach(k => { const i = mk("i", k); i.innerHTML = corner(s); orn.appendChild(i); });
+    const e = mk("span", "vc-cemb"); e.innerHTML = T.emblem;
+    d.append(mk("i", "vc-cpat"), orn, mk("small", "vc-cmark", "ANIME TCG"), e, mk("b", "vc-ctxt f-" + T.font, T.short), mk("i", "vc-ck", T.kanji));
     return d;
 }
 export function backCard(series, sleeve, size = "md") { const el = mk("div", "vcard back sz-" + size); el.appendChild(coverEl(series, sleeve)); return el; }

@@ -135,21 +135,23 @@ export const OPENING = {
 };
 export const SHARDS = { common: 5, uncommon: 10, rare: 25, ultra: 60, epic: 120, legendary: 250, mythic: 500, holoMult: 2 };
 
-/* ---------- Card faces: one card shape, one art window, faces always whole ----------
-   The art window is a fixed square inside the 63:88 card. Each picture is placed by its face centre (focusX / focusY
-   in js/vault/cards.js, measured offline): the face lands at targetY of the window. A face that can't fit is shown
-   whole (fit) over a blurred, darkened copy; so is any picture more than maxCrop times taller/wider than the window. */
+/* ---------- Card faces: one card shape, one art window per rarity layout, faces never cropped ----------
+   Pictures are AniList portraits (almost all 230 x 345, width / height 0.667). A picture may be cropped by at most
+   maxCrop (8%) to fill its window ("cover", placed by the face point measured offline: focusX / focusY in
+   js/vault/cards.js); if more would be lost it is shown whole ("fit": contained, over a blurred, darkened copy of
+   itself). The standard window is a portrait 0.86, so a 0.667 picture is shown whole with thin blurred sides; the Ultra
+   Rare window (taller, breaking out of the frame) and the Mythic full-art card fit within 8% and are covered. */
 export const CARD_ART = {
     cardRatio: [63, 88],                 // width : height of every card
-    artRatio: 1,                         // the art window's width / height (1 = square)
-    targetY: 0.45,                       // where the face centre sits in the window (0 top .. 1 bottom)
-    targetYMythic: 0.36,                 // Mythic: the whole card is the art; the face sits above the name plate
-    faceMargin: 1.12,                    // the face plus this much room must fit, otherwise fit (whole picture)
-    minFace: 0,                          // auto zoom-in on small faces: off (0); zoom per card in data/card-focus-fix.json
-    maxZoom: 1.5,
-    maxCrop: 2.2,                        // safety net: picture/window aspect mismatch beyond this = fit
+    artRatio: 0.86,                      // the standard art window's width / height
+    maxCrop: 0.08,                       // at most this share of a picture may be cut off to fill a window; more = fit (whole picture)
+    targetY: 0.42,                       // cover: where the face centre sits in the window (0 top .. 1 bottom)
+    targetYMythic: 0.36,                 // Mythic: the whole card is the art; the face sits above the text panel
+    faceMargin: 1.12,                    // cover: the face plus this much room must fit, otherwise fit
     defaultFocus: [0.5, 0.4],            // no face found: horizontally centred, upper part (most pictures are busts)
-    defaultFaceH: 0.5
+    defaultFaceH: 0.5,
+    retries: [700, 2200],                // a picture that fails to load is retried after these delays (ms)
+    preloadMax: 240                      // decoded pictures kept in memory (pack opening, decks)
 };
 
 /* ---------- A7. Decks ---------- */

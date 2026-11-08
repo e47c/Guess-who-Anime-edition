@@ -369,13 +369,31 @@ hidden by the interface, as in the other modes.
 - **Balance.** `node tools/cardvault-test.mjs` simulates thousands of battles: in mixed decks a deck holding a given
   card wins 48% (Common) to 53% (Mythic) of the time and no ability falls outside 44-60%; an all-Common deck still beats an all-Legendary/Mythic one now and
   then. Re-run it after changing an ability or `BATTLE.statTotal`.
-- **Card faces.** Every card is 63:88 with one square art window (`CARD_ART` in `js/vault/config.js`); nothing is drawn
-  over it (the name plate and PWR / DEF sit under it). Each picture is placed by its face centre: `focusX` / `focusY`
-  (and an optional zoom) are columns of `js/vault/cards.js`, measured ONCE offline by `py -3.12 tools/card-faces.py
-  <pictures>` (an anime face detector, OpenCV + nagadomi's MIT lbpcascade_animeface) into `data/card-focus.json`; hand
-  fixes go in `data/card-focus-fix.json`; `node tools/cards-build.mjs` turns both into the columns. No face found = upper
-  part, centred. A face that can't fit, or a picture far off the window's shape, is shown whole (contain) over a blurred,
-  darkened copy of itself. Dev gallery of every card (art-window review mode): `dev/cards.html`.
+- **Card faces** (`js/vault/cardui.js` + `css/cards.css`; one component everywhere: packs, collection, decks, duels, trades).
+  - **Anatomy:** name bar (series seal + the name, shrunk and wrapped to two lines when long, never cut), the art window,
+    big ATK / DEF plates (the stored values x100), the type line (1-7 rarity stars, archetype · series), the effect box
+    (keyword chips with icons, timing tags, the ability with its timing words in bold) and the footer (collection number,
+    rarity, Holo). Icons come from one set (`js/vault/icons.js`: 24 grid, 1.8 stroke, one gold / steel accent; no emoji).
+  - **The style matrix:** RARITY decides material, shape, effects and shine (Common matte steel, no shine · Uncommon etched
+    bronze-green, one soft sweep · Rare blue crystal bevel, gloss following the tilt · Ultra Rare silver / violet
+    shattered cut silhouette front and back, a specular streak and edge glints · Epic animated crimson energy border, glow
+    pulse, light foil in the art · Legendary embossed gold, gold foil in the art, sparkles, a moving highlight, an animated
+    gold name · Mythic borderless full art, prismatic foil, aura, breathing glow, its own reveal sound). Holo stacks on
+    any rarity as the card's surface. The SERIES decides colours, pattern, lettering, the corner ornaments
+    (`js/vault/cardstyle.js`, 18 drawings of our own) and the card back (pattern, etched holo, ornamented frame,
+    medallion, lettering, kanji). Idle motion only runs on cards on screen and stops under Reduced effects.
+  - **Art: faces are never cropped.** A picture may lose at most 8% (`CARD_ART.maxCrop`) to fill its window, placed by its
+    face point (`focusX` / `focusY` in `js/vault/cards.js`, measured once offline by `tools/card-faces.py` into
+    `data/card-focus.json`, hand fixes in `data/card-focus-fix.json`). Otherwise it is shown whole over a blurred,
+    darkened copy of itself. With AniList's 2:3 portraits that means: standard cards show the whole picture, the Ultra
+    Rare and Mythic windows are covered (5-7%). Failed loads are retried, pack pictures are preloaded and kept decoded,
+    and a series-coloured silhouette is the last resort.
+  - **Art audit:** `node tools/card-art-audit.mjs [--fix]` downloads every picture (cache in `.cache/`), checks status,
+    size, shape and face data, asks AniList for a current picture when one is broken (`data/card-art-fix.json`, read by
+    `tools/cards-build.mjs`) and writes `docs/card-art-report.md`.
+  - **Dev gallery** `dev/cards.html`: the style matrix (every series x every rarity, Holo on/off, front/back), every card,
+    every back, with automatic checks (art loaded, no crop over 8%, the face inside the window, names and effect text
+    not cut) that flag problems in red.
 - **Booster packs and the opening** (`css/packs.css`, `js/vault/opening.js`). Crimped zig-zag seals, a centre seam,
   puffed shading, a crinkled foil texture (SVG noise), a specular highlight and rim light that follow the pointer;
   Premium = gold foil, embossed, a moving shine, finer ridges. Opening: hover, drag across the top crimp (a tear line

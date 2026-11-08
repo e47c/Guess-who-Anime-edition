@@ -2,7 +2,8 @@
    CARD DESIGN SYSTEM (ARCADE VAULT: packs, collection, decks, battles)
    Rarity = frame material, shape and effects. Series = colours, ornaments, holo pattern, back, pack art.
    Sizes scale everything through --cw (card width); text uses em of a font-size derived from --cw.
-   Heavy effects only on Legendary / Mythic; everything stops under Reduced effects (body.fx-lite).
+   Idle effects run only on cards on screen; everything stops under Reduced effects (body.fx-lite).
+   The dev gallery (dev/cards.html) shows every series x every rarity x Holo, front and back, with automatic checks.
    ===================================================================== */
 
 /* ---------- series motifs (shared by card backgrounds, card backs and packs) ---------- */
@@ -35,8 +36,17 @@
 .f-gothic { font-family: 'Pirata One', serif !important; letter-spacing: .04em; }
 .f-elegant { font-family: 'Rajdhani', var(--f-ui) !important; font-weight: 700 !important; letter-spacing: .1em; }
 
-/* ---------- the card ---------- */
-.vcard { --cw: 170px; --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 50%; --frame: #8b919c; position: relative; flex: none; width: var(--cw); aspect-ratio: 63 / 88; font-size: calc(var(--cw) / 14); perspective: 900px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; color: #fff; }
+/* ---------- the TCG icon set (js/vault/icons.js): one stroke style, one gold / steel accent ---------- */
+.tcg-ico { width: 1em; height: 1em; flex: none; display: inline-block; vertical-align: -.14em; --ic-ac: #e9c45c; }
+.tcg-ico .ac { fill: var(--ic-ac); stroke: currentColor; stroke-width: 1.1; }
+
+/* ---------- the card ----------
+   Anatomy (percent of the card): name bar 2.2-9.8 · art window 10.8-74.1 (76% wide, portrait 0.86, CARD_ART in config.js)
+   · ATK / DEF plates over the window's lower corners · type line 74.8-79.4 (stars, archetype · series) · effect box
+   79.9-92.8 (keyword chips + timing tags, the ability) · footer (number, rarity). Text scales with the card (em of
+   --cw / 14); names and effect text shrink to fit (cardui.js fitText, --nf / --tf) and are never cut. */
+.vcard { --cw: 170px; --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 50%; --frame: #8b919c; --orn: color-mix(in srgb, var(--c3, #ccc) 70%, #fff);
+    position: relative; flex: none; width: var(--cw); aspect-ratio: 63 / 88; font-size: calc(var(--cw) / 14); perspective: 900px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; color: #fff; }
 .vcard.sz-xs { --cw: 64px; } .vcard.sz-sm { --cw: 112px; } .vcard.sz-md { --cw: 170px; } .vcard.sz-lg { --cw: min(78vw, 340px, 46dvh); }
 .vc-inner { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(var(--rx)) rotateY(calc(var(--ry) + var(--flip, 0deg))); transition: transform .55s cubic-bezier(.2,.8,.2,1); }
 .vcard.turned .vc-inner, .vcard.down .vc-inner { --flip: 180deg; }
@@ -48,118 +58,173 @@
 .vc-front { transform: translateZ(.01px); }
 .vcard.back .vc-cover { border-radius: .55em; box-shadow: 0 .4em 1.2em rgba(0,0,0,.5); }
 
+/* the series' pattern fills the frame around the window */
 .vc-bg { position: absolute; inset: 0; background: var(--motif, linear-gradient(160deg, var(--c1), var(--c2))); background-size: cover; background-position: center; }
-.vc-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.55)); }
-/* ONE card shape (63:88, .vcard) and ONE art window: a square (--art-ar, from CARD_ART in config.js) 76% of the card wide.
-   Nothing is drawn over the window: the name plate and the PWR / DEF gems sit in the row under it, the ability box
-   below that. The picture inside is placed by its face centre (cardui.js artPlace). */
-.vcard { --art-top: 10.5%; --art-w: 76%; }
-.vc-art { position: absolute; left: calc((100% - var(--art-w)) / 2); width: var(--art-w); top: var(--art-top); aspect-ratio: var(--art-ar, 1); min-height: 0; z-index: 1; overflow: hidden; border-radius: .25em; background: rgba(0,0,0,.35); display: grid; place-items: center; font: 400 3em/1 var(--f-title); color: rgba(255,255,255,.55); }
+.vc-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.2) 60%, rgba(0,0,0,.5)); }
+/* series ornaments: the window's top corners and the effect box's bottom corners (cardstyle.js) */
+.vc-orn { position: absolute; inset: 0; z-index: 5; pointer-events: none; color: var(--orn); }
+.vc-orn i { position: absolute; width: 1.55em; height: 1.55em; filter: drop-shadow(0 .05em .05em rgba(0,0,0,.7)); }
+.vc-orn svg { width: 100%; height: 100%; display: block; }
+.vc-front .vc-orn i.tl { left: calc((100% - var(--art-w)) / 2 - .32em); top: calc(var(--art-top) - .32em); }
+.vc-front .vc-orn i.tr { right: calc((100% - var(--art-w)) / 2 - .32em); top: calc(var(--art-top) - .32em); transform: scaleX(-1); }
+.vc-front .vc-orn i.bl { left: 3.2%; bottom: 5.4%; transform: scaleY(-1); }
+.vc-front .vc-orn i.br { right: 3.2%; bottom: 5.4%; transform: scale(-1); }
+/* the art window: a portrait (--art-ar). Covered pictures are placed by their face point; "fit" shows the whole picture
+   over a blurred, darkened copy of itself (cardui.js artPlace, at most 8% of a picture is ever cut off) */
+.vcard { --art-top: 10.8%; --art-w: 76%; --art-ar: .86; }
+.vc-art { position: absolute; left: calc((100% - var(--art-w)) / 2); width: var(--art-w); top: var(--art-top); aspect-ratio: var(--art-ar); min-height: 0; z-index: 1; overflow: hidden; border-radius: .25em; background: color-mix(in srgb, var(--c1) 40%, #000); display: grid; place-items: center; }
 .vc-art img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; display: block; transform-origin: var(--fo, 50% 45%); scale: var(--fz, 1); }
-/* safety net: the whole picture, contained, over a blurred and darkened copy of itself */
 .vc-art.fit::before { content: ""; position: absolute; inset: -12%; z-index: 0; background: var(--art) center / cover no-repeat; filter: blur(.45em) brightness(.42) saturate(1.2); }
 .vc-art.fit img { object-fit: contain; object-position: 50% 50%; height: 100% !important; margin-top: 0 !important; clip-path: none !important; -webkit-mask-image: none !important; mask-image: none !important; scale: 1 !important; }
+/* last resort only (no picture anywhere, see docs/card-art-report.md): a silhouette in the series' colours */
+.vc-art.noimg { background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--c3) 45%, var(--c1)), color-mix(in srgb, var(--c1) 55%, #000)); color: color-mix(in srgb, var(--c2) 55%, #000); align-content: end; }
+.vc-sil { width: 78%; height: auto; opacity: .75; margin-bottom: -2%; }
+.vc-silname { position: absolute; left: 6%; right: 6%; top: 8%; font: 700 .55em/1.1 var(--f-ui); text-align: center; color: rgba(255,255,255,.75); text-transform: uppercase; letter-spacing: .08em; }
 .vc-frame { position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: .55em; }
-.vc-frame::before { content: ""; position: absolute; left: calc((100% - var(--art-w)) / 2); width: var(--art-w); top: var(--art-top); aspect-ratio: var(--art-ar, 1); border-radius: .25em; box-shadow: 0 0 0 .14em var(--frame), inset 0 0 .6em rgba(0,0,0,.5); }
-.vc-top { position: absolute; left: 6%; right: 6%; top: 2.2%; z-index: 4; display: flex; align-items: center; justify-content: space-between; gap: .3em; height: 7.5%; }
-.vc-seal { width: 1.45em; height: 1.45em; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--c3), var(--c1)); color: var(--ink); box-shadow: 0 0 0 .08em rgba(255,255,255,.6), 0 .1em .3em rgba(0,0,0,.6); }
+.vc-frame::before { content: ""; position: absolute; left: calc((100% - var(--art-w)) / 2); width: var(--art-w); top: var(--art-top); aspect-ratio: var(--art-ar); border-radius: .25em; box-shadow: 0 0 0 .14em var(--frame), inset 0 0 .6em rgba(0,0,0,.45); }
+/* name bar */
+.vc-namebar { position: absolute; left: 4.5%; right: 4.5%; top: 2.2%; height: 7.6%; z-index: 6; display: flex; align-items: center; gap: .3em; padding: 0 .35em 0 .2em; border-radius: .35em;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--c2) 35%, rgba(8,6,12,.82)), rgba(8,6,12,.88)); box-shadow: inset 0 0 0 .07em color-mix(in srgb, var(--frame) 70%, transparent), 0 .1em .25em rgba(0,0,0,.5); }
+.vc-seal { width: 1.2em; height: 1.2em; flex: none; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--c3), var(--c1)); color: var(--ink); box-shadow: 0 0 0 .07em rgba(255,255,255,.6), 0 .08em .2em rgba(0,0,0,.6); }
 .vc-seal svg { width: 72%; height: 72%; }
 .vc-seal .ke-menace, .vc-cemb .ke-menace, .vp-emb .ke-menace { font: 400 1em/1 'Dela Gothic One', sans-serif; color: inherit; }
-.vc-rmark { display: flex; align-items: center; gap: .25em; padding: .12em .4em; border-radius: .3em; background: rgba(0,0,0,.6); white-space: nowrap; }
-.vc-rmark i { font-style: normal; font-size: .62em; letter-spacing: .05em; color: var(--frame); filter: drop-shadow(0 0 .15em var(--frame)); }
-.vc-rmark b { font: 700 .5em/1 var(--f-mono); letter-spacing: .1em; color: #fff; }
-.vc-name { position: absolute; left: 17%; right: 17%; top: 66.2%; z-index: 4; padding: .18em .4em; text-align: center; font: 700 .92em/1.05 var(--f-head); text-transform: uppercase; letter-spacing: .04em; color: #fff; text-shadow: 0 .08em 0 rgba(0,0,0,.8); background: linear-gradient(90deg, transparent, rgba(0,0,0,.72) 12% 88%, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.vcard.f-pirate .vc-name, .vcard.f-gothic .vc-name { font-family: 'Pirata One', serif; text-transform: none; font-size: 1.02em; letter-spacing: .03em; }
-.vcard.f-brush .vc-name, .vcard.f-graffiti .vc-name { font-family: 'Permanent Marker', cursive; text-transform: none; }
-.vcard.f-heavy .vc-name, .vcard.f-comic .vc-name, .vcard.f-pose .vc-name { font-family: 'Dela Gothic One', sans-serif; font-weight: 400; font-size: .8em; }
+.vc-name { flex: 1; min-width: 0; max-height: 100%; overflow: hidden; display: flex; align-items: center; font: 700 calc(var(--nf, 1) * var(--nb, .86em))/1 var(--f-head); text-transform: uppercase; letter-spacing: .03em; color: #fff; text-shadow: 0 .07em 0 rgba(0,0,0,.85); white-space: nowrap; overflow-wrap: anywhere; }
+.vc-name.nl2 { --nb: .76em; } .vc-name.nl3 { --nb: .66em; white-space: normal; line-height: 1; } .vc-name.nl4 { --nb: .58em; white-space: normal; line-height: 1; }
+.vcard.f-pirate .vc-name, .vcard.f-gothic .vc-name { font-family: 'Pirata One', serif; text-transform: none; letter-spacing: .02em; font-size: calc(var(--nf, 1) * var(--nb, .86em) * 1.12); }
+.vcard.f-brush .vc-name, .vcard.f-graffiti .vc-name { font-family: 'Permanent Marker', cursive; text-transform: none; font-size: calc(var(--nf, 1) * var(--nb, .86em) * 1.12); }
+.vcard.f-heavy .vc-name, .vcard.f-comic .vc-name, .vcard.f-pose .vc-name { font-family: 'Dela Gothic One', sans-serif; font-weight: 400; font-size: calc(var(--nf, 1) * var(--nb, .86em) * .86); }
+.vcard.f-pose .vc-name { font-style: italic; }
 .vcard.f-military .vc-name { font-family: 'Special Elite', monospace; }
-.vc-gems { position: absolute; left: 2.5%; right: 2.5%; top: 63.9%; z-index: 5; display: flex; justify-content: space-between; pointer-events: none; }
-.gem { position: relative; width: 2.1em; height: 2.1em; display: grid; place-items: center; align-content: center; color: #fff; }
-.gem::before { content: ""; position: absolute; inset: 0; z-index: -1; }
-.gem.pow::before { clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: radial-gradient(circle at 35% 30%, #ffe0a0, #ff5a1a 45%, #8a1500); box-shadow: inset 0 0 .3em #fff; filter: drop-shadow(0 0 .25em rgba(255,110,40,.9)); }
-.gem.def::before { clip-path: polygon(50% 0, 100% 15%, 92% 70%, 50% 100%, 8% 70%, 0 15%); background: radial-gradient(circle at 35% 30%, #d6f2ff, #2c8cff 45%, #0a2a70); filter: drop-shadow(0 0 .25em rgba(60,160,255,.9)); }
-.gem b { font: 700 1.05em/1 var(--f-mono); text-shadow: 0 .06em .1em rgba(0,0,0,.8); }
-.gem small { font: 700 .34em/1 var(--f-mono); letter-spacing: .08em; opacity: .9; }
-.vc-abil { position: absolute; left: 6%; right: 6%; top: 74.6%; bottom: 8.4%; z-index: 4; padding: .3em .45em; border-radius: .3em; color: #2a1d0c; background: linear-gradient(180deg, #f6ead0, #e3cfa3); box-shadow: inset 0 0 0 .08em rgba(90,60,20,.35), 0 .1em .25em rgba(0,0,0,.4); overflow: hidden; }
-.vc-abil b { display: block; font: 700 .58em/1.1 var(--f-ui); letter-spacing: .04em; text-transform: uppercase; color: #6b2a10; }
-.vc-abil small { display: block; margin-top: .15em; font: 500 .5em/1.25 var(--f-ui); }
-.vc-foot { position: absolute; left: 6%; right: 6%; bottom: 2.4%; z-index: 4; display: flex; justify-content: space-between; align-items: center; gap: .3em; font: 700 .42em/1 var(--f-mono); letter-spacing: .08em; color: rgba(255,255,255,.85); text-transform: uppercase; }
-.vc-foot .vc-ser { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 34%; }
-.vc-new { position: absolute; right: -.2em; top: 1.5%; z-index: 8; padding: .25em .5em; transform: rotate(8deg); background: linear-gradient(180deg, #ffef7a, #f2a50c); color: #3a1d00; font: 700 .55em/1 var(--f-mono); letter-spacing: .1em; box-shadow: 0 .1em .3em rgba(0,0,0,.5); }
-.vc-vet { position: relative; z-index: 8; width: 1.3em; height: 1.3em; display: grid; place-items: center; border-radius: 50%; background: #1b1b1b; color: #ffd76a; font-size: .7em; box-shadow: 0 0 0 .12em #ffd76a; }
-.vc-holo, .vc-glare { position: absolute; inset: 0; z-index: 6; pointer-events: none; border-radius: inherit; }
+.vcard.f-sharp .vc-name { font-family: 'Teko', var(--f-head); font-size: calc(var(--nf, 1) * var(--nb, .86em) * 1.2); letter-spacing: .05em; }
+.vcard.f-elegant .vc-name { font-family: 'Rajdhani', var(--f-ui); }
+/* ATK / DEF: big plates over the window's lower corners (stored values x 100) */
+.vc-stats { position: absolute; left: 3%; right: 3%; top: 66.6%; z-index: 7; display: flex; justify-content: space-between; pointer-events: none; }
+.vc-stat { display: inline-flex; align-items: center; gap: .18em; height: 1.45em; padding: 0 .4em 0 .26em; border-radius: .3em; font: 700 1em/1 var(--f-mono); color: #fff; text-shadow: 0 .06em .1em rgba(0,0,0,.8); box-shadow: inset 0 0 0 .07em rgba(255,255,255,.45), 0 .12em .3em rgba(0,0,0,.6); }
+.vc-stat .tcg-ico { width: .95em; height: .95em; }
+.vc-stat b { font-size: .92em; letter-spacing: .02em; }
+.vc-stat.atk { background: linear-gradient(180deg, #ff8a3d, #c2280f 60%, #7a1205); --ic-ac: #ffe09a; }
+.vc-stat.def { background: linear-gradient(180deg, #59b8ff, #1d5fd0 60%, #0b2c74); --ic-ac: #d9f0ff; }
+/* type line: rarity stars + archetype · series */
+.vc-type { position: absolute; left: 5%; right: 5%; top: 74.8%; height: 4.6%; z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: .3em; }
+.vc-stars { display: inline-flex; color: color-mix(in srgb, var(--frame) 60%, #000); --ic-ac: var(--frame); filter: drop-shadow(0 0 .12em color-mix(in srgb, var(--frame) 70%, transparent)); }
+.vc-stars .tcg-ico { width: .5em; height: .5em; }
+.vcard.r-mythic .vc-stars .tcg-ico { width: .44em; height: .44em; }
+.vc-arch { min-width: 0; font: 700 .4em/1 var(--f-mono); letter-spacing: .09em; text-transform: uppercase; color: rgba(255,255,255,.88); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 .06em .1em #000; }
+/* effect box: keyword chips + timing tags, then the ability (its name, timing words in bold) */
+.vc-abil { position: absolute; left: 5%; right: 5%; top: 79.9%; bottom: 7.2%; z-index: 6; display: flex; flex-direction: column; gap: .14em; padding: .2em .32em .22em; border-radius: .3em; color: #2a1d0c;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--c3) 10%, #f6ead0), #e3cfa3); box-shadow: inset 0 0 0 .07em rgba(90,60,20,.35), 0 .1em .25em rgba(0,0,0,.4); overflow: hidden; }
+.vc-chips { display: flex; flex-wrap: wrap; gap: .12em; flex: none; }
+.vc-kw, .vc-tm { display: inline-flex; align-items: center; gap: .14em; padding: .08em .26em .08em .14em; border-radius: 99px; font: 700 .37em/1 var(--f-ui); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.vc-kw { color: #fff; background: color-mix(in srgb, var(--c1) 70%, #222); --ic-ac: #ffd76a; }
+.vc-tm { color: #5a2a0a; background: rgba(120,70,20,.16); box-shadow: inset 0 0 0 .07em rgba(120,70,20,.35); --ic-ac: #d08a1c; }
+.vc-kw .tcg-ico, .vc-tm .tcg-ico { width: 1.15em; height: 1.15em; }
+.vc-abtxt { flex: 1; min-height: 0; margin: 0; overflow: hidden; font: 500 calc(var(--tf, 1) * .56em)/1.2 var(--f-ui); overflow-wrap: anywhere; }
+.vc-abil.tl2 .vc-abtxt { font-size: calc(var(--tf, 1) * .5em); } .vc-abil.tl3 .vc-abtxt { font-size: calc(var(--tf, 1) * .45em); }
+.vc-abname { font-weight: 800; color: #6b2a10; text-transform: uppercase; letter-spacing: .03em; }
+.vc-abtxt em { font-style: normal; font-weight: 700; color: #8a3a0c; }
+.vc-foot { position: absolute; left: 5.5%; right: 5.5%; bottom: 1.6%; height: 4.6%; z-index: 6; display: flex; justify-content: space-between; align-items: center; gap: .3em; font: 700 .36em/1 var(--f-mono); letter-spacing: .08em; color: rgba(255,255,255,.88); text-transform: uppercase; text-shadow: 0 .06em .1em #000; }
+.vc-foot .vc-ser { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50%; }
+.vc-new { position: absolute; right: -.2em; top: 11.5%; z-index: 9; padding: .25em .5em; transform: rotate(8deg); background: linear-gradient(180deg, #ffef7a, #f2a50c); color: #3a1d00; font: 700 .55em/1 var(--f-mono); letter-spacing: .1em; box-shadow: 0 .1em .3em rgba(0,0,0,.5); }
+.vc-vet { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: #1b1b1b; color: #ffd76a; --ic-ac: #ffd76a; box-shadow: 0 0 0 .12em #ffd76a; }
+.vc-vet .tcg-ico { width: 1.1em; height: 1.1em; }
+.vc-holo, .vc-glare, .vc-shine { position: absolute; inset: 0; z-index: 8; pointer-events: none; border-radius: inherit; }
 .vc-glare { background: radial-gradient(circle at var(--mx) var(--my), rgba(255,255,255,.35), transparent 45%); opacity: 0; transition: opacity .25s; mix-blend-mode: overlay; }
 .vcard:hover .vc-glare, .vcard.tilting .vc-glare { opacity: 1; }
+.vc-artfx { position: absolute; left: calc((100% - var(--art-w)) / 2); width: var(--art-w); top: var(--art-top); aspect-ratio: var(--art-ar); z-index: 2; pointer-events: none; border-radius: .25em; }
 /* small sizes: only what reads */
-.vcard.sz-xs .vc-abil, .vcard.sz-xs .vc-foot, .vcard.sz-xs .vc-rmark b, .vcard.sz-xs .gem small { display: none; }
-.vcard.sz-xs .vc-name { font-size: 1.05em; top: 66%; left: 4%; right: 4%; } .vcard.sz-xs .vc-gems { top: 77%; }
-.vcard.sz-sm .vc-abil small { display: none; } .vcard.sz-sm .vc-abil { bottom: auto; height: 12%; display: grid; place-items: center; text-align: center; } .vcard.sz-sm .vc-abil b { font-size: .62em; }
+.vcard.sz-xs .vc-abil, .vcard.sz-xs .vc-foot, .vcard.sz-xs .vc-type, .vcard.sz-xs .vc-orn, .vcard.sz-xs .vc-seal { display: none; }
+.vcard.sz-xs .vc-namebar { left: 2%; right: 2%; height: 9.5%; padding: 0 .15em; }
+.vcard.sz-xs .vc-stats { top: 76%; } .vcard.sz-xs .vc-stat { padding: 0 .2em; gap: .05em; } .vcard.sz-xs .vc-stat .tcg-ico { display: none; }
+.vcard.sz-sm .vc-abtxt { display: none; } .vcard.sz-sm .vc-abil { justify-content: center; } .vcard.sz-sm .vc-orn i.bl, .vcard.sz-sm .vc-orn i.br { display: none; }
+.vcard.sz-sm .vc-kw b, .vcard.sz-sm .vc-tm b { font-size: 1.15em; }
 .vcard.ghost { filter: grayscale(1) brightness(.35); }
-.vcard.ghost .vc-art img { filter: blur(.25em); } .vcard.ghost .vc-name { color: transparent; text-shadow: none; } .vcard.ghost .vc-name::after { content: "???"; position: absolute; inset: 0; color: #888; padding: inherit; }
-.vcard.ghost .vc-abil small, .vcard.ghost .vc-gems { visibility: hidden; }
+.vcard.ghost .vc-art img { filter: blur(.25em); } .vcard.ghost .vc-name { color: transparent; text-shadow: none; } .vcard.ghost .vc-name::after { content: "???"; position: absolute; color: #888; }
+.vcard.ghost .vc-abil, .vcard.ghost .vc-stats { visibility: hidden; }
 
-/* ---------- rarity frames ---------- */
-/* Common: matte steel, thin border, 1 gem */
-.vcard.r-common { --frame: #9aa1ab; }
-.vcard.r-common .vc-front { box-shadow: inset 0 0 0 .2em #7c838e, 0 .4em 1.2em rgba(0,0,0,.5); }
-/* Uncommon: bronze-green etched metal, corner flourishes, shine sweep when tilted */
-.vcard.r-uncommon { --frame: #b08d4a; }
-.vcard.r-uncommon .vc-front { box-shadow: inset 0 0 0 .22em #6f7d3a, inset 0 0 0 .36em #b08d4a, 0 .4em 1.2em rgba(0,0,0,.5); }
-.vcard.r-uncommon .vc-frame::after { content: ""; position: absolute; inset: .45em; background:
-    radial-gradient(circle at 0 0, transparent .9em, #c9a660 .9em 1.05em, transparent 1.05em) top left / 2em 2em no-repeat,
-    radial-gradient(circle at 100% 0, transparent .9em, #c9a660 .9em 1.05em, transparent 1.05em) top right / 2em 2em no-repeat,
-    radial-gradient(circle at 0 100%, transparent .9em, #c9a660 .9em 1.05em, transparent 1.05em) bottom left / 2em 2em no-repeat,
-    radial-gradient(circle at 100% 100%, transparent .9em, #c9a660 .9em 1.05em, transparent 1.05em) bottom right / 2em 2em no-repeat; }
+/* ---------- rarity: material, shape, effects and the shine ladder ----------
+   Common matte steel, no shine · Uncommon etched bronze-green, one soft sweep · Rare blue crystal bevel, gloss that
+   follows the tilt · Ultra Rare silver / violet shattered cut silhouette, a sharp specular streak, edge glints ·
+   Epic crimson / magenta energy border, glow pulse, a light foil in the art · Legendary embossed gold, gold foil in the
+   art, sparkles, a moving highlight, an animated gold name · Mythic borderless full art, prismatic foil, aura,
+   breathing glow. Idle motion only runs on cards on screen (.vis, cardui.js) and stops under Reduced effects. */
+.vcard:not(.vis) :is(.vc-frame, .vc-fg i, .vc-name, .vc-front, .vc-shine, .vc-artfx), .vcard:not(.vis) .vc-shine::before, .vcard.r-mythic:not(.vis)::after { animation-play-state: paused !important; }
+/* Common */
+.vcard.r-common { --frame: #9aa1ab; --orn: #aab1ba; }
+.vcard.r-common .vc-front { box-shadow: inset 0 0 0 .2em #7c838e, inset 0 0 0 .26em rgba(255,255,255,.12), 0 .4em 1.2em rgba(0,0,0,.5); }
+.vcard.r-common .vc-bg::after { background: linear-gradient(180deg, rgba(30,34,40,.35), rgba(10,12,16,.6)); }
+.vcard.r-common:not(.holo) .vc-glare { display: none; }
+/* Uncommon */
+.vcard.r-uncommon { --frame: #b08d4a; --orn: #c9a660; }
+.vcard.r-uncommon .vc-front { box-shadow: inset 0 0 0 .22em #6f7d3a, inset 0 0 0 .36em #b08d4a, inset 0 0 0 .42em rgba(255,240,190,.25), 0 .4em 1.2em rgba(0,0,0,.5); }
+.vcard.r-uncommon .vc-shine { background: linear-gradient(105deg, transparent 38%, rgba(255,240,190,.32) 48%, rgba(255,255,255,.12) 52%, transparent 62%) 0 0 / 260% 100% no-repeat; background-position: 130% 0; mix-blend-mode: screen; animation: vcSweep 7s ease-in-out 1.2s infinite; }
+@keyframes vcSweep { 0%, 72% { background-position: 130% 0; } 92%, 100% { background-position: -40% 0; } }
 .vcard.r-uncommon .vc-glare { background: linear-gradient(105deg, transparent calc(var(--mx) - 20%), rgba(255,240,190,.35) var(--mx), transparent calc(var(--mx) + 20%)); mix-blend-mode: screen; }
-/* Rare: blue crystal frame, glossy bevel, light slides across like cut glass */
-.vcard.r-rare { --frame: #6cc4ff; }
+/* Rare */
+.vcard.r-rare { --frame: #6cc4ff; --orn: #bfe6ff; }
 .vcard.r-rare .vc-front { box-shadow: inset 0 0 0 .26em #1a5fd1, inset .12em .12em 0 .3em rgba(200,235,255,.8), inset -.12em -.12em 0 .3em rgba(5,30,90,.8), 0 .4em 1.2em rgba(0,0,0,.5), 0 0 .6em rgba(80,170,255,.35); }
-.vcard.r-rare .vc-frame { background: linear-gradient(120deg, transparent 30%, rgba(190,235,255,.28) 45%, transparent 46%, transparent 52%, rgba(190,235,255,.18) 58%, transparent 60%) calc(var(--mx) * 1.6 - 60%) 0 / 200% 100%; mix-blend-mode: screen; }
-/* Ultra Rare: silver + violet, shattered angular edges; the character breaks out of the frame */
-.vcard.r-ultra { --frame: #d6c7ff;
+.vcard.r-rare .vc-shine { background: radial-gradient(ellipse 60% 40% at var(--mx) var(--my), rgba(220,245,255,.32), transparent 70%), linear-gradient(120deg, transparent 30%, rgba(190,235,255,.22) 45%, transparent 46%, transparent 52%, rgba(190,235,255,.14) 58%, transparent 60%) calc(var(--mx) * 1.6 - 60%) 0 / 200% 100%; mix-blend-mode: screen; transition: background-position .15s linear; }
+/* Ultra Rare */
+.vcard.r-ultra { --frame: #d6c7ff; --orn: #e9e1ff;
     /* the shattered silhouette is the card's physical outline: the front, the back and the card-stock edge all share it.
        The back sits inside the card turned 180°, so it gets the mirror image, which lands on exactly the same outline. */
     --cut: polygon(0 4%, 4% 0, 30% 0, 33% 1.5%, 36% 0, 96% 0, 100% 4%, 100% 40%, 98.5% 43%, 100% 46%, 100% 96%, 96% 100%, 64% 100%, 61% 98.5%, 58% 100%, 4% 100%, 0 96%, 0 62%, 1.5% 59%, 0 56%);
     --cut-back: polygon(100% 4%, 96% 0, 70% 0, 67% 1.5%, 64% 0, 4% 0, 0 4%, 0 40%, 1.5% 43%, 0 46%, 0 96%, 4% 100%, 36% 100%, 39% 98.5%, 42% 100%, 96% 100%, 100% 96%, 100% 62%, 98.5% 59%, 100% 56%); }
-.vcard.r-ultra .vc-front { clip-path: var(--cut);
-    box-shadow: inset 0 0 0 .26em #8e7cc3, inset 0 0 0 .4em #e9e9f2; background: linear-gradient(160deg, #2a2240, #0c0a14); }
-.vcard.r-ultra .vc-art { overflow: visible; z-index: 3; }
+.vcard.r-ultra .vc-front { clip-path: var(--cut); box-shadow: inset 0 0 0 .26em #8e7cc3, inset 0 0 0 .4em #e9e9f2; background: linear-gradient(160deg, #2a2240, #0c0a14); }
+.vcard.r-ultra .vc-art { overflow: visible; z-index: 3; background: transparent; }
 .vcard.r-ultra .vc-art img { height: 122%; margin-top: -22%; clip-path: inset(-30% 0 0 0 round .25em); -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 16%); mask-image: linear-gradient(180deg, transparent 0, #000 16%); }
 .vcard.r-ultra .vc-back { clip-path: var(--cut-back); }
 .vcard.r-ultra .vc-edge { clip-path: var(--cut); }
 .vcard.r-ultra .vc-frame::before { box-shadow: 0 0 0 .14em #e9e9f2, 0 0 .5em rgba(180,140,255,.7); clip-path: polygon(0 18%, 100% 18%, 100% 100%, 0 100%); }
-/* Epic: crimson + magenta glowing frame, energy running along the border, 2-layer parallax art */
-.vcard.r-epic { --frame: #ff4fa0; }
-.vcard.r-epic .vc-front { box-shadow: inset 0 0 0 .3em #8a0a35, 0 .4em 1.2em rgba(0,0,0,.5), 0 0 .8em rgba(255,60,140,.45); }
+.vcard.r-ultra .vc-namebar { background: linear-gradient(180deg, rgba(20,14,40,.7), rgba(10,8,22,.86)); backdrop-filter: blur(2px); }
+.vcard.r-ultra .vc-shine { background: linear-gradient(calc(118deg + (var(--mx) - 50%) * .3), transparent calc(var(--mx) - 3%), rgba(255,255,255,.75) var(--mx), rgba(210,190,255,.4) calc(var(--mx) + .8%), transparent calc(var(--mx) + 4%)); mix-blend-mode: overlay; opacity: .8; clip-path: var(--cut); }
+.vcard.r-ultra .vc-shine::before { content: ""; position: absolute; inset: 0; background:
+    radial-gradient(circle at 33% 1.5%, #fff 0 .08em, rgba(220,200,255,.7) .12em, transparent .45em), radial-gradient(circle at 98.5% 43%, #fff 0 .08em, rgba(220,200,255,.7) .12em, transparent .45em),
+    radial-gradient(circle at 61% 98.5%, #fff 0 .08em, rgba(220,200,255,.7) .12em, transparent .45em), radial-gradient(circle at 1.5% 59%, #fff 0 .08em, rgba(220,200,255,.7) .12em, transparent .45em);
+    mix-blend-mode: screen; animation: vcGlint 2.8s ease-in-out infinite; }
+@keyframes vcGlint { 0%, 100% { opacity: .15; } 45% { opacity: 1; } 60% { opacity: .5; } }
+/* Epic */
+.vcard.r-epic { --frame: #ff4fa0; --orn: #ff9ccb; }
+.vcard.r-epic .vc-front { box-shadow: inset 0 0 0 .3em #8a0a35, 0 .4em 1.2em rgba(0,0,0,.5), 0 0 .8em rgba(255,60,140,.45); animation: vcPulse 3.4s ease-in-out infinite; }
+@keyframes vcPulse { 50% { box-shadow: inset 0 0 0 .3em #a50d42, 0 .4em 1.2em rgba(0,0,0,.5), 0 0 1.5em rgba(255,60,140,.75); } }
 .vcard.r-epic .vc-frame { padding: .14em; background: conic-gradient(from var(--ea, 0deg), transparent 0 70%, #ff4fa0 80%, #fff 85%, #ff1f5a 90%, transparent 100%) border-box; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: vcCircuit 3.2s linear infinite; }
 @property --ea { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
 @keyframes vcCircuit { to { --ea: 360deg; } }
-.vcard.r-epic .vc-art img { scale: calc(var(--fz, 1) * 1.06); }
-/* Legendary: ornate embossed gold, 3-layer depth (background / character / foreground), floating particles, foil name */
-.vcard.r-legendary { --frame: #ffd76a; }
+.vcard.r-epic .vc-artfx { background: linear-gradient(125deg, transparent 20%, rgba(255,80,160,.5) 38%, rgba(255,210,120,.4) 48%, rgba(120,90,255,.45) 58%, transparent 76%) 0 0 / 250% 250%; mix-blend-mode: color-dodge; opacity: .4; animation: vcFoilMove 6s ease-in-out infinite alternate; }
+@keyframes vcFoilMove { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
+/* Legendary */
+.vcard.r-legendary { --frame: #ffd76a; --orn: #ffe8a0; }
 .vcard.r-legendary .vc-front { box-shadow: inset 0 0 0 .2em #7a5a12, inset 0 0 0 .38em #f6d36b, inset 0 0 0 .48em #a87b18, inset 0 0 1.2em rgba(255,210,90,.45), 0 .4em 1.2em rgba(0,0,0,.5), 0 0 1em rgba(255,200,80,.4); }
 .vcard.r-legendary .vc-bg { filter: blur(.35em) saturate(1.3) brightness(.7); transform: scale(1.15); }
 .vcard.r-legendary .vc-bg::after { background: radial-gradient(circle at 50% 35%, rgba(255,220,120,.25), rgba(0,0,0,.6) 75%); }
 .vcard.r-legendary .vc-art { background: transparent; }
-.vcard.r-legendary .vc-art img { scale: calc(var(--fz, 1) * 1.04); }
-.vcard.r-legendary .vc-name { background: linear-gradient(90deg, #a87b18, #fff3b0 25%, #d4a017 45%, #fff8d0 60%, #b8860b 80%, #ffe38a) 0 0 / 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; animation: vcFoil 4s linear infinite; }
-.vcard.r-legendary .vc-name::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, transparent, rgba(30,18,0,.8) 12% 88%, transparent); }
+.vcard.r-legendary .vc-artfx { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .84 0 0 0 0 .4 0 0 0 1.4 -.55'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 3em 3em, linear-gradient(115deg, transparent 30%, rgba(255,236,170,.55) 46%, transparent 60%) 0 0 / 260% 100% no-repeat; mix-blend-mode: soft-light; opacity: .85; animation: vcGoldMove 5s ease-in-out infinite; }
+@keyframes vcGoldMove { 0%, 100% { background-position: 0 0, 130% 0; } 50% { background-position: 1.5em 1em, -30% 0; } }
+.vcard.r-legendary .vc-shine { background: linear-gradient(115deg, transparent 35%, rgba(255,240,190,.45) 48%, transparent 58%) 0 0 / 260% 100% no-repeat; mix-blend-mode: screen; animation: vcSweep 5.5s ease-in-out infinite; }
+.vcard.r-legendary .vc-name { background: linear-gradient(90deg, #a87b18, #fff3b0 25%, #d4a017 45%, #fff8d0 60%, #b8860b 80%, #ffe38a) 0 0 / 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 .06em 0 rgba(0,0,0,.8)); animation: vcFoil 4s linear infinite; }
 @keyframes vcFoil { to { background-position: 200% 0; } }
 .vc-fg { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
 .vc-fg i { position: absolute; left: calc(8% + var(--i) * 10%); bottom: 32%; width: .3em; height: .3em; border-radius: 50%; background: #fff3b0; box-shadow: 0 0 .5em #ffd76a; opacity: 0; animation: vcMote 3.4s ease-in calc(var(--i) * .37s) infinite; }
 @keyframes vcMote { 0% { opacity: 0; transform: translateY(0); } 25% { opacity: .9; } 100% { opacity: 0; transform: translateY(-9em) translateX(.8em); } }
-/* Mythic: no frame; the border dissolves into a void / glitch, full art, the card breathes */
-.vcard.r-mythic { --frame: #b38bff; }
+/* Mythic: borderless full art, prismatic foil, aura, breathing glow; the text sits on glass panels */
+.vcard.r-mythic { --frame: #c9a6ff; --orn: transparent; }
+.vcard.r-mythic::after { content: ""; position: absolute; inset: -5%; z-index: -1; border-radius: 1em; pointer-events: none; background: conic-gradient(from var(--ma, 0deg), #ff4fd8, #6b8cff, #4fffe0, #ffe36b, #ff4fd8); filter: blur(1.1em); opacity: .55; animation: vcAura 6s linear infinite; }
+@property --ma { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes vcAura { to { --ma: 360deg; } }
 .vcard.r-mythic .vc-front { background: #000; box-shadow: 0 0 1.4em rgba(140,80,255,.55), 0 .4em 1.2em rgba(0,0,0,.6); animation: vcBreathe 4.6s ease-in-out infinite; }
-.vcard.r-mythic .vc-bg { filter: blur(.5em) saturate(1.6) hue-rotate(-20deg) brightness(.45); transform: scale(1.2); }
-.vcard.r-mythic .vc-art { inset: 0; left: 0; right: 0; top: 0; width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; background: transparent; -webkit-mask-image: radial-gradient(ellipse 72% 62% at 50% 38%, #000 55%, transparent 100%); mask-image: radial-gradient(ellipse 72% 62% at 50% 38%, #000 55%, transparent 100%); }
+.vcard.r-mythic .vc-bg { filter: blur(.5em) saturate(1.6) brightness(.45); transform: scale(1.2); }
+.vcard.r-mythic .vc-art, .vcard.r-mythic .vc-artfx { left: 0; top: 0; width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; background: transparent; }
 .vcard.r-mythic .vc-frame::before { display: none; }
-.vcard.r-mythic .vc-frame { box-shadow: inset 0 0 1.6em 1em #000; background: repeating-linear-gradient(0deg, rgba(150,90,255,.0) 0 .3em, rgba(150,90,255,.12) .3em .34em); animation: vcGlitch 3.8s steps(1) infinite; }
-.vcard.r-mythic .vc-name { color: #f1e6ff; text-shadow: .06em 0 #ff2bd6, -.06em 0 #2bf5ff, 0 0 .5em rgba(170,120,255,.8); background: none; }
-.vcard.r-mythic .vc-abil { background: rgba(15,8,30,.82); color: #e8dcff; box-shadow: inset 0 0 0 .08em rgba(180,140,255,.5); }
-.vcard.r-mythic .vc-abil b { color: #c9a6ff; }
+.vcard.r-mythic .vc-frame { box-shadow: inset 0 0 1.2em .3em rgba(0,0,0,.65); }
+.vcard.r-mythic .vc-artfx { background: conic-gradient(from calc(var(--ma, 0deg) + var(--mx) * 1.2), hsl(300 90% 55%), hsl(220 90% 55%), hsl(160 90% 50%), hsl(50 95% 55%), hsl(300 90% 55%)); mix-blend-mode: color-dodge; opacity: .28; animation: vcAura 9s linear infinite;
+    -webkit-mask-image: radial-gradient(ellipse 30% 22% at 50% 34%, rgba(0,0,0,.15) 0 55%, #000 100%); mask-image: radial-gradient(ellipse 30% 22% at 50% 34%, rgba(0,0,0,.15) 0 55%, #000 100%); }
+.vcard.r-mythic .vc-namebar { background: linear-gradient(180deg, rgba(14,6,30,.72), rgba(14,6,30,.5)); backdrop-filter: blur(3px); box-shadow: inset 0 0 0 .07em rgba(200,170,255,.55); }
+.vcard.r-mythic .vc-name { color: #f6eeff; text-shadow: .05em 0 #ff2bd6, -.05em 0 #2bf5ff, 0 0 .5em rgba(170,120,255,.8); }
+.vcard.r-mythic .vc-type { padding: 0 .3em; border-radius: .3em; background: rgba(14,6,30,.6); backdrop-filter: blur(3px); }
+.vcard.r-mythic .vc-abil { background: rgba(15,8,30,.78); backdrop-filter: blur(4px); color: #ece2ff; box-shadow: inset 0 0 0 .07em rgba(190,150,255,.55); }
+.vcard.r-mythic .vc-abname { color: #d4b6ff; } .vcard.r-mythic .vc-abtxt em { color: #ffd76a; }
+.vcard.r-mythic .vc-tm { color: #f0e4ff; background: rgba(190,150,255,.18); box-shadow: inset 0 0 0 .07em rgba(190,150,255,.45); }
+.vcard.r-mythic .vc-foot { background: linear-gradient(90deg, transparent, rgba(14,6,30,.6) 15% 85%, transparent); }
 @keyframes vcBreathe { 50% { box-shadow: 0 0 2.2em rgba(170,110,255,.75), 0 .4em 1.2em rgba(0,0,0,.6); } }
-@keyframes vcGlitch { 0%, 88%, 100% { opacity: 1; } 90% { opacity: .35; } 93% { opacity: 1; } 96% { opacity: .55; } }
 /* a completed series in the collection book: subtle gold edge */
 .vcard.gold .vc-front { outline: .12em solid #ffd76a; outline-offset: -.12em; }
 
@@ -170,8 +235,8 @@
    phone or the inspect view; cardui.js), the hue turns with the angle (--px), the series pattern is etched into the
    foil (fixed on the card), a fine glitter twinkles as it moves, and the glare becomes a specular highlight. Less foil
    over the face so it always reads. Every rarity can be holo. Reduced effects: the same foil, still. */
-.vcard.holo { --face-mask: radial-gradient(ellipse 37% 26% at 50% 35%, rgba(0,0,0,.1) 0 55%, #000 100%);
-    --text-mask: linear-gradient(180deg, #000 0 62%, rgba(0,0,0,.3) 63.5% 72%, rgba(0,0,0,.1) 73.5% 92%, #000 94%);      /* name row + ability box: a trace of foil only, the text stays clean */
+.vcard.holo { --face-mask: radial-gradient(ellipse 37% 24% at 50% 37%, rgba(0,0,0,.1) 0 55%, #000 100%);
+    --text-mask: linear-gradient(180deg, rgba(0,0,0,.25) 0 10%, #000 11% 66%, rgba(0,0,0,.35) 66.5% 74%, rgba(0,0,0,.1) 74.5% 93%, #000 94%);      /* name bar, stat plates, type line + effect box: a trace of foil only, the text stays clean */
     --glitter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.25' numOctaves='1' seed='11'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 16 -12.5'/%3E%3C/filter%3E%3Crect width='96' height='96' filter='url(%23g)'/%3E%3C/svg%3E"); }
 .vcard.holo .vc-holo { opacity: .9; mix-blend-mode: color-dodge;
     background:
@@ -193,7 +258,6 @@
     transition: background-position .12s linear; }
 /* the specular highlight: a hot spot that slides with the light */
 .vcard.holo .vc-glare { opacity: .85; mix-blend-mode: overlay; background: radial-gradient(farthest-corner circle at var(--mx) var(--my), rgba(255,255,255,.85) 0%, rgba(255,255,255,.3) 16%, transparent 46%); }
-.vcard.holo .vc-holo::after { content: "HOLO"; position: absolute; right: 7%; top: 61%; font: 700 .42em/1 var(--f-mono); letter-spacing: .2em; color: #fff; opacity: .8; }
 /* series patterns etched into the foil (image + tile size) */
 .h-waves     { --holo: repeating-radial-gradient(circle at 50% 120%, rgba(255,255,255,.55) 0 .16em, transparent .16em .75em); }
 .h-spirals   { --holo: repeating-conic-gradient(from 0deg at 50% 40%, rgba(255,255,255,.4) 0 5deg, transparent 5deg 16deg), repeating-radial-gradient(circle at 50% 40%, rgba(255,255,255,.3) 0 .12em, transparent .12em .8em); }
@@ -218,19 +282,30 @@
 .vcard.thick .vc-back { transform: rotateY(180deg) translateZ(.09em); }
 .vc-edge { position: absolute; inset: 0; border-radius: .55em; background: linear-gradient(90deg, #b9b2a2, #ece6d6 50%, #b9b2a2); transform: translateZ(var(--z)); pointer-events: none; }
 
-/* ---------- card back (series design or sleeve) ---------- */
-.vc-cover { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: .3em; background: var(--motif, linear-gradient(160deg, var(--c1), var(--c2))); color: var(--ink); box-shadow: inset 0 0 0 .3em rgba(0,0,0,.35), inset 0 0 0 .45em rgba(255,255,255,.25); overflow: hidden; }
-.vc-cover::before { content: ""; position: absolute; inset: .7em; border: .08em solid rgba(255,255,255,.45); border-radius: .4em; }
+/* ---------- card back: the series design (or the equipped sleeve) ----------
+   The series pattern, its holo pattern etched in, a double inner frame with the series corner ornaments, a medallion
+   with the emblem, the series name in its own lettering, the kanji watermark and the ANIME TCG mark. */
+.vc-cover { --orn: color-mix(in srgb, var(--c3) 72%, #fff); position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: .32em; background: var(--motif, linear-gradient(160deg, var(--c1), var(--c2))); color: var(--ink); overflow: hidden;
+    box-shadow: inset 0 0 0 .3em rgba(0,0,0,.42), inset 0 0 0 .4em var(--orn), inset 0 0 0 .5em rgba(0,0,0,.3), inset 0 0 2.4em rgba(0,0,0,.55); }
+.vc-cover::before { content: ""; position: absolute; inset: .85em; border: .07em solid color-mix(in srgb, var(--orn) 70%, transparent); border-radius: .45em; box-shadow: inset 0 0 0 .2em rgba(0,0,0,.18); }
+.vc-cpat { position: absolute; inset: 0; background: var(--holo, none) center / var(--hs, auto); opacity: .3; mix-blend-mode: overlay; pointer-events: none; }
+.vc-cover .vc-orn i { width: 2em; height: 2em; }
+.vc-cover .vc-orn i.tl { left: .5em; top: .5em; } .vc-cover .vc-orn i.tr { right: .5em; top: .5em; transform: scaleX(-1); }
+.vc-cover .vc-orn i.bl { left: .5em; bottom: .5em; transform: scaleY(-1); } .vc-cover .vc-orn i.br { right: .5em; bottom: .5em; transform: scale(-1); }
 .vc-cover.m-gothic { clip-path: polygon(0 0, 100% 0, 100% 97%, 94% 100%, 88% 97.5%, 80% 100%, 70% 97%, 60% 100%, 48% 97.5%, 38% 100%, 26% 97%, 15% 100%, 6% 97.5%, 0 100%); }
-.vc-cemb { width: 3.4em; height: 3.4em; display: grid; place-items: center; border-radius: 50%; background: rgba(0,0,0,.35); box-shadow: 0 0 0 .12em rgba(255,255,255,.5); color: var(--ink); font-size: 1em; }
-.vc-cemb svg { width: 70%; height: 70%; }
-.vc-ctxt { font-size: .95em; letter-spacing: .08em; text-align: center; text-shadow: 0 .08em 0 rgba(0,0,0,.6); }
-.vc-ck { position: absolute; right: .6em; bottom: .3em; font: 400 2.2em/1 var(--f-title); opacity: .18; font-style: normal; }
+.vc-cmark { position: relative; z-index: 1; font: 700 .4em/1 var(--f-mono); letter-spacing: .32em; color: var(--ink); opacity: .85; text-shadow: 0 .08em .1em rgba(0,0,0,.6); }
+.vc-cemb { position: relative; z-index: 1; width: 3.6em; height: 3.6em; display: grid; place-items: center; border-radius: 50%; color: var(--ink); font-size: 1em;
+    background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--c3) 45%, rgba(0,0,0,.2)), rgba(0,0,0,.55));
+    box-shadow: 0 0 0 .1em var(--orn), 0 0 0 .3em rgba(0,0,0,.35), 0 0 0 .38em color-mix(in srgb, var(--orn) 60%, transparent), 0 .2em .6em rgba(0,0,0,.5); }
+.vc-cemb svg { width: 66%; height: 66%; filter: drop-shadow(0 .06em .1em rgba(0,0,0,.5)); }
+.vc-ctxt { position: relative; z-index: 1; font-size: .95em; letter-spacing: .08em; text-align: center; text-shadow: 0 .08em 0 rgba(0,0,0,.6); }
+.vc-ck { position: absolute; right: .9em; bottom: .6em; font: 400 2.2em/1 var(--f-title); opacity: .18; font-style: normal; }
 .vc-binfo { position: absolute; inset: 9% 9%; z-index: 2; display: flex; flex-direction: column; justify-content: center; gap: .35em; padding: .7em; border-radius: .4em; background: rgba(8,6,12,.82); color: #f4eee4; text-align: center; }
 .vc-bname { font: 700 1em/1.1 var(--f-head); text-transform: uppercase; letter-spacing: .04em; }
 .vc-barch { font: 700 .5em/1.2 var(--f-mono); letter-spacing: .12em; color: #ffd76a; text-transform: uppercase; }
 .vc-btxt { margin: .3em 0; font: 500 .62em/1.35 var(--f-ui); }
 .vc-bkw { font: 700 .48em/1 var(--f-mono); letter-spacing: .1em; color: #9fd6ff; text-transform: uppercase; }
+.vc-bstat { font: 700 .56em/1 var(--f-mono); letter-spacing: .06em; color: #ffd0a8; }
 .vc-bno { font: 600 .48em/1.2 var(--f-mono); color: rgba(255,255,255,.6); }
 .vc-stamp { margin-top: .2em; padding: .3em; border: .06em dashed rgba(255,215,106,.6); font: 600 .46em/1.3 var(--f-mono); color: #ffd76a; transform: rotate(-2deg); }
 
@@ -248,9 +323,10 @@
 /* ---------- reduced effects: everything static ---------- */
 body.fx-lite .vcard *, body.fx-lite .vcard, body.fx-lite .vpack *, body.fx-lite .pk-packwrap, body.fx-lite .pk-special, body.fx-lite .pk-special *, body.fx-lite .pk-deck .vcard { animation: none !important; }
 body.fx-lite .vc-inner { transition-duration: .01s !important; }
-body.fx-lite .vc-fg, body.fx-lite .vc-glare, body.fx-lite .vp-shine { display: none; }
+body.fx-lite .vc-fg, body.fx-lite .vc-glare, body.fx-lite .vp-shine, body.fx-lite .vc-shine::before { display: none; }
+body.fx-lite .vcard.r-mythic::after { opacity: .35; }
 body.fx-lite .vcard.holo .vc-glare { display: block; --mx: 32%; --my: 24%; }      /* reduced effects: a still foil, lit from one side */
 body.fx-lite .vcard.holo .vc-holo, body.fx-lite .vcard.holo .vc-sheen { transition: none; --mx: 32%; --my: 24%; }
 body.fx-lite .pk-open.shake .pk-stage, body.fx-lite .pk-open.flash::after { animation: none !important; }
 body.fx-lite .pk-special { animation: none !important; opacity: 1; }
-@media (prefers-reduced-motion: reduce) { .vcard *, .vpack *, .pk-packwrap { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .vcard *, .vcard::after, .vpack *, .pk-packwrap { animation: none !important; } }

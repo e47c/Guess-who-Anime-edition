@@ -7,61 +7,147 @@
 <title>Card Gallery (dev)</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&family=Special+Elite&family=Permanent+Marker&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/base.css?v=13">
-<link rel="stylesheet" href="../css/cards.css?v=5">
-<link rel="stylesheet" href="../css/packs.css?v=3">
+<link rel="stylesheet" href="../css/cards.css?v=6">
+<link rel="stylesheet" href="../css/packs.css?v=4">
 <style>
-/* DEV ONLY: every card of every series, to scan for cut-off faces. Not linked from the game. */
+/* DEV ONLY (not linked from the game): the card style matrix for review, every card, every back, and the automatic
+   checks (art loaded, nothing over 8% cropped, the face inside the window, names and effect text never cut). */
 body { margin: 0; padding: 16px; background: #0b0810; color: #eee; font: 500 14px/1.4 Inter, sans-serif; }
 h1 { margin: 0 0 6px; font: 400 26px/1 'Dela Gothic One'; }
-.bar { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 0; background: #0b0810; }
+p.lede { max-width: 1000px; color: #bbb; margin: 0 0 8px; }
+.bar { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; padding: 10px 0; background: #0b0810; }
 .bar button, .bar select { padding: 6px 10px; border-radius: 6px; border: 1px solid #555; background: #1c1824; color: #eee; font: 600 13px Inter; cursor: pointer; }
-.bar button.on { background: #b38bff; color: #120820; }
+.bar button.on { background: #e9c45c; color: #1b1203; border-color: #e9c45c; }
+.bar .sep { width: 1px; height: 22px; background: #444; margin: 0 4px; }
+#checks { margin: 6px 0 12px; padding: 10px 12px; border-radius: 8px; background: #141019; border: 1px solid #333; font: 600 13px/1.5 'JetBrains Mono', monospace; }
+#checks.ok { border-color: #2f8f4e; } #checks.bad { border-color: #c33; }
+#checks a { color: #ffb3b3; }
 h2 { margin: 22px 0 8px; font: 600 22px/1 Teko; letter-spacing: .06em; text-transform: uppercase; }
+.matrix { display: grid; grid-template-columns: 120px repeat(7, max-content); gap: 10px 12px; align-items: start; overflow-x: auto; padding-bottom: 8px; }
+.matrix .rh { font: 700 12px/1.2 'JetBrains Mono'; color: #ffd76a; padding-top: 8px; }
+.matrix .ch { font: 700 11px/1 'JetBrains Mono'; color: #aaa; text-align: center; letter-spacing: .08em; }
 .grid { display: flex; flex-wrap: wrap; gap: 10px; }
-.cell { display: grid; justify-items: center; gap: 3px; }
-.cell > small { font: 600 10px/1.2 'JetBrains Mono'; color: #aaa; max-width: 120px; text-align: center; }
-.cell > small b { color: #ffd76a; }
-.cell.fit > small b { color: #7df3ff; } .cell.zoom > small b { color: #9dff57; } .cell.fixed > small b { color: #ff7ab6; }
-.legend span { margin-right: 12px; }
-.vc-art.rv { position: relative; left: auto; top: auto; width: 150px; aspect-ratio: var(--art-ar, 1); box-shadow: 0 0 0 2px #8b919c; }
+.cell { display: grid; justify-items: center; gap: 4px; }
+.cell > small { font: 600 10px/1.25 'JetBrains Mono'; color: #999; max-width: 150px; text-align: center; }
+.cell > small b { color: #ffd76a; } .cell > small i { color: #7df3ff; font-style: normal; }
+.cell.flag { outline: 2px solid #ff4d4d; outline-offset: 4px; border-radius: 10px; }
+.cell .issues { font: 700 10px/1.2 'JetBrains Mono'; color: #ff8080; text-align: center; max-width: 150px; }
+.win { position: relative; width: 170px; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 2px #8b919c; }
 </style>
 </head>
 <body>
-<h1>Card gallery · dev</h1>
-<p class="legend">Every card, every series, grouped by series. Under each card: id, how its face was found (<b style="color:#ffd76a">det</b> = detected, <b style="color:#ffd76a">default</b> = no face found, upper third) and how it is shown (<b style="color:#7df3ff">fit</b> = whole picture over a blurred copy, <b style="color:#9dff57">zoom</b>, <b style="color:#ff7ab6">fixed</b> = hand-corrected in data/card-focus-fix.json).</p>
-<div class="bar"><span>Size</span><button data-size="sm" class="on">small</button><button data-size="md">medium</button><button data-size="lg">large</button><button data-size="art">art windows only</button>
-<span>Show</span><select id="show"><option value="">all cards</option><option value="default">no face found</option><option value="fit">fit (whole picture)</option><option value="zoom">zoomed</option><option value="fixed">hand-fixed</option><option value="r3">Ultra Rare+</option></select>
-<select id="series"><option value="">every series</option></select><span id="count"></span></div>
+<h1>Anime TCG · card gallery (dev)</h1>
+<p class="lede">The style matrix: rarity decides the material, shape, effects and shine; the series decides colours, ornaments, pattern, lettering and back. Every series × every rarity (a real card of that rarity when the series has one, otherwise the series' first card drawn in that rarity: marked <i>preview</i>), Holo on or off, front or back. The checks run on every card shown and flag in red.</p>
+<div class="bar">
+<button data-view="matrix" class="on">Style matrix</button><button data-view="all">Every card</button><button data-view="backs">Card backs</button>
+<span class="sep"></span><button id="holo">Holo: off</button><button id="side">Side: front</button>
+<span class="sep"></span><span>Size</span><select id="size"><option value="sm">small</option><option value="md" selected>medium</option><option value="lg">large</option></select>
+<select id="series"><option value="">every series</option></select>
+<select id="only"><option value="">all</option><option value="flag">flagged only</option><option value="fit">shown whole (fit)</option><option value="cover">covered</option></select>
+<span id="count"></span>
+</div>
+<div id="checks">checking…</div>
 <div id="out"></div>
 <script type="module">
-import { CARDS, BY_SERIES, CARD_SERIES } from "../js/vault/carddb.js?v=3";
-import { cardEl, theme, artPlace } from "../js/vault/cardui.js?v=9";
+import { CARDS, BY_SERIES, BY_SERIES_RARITY, CARD_SERIES, RARITY_NAMES } from "../js/vault/carddb.js?v=4";
+import { cardEl, backCard, theme, fitText, windowRatio } from "../js/vault/cardui.js?v=10";
+import { CARD_ART } from "../js/vault/config.js?v=12";
 const focus = await fetch("../data/card-focus.json").then(r => r.json()).catch(() => ({}));
 const fix = await fetch("../data/card-focus-fix.json").then(r => r.json()).catch(() => ({}));
-let size = "sm";
-const sel = document.getElementById("series"); CARD_SERIES.forEach(s => sel.add(new Option(theme(s).label, s)));
-function draw() {
-    const out = document.getElementById("out"), show = document.getElementById("show").value, only = sel.value; out.innerHTML = ""; let n = 0;
-    CARD_SERIES.filter(s => !only || s === only).forEach(s => {
-        const ids = BY_SERIES[s].filter(id => { const c = CARDS[id], f = focus[id] || {}; return !show || (show === "default" && f.src === "default") || (show === "fit" && c.fit) || (show === "zoom" && c.fz > 1) || (show === "fixed" && fix[id]) || (show === "r3" && c.r >= 3); });
-        if (!ids.length) return;
-        const h = document.createElement("h2"); h.textContent = theme(s).label + " (" + ids.length + ")"; out.appendChild(h);
-        const g = document.createElement("div"); g.className = "grid";
-        ids.forEach(id => { const c = CARDS[id], f = focus[id] || {}, cell = document.createElement("div"); cell.className = "cell" + (c.fit ? " fit" : c.fz > 1 ? " zoom" : "") + (fix[id] ? " fixed" : ""); cell.dataset.id = id;
-            if (size === "art") {      // the square window exactly as a Common..Epic card places it (same artPlace), bigger
-                const a = document.createElement("div"), im = new Image(); a.className = "vc-art rv"; im.referrerPolicy = "no-referrer"; im.alt = "";
-                if (c.img) { artPlace(Object.assign({}, c, { r: 0 }), a, im); im.src = c.img; a.appendChild(im); } else a.textContent = "?";
-                cell.appendChild(a);
-            } else cell.appendChild(cardEl(id, { size }));
-            const t = document.createElement("small"); t.innerHTML = id + " · <b>" + (fix[id] ? "fixed" : f.src || "none") + (c.fit ? " · fit" : c.fz > 1 ? " · zoom " + c.fz : "") + "</b><br>" + c.n; cell.appendChild(t); g.appendChild(cell); n++; });
-        out.appendChild(g);
-    });
-    out.querySelectorAll("img").forEach(i => { i.loading = "eager"; });
-    document.getElementById("count").textContent = n + " cards";
+const st = { view: "matrix", holo: false, back: false };
+const $ = id => document.getElementById(id);
+CARD_SERIES.forEach(s => $("series").add(new Option(theme(s).label, s)));
+const mkEl = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+
+/* ---------- the checks ---------- */
+const settle = im => im.complete ? Promise.resolve() : new Promise(r => { im.addEventListener("load", r, { once: true }); im.addEventListener("error", r, { once: true }); setTimeout(r, 15000); });
+function faceIn(card) {      // covered pictures: is the face box inside the visible part of the picture?
+    const a = card.querySelector(".vc-art"); if (!a || a.dataset.mode !== "cover") return true;
+    const c = CARDS[card.dataset.id], f = Object.assign({ fh: CARD_ART.defaultFaceH }, focus[c.id] || {}, fix[c.id] || {}), r = Number(card.className.match(/r-(\w+)/) && ["common","uncommon","rare","ultra","epic","legendary","mythic"].indexOf(card.className.match(/r-(\w+)/)[1]));
+    const A = windowRatio(r), ar = c.ar, kk = ar < A ? A / ar : ar / A; if (kk < 1.001) return true;
+    const im = a.querySelector("img"), pos = (im.style.objectPosition || "50% 50%").split(" ").map(v => parseFloat(v) / 100);
+    if (ar < A) { const top = pos[1] * (1 - 1 / kk), bot = top + 1 / kk, half = (f.fh || .3) / 2 * .8; return c.fy - half >= top - .02 && c.fy + half <= bot + .02; }
+    const left = pos[0] * (1 - 1 / kk), right = left + 1 / kk, half = (f.fh || .3) / ar / 2 * .8; return c.fx - half >= left - .02 && c.fx + half <= right + .02;
 }
-document.querySelectorAll("[data-size]").forEach(b => b.onclick = () => { size = b.dataset.size; document.querySelectorAll("[data-size]").forEach(x => x.classList.toggle("on", x === b)); draw(); });
-document.getElementById("show").onchange = draw; sel.onchange = draw;
-draw(); window.__ready = true;
+async function check(cell) {
+    const card = cell.querySelector(".vcard[data-id]"); if (!card) return [];
+    const a = card.querySelector(".vc-art"), im = a && a.querySelector("img"), out = [];
+    if (im) await settle(im);
+    fitText(card);
+    if (!a || a.dataset.mode === "placeholder") out.push("placeholder art");
+    else if (im && !im.naturalWidth) out.push("art failed");
+    else if (im && (im.naturalWidth < 200 || im.naturalHeight < 200)) out.push("small art " + im.naturalWidth + "×" + im.naturalHeight);
+    if (a && a.dataset.mode === "cover" && Number(a.dataset.crop) > CARD_ART.maxCrop + .001) out.push("cropped " + Math.round(a.dataset.crop * 100) + "%");
+    if (!faceIn(card)) out.push("face cut");
+    const nm = card.querySelector(".vc-name");
+    if (nm && nm.clientWidth && (nm.scrollWidth > nm.clientWidth + 1 || nm.scrollHeight > nm.clientHeight + 1)) out.push("name cut");
+    const tx = card.querySelector(".vc-abtxt");
+    if (tx && tx.offsetParent && tx.clientHeight && tx.scrollHeight > tx.clientHeight + 1) out.push("text cut");
+    cell.classList.toggle("flag", out.length > 0);
+    let is = cell.querySelector(".issues"); if (out.length) { if (!is) { is = mkEl("div", "issues"); cell.appendChild(is); } is.textContent = out.join(" · "); } else if (is) is.remove();
+    return out;
+}
+async function runChecks() {
+    const cells = [...document.querySelectorAll(".cell")], problems = [];
+    $("checks").className = ""; $("checks").textContent = "checking " + cells.length + " cards…";
+    for (let i = 0; i < cells.length; i += 24) {
+        const part = await Promise.all(cells.slice(i, i + 24).map(c => check(c).then(x => [c, x])));
+        part.forEach(([c, x]) => { if (x.length) problems.push({ id: c.dataset.id, name: c.dataset.name, issues: x, el: c }); });
+    }
+    const box = $("checks"); box.className = problems.length ? "bad" : "ok"; box.innerHTML = "";
+    box.appendChild(mkEl("div", null, cells.filter(c => c.querySelector(".vcard[data-id]")).length + " cards checked · " + (problems.length ? problems.length + " with problems" : "no problems") + " · size " + $("size").value));
+    problems.slice(0, 60).forEach(p => { const a = mkEl("a", null, p.id + " " + p.name + ": " + p.issues.join(", ")); a.href = "#"; a.onclick = e => { e.preventDefault(); p.el.scrollIntoView({ block: "center" }); }; box.appendChild(a); box.appendChild(mkEl("br")); });
+    window.__gallery = { done: true, checked: cells.length, problems: problems.map(p => ({ id: p.id, name: p.name, issues: p.issues })) };
+    if ($("only").value === "flag") document.querySelectorAll(".cell:not(.flag)").forEach(c => c.style.display = "none");
+}
+/* ---------- views ---------- */
+function cellFor(id, o, label) {
+    const c = CARDS[id], cell = mkEl("div", "cell"); cell.dataset.id = id; cell.dataset.name = c.n;
+    const el = cardEl(id, Object.assign({ size: $("size").value, holo: st.holo }, o));
+    if (st.back) el.classList.add("turned");
+    cell.appendChild(el);
+    const a = el.querySelector(".vc-art"), mode = a ? a.dataset.mode : "", sm = mkEl("small");
+    sm.innerHTML = (label || "") + id + " · <b>" + mode + (mode === "cover" ? " " + Math.round(a.dataset.crop * 100) + "%" : "") + "</b><br>" + c.n;
+    cell.appendChild(sm);
+    const only = $("only").value; if ((only === "fit" && mode !== "fit") || (only === "cover" && mode !== "cover")) cell.style.display = "none";
+    return cell;
+}
+function draw() {
+    const out = $("out"), only = $("series").value; out.innerHTML = ""; window.__gallery = { done: false };
+    const list = CARD_SERIES.filter(s => !only || s === only);
+    if (st.view === "matrix") {
+        const m = mkEl("div", "matrix"); m.appendChild(mkEl("div"));
+        RARITY_NAMES.forEach(n => m.appendChild(mkEl("div", "ch", n.toUpperCase())));
+        list.forEach(s => {
+            m.appendChild(mkEl("div", "rh", theme(s).label));
+            RARITY_NAMES.forEach((_, r) => {
+                const real = BY_SERIES_RARITY[s][r][0];
+                m.appendChild(real ? cellFor(real, {}) : cellFor(BY_SERIES[s][0], { as: r }, "<i>preview</i> · "));
+            });
+        });
+        out.appendChild(m);
+    } else if (st.view === "all") {
+        list.forEach(s => {
+            out.appendChild(mkEl("h2", null, theme(s).label + " (" + BY_SERIES[s].length + ")"));
+            const g = mkEl("div", "grid"); BY_SERIES[s].forEach(id => g.appendChild(cellFor(id, {}))); out.appendChild(g);
+        });
+    } else {
+        const g = mkEl("div", "grid");
+        list.forEach(s => { const cell = mkEl("div", "cell"); cell.appendChild(backCard(s, null, $("size").value)); cell.appendChild(mkEl("small", null, theme(s).label)); g.appendChild(cell); });
+        out.appendChild(g);
+    }
+    out.querySelectorAll("img").forEach(i => { i.loading = "eager"; });
+    $("count").textContent = out.querySelectorAll(".cell").length + " cells";
+    requestAnimationFrame(() => setTimeout(runChecks, 50));
+}
+document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => { st.view = b.dataset.view; document.querySelectorAll("[data-view]").forEach(x => x.classList.toggle("on", x === b)); draw(); });
+$("holo").onclick = () => { st.holo = !st.holo; $("holo").textContent = "Holo: " + (st.holo ? "on" : "off"); $("holo").classList.toggle("on", st.holo); draw(); };
+$("side").onclick = () => { st.back = !st.back; $("side").textContent = "Side: " + (st.back ? "back" : "front"); $("side").classList.toggle("on", st.back); draw(); };
+["size", "series", "only"].forEach(k => $(k).onchange = draw);
+const q = new URLSearchParams(location.search);
+if (q.get("view")) st.view = q.get("view"); if (q.get("holo")) st.holo = true; if (q.get("back")) st.back = true; if (q.get("size")) $("size").value = q.get("size"); if (q.get("series")) $("series").value = q.get("series");
+document.querySelectorAll("[data-view]").forEach(x => x.classList.toggle("on", x.dataset.view === st.view));
+draw();
 </script>
 </body>
 </html>
