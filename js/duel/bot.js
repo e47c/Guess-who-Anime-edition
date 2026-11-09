@@ -9,7 +9,7 @@
    Easy blunders often (a random legal move), Normal sometimes, Hard never. It plays on the full state (it is local).
    ===================================================================== */
 import { legalMoves, outcome, statOf, P, opponents, lifeOf, cardOf } from "./engine.js?v=1";
-import { DUEL } from "../vault/config.js?v=19";
+import { DUEL } from "../vault/config.js?v=20";
 
 const arr = v => Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : [];
 export function botMove(s, p, level = "normal", defs, rnd = Math.random) {

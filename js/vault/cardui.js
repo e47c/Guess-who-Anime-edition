@@ -11,7 +11,7 @@
 import { CARDS, RARITY_NAMES, RARITY_KEYS } from "./carddb.js?v=6";
 import { icon, KEYWORD_ICON } from "./icons.js?v=3";
 import { corner } from "./cardstyle.js?v=1";
-import { CARD_ART } from "./config.js?v=19";
+import { CARD_ART } from "./config.js?v=20";
 import { ABILITIES, abilityText } from "../cardvault/abilities.js?v=4";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };

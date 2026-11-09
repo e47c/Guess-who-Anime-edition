@@ -274,17 +274,17 @@ they only craft packs.
 
 **The Shop** (`js/vault/shoppage.js`, `css/shop.css`) is its own section, not a game mode: the storefront tile under the
 logo on the main menu, or the Shop button at the top of the lobby (a full-screen sheet over the lobby, so closing it
-returns to the same room with everyone still there). Two tabs: **SEASON 1** (the Season 1 skins, Frame + Background
+returns to the same room with everyone still there). Three tabs: **SEASON 1** (the Season 1 skins, Frame + Background
 per tier, bundle -20%, AND the scratch cards: Basic / Silver / Gold -> titles, title skins, username styles; scratch cards
-live only here) and **SEASON 2** (the Season 2 skins, tagged NEW). A persistent preview panel shows your real Arcade Pass
+live only here), **SEASON 2** (realistic materials) and **SEASON 3** (living scenes, tagged NEW). A persistent preview panel shows your real Arcade Pass
 (name, title, level) with the frame and / or background being tried: a side panel on wide screens (hover a tile to
 preview it, click to pin it), a bottom sheet on phones. Buying
 never equips: after every purchase and every new scratch prize, **Equip now** (sits next to Keep browsing) equips it in
 the right slot at once and shows it on the pass; otherwise equip it later in the Wardrobe.
 
 **The Wardrobe** (`js/wardrobe.js`) is "Edit player card": display name, profile picture (gallery or upload, accent
-colour), Frame (Season 1 and Season 2 frames, grouped under their own headings, + arcade frames from levels /
-achievements), Background (Season 1 / Season 2), Title (level titles + Shop
+colour), Frame (Season 1, 2 and 3 frames, grouped under their own headings, + arcade frames from levels /
+achievements), Background (Season 1 / 2 / 3), Title (level titles + Shop
 titles), Title skins, Username styles and Card sleeves (Anime TCG, from completed series), with your achievements and
 Night Party record. Owned items are selectable, the rest greyed out with where to get them ("Get it in the Shop" opens
 the Shop on that item). The live preview is the Arcade Pass. Nothing is applied until Save profile; closing discards.
@@ -355,6 +355,14 @@ hidden by the interface, as in the other modes.
   chips, lists) get a compact version; big Flame / Water frames and the Flame background add one shared canvas loop
   (30 fps cap). Everything pauses off-screen and is still under Reduced effects. Review page: `dev/skins.html` (every
   frame and background of both seasons at every size).
+- **Season 3 skins** (`js/skins3.js`, `js/skins3-tiers.js`, `css/skins3.css`, prices in `SKINS3`): 12 tiers (Ruby is new),
+  each a small living scene. Frames are objects and creatures around the picture (mech visor, astrolabe, crescent moon
+  with mirror shards, baroque cartouche, holo reticle, vines, ruby brooch, diamond crown, phoenix, water serpent,
+  celestial gate, living prism) with an idle loop and an entrance; backgrounds are scenes with 3-5 depth layers that
+  follow the pointer, the phone's tilt (asked only when previewing / equipping) or a slow drift. Three render levels
+  (full / medium / compact); in a lobby only your own card animates fully, the others run a simplified loop, and at
+  most 3 canvas effects run at once. Prices = Season 2 x1.5 (Iron 400 ... Prismatic 6800, Ruby 3500). Details and the
+  checklist: `docs/skins-season3.md`; review page `dev/skins.html`.
 - **Owner coin tool** (`js/vault/devgrant.js`, hidden): holding the coin counter for 4 s opens a code prompt; only the
   right code on an allow-listed player id unlocks a grant (logged as "Dev grant", counts for nothing else). The code
   is stored only as a salted PBKDF2 hash; set it and the allow-list with `tools/devgrant-setup.mjs`. There is no

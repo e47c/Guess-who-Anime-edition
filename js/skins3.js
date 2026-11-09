@@ -15,54 +15,15 @@
      the frame floats gently as one composited layer instead; entrances still play. At most maxHeavy canvas
      or SVG-filter effects run at once (heroes first); the others keep a still frame. Off-screen (.fx-off), hidden
      (0 size) and a hidden tab pause everything. Reduced effects: no parallax, no entrance, a still scene.
-   Built so far: Ruby, Diamond, Flame (the other tiers render as a plain picture / default card until they exist).
+   Ruby, Diamond and Flame are drawn here; the other nine tiers live in js/skins3-tiers.js (shared kit: js/skins3-kit.js).
    ===================================================================== */
-import { SKINS3 } from "./vault/config.js?v=19";
+import { SKINS3 } from "./vault/config.js?v=20";
 import { motionOK } from "./fx.js";
-
-/* ---------- small helpers (frame box 0..100, picture centre 50,50; angles clockwise from the top) ---------- */
-const n2 = v => Math.round(v * 100) / 100;
-const XY = (r, d, cx = 50, cy = 50) => { const a = d * Math.PI / 180; return [n2(cx + r * Math.sin(a)), n2(cy - r * Math.cos(a))]; };
-const P = (r, d) => XY(r, d).join(" ");
-const arc = (r, a1, a2) => `M${P(r, a1)}A${r} ${r} 0 ${a2 - a1 > 180 ? 1 : 0} 1 ${P(r, a2)}`;
-const stops = list => list.map(([o, c, op]) => `<stop offset='${o}' stop-color='${c}'${op != null ? ` stop-opacity='${op}'` : ""}/>`).join("");
-const lg = (id, list, a = "x1='0' y1='0' x2='1' y2='1'") => `<linearGradient id='${id}' ${a}>${stops(list)}</linearGradient>`;
-const rg = (id, list, a = "") => `<radialGradient id='${id}' ${a}>${stops(list)}</radialGradient>`;
-const hx = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-const mix = (a, b, t) => { t = Math.max(0, Math.min(1, t)); const A = hx(a), B = hx(b); return "#" + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, "0")).join(""); };
-const rnd = seed => () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-const star4 = (s = 5, k = .18) => `M0 ${-s}L${n2(s * k)} ${n2(-s * k)}L${s} 0L${n2(s * k)} ${n2(s * k)}L0 ${s}L${n2(-s * k)} ${n2(s * k)}L${-s} 0L${n2(-s * k)} ${n2(-s * k)}Z`;
-const poly = pts => "M" + pts.map(p => n2(p[0]) + " " + n2(p[1])).join("L") + "Z";
-const dly = s => `style='animation-delay:${n2(s)}s'`;
-
-/* a cut gem seen from the top (round / oval brilliant): table, star facets, bezels, upper girdle facets, shaded for a
-   light from the upper left, plus an inner glow, a rim and specular glints. pal = { hi, mid, lo, rim, glow } */
-function brilliant(cx, cy, rx, ry, rot, pal, o = {}) {
-    const n = 8, r = rnd(o.seed || 7), pt = (k, off) => [...Array(n)].map((_, i) => { const a = (i * 360 / n + off + rot) * Math.PI / 180; return [cx + rx * k * Math.sin(a), cy - ry * k * Math.cos(a)]; });
-    const T = pt(.47, 0), S = pt(.76, 22.5), G = pt(1, 0), G2 = pt(1, 22.5);
-    const lit = a => (1 + Math.cos((a + rot - 315) * Math.PI / 180)) / 2;
-    const col = (l, j = .18) => mix(pal.lo, pal.hi, l + (r() - .5) * j);
-    let s = "";
-    if (!o.simple) for (let i = 0; i < n; i++) {
-        const a = i * 45, j = (i + 1) % n, h = (i + n - 1) % n;
-        s += `<path d='${poly([S[i], G[i], G2[i]])}' fill='${col(lit(a + 11) * .85)}'/><path d='${poly([S[i], G2[i], G[j]])}' fill='${col(1 - lit(a + 34) * .8)}'/>`;
-        s += `<path d='${poly([T[i], S[h], G[i], S[i]])}' fill='${col(lit(a) * .95 + .05)}'/>`;
-        s += `<path d='${poly([T[i], T[j], S[i]])}' fill='${col(1 - lit(a + 22.5) * .7)}'/>`;
-    } else for (let i = 0; i < n; i++) { const a = i * 45, j = (i + 1) % n; s += `<path d='${poly([T[i], G[i], G[j], T[j]])}' fill='${col(lit(a + 22.5), .1)}'/>`; }
-    s += `<path d='${poly(T)}' fill='${pal.mid}'/>`;
-    const tr = `rotate(${rot} ${cx} ${cy})`;
-    const lines = o.simple ? "" : `<g fill='none' stroke='${pal.hi}' stroke-opacity='.35' stroke-width='${n2(Math.max(rx, ry) * .025)}'>${T.map((p, i) => `<path d='M${n2(p[0])} ${n2(p[1])}L${n2(G[i][0])} ${n2(G[i][1])}'/>`).join("")}</g>`;
-    const glow = pal.glow ? `<ellipse class='${o.glowCls || "s3-glow"}' cx='${cx}' cy='${cy}' rx='${n2(rx * .78)}' ry='${n2(ry * .78)}' transform='${tr}' fill='url(#${o.glowId})' style='mix-blend-mode:screen${o.glowDelay != null ? ";animation-delay:" + o.glowDelay + "s" : ""}'/>` : "";
-    const spec = o.simple ? "" : `<ellipse cx='${n2(cx - rx * .3)}' cy='${n2(cy - ry * .32)}' rx='${n2(rx * .2)}' ry='${n2(ry * .11)}' transform='rotate(-30 ${n2(cx - rx * .3)} ${n2(cy - ry * .32)})' fill='#fff' opacity='.75'/>`;
-    return `<g>${s}${lines}${glow}<ellipse cx='${cx}' cy='${cy}' rx='${rx}' ry='${ry}' transform='${tr}' fill='none' stroke='${pal.rim}' stroke-width='${n2(Math.max(rx, ry) * .05)}'/>${spec}</g>`;
-}
-const RUBY = { hi: "#ff7f97", mid: "#e0183c", lo: "#3e000e", rim: "#2a0008", glow: true };
-const ICE = { hi: "#ffffff", mid: "#e6f3fb", lo: "#58748a", rim: "#3e5a70" };
+import { n2, XY, P, arc, stops, lg, rg, hx, mix, rnd, star4, poly, dly, brilliant, RUBY, ICE, ROSE, SHADOW, feather, svgURL, OV } from "./skins3-kit.js?v=1";
+import { FRAMES_MORE, SCENES_MORE, STEPS_MORE } from "./skins3-tiers.js?v=1";
 
 /* =========================== FRAMES =========================== */
 /* full + medium: viewBox -30..130 (picture radius 33); compact: viewBox -12..112 (picture radius 40) */
-const ROSE = u => lg("rg" + u, [[0, "#fbd6c4"], [.32, "#dc977f"], [.58, "#a5604d"], [.82, "#f4bca6"], [1, "#c98169"]]);
-const SHADOW = (u, r = 54) => `<defs>${rg("sd" + u, [[.6, "#000", .5], [1, "#000", 0]])}</defs><circle cx='50' cy='53' r='${r}' fill='url(#sd${u})'/>`;
 const FRAME3 = {
     /* RUBY: a rose-gold jewellery setting holding claw-set cut rubies whose inner glow pulses; the setting is three open
        arms broken by the stones, with filigree curls (full). Entrance: the arms draw in, the stones drop into their claws. */
@@ -79,7 +40,7 @@ const FRAME3 = {
     /* FLAME: a phoenix: crest of flame plumes, glowing eyes, fire wings that spread and fold around the picture, a long
        tail below. Full: heat distortion over the fire and a canvas of flames + embers. Entrance: it rises with folded
        wings, the crest ignites and the wings open. */
-    flame: { full: u => phoenix(u, "full"), medium: u => phoenix(u, "medium"), compact: u => phoenix(u, "compact") }
+    flame: { full: u => phoenix(u, "full"), medium: u => phoenix(u, "medium"), compact: u => phoenix(u, "compact"), fx: "phoenix", haze: true }
 };
 
 function rubyFrame(u, lv) {
@@ -107,7 +68,7 @@ function rubyFrame(u, lv) {
 
 function diamondFrame(u, lv) {
     const full = lv === "full", cmp = lv === "compact", R0 = cmp ? 45 : 42.5;
-    const stone = (x, y, r, i) => full ? brilliant(x, y, r, r, i * 9, ICE, { seed: 20 + i }) : `<circle cx='${x}' cy='${y}' r='${r}' fill='url(#st${u})' stroke='#5b778c' stroke-width='.3'/>`;
+    const stone = (x, y, r) => `<circle cx='${x}' cy='${y}' r='${r}' fill='url(#st${u})' stroke='#5b778c' stroke-width='.3'/>` + (full ? `<path d='${star4(r * .8, .3)}' transform='translate(${x} ${y}) rotate(22)' fill='#fff' opacity='.55'/>` : "");
     let band = `<path d='${arc(R0, -62, 62)}' fill='none' stroke='#2c3f50' stroke-width='${cmp ? 7.4 : 6.6}' stroke-linecap='round'/><path d='${arc(R0, -62, 62)}' fill='none' stroke='url(#pl${u})' stroke-width='${cmp ? 6 : 5.4}' stroke-linecap='round'/>`;
     const step = cmp ? 15 : 7.5;
     for (let a = -60, i = 0; a <= 60.1; a += step, i++) { const [x, y] = XY(R0, a); band += stone(x, y, cmp ? 3 : 2.5, i); }
@@ -134,7 +95,6 @@ function diamondFrame(u, lv) {
 }
 
 /* a flame feather along +x: a wide base, flame-tongue notches at the tip */
-const feather = (L, w) => `M0 0C${n2(L * .25)} ${n2(-w)} ${n2(L * .6)} ${n2(-w * 1.1)} ${n2(L * .8)} ${n2(-w * .5)}Q${n2(L * .9)} ${n2(-w * .95)} ${L} ${n2(-w * .2)}Q${n2(L * .92)} ${n2(w * .1)} ${n2(L * .96)} ${n2(w * .5)}Q${n2(L * .84)} ${n2(w * .38)} ${n2(L * .77)} ${n2(w * .75)}C${n2(L * .55)} ${n2(w * 1.05)} ${n2(L * .25)} ${n2(w * .8)} 0 0Z`;
 function phoenix(u, lv) {
     const full = lv === "full", cmp = lv === "compact";
     const F = (ang, L, w, g, extra = "") => `<g transform='rotate(${ang})'><path d='${feather(L, w)}' fill='url(#${g}${u})'/>${full ? `<path d='M1 0Q${n2(L * .5)} ${n2(-w * .15)} ${n2(L * .9)} ${n2(-w * .1)}' fill='none' stroke='#fff6d0' stroke-width='.45' opacity='.75'/><path d='${feather(L * .7, w * .42)}' fill='#fff' opacity='.18'/>` : ""}${extra}</g>`;
@@ -153,7 +113,7 @@ function phoenix(u, lv) {
     const head = `<g transform='translate(50 1.5) scale(1.3)'><g class='s3-e-ignite'>${crest}</g><path d='M-6 -2C-6 -9 6 -9 6 -2C6 3 2 6 0 9C-2 6 -6 3 -6 -2Z' fill='url(#fh${u})' stroke='#7a1500' stroke-width='.45'/>`
         + `<path d='M-1.5 6.2L0 11L1.5 6.2Z' fill='#ffd36a' stroke='#8a3a00' stroke-width='.35'/><g fill='#fffbe6'><ellipse cx='-2.6' cy='-.4' rx='1.5' ry='.75' transform='rotate(14 -2.6 -.4)'/><ellipse cx='2.6' cy='-.4' rx='1.5' ry='.75' transform='rotate(-14 2.6 -.4)'/></g>`
         + `<circle class='s3-eye' cx='-2.4' cy='-.4' r='.45' fill='#ff3000'/><circle class='s3-eye' cx='2.4' cy='-.4' r='.45' fill='#ff3000'/></g>`;
-    const heat = full ? `<filter id='ht${u}' x='-20%' y='-20%' width='140%' height='140%'><feTurbulence type='fractalNoise' baseFrequency='.05' numOctaves='1' seed='3' result='t'><animate attributeName='baseFrequency' values='.045;.065;.045' dur='2.6s' repeatCount='indefinite'/></feTurbulence><feDisplacementMap in='SourceGraphic' in2='t' scale='2.4' xChannelSelector='R' yChannelSelector='G'/></filter>` : "";
+    const heat = full ? `<filter id='ht${u}' x='-20%' y='-20%' width='140%' height='140%'><feTurbulence type='fractalNoise' baseFrequency='.05' numOctaves='1' seed='3' result='t'/><feDisplacementMap in='SourceGraphic' in2='t' scale='1.8' xChannelSelector='R' yChannelSelector='G'/></filter>` : "";      // a still warp of the fire; the moving shimmer is the .s3-avhaze layer
     return `<defs>${lg("fp" + u, [[0, "#fff6c8"], [.22, "#ffd24a"], [.52, "#ff7a12"], [.8, "#e8320a"], [1, "#a80c00", .3]], "x1='0' y1='0' x2='1' y2='0'")}${lg("fv" + u, [[0, "#fffbe6"], [.4, "#ffe27a"], [.8, "#ff9a2a"], [1, "#ff5a0a", .4]], "x1='0' y1='0' x2='1' y2='0'")}`
         + `${lg("fc" + u, [[0, "#fff6d0"], [.45, "#ffc43a"], [.8, "#ff5a0a"], [1, "#d01a00", .15]], "x1='0' y1='0' x2='1' y2='0'")}${rg("fh" + u, [[0, "#fff4c0"], [.5, "#ff9a2a"], [1, "#c42a00"]], "cx='.5' cy='.4' r='.7'")}${rg("fg" + u, [[.45, "#ff8a1a", .55], [1, "#ff3a00", 0]], "gradientUnits='userSpaceOnUse' cx='50' cy='48' r='56'")}${heat}</defs>`
         + `<circle class='s3-glowpulse' cx='50' cy='48' r='56' fill='url(#fg${u})'/>`
@@ -161,8 +121,6 @@ function phoenix(u, lv) {
 }
 
 /* =========================== BACKGROUNDS (scene layers; viewBox 0 0 400 252, cropped to fill) =========================== */
-const svgURL = body => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 252' preserveAspectRatio='xMidYMid slice'>${body}</svg>`)}")`;
-const OV = body => `<svg class='s3-ov' viewBox='0 0 400 252' preserveAspectRatio='xMidYMid slice' aria-hidden='true'>${body}</svg>`;
 /* each scene: level -> [{ d (depth), img (static SVG, rasterized once), ov (animated SVG overlay, optional), cls }], plus
    html (extra animated CSS layers) and canvas (a canvas effect for the full level) */
 const BG3 = {
@@ -235,6 +193,7 @@ const BG3 = {
 };
 
 /* caches: one SVG string per frame level, one data URL per background layer */
+Object.assign(FRAME3, FRAMES_MORE); Object.assign(BG3, SCENES_MORE);     // the other tiers (js/skins3-tiers.js)
 const TPL = {}, URLS = {};
 let UID = 0;
 export const S3_BASES = SKINS3.tiers.map(t => t.id);
@@ -251,11 +210,13 @@ export function decorateAvatar3(el, base, size, o = {}) {
     if (!TPL[key]) TPL[key] = FRAME3[base][lv]("§");
     const E = cmp ? 12 : 30, u = "t" + (++UID).toString(36);
     const f = document.createElement("i"); f.className = "s3f " + (cmp ? "s3f-c" : "s3f-w"); f.setAttribute("aria-hidden", "true");
-    f.innerHTML = `<svg viewBox='${-E} ${-E} ${100 + 2 * E} ${100 + 2 * E}' focusable='false'>${TPL[key].split("§").join(u)}</svg>`;
+    const img = /^(images\/|https:\/\/|data:image\/)/.test(o.img || "") && !/['"<>]/.test(o.img) ? o.img : "";       // Silver's mirror shards show the picture
+    f.innerHTML = `<svg viewBox='${-E} ${-E} ${100 + 2 * E} ${100 + 2 * E}' focusable='false'>${TPL[key].split("§").join(u).split("¤").join(img)}</svg>`;
     el.insertBefore(f, el.querySelector(".ava-in"));
+    if (lv === "full" && FRAME3[base].haze) { const h = document.createElement("i"); h.className = "s3-avhaze"; h.setAttribute("aria-hidden", "true"); el.insertBefore(h, el.querySelector(".ava-in")); }
     if (o.entrance && motionOK() && !cmp) enter(el);
-    const heavy = lv === "full" && base === "flame";
-    if (lv !== "compact") track(el, { kind: "ava", hero: !!o.hero, heavy, svg: heavy ? f.querySelector("svg") : null, canvas: heavy ? fxCanvas(el, "s3-cvf", el.querySelector(".ava-in")) : null, step: heavy ? "phoenix" : null });
+    const fx = lv === "full" && FRAME3[base].fx;          // a canvas effect (full level only) is a "heavy" effect
+    if (lv !== "compact") track(el, { kind: "ava", hero: !!o.hero, heavy: !!fx, svg: fx && FRAME3[base].smil ? f.querySelector("svg") : null, canvas: fx ? fxCanvas(el, "s3-cvf", el.querySelector(".ava-in")) : null, step: fx || null });
 }
 function enter(el) { el.classList.add("s3-in"); el._s3enter = true; }
 
@@ -267,8 +228,10 @@ export function decorateCard3(el, base, o = {}) {
     sc.layers.forEach((L, i) => {
         const k = base + ":" + lv + ":" + i; if (!URLS[k]) URLS[k] = svgURL(L.img);
         const e = document.createElement("i"); e.className = "s3-l" + (L.cls ? " " + L.cls : ""); e.style.setProperty("--d", String(L.d)); e.style.backgroundImage = URLS[k];
-        if (L.ov && lv !== "compact") e.innerHTML = OV(L.ov);
         w.appendChild(e);
+        /* the animated overlay gets its own layer at the same depth: its repaints never touch the (filtered, cached)
+           scene image under it */
+        if (L.ov && lv !== "compact") { const o = document.createElement("i"); o.className = "s3-l s3-lo"; o.style.setProperty("--d", String(L.d)); o.innerHTML = OV(L.ov); w.appendChild(o); }
     });
     if (sc.html && lv !== "compact") w.insertAdjacentHTML("beforeend", sc.html);
     const shine = document.createElement("i"); shine.className = "s3-shine"; w.appendChild(shine);
@@ -351,14 +314,16 @@ const SP = () => ({
     hot: sprite("s3hot", [[0, "rgba(255,252,230,1)"], [.35, "rgba(255,214,110,.75)"], [1, "rgba(255,150,30,0)"]]),
     fire: sprite("s3fire", [[0, "rgba(255,190,70,.95)"], [.4, "rgba(255,110,20,.55)"], [1, "rgba(255,60,0,0)"]]),
     red: sprite("s3red", [[0, "rgba(255,80,20,.8)"], [.45, "rgba(190,24,0,.35)"], [1, "rgba(120,10,0,0)"]]),
-    ember: sprite("s3ember", [[0, "rgba(255,246,200,1)"], [.3, "rgba(255,190,80,.9)"], [1, "rgba(255,120,20,0)"]])
+    ember: sprite("s3ember", [[0, "rgba(255,246,200,1)"], [.3, "rgba(255,190,80,.9)"], [1, "rgba(255,120,20,0)"]]),
+    drop: sprite("s3drop", [[0, "rgba(255,255,255,1)"], [.3, "rgba(200,240,255,.95)"], [.65, "rgba(70,180,245,.55)"], [1, "rgba(30,120,220,0)"]]),
+    bubble: sprite("s3bubble", [[0, "rgba(255,255,255,.05)"], [.62, "rgba(200,240,255,.08)"], [.8, "rgba(220,248,255,.75)"], [.9, "rgba(255,255,255,.35)"], [1, "rgba(255,255,255,0)"]])
 });
 const rr = (a, b) => a + Math.random() * (b - a);
 function draw(it, dt) {
     const dpr = Math.min(1.5, globalThis.devicePixelRatio || 1), w = it.w || it.canvas.clientWidth, h = it.h || it.canvas.clientHeight; if (!w || !h) return;
     const W = Math.round(w * dpr), H = Math.round(h * dpr);
     if (it.canvas.width !== W || it.canvas.height !== H || !it.g) { it.canvas.width = W; it.canvas.height = H; it.g = it.canvas.getContext("2d"); it.parts.length = 0; }
-    it.idle = false; STEPS[it.step](it, dt, W, H);
+    it.idle = false; STEPS[it.step](it, dt, W, H, SP());
 }
 const STEPS = {
     /* fire streaming off the phoenix's wing edges and tail, embers drifting up (canvas = 160 x 160 frame units) */
@@ -404,4 +369,5 @@ const STEPS = {
         g.globalAlpha = 1; g.globalCompositeOperation = "source-over";
     }
 };
+Object.assign(STEPS, STEPS_MORE);
 export const _s3Test = { FRAME3, BG3, ITEMS, state: () => ({ tiltOn, tilt }) };

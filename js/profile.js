@@ -5,9 +5,9 @@
    player node so everybody sees the same card in every mode.
    ===================================================================== */
 
-import { SKINS, SKINS2, SKINS3 } from "./vault/config.js?v=19";
-import { s2Base, decorateAvatar, decorateCard, installTextures } from "./skins2.js?v=3";
-import { s3Base, decorateAvatar3, decorateCard3 } from "./skins3.js?v=1";
+import { SKINS, SKINS2, SKINS3 } from "./vault/config.js?v=20";
+import { s2Base, decorateAvatar, decorateCard, installTextures } from "./skins2.js?v=4";
+import { s3Base, decorateAvatar3, decorateCard3 } from "./skins3.js?v=2";
 import { NIGHT_PARTY } from "./party/config.js?v=2";
 
 const KEY = "gw_profile_v1";
@@ -156,7 +156,7 @@ export function avatarEl(p, { size = 48, cls = "", badge = false, level = "", he
     el.appendChild(inner);
     if (sf) {
         const b2 = s2Base(sf), b3 = s3Base(sf);
-        if (b3) decorateAvatar3(el, b3, size, { level, hero, entrance });     // Season 3: a living object around the picture (js/skins3.js)
+        if (b3) decorateAvatar3(el, b3, size, { level, hero, entrance, img: av && av.t === "c" ? av.u : av && av.t === "i" ? av.d : "" });     // Season 3: a living object around the picture (js/skins3.js)
         else if (b2) decorateAvatar(el, b2, size);    // Season 2: an SVG frame around a slightly smaller picture (js/skins2.js)
         else ["ava-ring", "ava-fx"].forEach(c => { const i = document.createElement("i"); i.className = c; i.setAttribute("aria-hidden", "true"); el.appendChild(i); });
         fxWatch(el);

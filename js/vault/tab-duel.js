@@ -5,12 +5,12 @@
    (6 guided lessons, a one-time 100 coin reward), live duels in the room (watch / return) and your recent results.
    No room: HOST PARTY / JOIN instead of the friends list.
    ===================================================================== */
-import { DUEL, DECK } from "./config.js?v=19";
-import { activeDeck, setActiveDeck, deckProblem, isHolo } from "./packs.js?v=17";
+import { DUEL, DECK } from "./config.js?v=20";
+import { activeDeck, setActiveDeck, deckProblem, isHolo } from "./packs.js?v=18";
 import { CARDS } from "./carddb.js?v=6";
-import { cardEl } from "./cardui.js?v=18";
+import { cardEl } from "./cardui.js?v=19";
 import { icon } from "./icons.js?v=3";
-import { cvChallenge, cvDuels, busyIn, seatsOf, cvWatch, cvReturn, cvDeckOf, locOf, startPractice } from "../cardvault/cardvault.js?v=20";
+import { cvChallenge, cvDuels, busyIn, seatsOf, cvWatch, cvReturn, cvDeckOf, locOf, startPractice } from "../cardvault/cardvault.js?v=21";
 import { LESSONS, setupTraining, trainingBot } from "../duel/training.js?v=1";
 import { P } from "../duel/engine.js?v=1";
 

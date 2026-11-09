@@ -8,11 +8,11 @@
    deck). Duplicates (a card owned both Normal and Holo): turn the extra copy into shards. Trades with friends in the
    room (cards only): pick, review both sides, send; the friend reviews and accepts; an undo window, then the swap.
    ===================================================================== */
-import { TRADE } from "./config.js?v=19";
-import { owned, isHolo, ownedIds, seriesDone, shardValue, convertDuplicate, lockTrade, unlockTrade, applyTrade, tradeProblem } from "./packs.js?v=17";
+import { TRADE } from "./config.js?v=20";
+import { owned, isHolo, ownedIds, seriesDone, shardValue, convertDuplicate, lockTrade, unlockTrade, applyTrade, tradeProblem } from "./packs.js?v=18";
 import { CARDS, BY_SERIES, CARD_SERIES, CARD_COUNT, RARITY_NAMES, ARCHETYPES, TOTAL_CARDS } from "./carddb.js?v=6";
-import { cardEl, theme, SHOW, abilityParts } from "./cardui.js?v=18";
-import { inspect } from "./opening.js?v=18";
+import { cardEl, theme, SHOW, abilityParts } from "./cardui.js?v=19";
+import { inspect } from "./opening.js?v=19";
 import { icon, RARITY_ICON, ARCH_ICON, KEYWORD_ICON } from "./icons.js?v=3";
 import { define } from "../duel/glossary.js?v=2";
 

@@ -97,7 +97,7 @@ export const SKINS = {
    canvas flames / water (smaller ones keep the SVG version); fps = the canvas effects' frame rate cap. */
 export const SKINS2 = {
     season: 2,
-    newTag: true,                                // "NEW" badge on Season 2 items in the Shop
+    newTag: false,                               // "NEW" badge on Season 2 items in the Shop (handed to Season 3)
     tiers: [
         { id: "iron",         name: "Iron",         price: 250,  speed: 1 },
         { id: "bronze",       name: "Bronze",       price: 400,  speed: 1 },
@@ -135,7 +135,7 @@ export const SKINS2 = {
 export const SKINS3 = {
     season: 3,
     newTag: true,
-    live: false,
+    live: true,
     tiers: [
         { id: "iron",         name: "Iron",         price: 400,  speed: 1 },
         { id: "bronze",       name: "Bronze",       price: 600,  speed: 1 },

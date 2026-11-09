@@ -15,17 +15,18 @@
    Profile side (name, picture, colour, arcade frame, level title) -> profile.js; Shop side (Season frame /
    background, Shop title, title skin, username style, sleeve) -> the Vault bank's equip slots (shop.js equip).
    ===================================================================== */
-import { profile, TITLES, FRAMES, ACH, COLORS, isUnlocked, titleName, levelOf, cleanAvatar, avatarEl, passCard, galleryTabs, galleryFor, shrinkImage, commitProfile } from "./profile.js?v=18";
-import { bank } from "./vault/vault.js?v=22";
-import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, owns, equip, publicLook, tierInfo, seasonLive } from "./vault/shop.js?v=17";
-import { SKINS, SCRATCH } from "./vault/config.js?v=19";
+import { profile, TITLES, FRAMES, ACH, COLORS, isUnlocked, titleName, levelOf, cleanAvatar, avatarEl, passCard, galleryTabs, galleryFor, shrinkImage, commitProfile } from "./profile.js?v=19";
+import { bank } from "./vault/vault.js?v=23";
+import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, owns, equip, publicLook, tierInfo, seasonLive } from "./vault/shop.js?v=18";
+import { SKINS, SCRATCH } from "./vault/config.js?v=20";
 import { CARD_SERIES } from "./vault/carddb.js?v=6";
-import { theme, backCard } from "./vault/cardui.js?v=18";
+import { requestTilt } from "./skins3.js?v=2";
+import { theme, backCard } from "./vault/cardui.js?v=19";
 
 const $ = id => document.getElementById(id);
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 let X = { sfx: () => {}, toast: () => {}, openShop: () => {}, closeOverlay: () => {}, uid: () => "" };
-let D = null, picTab = "emblem", tab = "profile", sel = null;
+let D = null, picTab = "emblem", tab = "profile", sel = null, lastSig = "";
 const VSLOTS = ["sf", "bg", "title", "ts", "uc", "sleeve"];
 const TABS = [
     { id: "profile", name: "Profile" }, { id: "frames", name: "Frames" }, { id: "bgs", name: "Backgrounds" }, { id: "titles", name: "Titles" },
@@ -46,6 +47,7 @@ export function initWardrobe(ctx) {
 /* the draft: profile fields + Shop equip slots, from what is saved now */
 export function openWardrobe() {
     const P = profile.get(), w = bank.get(), e = w.equip || {}, ok = id => id && owns(w, id) ? id : "";
+    lastSig = "";
     D = { name: P.name || "", av: JSON.parse(JSON.stringify(P.av || null)), col: P.col, fr: P.fr || "none", ttl: P.ttl || "rookie", e0: {} };
     VSLOTS.forEach(k => { D[k] = ok(e[k]); D.e0[k] = e[k] || ""; });
     if (!D.name) tab = "profile";           // "pick a display name first" lands on the name
@@ -195,7 +197,7 @@ const SUBS = {
 };
 /* Frames and Backgrounds are grouped under "Season 1" / "Season 2" (and "Arcade frames") headings; the default
    item (No frame / Arcade default) sits on top of the first group */
-const GROUP_NOTE = { "Season 1": "The original Shop set", "Season 2": "New in the Shop: realistic materials, frames that reach past your picture", "Arcade frames": "From levels and achievements" };
+const GROUP_NOTE = { "Season 1": "The original Shop set", "Season 2": "Realistic materials, frames that reach past your picture", "Season 3": "New: living scenes, frames with an entrance, backgrounds with depth", "Arcade frames": "From levels and achievements" };
 function gridTab(id) {
     const wrap = mk("div", "wd-cat"), list = itemsFor(id);
     wrap.appendChild(mk("p", "wd-sub", SUBS[id] || ""));
@@ -237,7 +239,9 @@ function renderSide() {
     const list = tab === "profile" || tab === "ach" ? [] : itemsFor(tab);
     const it = (sel && list.find(i => i.key === sel.key)) || null, cur = list.find(i => i.on) || null, show = it || cur;
     box.innerHTML = ""; box.classList.toggle("previewing", !!it);
-    box.appendChild(passCard(lookOf(it ? it.over : null), { xp: levelOf(profile.get().xp), cls: "pass-preview" }));
+    const look = lookOf(it ? it.over : null), sig = look.sf + "|" + look.bg, enter = !!lastSig && sig !== lastSig; lastSig = sig;     // a newly shown skin plays its entrance
+    if (enter && /3$/.test(look.sf + look.bg)) requestTilt();
+    box.appendChild(passCard(look, { xp: levelOf(profile.get().xp), cls: "pass-preview", entrance: enter }));
     if (it) { const f = mk("span", "wd-pvflag", "Preview only"); box.appendChild(f); }
     panel.innerHTML = "";
     if (!show) {

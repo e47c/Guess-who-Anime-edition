@@ -22,6 +22,12 @@
 .s3f svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .s3f svg * { transform-box: view-box; }
 .pass .pass-ava.s3:not(.s3-compact) { --ava: 27cqw !important; }
+/* the phoenix's heat shimmer (full level): a rippling texture over the fire, composited, no SVG filter animation */
+.s3-avhaze { position: absolute; left: calc(var(--ava) * -.3); top: calc(var(--ava) * -.36); width: calc(var(--ava) * 1.6); height: calc(var(--ava) * 1.1); z-index: 1; pointer-events: none; overflow: hidden; border-radius: 50%;
+    -webkit-mask: radial-gradient(ellipse at 50% 60%, #000 30%, transparent 70%); mask: radial-gradient(ellipse at 50% 60%, #000 30%, transparent 70%); opacity: .35; mix-blend-mode: overlay; }
+.s3-avhaze::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 300%; background: var(--tx-liquid) 0 0 / 120px 74px; animation: s3AvHaze 3s linear infinite; }
+@keyframes s3AvHaze { to { transform: translateY(-33.33%); } }
+.s3-crowd .s3-avhaze::before, body.fx-lite .s3-avhaze::before { animation: none; }
 
 /* idle loops */
 .s3-glow { animation: s3Glow 2.6s ease-in-out infinite; }
@@ -102,6 +108,132 @@
 .s3-embers { inset: 0 0 -40%; background: radial-gradient(circle at 18% 70%, #ffd36a 0 1.2px, transparent 2.4px), radial-gradient(circle at 46% 84%, #ffb347 0 1px, transparent 2.2px), radial-gradient(circle at 72% 62%, #ffe27a 0 1.2px, transparent 2.4px), radial-gradient(circle at 88% 90%, #ffb347 0 1px, transparent 2px);
     animation: s3Rise2 4.5s linear infinite; }
 @keyframes s3Rise2 { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-40%); opacity: 0; } }
+
+/* ---------- the other nine tiers (js/skins3-tiers.js) ---------- */
+.sbg[data-bg="iron3"] { --sbg-edge: #7a828c; } .sbg[data-bg="bronze3"] { --sbg-edge: #c98a4b; } .sbg[data-bg="silver3"] { --sbg-edge: #e6ebf0; }
+.sbg[data-bg="gold3"] { --sbg-edge: #f0c454; } .sbg[data-bg="platinum3"] { --sbg-edge: #9ff8ff; } .sbg[data-bg="emerald3"] { --sbg-edge: #3fdc7a; }
+.sbg[data-bg="water3"] { --sbg-edge: #5fd0ff; } .sbg[data-bg="transcendent3"] { --sbg-edge: #fff2c4; } .sbg[data-bg="prismatic3"] { --sbg-edge: #e9a6ff; }
+/* frame loops */
+.s3-spin { animation: s3Spin 16s linear infinite; }
+.s3-spin.s3-slow { animation-duration: 30s; } .s3-spin.s3-mid { animation-duration: 12s; } .s3-spin.s3-vslow { animation-duration: 60s; } .s3-spin.s3-fastspin { animation-duration: 4s; }
+.s3-orbit { animation: s3Spin 10s linear infinite; }
+.s3-rev { animation-direction: reverse !important; }
+.s3-led { animation: s3Led 1.8s steps(2, jump-none) infinite; }
+.s3-visor { animation: s3Visor 3s ease-in-out infinite alternate; }
+.s3-spark { animation: s3Spark 3.3s ease-out infinite; }
+.s3-rune { animation: s3Rune 4.2s ease-in-out infinite; }
+.s3-float { animation: s3FloatS 3.4s ease-in-out infinite alternate; }
+.s3-glint { animation: s3Glint 8s ease-in-out infinite; }
+.s3-node { animation: s3Led 1.4s steps(2, jump-none) infinite; }
+.s3-lock { transform-origin: 50px 50px; animation: s3Lock 2.4s ease-in-out infinite; }
+.s3-rustle { animation: s3Rustle 3.2s ease-in-out infinite alternate; }
+.s3-firefly { animation: s3Firefly 5s ease-in-out infinite; }
+.s3-headbob { animation: s3Head 2.6s ease-in-out infinite alternate; }
+.s3-drip { animation: s3Drip 2.2s ease-in infinite; }
+.s3-corona { animation: s3Corona 14s ease-in-out infinite; }
+.s3-eclipse { animation: s3Eclipse 14s linear infinite; }
+.s3-raysweep { animation: s3Sweep 6s ease-in-out infinite alternate; }
+.s3-prismturn { animation: s3Prism 5s ease-in-out infinite alternate; }
+.s3-hotA { animation: s3Hot 6s ease-in-out infinite; } .s3-hotB { animation: s3Hot 6s ease-in-out -3s infinite; }
+@keyframes s3Hot { 0%, 100% { opacity: 1; } 55% { opacity: .08; } }
+.s3-glyph { opacity: 0; animation: s3Glyph 6s ease-in-out infinite; }
+.s3-crowd .s3-hotA, .s3-crowd .s3-hotB { animation: none; opacity: .7; }
+body.fx-lite .s3-hotA, body.fx-lite .s3-hotB { opacity: .7; }
+.s3-crowd :is(.s3-spin, .s3-orbit, .s3-led, .s3-visor, .s3-spark, .s3-rune, .s3-float, .s3-glint, .s3-node, .s3-lock, .s3-rustle, .s3-firefly, .s3-headbob, .s3-drip, .s3-corona, .s3-eclipse, .s3-raysweep, .s3-prismturn, .s3-cool, .s3-glyph) { animation: none !important; }
+.s3-crowd .s3-glyph { opacity: .55; }
+/* crowd scenes: the moving scene layers (shafts, dust, streams, ripples, haze, embers...) hold still; only the slow parallax
+   drift remains (at SKINS3.crowdFps) */
+.s3-crowd .s3bg .s3-x { animation: none !important; }
+.s3-crowd .s3-meteor, body.fx-lite .s3-meteor { display: none; }
+.s3-crowd .s3-ripple { transform: translate(-50%, -50%) scale(.7); opacity: .5; }
+@keyframes s3Spin { to { transform: rotate(360deg); } }
+@keyframes s3Led { 0% { opacity: .35; } 100% { opacity: 1; } }
+@keyframes s3Visor { from { transform: translateY(0); } to { transform: translateY(-1.1px); } }
+@keyframes s3Spark { 0%, 78%, 100% { transform: scale(0); opacity: 0; } 84% { transform: scale(1.15); opacity: 1; } 92% { transform: scale(.4); opacity: .7; } }
+@keyframes s3Rune { 0%, 100% { opacity: .25; } 30% { opacity: 1; } }
+@keyframes s3FloatS { from { transform: translateY(-1.6px) rotate(-3deg); } to { transform: translateY(1.6px) rotate(3deg); } }
+@keyframes s3Glint { 0%, 60% { transform: translateX(0); } 100% { transform: translateX(240px); } }
+@keyframes s3Lock { 0%, 100% { transform: scale(.97); opacity: .35; } 50% { transform: scale(1.04); opacity: 1; } }
+@keyframes s3Rustle { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+@keyframes s3Firefly { 0%, 100% { transform: translate(0, 0); opacity: .2; } 25% { transform: translate(4px, -6px); opacity: 1; } 50% { transform: translate(-3px, -10px); opacity: .35; } 75% { transform: translate(-6px, -3px); opacity: 1; } }
+@keyframes s3Head { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
+@keyframes s3Drip { 0%, 30% { transform: translateY(0) scale(.6); opacity: 0; } 45% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(10px); opacity: 0; } }
+@keyframes s3Corona { 0%, 100% { transform: scale(.9); opacity: .55; } 50% { transform: scale(1.3); opacity: 1; } }
+@keyframes s3Eclipse { from { transform: translateX(-15px); } to { transform: translateX(15px); } }
+@keyframes s3Sweep { from { transform: rotate(-12deg); } to { transform: rotate(14deg); } }
+@keyframes s3Prism { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
+@keyframes s3Cool { 0%, 100% { stroke: #fff1b0; opacity: 1; } 35% { stroke: #ff7a1a; opacity: .95; } 65% { stroke: #5a0e04; opacity: .35; } }
+@keyframes s3Glyph { 0%, 55%, 100% { opacity: 0; } 12%, 30% { opacity: 1; } }
+/* entrances */
+.s3-in .s3-e-slide { animation: s3Slide .7s cubic-bezier(.2, 1.3, .4, 1) both; }
+.s3-in .s3-e-spin { transform-origin: 50px 50px; animation: s3SpinIn 1.2s cubic-bezier(.15, .8, .3, 1) both; }
+.s3-in .s3-e-spin2 { animation: s3SpinIn2 1.4s cubic-bezier(.15, .8, .3, 1) both !important; }
+.s3-in .s3-e-fly { animation: s3Fly .7s cubic-bezier(.2, 1.2, .4, 1) both; }
+.s3-in .s3-e-swing { animation: s3Swing .9s cubic-bezier(.2, 1.1, .4, 1) both; }
+.s3-in .s3-e-unfurl { animation: s3Unfurl 1s cubic-bezier(.2, 1.2, .4, 1) .2s both; }
+.s3-in .s3-e-snap { animation: s3Snap .55s cubic-bezier(.2, 1.4, .4, 1) both; }
+.s3-in .s3-e-draw1, .s3-in .s3-e-grow, .s3-in .s3-e-beam { stroke-dasharray: 1; animation: s3Draw .9s ease-out both; }
+.s3-in .s3-e-leaf { animation: s3Leaf .5s cubic-bezier(.2, 1.5, .4, 1) both; }
+.s3-in .s3-e-coil { stroke-dasharray: 1; animation: s3Coil 1.3s ease-out both; }
+.s3-in .s3-e-fade { animation: s3Fade 1s ease-out .5s both; }
+.s3-in .s3-e-unfurl2 { animation: s3Unfurl2 1s cubic-bezier(.2, 1.1, .4, 1) .55s both; }
+.s3-in .s3-e-form { animation: s3Form .7s cubic-bezier(.2, 1.4, .4, 1) both; }
+.s3-in .s3-e-beam { animation-delay: .35s; }
+@keyframes s3Slide { 0% { transform: translateY(-18px); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes s3SpinIn { 0% { transform: rotate(-200deg) scale(.7); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes s3SpinIn2 { 0% { transform: rotate(260deg); } 100% { transform: rotate(0deg); } }
+@keyframes s3Fly { 0% { transform: scale(0); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes s3Swing { 0% { transform: rotate(-70deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes s3Unfurl { 0% { transform: scale(.2) rotate(-40deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes s3Snap { 0% { transform: scale(1.5); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes s3Leaf { 0% { transform: scale(0); } 100% { transform: none; } }
+@keyframes s3Coil { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes s3Fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes s3Unfurl2 { 0% { transform: rotate(-70deg) scaleX(.15); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes s3Form { 0% { transform: scale(0) rotate(-120deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+/* scene overlays */
+.s3-sparks { inset: 20% 0 -60%; background: radial-gradient(circle at 22% 70%, #fff3c0 0 1px, transparent 2px), radial-gradient(circle at 58% 80%, #ffd36a 0 1.2px, transparent 2.4px), radial-gradient(circle at 74% 64%, #fff 0 .9px, transparent 2px), radial-gradient(circle at 36% 92%, #ffb347 0 1px, transparent 2px);
+    animation: s3Rise3 2.2s linear infinite; }
+@keyframes s3Rise3 { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-45%); opacity: 0; } }
+.s3-lightbeam { left: 40%; top: -15%; width: 36%; height: 130%; transform: rotate(8deg); mix-blend-mode: screen; background: linear-gradient(90deg, transparent, rgba(255,226,170,.26) 45%, rgba(255,240,200,.32) 50%, rgba(255,226,170,.26) 55%, transparent);
+    -webkit-mask: linear-gradient(180deg, #000, transparent 90%); mask: linear-gradient(180deg, #000, transparent 90%); animation: s3Breath 7s ease-in-out infinite alternate; }
+@keyframes s3Breath { from { opacity: .55; } to { opacity: 1; } }
+.s3-dust { inset: -10%; background: radial-gradient(circle at 12% 30%, rgba(255,236,190,.9) 0 .9px, transparent 1.8px), radial-gradient(circle at 46% 18%, rgba(255,236,190,.7) 0 .7px, transparent 1.6px), radial-gradient(circle at 63% 52%, rgba(255,236,190,.85) 0 1px, transparent 2px), radial-gradient(circle at 80% 76%, rgba(255,236,190,.6) 0 .8px, transparent 1.7px), radial-gradient(circle at 30% 84%, rgba(255,236,190,.7) 0 .7px, transparent 1.5px);
+    background-size: 180px 150px; animation: s3Dust 18s linear infinite; }
+.s3-dust.s3-gold { background-image: radial-gradient(circle at 12% 30%, #ffe27a 0 1px, transparent 2px), radial-gradient(circle at 46% 18%, #fff2b0 0 .8px, transparent 1.7px), radial-gradient(circle at 63% 52%, #ffd36a 0 1.1px, transparent 2.2px), radial-gradient(circle at 80% 76%, #fff2b0 0 .8px, transparent 1.7px), radial-gradient(circle at 30% 84%, #ffe27a 0 .9px, transparent 1.8px); }
+.s3-dust.s3-pollen { background-image: radial-gradient(circle at 12% 30%, #f2ffb0 0 1px, transparent 2.2px), radial-gradient(circle at 46% 18%, #d8ff8a 0 .8px, transparent 1.8px), radial-gradient(circle at 63% 52%, #f6ffc0 0 1px, transparent 2px), radial-gradient(circle at 80% 76%, #c8ff7a 0 .8px, transparent 1.8px), radial-gradient(circle at 30% 84%, #f2ffb0 0 .8px, transparent 1.6px); }
+@keyframes s3Dust { from { transform: translate(0, 0); } to { transform: translate(-180px, -150px); } }
+.s3-ripple { left: calc(50% + var(--px, 0) * 40%); top: calc(56% + var(--py, 0) * 32%); width: 70%; aspect-ratio: 1.7; border-radius: 50%; mix-blend-mode: overlay;
+    background: radial-gradient(closest-side, transparent 72%, rgba(255,255,255,.75) 82%, rgba(0,0,0,.35) 90%, transparent 98%); animation: s3Ripple 2.7s ease-out infinite; }
+.s3-ripple.s3-r2 { animation-delay: -.9s; } .s3-ripple.s3-r3 { animation-delay: -1.8s; }
+@keyframes s3Ripple { 0% { transform: translate(-50%, -50%) scale(.08); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+.s3-shaft { left: 52%; top: -20%; width: 20%; height: 140%; transform: rotate(12deg); mix-blend-mode: screen; background: linear-gradient(90deg, transparent, rgba(255,232,160,.3) 50%, transparent);
+    -webkit-mask: linear-gradient(180deg, #000 10%, transparent 92%); mask: linear-gradient(180deg, #000 10%, transparent 92%); animation: s3Shaft 9s ease-in-out infinite alternate; }
+.s3-shaft.s3-s2 { left: 24%; width: 13%; animation-duration: 12s; animation-delay: -4s; }
+@keyframes s3Shaft { from { opacity: .5; transform: rotate(12deg) translateX(-4%); } to { opacity: 1; transform: rotate(12deg) translateX(4%); } }
+.s3-stream { left: 61%; top: 0; width: 3.4%; height: 200%; background: repeating-linear-gradient(180deg, rgba(159,248,255,.6) 0 2px, transparent 2px 7px, rgba(159,248,255,.28) 7px 8px, transparent 8px 15px);
+    -webkit-mask: linear-gradient(180deg, transparent, #000 15%, #000 35%, transparent 50%); mask: linear-gradient(180deg, transparent, #000 15%, #000 35%, transparent 50%); animation: s3Stream 7s linear infinite; }
+.s3-stream.s3-st2 { left: 74%; width: 2.4%; animation-duration: 5s; } .s3-stream.s3-st3 { left: 88%; width: 2%; animation-duration: 9s; }
+@keyframes s3Stream { from { transform: translateY(-50%); } to { transform: translateY(0); } }
+.s3-sunray { left: 58%; top: -25%; width: 22%; height: 150%; transform: rotate(16deg); mix-blend-mode: screen; background: linear-gradient(90deg, transparent, rgba(220,255,180,.24) 50%, transparent);
+    -webkit-mask: linear-gradient(180deg, #000 5%, transparent 90%); mask: linear-gradient(180deg, #000 5%, transparent 90%); animation: s3Shaft2 10s ease-in-out infinite alternate; }
+.s3-sunray.s3-s2 { left: 30%; width: 14%; animation-duration: 13s; animation-delay: -5s; }
+@keyframes s3Shaft2 { from { opacity: .45; transform: rotate(16deg) translateX(-6%); } to { opacity: 1; transform: rotate(16deg) translateX(6%); } }
+.s3-rays { inset: -10% 0 20%; mix-blend-mode: screen; background: linear-gradient(100deg, transparent 30%, rgba(190,240,255,.22) 36%, transparent 44%), linear-gradient(80deg, transparent 52%, rgba(190,240,255,.16) 58%, transparent 66%);
+    -webkit-mask: linear-gradient(180deg, #000, transparent 95%); mask: linear-gradient(180deg, #000, transparent 95%); animation: s3Breath 6s ease-in-out infinite alternate; }
+.s3-manta { left: 0; top: 22%; width: 24%; aspect-ratio: 2.2; opacity: .3; background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 110 50'%3E%3Cpath d='M55 12C42 12 30 2 2 18C28 22 40 28 50 40L55 50L60 40C70 28 82 22 108 18C80 2 68 12 55 12Z' fill='%23032a48'/%3E%3C/svg%3E");
+    animation: s3Swim 42s linear infinite; }
+@keyframes s3Swim { from { transform: translateX(-120%) translateY(0); } 50% { transform: translateX(200%) translateY(10%); } to { transform: translateX(520%) translateY(0); } }
+.s3-bubbles { inset: 0 0 -50%; background: radial-gradient(circle at 20% 80%, transparent 0 2px, rgba(220,248,255,.7) 2.5px, transparent 3.2px), radial-gradient(circle at 64% 90%, transparent 0 1.4px, rgba(220,248,255,.6) 1.9px, transparent 2.6px), radial-gradient(circle at 82% 70%, transparent 0 2.4px, rgba(220,248,255,.55) 3px, transparent 3.6px);
+    animation: s3Rise3 6s linear infinite; }
+.s3-meteor { left: 70%; top: 8%; width: 22%; height: 2px; border-radius: 2px; background: linear-gradient(90deg, rgba(255,255,255,0), #fff); transform-origin: 100% 50%; animation: s3Meteor 7.5s ease-in infinite; }
+.s3-meteor.s3-m2 { left: 30%; top: 30%; width: 16%; animation-duration: 11s; animation-delay: -5s; }
+@keyframes s3Meteor { 0%, 86% { transform: translate(0, 0) rotate(152deg) scaleX(.2); opacity: 0; } 88% { opacity: 1; } 100% { transform: translate(-90px, 46px) rotate(152deg) scaleX(1); opacity: 0; } }
+.s3-lca { opacity: clamp(0, calc((var(--px, 0) + var(--py, 0) * .4) * 1.3), 1); }
+.s3-lcb { opacity: clamp(0, calc((var(--px, 0) + var(--py, 0) * .4) * -1.3), 1); }
+body.fx-lite .s3-lca, body.fx-lite .s3-lcb { opacity: 0; }
+body.fx-lite .s3-ripple { transform: translate(-50%, -50%) scale(.7); opacity: .6; }
+body.fx-lite .s3-glyph { opacity: .55; }
 
 /* ---------- Reduced effects / reduced motion: still scenes ---------- */
 body.fx-lite :is(.s3f, .s3bg) *, body.fx-lite :is(.s3f, .s3bg) { animation: none !important; }

@@ -50,8 +50,8 @@ h2 { margin: 22px 0 8px; font: 600 22px/1 Teko; letter-spacing: .06em; text-tran
 <div id="out"></div>
 <script type="module">
 import { CARDS, BY_SERIES, BY_SERIES_RARITY, CARD_SERIES, RARITY_NAMES } from "../js/vault/carddb.js?v=6";
-import { cardEl, backCard, theme, fitText, windowRatio } from "../js/vault/cardui.js?v=18";
-import { CARD_ART } from "../js/vault/config.js?v=19";
+import { cardEl, backCard, theme, fitText, windowRatio } from "../js/vault/cardui.js?v=19";
+import { CARD_ART } from "../js/vault/config.js?v=20";
 const focus = await fetch("../data/card-focus.json").then(r => r.json()).catch(() => ({}));
 const fix = await fetch("../data/card-focus-fix.json").then(r => r.json()).catch(() => ({}));
 const st = { view: "matrix", holo: false, back: false };

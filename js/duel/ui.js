@@ -11,11 +11,11 @@
    (flip + banner), life bars counting down, floating numbers. Skip animations; Reduced effects = fades only.
    ===================================================================== */
 import { why, legalMoves, preview, statOf, P as P0, opponents, lifeOf, alive, tributesFor, cardOf, pierces } from "./engine.js?v=1";
-import { DUEL } from "../vault/config.js?v=19";
-import { cardEl, theme, SHOW } from "../vault/cardui.js?v=18";
+import { DUEL } from "../vault/config.js?v=20";
+import { cardEl, theme, SHOW } from "../vault/cardui.js?v=19";
 import { icon, RARITY_ICON, KEYWORD_ICON } from "../vault/icons.js?v=3";
 import { define, PHASES, POSITIONS, KEYWORDS } from "./glossary.js?v=2";
-import { ACTIONS } from "./cards.js?v=5";
+import { ACTIONS } from "./cards.js?v=6";
 /* a missing player (a stale / partial view during a switch) renders as empty instead of throwing */
 const NOBODY = Object.freeze({ life: 0, ch: [], ac: [], hand: [], gy: [], deck: [] });
 const P = (v, p) => (v && v.P && P0(v, p)) || NOBODY;

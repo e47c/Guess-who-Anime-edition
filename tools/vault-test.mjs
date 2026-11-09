@@ -3,14 +3,14 @@
 // atomic, never negative), the seeded RNG, the config. Phase 2: coins per placement, anti-farming, the daily
 // cap, missions and the login streak.
 import { resultOf, resultToDb, resultFromDb, placeRows, RESULT_MODES, duelResultOf } from "../js/vault/result.js";
-import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=19";
+import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=20";
 import { rngFrom, newSeed, pickWeighted, shuffleWith } from "../js/vault/rng.js?v=2";
-import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, SKINS2, SKINS3, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=19";
-import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, nightPartyValid, applyNightParty, gameCoinsOn, FEATURES } from "../js/vault/economy.js?v=18";
-import { SKIN_ITEMS, SKIN_TIERS, tierInfo, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=17";
-import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordDuel, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=17";
+import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, SKINS2, SKINS3, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=20";
+import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, nightPartyValid, applyNightParty, gameCoinsOn, FEATURES } from "../js/vault/economy.js?v=19";
+import { SKIN_ITEMS, SKIN_TIERS, tierInfo, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=18";
+import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordDuel, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=18";
 import { CARDS, BY_SERIES, CARD_SERIES } from "../js/vault/carddb.js?v=6";
-import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=19";
+import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=20";
 
 let ok = 0, bad = 0;
 const t = (c, m) => { if (c) ok++; else { bad++; console.log("  ✘", m); } };
@@ -293,8 +293,10 @@ t(S3I.length === 24 && eq(SKINS3.tiers.map(x => x.id), T12) && T12.every(b => it
 t(itemById("sf_ruby3").name === "Ruby Frame - Season 3" && itemById("bg_iron3").name === "Iron Background - Season 3", "names: \"Ruby Frame - Season 3\", \"Iron Background - Season 3\"");
 t(SKINS3.tiers.filter(x => x.id !== "ruby").every(x => x.price === r50(SKINS2.tiers.find(y => y.id === x.id).price * 1.5)) && eq(SKINS3.tiers.map(x => x.price), [400, 600, 900, 1400, 2100, 3000, 3500, 4100, 5000, 5000, 5700, 6800]), "Season 3 price = Season 2 x1.5 rounded; Ruby 3500 between Emerald 3000 and Diamond 4100");
 t(bundlePrice("ruby3") === 5600 && bundlePrice("prismatic3") === 10880, "Season 3 bundles keep 20% off (Ruby 5600, Prismatic 10880)");
-w = rich(); t(SKINS3.live === false && buySkin(w, "sf_ruby3").error && buyBundle(w, "ruby3").error && w.coins === 100000, "while Season 3 isn't live it can't be bought");
-SKINS3.live = true; w = rich(); t(!buySkin(w, "sf_ruby3").error && w.coins === 100000 - 3500 && grantCosmetic(w, "sf_ruby3").refund === 1750, "once live: Ruby Frame S3 costs 3500, a duplicate refunds 1750"); SKINS3.live = false;
+SKINS3.live = false; w = rich(); t(buySkin(w, "sf_ruby3").error && buyBundle(w, "ruby3").error && w.coins === 100000, "a season that isn't live can't be bought (live: false)"); SKINS3.live = true;
+t(SKINS3.live === true && SKINS3.newTag === true && SKINS2.newTag === false, "Season 3 is live and carries the NEW tag (Season 2 no longer does)");
+SKINS3.live = true; w = rich(); t(!buySkin(w, "sf_ruby3").error && w.coins === 100000 - 3500 && grantCosmetic(w, "sf_ruby3").refund === 1750, "live: the Ruby Frame S3 costs 3500, a duplicate refunds 1750");
+w = rich(); t(!buyBundle(w, "flame3").error && w.coins === 100000 - 8000 && w.inv.sf_flame3 && w.inv.bg_flame3 && equip(w, "bg", "bg_flame3").slot === "bg" && publicLook(w).bg === "flame3", "the Flame S3 bundle is 8000 (-20%); equipped, the public look carries \"flame3\"");
 const keep = Object.assign(blankVault(T0), { coins: 777, inv: { sf_gold: 1, bg_iron: 1, t_plotarmor: 1 }, equip: { sf: "sf_gold", bg: "bg_iron", title: "t_plotarmor" } });
 const mig = migrate(JSON.parse(JSON.stringify(keep)), T0);
 t(mig.coins === 777 && mig.inv.sf_gold && mig.inv.bg_iron && mig.equip.sf === "sf_gold" && publicLook(mig).sf === "gold" && publicLook(mig).bg === "iron", "existing coins, owned and equipped Season 1 items are kept as they were");

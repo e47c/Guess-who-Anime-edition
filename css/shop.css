@@ -190,6 +190,9 @@ body.fx-lite .shop-tile, body.fx-lite .shop-tile:hover, body.fx-lite .shop-tile:
 .sh-tb.t-platinum { background: linear-gradient(180deg, #f6fcff, #a9bccc); } .sh-tb.t-emerald { background: linear-gradient(180deg, #a6ffd4, #19b066); } .sh-tb.t-diamond { background: linear-gradient(180deg, #ecfcff, #6cc6f0); }
 .sh-tb.t-flame { background: linear-gradient(180deg, #ffd36a, #ff5a12); } .sh-tb.t-water { background: linear-gradient(180deg, #d2f7ff, #35a6ea); } .sh-tb.t-transcendent { background: linear-gradient(180deg, #fffbe8, #ffcf5a); }
 .sh-tb.t-prismatic { background: linear-gradient(90deg, #ff9ad8, #ffe08a, #8affd0, #8ad8ff, #c8a8ff); }
+.sh-tb.t-ruby { color: #fff4f6; background: linear-gradient(180deg, #ff6b86, #b0102e); text-shadow: 0 1px 0 rgba(0,0,0,.35); }
+.sh-item.s3 { background: radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255,215,106,.08), transparent 60%), linear-gradient(170deg, rgba(18,26,48,.94), rgba(6,14,22,.94)); box-shadow: inset 0 0 0 1px rgba(255,215,106,.28); }
+.sh-season.s3 .sh-shead small { color: #ffd76a; }
 .sh-sn { font: 700 10px/1 var(--f-mono); letter-spacing: .16em; color: rgba(234,255,249,.5); white-space: nowrap; }
 .sh-st.try { color: rgba(234,255,249,.55); font-weight: 600; }
 .sh-tiles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 8px; }

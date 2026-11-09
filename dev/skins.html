@@ -11,9 +11,9 @@
 <link rel="stylesheet" href="css/lobby.css?v=3">
 <link rel="stylesheet" href="css/vault.css?v=7">
 <link rel="stylesheet" href="css/skins2.css?v=1">
-<link rel="stylesheet" href="css/skins3.css?v=1">
+<link rel="stylesheet" href="css/skins3.css?v=3">
 <link rel="stylesheet" href="css/party.css?v=2">
-<link rel="stylesheet" href="css/shop.css?v=4">
+<link rel="stylesheet" href="css/shop.css?v=5">
 <style>
 /* DEV ONLY: every Season 1, 2 and 3 frame and background at FULL, MEDIUM and COMPACT, for review. Not linked from the game. */
 body { margin: 0; padding: 16px; background: #0d0a10; color: #eee; font: 500 14px/1.4 Inter, sans-serif; }
@@ -53,9 +53,9 @@ only your card (1P) animates fully, the others run a simplified loop. Season 3 b
 </div>
 <main id="out"></main>
 <script type="module">
-import { avatarEl, passCard, seatCard } from "./js/profile.js?v=18";
-import { SKIN_TIERS } from "./js/vault/shop.js?v=17";
-import { s3Base, requestTilt } from "./js/skins3.js?v=1";
+import { avatarEl, passCard, seatCard } from "./js/profile.js?v=19";
+import { SKIN_TIERS } from "./js/vault/shop.js?v=18";
+import { s3Base, requestTilt } from "./js/skins3.js?v=2";
 import { setReduced, isReduced } from "./js/fx.js";
 const mk = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
 const look = over => Object.assign({ name: "Ayoub", av: { t: "c", u: "images/character1.jpg" }, col: "#3ea6ff", fr: "none", ttl: "Peak Fiction", lvl: 23, sf: "", bg: "", ts: "", uc: "" }, over);

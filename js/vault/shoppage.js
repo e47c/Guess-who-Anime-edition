@@ -1,10 +1,12 @@
 /* =====================================================================
    THE SHOP: its own section (not a game mode, not in the Vault / Anime TCG). A full-screen sheet over the main menu
    or the lobby, so closing it puts you back exactly where you were (room, friends, state intact).
-   Two tabs, one per season:
+   One tab per season:
      SEASON 1: the Season 1 skins (each tier as a Frame and a Background, bundle discount) AND the scratch cards
                (Basic, Silver, Gold -> titles, title skins, username styles). Scratch cards live only here.
-     SEASON 2: the Season 2 skins (new Frame + Background per tier, "NEW" tags). Prices: config.js SKINS / SKINS2.
+     SEASON 2: the Season 2 skins (realistic materials).
+     SEASON 3: the Season 3 skins (living scenes, js/skins3.js; "NEW" tags). Prices: config.js SKINS / SKINS2 / SKINS3.
+     A season whose config says live: false has no tab. Previewing or equipping a Season 3 skin asks for the phone's tilt.
    THE PREVIEW: one persistent panel with the real credit-card Arcade Pass (your name, title, level and XP) wearing the
    frame and / or background being tried. Wide screens: a side panel that stays in view while the grid scrolls; on a
    PC, hovering a tile previews it and a click pins it (the hover only redraws the panel). Phones: the same panel as a
@@ -18,9 +20,10 @@
    shows the result on the Arcade Pass. Every purchase is an intent sent to the bank (bank.apply with an operation
    id): a double click never pays twice.
    ===================================================================== */
-import { SKINS, SKINS2, SCRATCH } from "./config.js?v=19";
-import { SKIN_TIERS, tierInfo, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=17";
-import { bank, vaultEvent } from "./vault.js?v=22";
+import { SKINS, SKINS2, SKINS3, SCRATCH } from "./config.js?v=20";
+import { SKIN_TIERS, tierInfo, seasonLive, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=18";
+import { requestTilt } from "../skins3.js?v=2";
+import { bank, vaultEvent } from "./vault.js?v=23";
 import { newSeed } from "./rng.js?v=2";
 import { motionOK } from "../fx.js";
 
@@ -35,7 +38,15 @@ const intents = {};
 const intent = k => intents[k] || (intents[k] = k + ":" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7));
 const used = k => { delete intents[k]; };
 
-const SEASON_TABS = [{ id: "s1", season: SKINS.season, label: "Season 1", ico: "◆" }, { id: "s2", season: SKINS2.season, label: "Season 2", ico: "✦", isNew: !!SKINS2.newTag }];
+/* the season tabs (a season whose config says live: false stays hidden); "NEW" follows each season's newTag */
+const SEASON_CFG = { [SKINS.season]: SKINS, [SKINS2.season]: SKINS2, [SKINS3.season]: SKINS3 };
+const SEASON_TABS = [{ id: "s1", season: SKINS.season, label: "Season 1", ico: "◆" }, { id: "s2", season: SKINS2.season, label: "Season 2", ico: "✦" }, { id: "s3", season: SKINS3.season, label: "Season 3", ico: "✸" }]
+    .filter(t => seasonLive(t.season)).map(t => Object.assign(t, { isNew: !!SEASON_CFG[t.season].newTag }));
+const SEASON_COPY = {
+    1: ["THE ORIGINAL SET", "Every tier as a Frame (around your picture) and a Background (your whole Arcade Pass and lobby card). Hover or tap a tile to try it on the preview."],
+    2: ["REALISTIC MATERIALS", "A Frame and Background for every tier: realistic materials, light that moves, frames that reach past your picture. Hover or tap a tile to try it on the preview."],
+    3: ["NEW SEASON · LIVING SCENES", "Every skin is a small living scene: frames are objects and creatures with an entrance, backgrounds have depth that follows your pointer (or your phone's tilt). Hover or tap a tile to try it."]
+};
 let view = "s1", tabAnim = false;
 const pv = { sf: null, bg: null };          // the pinned try-on (null = what you wear now, "" = none)
 let hov = null;                             // { slot, tier } while a fine pointer rests on a tile (PC)
@@ -63,7 +74,7 @@ export function openShop(where) {
     const t = where.tier ? tierOf(where.tier) : null;
     if (where.tab === "s1" || where.tab === "s2") view = where.tab;
     else if (where.tab === "scratch") view = "s1";
-    else if (t) view = t.season === SKINS2.season ? "s2" : "s1";
+    else if (t) view = SEASON_TABS.some(x => x.season === t.season) ? "s" + t.season : "s1";
     pv.sf = null; pv.bg = null; hov = null; tabAnim = false;
     if (t) { if (where.slot === "bg") pv.bg = t.id; else pv.sf = t.id; }
     focus = where.from === "wardrobe" && where.name ? { name: where.name, tab: view, scratch: where.tab === "scratch", sct: where.sct || null, item: where.item || null } : null;
@@ -119,29 +130,27 @@ const slotName = slot => slot === "sf" ? "Frame" : "Background";
 const nameOf = (slot, tier) => tier ? tierOf(tier).name + " " + slotName(slot) + " · S" + tierOf(tier).season : (slot === "sf" ? "No frame" : "No background");
 const tried = () => { const cur = publicLook(bank.get()); return { cur, tf: pv.sf == null ? cur.sf : pv.sf, tb: pv.bg == null ? cur.bg : pv.bg }; };
 function seasonView(season) {
-    const w = bank.get(), { cur, tf, tb } = tried(), s2 = season === SKINS2.season;
+    const w = bank.get(), { cur, tf, tb } = tried(), copy = SEASON_COPY[season] || SEASON_COPY[1];
     const v = mk("div", "sh-season s" + season + (tabAnim && motionOK() ? " enter" : ""));
     const head = mk("header", "sh-shead");
-    head.append(mk("small", null, s2 ? "NEW SEASON" : "THE ORIGINAL SET"), mk("h2", null, "Season " + season + " skins"));
-    head.appendChild(mk("p", null, s2
-        ? "A new Frame and Background for every tier: realistic materials, light that moves, frames that reach past your picture. Hover or tap a tile to try it on the preview."
-        : "Every tier as a Frame (around your picture) and a Background (your whole Arcade Pass and lobby card). Hover or tap a tile to try it on the preview."));
+    head.append(mk("small", null, copy[0]), mk("h2", null, "Season " + season + " skins"));
+    head.appendChild(mk("p", null, copy[1]));
     v.appendChild(head);
     const grid = mk("div", "sh-grid");
     SKIN_TIERS.filter(t => t.season === season).forEach(t => grid.appendChild(tierCard(t, w, cur, tf, tb)));
     v.appendChild(grid);
-    v.appendChild(mk("p", "vt-rule", "Wear any frame with any background, from either season; everyone in the room sees both. Buying the Frame and Background of a tier together is " + Math.round(SKINS.bundleOff * 100) + "% off. Cosmetics can't be traded or gifted; if you ever get one twice (future rewards) you get " + Math.round(SKINS.dupRefund * 100) + "% of its price back."));
-    if (!s2) v.appendChild(scratchSection());
+    v.appendChild(mk("p", "vt-rule", "Wear any frame with any background, from any season; everyone in the room sees both. Buying the Frame and Background of a tier together is " + Math.round(SKINS.bundleOff * 100) + "% off. Cosmetics can't be traded or gifted; if you ever get one twice (future rewards) you get " + Math.round(SKINS.dupRefund * 100) + "% of its price back."));
+    if (season === SKINS.season) v.appendChild(scratchSection());
     return v;
 }
 function tierCard(t, w, cur, tf, tb) {
-    const fId = "sf_" + t.id, bId = "bg_" + t.id, of = owns(w, fId), ob = owns(w, bId), s2 = t.season === SKINS2.season;
+    const fId = "sf_" + t.id, bId = "bg_" + t.id, of = owns(w, fId), ob = owns(w, bId), isNew = !!(SEASON_CFG[t.season] || {}).newTag;
     const c = mk("article", "sh-item tier-" + t.base + " s" + t.season + (tf === t.id || tb === t.id ? " on" : ""));
     c.dataset.tier = t.id;
     const h = mk("header", "sh-ih");
     const badge = mk("span", "sh-tb t-" + t.base, t.name); h.appendChild(badge);
     h.appendChild(mk("small", "sh-sn", "S" + t.season));
-    if (s2 && SKINS2.newTag && !of && !ob) h.appendChild(mk("em", "sh-new", "NEW"));
+    if (isNew && !of && !ob) h.appendChild(mk("em", "sh-new", "NEW"));
     c.appendChild(h);
     const tiles = mk("div", "sh-tiles");
     const tile = (slot, art, own, worn) => {
@@ -178,6 +187,7 @@ function tierCard(t, w, cur, tf, tb) {
 }
 /* a click / tap pins a tile on the preview (a second click on the same tile goes back to what you wear) */
 function pin(slot, tier) {
+    if (tierOf(tier) && tierOf(tier).season === SKINS3.season) requestTilt();      // Season 3 follows the phone's tilt: ask only now (previewing)
     const cur = publicLook(bank.get()), was = slot === "sf" ? (pv.sf == null ? cur.sf : pv.sf) : (pv.bg == null ? cur.bg : pv.bg);
     const next = was === tier ? null : tier;
     if (slot === "sf") pv.sf = next; else pv.bg = next;
@@ -258,6 +268,7 @@ function bought(ids, o = {}) {
     box.appendChild(note);
     const row = mk("div", "sh-brow");
     const eq = btn("Equip now", "alt", async () => {
+        if (items.some(i => (tierOf(i.tier) || {}).season === SKINS3.season)) requestTilt();      // ... or when equipping
         eq.disabled = true;
         if (!(await equipNow(ids))) { eq.disabled = false; return; }
         X.sfx("ready"); pw.innerHTML = ""; pw.appendChild(pass({}, "equipped"));
