@@ -18,12 +18,13 @@
      vloc/pN     where each player is: "v" Anime TCG page, "b" a duel, "l" the lobby.
    Practice vs Bot runs the same engine locally (no coins, no stats, no missions).
    ===================================================================== */
-import { newDuel, act, tick, forceEnd, viewFor, placements, useDefs, lifeOf, alive, P, arr } from "../duel/engine.js?v=1";
-import { DEFS, deckList, ACTIONS, ACTION_IDS } from "../duel/cards.js?v=6";
-import { botMove } from "../duel/bot.js?v=6";
-import { mountDuel } from "../duel/ui.js?v=6";
+import { newDuel, act, tick, forceEnd, viewFor, placements, useDefs, lifeOf, alive, P, arr } from "../duel/engine.js?v=2";
+import { DEFS, deckList, ACTIONS, ACTION_IDS } from "../duel/cards.js?v=7";
+import { botMove } from "../duel/bot.js?v=7";
+import { mountDuel } from "../duel/ui.js?v=7";
+import { deckMats } from "../duel/table.js?v=1";
 import { myKeys, seal, open, sealFull, openFull, hasHostKey, cryptoOk } from "../duel/net.js?v=1";
-import { DUEL, DECK } from "../vault/config.js?v=20";
+import { DUEL, DECK } from "../vault/config.js?v=21";
 import { CARDS } from "../vault/carddb.js?v=6";
 import { newSeed } from "../vault/rng.js?v=2";
 import { duelResultOf, resultToDb, resultFromDb } from "../vault/result.js?v=6";
@@ -124,7 +125,7 @@ function build(b, d, now) {
     seats.forEach(p => { decks[pk(p)] = deckList(arr(b.acc[pk(p)].cards)); names[pk(p)] = X.pName(d, p); uids[pk(p)] = String((d["player" + p] || {}).uid || ""); });
     if (seats.some(p => decks[pk(p)].length !== DECK.size)) { HS.delete(b.bid); simple(b.bid, "cancelled"); return; }
     const seed = newSeed() >>> 0;
-    H.s = newDuel({ id: b.bid, players: seats, decks, names, now, seed, rules: rulesFor(b) });
+    H.s = newDuel({ id: b.bid, players: seats, decks, names, now, seed, rules: rulesFor(b), mats: deckMats(decks, DEFS, p => (X.pPub(d, p) || {}).mat) });
     H.s.inN = {}; H.s.used = {};
     publish(b.bid, H, d, { st: "live", t0: now, uids, seed, host: X.me() }).finally(() => { H.busy = false; });
 }
@@ -329,7 +330,7 @@ export function startPractice(level = "normal", opts = {}) {
     const LV = level[0].toUpperCase() + level.slice(1), BOT_NAMES = ["Kaze", "Rin", "Tetsu", "Mika", "Sora", "Jun", "Hana"];
     const decks = { p1: deckList(deck) }, names = { p1: (X.myName && X.myName()) || "You" };
     bots.forEach((q, i) => { decks[pk(q)] = deckList(i === 0 && opts.botDeck || botDeck(level)); names[pk(q)] = i === 0 && opts.botName || (nb > 1 ? "Bot " + BOT_NAMES[i] + " · " + LV : "Bot · " + LV); });
-    const s = newDuel({ id: "practice", players: [me].concat(bots), decks, names, now: Date.now(), seed: newSeed() >>> 0, rules: Object.assign({}, DUEL.rules, opts.rules || {}) });
+    const s = newDuel({ id: "practice", players: [me].concat(bots), decks, names, now: Date.now(), seed: newSeed() >>> 0, rules: Object.assign({}, DUEL.rules, opts.rules || {}), mats: deckMats(decks, DEFS) });
     practice = { s, level, bot, bots, me, timer: 0 };
     X.showOnly("cardvault"); $("cvTurnT").textContent = opts.title || "PRACTICE VS BOT"; $("cvStatus").textContent = opts.status || "No coins, stats or missions";
     if (ui) ui.destroy();

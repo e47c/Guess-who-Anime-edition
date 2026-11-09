@@ -5,11 +5,11 @@
    Every action is an intent sent to the bank (bank.apply with an operation id), so a double click or a second tab
    can never pay twice.
    ===================================================================== */
-import { activeDeck } from "./packs.js?v=18";
-import { packsTab } from "./tab-packs.js?v=8";
-import { collectionTab, collectionSig, collectionRoomSync } from "./tab-collection.js?v=7";
-import { decksTab, startEditing } from "./tab-decks.js?v=6";
-import { duelTab, setDuelRoom, maybeOfferTraining, closeTrainingOffer } from "./tab-duel.js?v=6";
+import { activeDeck } from "./packs.js?v=19";
+import { packsTab } from "./tab-packs.js?v=9";
+import { collectionTab, collectionSig, collectionRoomSync } from "./tab-collection.js?v=8";
+import { decksTab, startEditing } from "./tab-decks.js?v=7";
+import { duelTab, setDuelRoom, maybeOfferTraining, closeTrainingOffer } from "./tab-duel.js?v=7";
 export { closeTrainingOffer };
 
 let H = null;

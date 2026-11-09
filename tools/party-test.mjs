@@ -1,10 +1,10 @@
 /* Night Party unit tests: node tools/party-test.mjs
    Phase 1: the stage registry (metadata, settings schema, formats, fits, team patches) and its match with the
    standard result every mode reports. */
-import { MODE_META } from "../js/vault/config.js?v=20";
+import { MODE_META } from "../js/vault/config.js?v=21";
 import { RESULT_MODES, RESULT_SETTINGS } from "../js/vault/result.js?v=6";
 import { basePoints, sharePoints, stagePoints, teamPlacements, adjustPlacements, standings, topTied, leadGap, lateStart, seedOrder, splitTeams, seedSlots, makeBracket, normBracket, nextMatch, recordWin, bracketDone, matchesLeft, bracketPlacements, sdWinners } from "../js/party/scoring.js?v=2";
-import { STAGE_SETTINGS, registerStage, stageIds, stageMeta, fastStages, normalizeSettings, defaultSettings, formatOf, stageFits, teamPatch, estMinutes, estTotal } from "../js/party/stages.js?v=15";
+import { STAGE_SETTINGS, registerStage, stageIds, stageMeta, fastStages, normalizeSettings, defaultSettings, formatOf, stageFits, teamPatch, estMinutes, estTotal } from "../js/party/stages.js?v=16";
 import { NIGHT_PARTY } from "../js/party/config.js?v=2";
 
 let pass = 0, fail = 0;

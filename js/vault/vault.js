@@ -11,15 +11,15 @@
    Every coin change goes through bank.apply(opId, ...), so a reload, a reconnect or a double click
    never pays twice.
    ===================================================================== */
-import { createBank, localBackend } from "./store.js?v=20";
-import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=20";
-import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=19";
+import { createBank, localBackend } from "./store.js?v=21";
+import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=21";
+import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=20";
 import { newSeed } from "./rng.js?v=2";
-import { grantStarter, recordDuel, activeDeck, deckProblem, migrateDecks20, setActionLevels } from "./packs.js?v=18";
-import { ACTIONS } from "../duel/cards.js?v=6";
-import { publicLook } from "./shop.js?v=18";
-import { initOpening } from "./opening.js?v=19";
-import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig, addToDeck, closeTrainingOffer } from "./tabs.js?v=20";
+import { grantStarter, recordDuel, activeDeck, deckProblem, migrateDecks20, setActionLevels } from "./packs.js?v=19";
+import { ACTIONS } from "../duel/cards.js?v=7";
+import { publicLook } from "./shop.js?v=19";
+import { initOpening } from "./opening.js?v=20";
+import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig, addToDeck, closeTrainingOffer } from "./tabs.js?v=21";
 import { motionOK } from "../fx.js";
 import { icon } from "./icons.js?v=3";
 

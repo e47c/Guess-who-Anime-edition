@@ -10,12 +10,13 @@
    a flash in the rarity colour), set, position, attack (lunge, clash, hit-stop, shake), destroy (shatter), Counter
    (flip + banner), life bars counting down, floating numbers. Skip animations; Reduced effects = fades only.
    ===================================================================== */
-import { why, legalMoves, preview, statOf, P as P0, opponents, lifeOf, alive, tributesFor, cardOf, pierces } from "./engine.js?v=1";
-import { DUEL } from "../vault/config.js?v=20";
-import { cardEl, theme, SHOW } from "../vault/cardui.js?v=19";
+import { why, legalMoves, preview, statOf, P as P0, opponents, lifeOf, alive, tributesFor, cardOf, pierces } from "./engine.js?v=2";
+import { DUEL } from "../vault/config.js?v=21";
+import { cardEl, theme, SHOW } from "../vault/cardui.js?v=20";
 import { icon, RARITY_ICON, KEYWORD_ICON } from "../vault/icons.js?v=3";
 import { define, PHASES, POSITIONS, KEYWORDS } from "./glossary.js?v=2";
-import { ACTIONS } from "./cards.js?v=6";
+import { ACTIONS } from "./cards.js?v=7";
+import { matFor, paintMat, medallion, deckPile, gyPile, mountTable } from "./table.js?v=1";
 /* a missing player (a stale / partial view during a switch) renders as empty instead of throwing */
 const NOBODY = Object.freeze({ life: 0, ch: [], ac: [], hand: [], gy: [], deck: [] });
 const P = (v, p) => (v && v.P && P0(v, p)) || NOBODY;
@@ -64,6 +65,9 @@ export function mountDuel(root, o) {
     const board = mk("div", "dz-board"); board.append(oppSide, mid, meSide);
     const main = mk("div", "dz-main"); main.append(top, board, mePlate, hand);
     root.append(main, insp, bar, fx);
+    /* the table under it all: wood, light, dust, the camera lean (table.js); the mat halves are the two sides */
+    board.classList.add("dz-mat");
+    const table = mountTable(root, board);
     bar.append(btn("Log", "ghost sm", showLog, "log"), btn("Rules", "ghost sm", showRules, "help"), btn("Skip animations", "ghost sm dz-skip", () => { C.fast = !C.fast; root.querySelector(".dz-skip").classList.toggle("alt", C.fast); o.sfx("toggle"); }, "skip"));
     if (o.emote) bar.appendChild(btn("Emote", "ghost sm dz-emb", e => { e.stopPropagation(); emotePicker(); }, "emote"));
     if (o.extraTools) o.extraTools(bar);
@@ -72,7 +76,7 @@ export function mountDuel(root, o) {
     /* ---------- render ---------- */
     function update(view) {
         const prev = C.v; C.v = view;
-        root.classList.toggle("lite", lite());
+        root.classList.toggle("lite", lite()); table.refresh();
         // remember where things were, so animations start from there
         C.rects = new Map(); root.querySelectorAll("[data-u]").forEach(e => C.rects.set(e.dataset.u, { r: e.getBoundingClientRect(), node: e }));
         if (C.sel && C.sel.kind === "hand" && !arr(P(view, me()).hand).includes(C.sel.u)) { C.sel = null; C.mode = null; }
@@ -100,7 +104,9 @@ export function mountDuel(root, o) {
         if (C.shownFocus !== theOpp()) { C.shownFocus = theOpp(); const f = top.querySelector(".dz-plate.focus"); if (f && top.scrollWidth > top.clientWidth) top.scrollLeft = Math.max(0, f.offsetLeft - top.offsetLeft - 12); }
         // the board: one opponent side (the focused one), the middle, my side
         oppSide.innerHTML = ""; meSide.innerHTML = "";
-        const oq = theOpp(); if (oq) { mat(oppSide, oq); oppSide.append(zoneRow(oq, "ac", true), zoneRow(oq, "ch", true)); }
+        // each half is a 5-column grid: [corner] [3 zones] [corner]. Mine: the medallion left, Graveyard / Deck right;
+        // the opponent sits across the table, so theirs is mirrored (Deck / Graveyard on my left, medallion on my right)
+        const oq = theOpp(); oppSide.classList.toggle("empty", !oq); if (oq) { mat(oppSide, oq); oppSide.append(zoneRow(oq, "ac", true), zoneRow(oq, "ch", true)); }
         mat(meSide, bottomP()); meSide.append(zoneRow(bottomP(), "ch", false), zoneRow(bottomP(), "ac", false));
         drawMid(L);
         mePlate.innerHTML = ""; mePlate.appendChild(plate(bottomP(), true, false));
@@ -149,11 +155,10 @@ export function mountDuel(root, o) {
             e.fresh = 0;
         });
     }
-    function mat(side, p) {
-        const counts = {}; Object.values(C.v.cards || {}).forEach(c => { if (Number(c.o) === Number(p) && !String(c.id).startsWith("a:")) { const d = o.defs.card(Number(c.id)); if (d) counts[d.s] = (counts[d.s] || 0) + 1; } });
-        const s = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-        const T = theme(s ? s[0] : "onepiece"); side.style.setProperty("--m1", T.c1); side.style.setProperty("--m2", T.c2); side.style.setProperty("--m3", T.c3);
-    }
+    /* the playmat half of player p (the series most common in their deck, or the playmat hook: table.js matFor) */
+    function mat(side, p) { const m = matFor(C.v, p, o); paintMat(side, m); side._mat = m; }
+    /* a face for a Graveyard card (characters and Action cards) */
+    const faceOf = u => { const c = C.v.cards[u]; if (!c) return null; return String(c.id).startsWith("a:") ? actionEl(String(c.id).slice(2)) : cardEl(Number(c.id), { size: "sm" }); };
     function plate(p, mine, focus) {
         const v = C.v, pl = P(v, p) || {}, out = arr(v.out).includes(p), pub = o.pub ? o.pub(p) : null;
         const canHit = !mine && !out && C.mode === "attack" && C.sel && legal().some(x => x.k === "attack" && x.slot === C.sel.slot && x.tp === p);
@@ -177,6 +182,11 @@ export function mountDuel(root, o) {
     function zoneRow(p, kind, theirs) {
         const v = C.v, pl = P(v, p) || {}, row = mk("div", "dz-row " + kind), m = me(), L = legal();
         const list = kind === "ch" ? arr(pl.ch) : arr(pl.ac);
+        const side = theirs ? oppSide : meSide;
+        const corner = () => kind === "ch" ? gyPile(p, arr(pl.gy), faceOf, () => showGy(p)) : deckPile(p, pl.deckN != null ? Number(pl.deckN) : arr(pl.deck).length, () => backEl());
+        // mine: the medallion spans both rows on the left; theirs (mirrored): the piles on the left
+        if (!theirs && kind === "ch") row.appendChild(medallion(side._mat || { key: "onepiece" }));
+        if (theirs) row.appendChild(corner());
         list.forEach((c, i) => {
             const z = mk("div", "dz-zone " + kind + (c ? " full" : " free")); z.dataset.p = p; z.dataset.slot = i; z.dataset.kind = kind;
             if (kind === "ch" && c) {
@@ -200,6 +210,8 @@ export function mountDuel(root, o) {
             z.onclick = () => zoneTap(p, kind, i);
             row.appendChild(z);
         });
+        if (!theirs) row.appendChild(corner());
+        if (theirs && kind === "ac") row.appendChild(medallion(side._mat || { key: "onepiece" }));
         return row;
     }
     function zoneLegal(p, kind, i, L) {
@@ -434,5 +446,5 @@ export function mountDuel(root, o) {
     }
     /* the timers (turn, response window) */
     const tickT = setInterval(() => { root.querySelectorAll(".dz-timer").forEach(t => { const left = Math.max(0, Math.ceil((Number(t.dataset.dl) - (o.now ? o.now() : Date.now())) / 1000)); t.lastChild.textContent = left + " s"; t.classList.toggle("low", left <= 10); }); }, 250);
-    return { update, emote: showEmote, destroy() { clearInterval(tickT); Object.values(C.emo).forEach(e => clearTimeout(e.tm)); root.innerHTML = ""; }, get sel() { return C.sel; }, select(s) { C.sel = s; draw(); }, root };
+    return { update, emote: showEmote, destroy() { clearInterval(tickT); table.destroy(); Object.values(C.emo).forEach(e => clearTimeout(e.tm)); root.innerHTML = ""; }, get sel() { return C.sel; }, select(s) { C.sel = s; draw(); }, root };
 }

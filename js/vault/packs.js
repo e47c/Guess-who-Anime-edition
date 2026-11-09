@@ -13,7 +13,7 @@
    5. the cards go into the collection right away (the opening animation only reveals them), in reveal order:
       lowest rarity first, best last.
    ===================================================================== */
-import { PACKS, SHARDS, RARITY_ORDER, DECK, TRADE } from "./config.js?v=20";
+import { PACKS, SHARDS, RARITY_ORDER, DECK, TRADE } from "./config.js?v=21";
 import { CARDS, BY_SERIES, BY_SERIES_RARITY, CARD_SERIES } from "./carddb.js?v=6";
 import { rngFrom, pickWeighted, pickInt, shuffleWith } from "./rng.js?v=2";
 

@@ -1,7 +1,7 @@
 // Anime TCG: writes docs/duel-cards.md, the review table of every card (rarity, ATK, DEF, ability, timing) and
 // every Action card, plus each ability's bot-vs-bot win rate. Run: node tools/duel-cards-doc.mjs [games]
 import { writeFileSync } from "node:fs";
-import { newDuel, act, useDefs } from "../js/duel/engine.js?v=1";
+import { newDuel, act, useDefs } from "../js/duel/engine.js?v=2";
 import { botMove } from "../js/duel/bot.js";
 import { DEFS, ACTIONS, ACTION_IDS } from "../js/duel/cards.js";
 import { CARDS } from "../js/vault/carddb.js";

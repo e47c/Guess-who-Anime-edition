@@ -17,7 +17,7 @@
      (0 size) and a hidden tab pause everything. Reduced effects: no parallax, no entrance, a still scene.
    Ruby, Diamond and Flame are drawn here; the other nine tiers live in js/skins3-tiers.js (shared kit: js/skins3-kit.js).
    ===================================================================== */
-import { SKINS3 } from "./vault/config.js?v=20";
+import { SKINS3 } from "./vault/config.js?v=21";
 import { motionOK } from "./fx.js";
 import { n2, XY, P, arc, stops, lg, rg, hx, mix, rnd, star4, poly, dly, brilliant, RUBY, ICE, ROSE, SHADOW, feather, svgURL, OV } from "./skins3-kit.js?v=1";
 import { FRAMES_MORE, SCENES_MORE, STEPS_MORE } from "./skins3-tiers.js?v=1";

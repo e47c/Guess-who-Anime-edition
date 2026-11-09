@@ -1,6 +1,6 @@
 // Anime TCG: bot-vs-bot simulation with the real cards (balance + crash check). Run: node tools/duel-sim.mjs [games] [players]
 // Reports win rate of the player going first, average turns / rounds, how duels end, and any engine error.
-import { newDuel, act, useDefs, legalMoves, why } from "../js/duel/engine.js?v=1";
+import { newDuel, act, useDefs, legalMoves, why } from "../js/duel/engine.js?v=2";
 import { botMove } from "../js/duel/bot.js";
 import { DEFS, ACTION_IDS } from "../js/duel/cards.js";
 import { CARDS } from "../js/vault/carddb.js";

@@ -46,9 +46,9 @@ h1 { margin: 0 0 4px; font: 400 26px/1 'Dela Gothic One'; }
 <div class="show" id="show"></div>
 <script type="module">
 import { CARD_SERIES, BY_SERIES_RARITY } from "../js/vault/carddb.js?v=6";
-import { packEl, theme, bindShine } from "../js/vault/cardui.js?v=19";
-import { openPack, initOpening } from "../js/vault/opening.js?v=19";
-import { SHARDS, RARITY_ORDER } from "../js/vault/config.js?v=20";
+import { packEl, theme, bindShine } from "../js/vault/cardui.js?v=20";
+import { openPack, initOpening } from "../js/vault/opening.js?v=20";
+import { SHARDS, RARITY_ORDER } from "../js/vault/config.js?v=21";
 import { audio } from "../js/audio.js?v=4";
 initOpening({ sfx: n => audio.sfx(n), crinkle: v => audio.crinkle(v), stamp: () => null, sleeve: () => "" });
 const $ = id => document.getElementById(id);

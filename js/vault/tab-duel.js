@@ -5,14 +5,14 @@
    (6 guided lessons, a one-time 100 coin reward), live duels in the room (watch / return) and your recent results.
    No room: HOST PARTY / JOIN instead of the friends list.
    ===================================================================== */
-import { DUEL, DECK } from "./config.js?v=20";
-import { activeDeck, setActiveDeck, deckProblem, isHolo } from "./packs.js?v=18";
+import { DUEL, DECK } from "./config.js?v=21";
+import { activeDeck, setActiveDeck, deckProblem, isHolo } from "./packs.js?v=19";
 import { CARDS } from "./carddb.js?v=6";
-import { cardEl } from "./cardui.js?v=19";
+import { cardEl } from "./cardui.js?v=20";
 import { icon } from "./icons.js?v=3";
-import { cvChallenge, cvDuels, busyIn, seatsOf, cvWatch, cvReturn, cvDeckOf, locOf, startPractice } from "../cardvault/cardvault.js?v=21";
-import { LESSONS, setupTraining, trainingBot } from "../duel/training.js?v=1";
-import { P } from "../duel/engine.js?v=1";
+import { cvChallenge, cvDuels, busyIn, seatsOf, cvWatch, cvReturn, cvDeckOf, locOf, startPractice } from "../cardvault/cardvault.js?v=22";
+import { LESSONS, setupTraining, trainingBot } from "../duel/training.js?v=2";
+import { P } from "../duel/engine.js?v=2";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 const btn = (txt, cls, fn, ic) => { const b = mk("button", "btn " + (cls || "")); b.type = "button"; if (ic) b.innerHTML = icon(ic); b.appendChild(document.createTextNode(txt)); if (fn) b.onclick = fn; return b; };

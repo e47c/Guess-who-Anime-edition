@@ -272,6 +272,15 @@ export const DUEL = {
     },
     /* quick emotes in a duel: shown on the sender's plate for showSec; one every cooldownSec per player */
     emotes: { list: [["nice", "Nice!"], ["wow", "Wow!"], ["oops", "Oops"], ["gg", "GG"], ["think", "Hmm…"], ["angry", "Grr!"]], cooldownSec: 4, showSec: 2.6 },
+    /* the duel table (js/duel/table.js): presentation only. Piles: px of visible thickness per card (up to pileMax
+       cards), the top card's small random turn (deg), how many Graveyard cards show face-up and how far they scatter.
+       Ambient: dust motes (desktop / phone, hard cap), the camera's lean (px per layer at full lean), how fast it
+       follows (ease), the idle drift (cycles per second) and the tilt that counts as a full lean (deg); fps cap. */
+    table: {
+        pileStep: .7, pileMax: 20, deckRotDeg: 2.5, gyShow: 3, gyRotDeg: 9, gyOffset: 3,
+        motes: 26, motesPhone: 12, maxMotes: 40, fps: 30,
+        parallax: { table: 4, light: 12, mat: 3, dust: 18 }, ease: 3.5, idleDrift: .04, tiltDeg: 28
+    },
     /* practice bots: chance to pick a weaker move, how often they attack into a risk, Counter use */
     bots: { easy: { blunder: .35, risk: .2, counters: .4 }, normal: { blunder: .12, risk: .45, counters: .8 }, hard: { blunder: 0, risk: .7, counters: 1 } }
 };

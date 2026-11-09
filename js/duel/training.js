@@ -5,7 +5,7 @@
    or zone to tap glows. The hand and the bot's moves are scripted, so every lesson can be done. The first completion
    pays a one-time reward (idempotent: an operation id on the wallet), it can be replayed any time.
    ===================================================================== */
-import { P } from "./engine.js?v=1";
+import { P } from "./engine.js?v=2";
 
 const arr = v => Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : [];
 export const LESSONS = [

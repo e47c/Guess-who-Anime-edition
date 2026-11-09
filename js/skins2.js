@@ -14,7 +14,7 @@
    skips anything off-screen (.fx-off from profile.js fxWatch), hidden, or under Reduced effects; static under
    Reduced effects / reduced motion (body.fx-lite), where the canvases are hidden and the SVG keeps a still pose.
    ===================================================================== */
-import { SKINS2 } from "./vault/config.js?v=20";
+import { SKINS2 } from "./vault/config.js?v=21";
 import { motionOK } from "./fx.js";
 
 export const S2_BASES = SKINS2.tiers.map(t => t.id);

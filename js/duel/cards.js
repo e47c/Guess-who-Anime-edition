@@ -10,7 +10,7 @@
    ===================================================================== */
 import { CARDS } from "../vault/carddb.js?v=6";
 import { ABILITIES } from "../cardvault/abilities.js?v=4";
-import { DUEL } from "../vault/config.js?v=20";
+import { DUEL } from "../vault/config.js?v=21";
 
 const S = (DUEL.rules && DUEL.rules.statScale) || 100;
 export const ACTIONS = {

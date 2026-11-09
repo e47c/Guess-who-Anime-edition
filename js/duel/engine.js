@@ -53,10 +53,13 @@ const isAct = (s, u) => !!s.cards[u] && String(s.cards[u].id).startsWith("a:");
 export const cardOf = (s, u) => s.cards[u] || null;
 
 /* ---------- a new duel ---------- */
-export function newDuel({ id = "d", fmt = "duel", seed = 1, players, decks, names = {}, now = 0, rules }) {
+/* mats (optional, cosmetic): { pN: series key } for each player's playmat, chosen by the host from the whole deck
+   (or the player's playmat pick) and kept in the public state; the rules never read it */
+export function newDuel({ id = "d", fmt = "duel", seed = 1, players, decks, names = {}, now = 0, rules, mats = null }) {
     const R = rules; const ps = players.map(Number);
     const s = { v: 2, id, fmt: ps.length > 2 ? "ffa" : fmt, seed, rng: seed >>> 0, R: clone(R), players: ps, names, cards: {}, P: {}, turnNo: 0, round: 0, phase: "draw",
         turnP: 0, first: 0, out: [], place: {}, pending: null, ev: [], evn: 0, log: [], t0: now, dl: 0, over: false, stats: {} };
+    if (mats) s.mats = Object.assign({}, mats);
     let n = 0;
     ps.forEach(p => {
         const deck = arr(decks[pk(p)] || decks[p]).map(String).map(id => { const u = "u" + (++n); s.cards[u] = { id: /^a:/.test(id) ? id : Number(id), o: p }; return u; });

@@ -59,17 +59,68 @@ button.dz-plate { cursor: pointer; } .dz-plate.focus { box-shadow: inset 0 0 0 2
 .dz-lifen { position: relative; display: flex; align-items: center; gap: 4px; height: 100%; padding: 0 8px; font: 700 13px/1 var(--f-mono); text-shadow: 0 1px 2px #000; } .dz-lifen .tcg-ico { width: 14px; height: 14px; color: #fff; --ic-ac: #ff8a8a; }
 .dz-piles { display: flex; gap: 6px; } .dz-pile { display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px; border-radius: 8px; background: rgba(255,255,255,.06); font: 700 12px/1 var(--f-mono); } .dz-pile .tcg-ico { width: 15px; height: 15px; } .dz-pile.tap { cursor: pointer; } .dz-pile.tap:hover { background: rgba(233,196,92,.18); }
 .dz-hbacks { grid-column: 1 / -1; display: flex; justify-content: center; height: 22px; margin-top: 2px; } .dz-hbacks i { width: 16px; height: 22px; margin: 0 -3px; border-radius: 3px; background: linear-gradient(160deg, #2b3a4a, #121b24); box-shadow: inset 0 0 0 1px rgba(233,196,92,.45); transform: rotate(calc(var(--k) * 4deg)); }
-/* the board */
-.dz-board { display: grid; gap: 6px; }
-.dz-side { --m1: #1f8a8a; --m2: #12333a; --m3: #e9c45c; display: grid; gap: 6px; padding: 8px; border-radius: 18px; background: radial-gradient(ellipse 70% 80% at 50% 50%, color-mix(in srgb, var(--m1) 18%, transparent), transparent 75%), linear-gradient(180deg, color-mix(in srgb, var(--m2) 22%, #08121a), #070d12); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--m3) 35%, transparent), inset 0 0 40px rgba(0,0,0,.5); }
-.dz-row { display: flex; justify-content: center; gap: clamp(6px, 1.4vw, 14px); }
-.dz-zone { position: relative; display: grid; place-items: center; width: calc(var(--zw) * 1.42); height: calc(var(--zw) * 1.42); border-radius: 12px; background: rgba(0,0,0,.25); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); cursor: pointer; transition: box-shadow .2s, transform .2s; }
+/* ---------- the table (js/duel/table.js): wood under a warm overhead light, a vignette, the far edges out of focus,
+   dust in the light, a small camera lean. Two playmats on it (one per player, printed in their series), stitched
+   edges, printed zones; the Deck and Graveyard are real piles. Reduced effects: a still table (.dz-room.still). ---------- */
+#cardvault.dz-tablepage { background: #120a05; }
+.dz-main { position: relative; z-index: 1; } .dz-tools, .dz-insp { z-index: 2; }
+.dz-room { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.dz-room > * { position: absolute; display: block; }
+.dz-wood { inset: -28px; will-change: transform;
+    background: repeating-linear-gradient(180deg, transparent 0 207px, rgba(0,0,0,.55) 207px 209px, rgba(255,226,180,.06) 209px 210px), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='840' height='420'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.0047619 .1595238' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='.42 0 0 0 .07 .25 0 0 0 .035 .13 0 0 0 .012 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)'/%3E%3C/svg%3E") 0 0 / 100% 420px repeat-y, #2a170b; }
+.dz-dof { filter: blur(3.5px) brightness(.85); -webkit-mask: radial-gradient(ellipse 62% 58% at 50% 48%, transparent 58%, #000 100%); mask: radial-gradient(ellipse 62% 58% at 50% 48%, transparent 58%, #000 100%); }
+.dz-light { inset: -60px; will-change: transform; background: radial-gradient(ellipse 50% 46% at 50% 46%, rgba(255,224,168,.26), rgba(255,206,140,.09) 48%, transparent 72%); }
+.dz-dust { left: 0; top: 0; width: 100%; height: 100%; }
+.dz-vig { inset: 0; background: radial-gradient(ellipse 78% 72% at 50% 48%, transparent 40%, rgba(0,0,0,.5) 75%, rgba(0,0,0,.82) 100%); }
+.dz-room.still .dz-dust { display: none; } .dz-room.still > * { will-change: auto; transform: none !important; }
+/* the board: the opponent's mat across from me, the strip of table between (phases, hint, buttons), my mat */
+.dz-board { display: grid; gap: 10px; justify-items: center; }
+.dz-board > .dz-mid { justify-self: stretch; }
+.dz-side { --m1: #1f8a8a; --m2: #12333a; --m3: #e9c45c; --mpat: none; --zc: calc(var(--zw) * 1.42); --pc: calc(var(--zw) * .98);
+    position: relative; display: grid; grid-template-columns: var(--pc) repeat(3, var(--zc)) var(--pc); align-items: center; justify-items: center; gap: 8px clamp(6px, 1.4vw, 14px); padding: 14px clamp(10px, 1.8vw, 20px); border-radius: 20px; max-width: 100%;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E") 0 0 / 160px 160px, radial-gradient(ellipse 58% 64% at 50% 52%, rgba(255,255,255,.07), transparent 72%), var(--mpat) 0 0 / 58px 58px,
+        radial-gradient(ellipse 95% 95% at 50% 45%, color-mix(in srgb, var(--m1) 40%, #0d1115), color-mix(in srgb, var(--m2) 28%, #05070a));
+    background-blend-mode: overlay, normal, normal, normal;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.65), 0 3px 0 -1px #07090b, 0 20px 34px -6px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.1), inset 0 0 46px rgba(0,0,0,.5); }
+/* the stitched edge, and the light falling off toward the far side of each mat */
+.dz-side::before { content: ""; position: absolute; inset: 6px; border: 1.5px dashed color-mix(in srgb, var(--m3) 45%, rgba(255,255,255,.2)); border-radius: 15px; pointer-events: none; }
+.dz-side::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; }
+.dz-side.opp::after { background: linear-gradient(180deg, rgba(0,0,0,.26), transparent 65%); } .dz-side.me::after { background: linear-gradient(0deg, rgba(0,0,0,.14), transparent 50%); }
+.dz-side.empty { display: none; }
+.dz-row { display: contents; }
+/* printed zones: an engraved outline in the mat's ink, the label printed small */
+.dz-zone, .dz-pz { position: relative; z-index: 1; display: grid; place-items: center; width: var(--zc); height: calc(var(--zw) * 1.42); border: 0; padding: 0; border-radius: 11px; color: inherit; font: inherit;
+    background: rgba(0,0,0,.2); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--m3) 42%, transparent), inset 0 2px 7px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.05); cursor: pointer; transition: box-shadow .2s, transform .2s; }
+.dz-zl { font: 700 10px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: color-mix(in srgb, var(--m3) 45%, rgba(255,255,255,.3)); text-align: center; }
+/* the medallion printed in my empty corner (theirs, mirrored, on my right) */
+.dz-medal { grid-row: span 2; align-self: stretch; display: grid; align-content: center; justify-items: center; gap: 6px; width: 100%; color: var(--m3); opacity: .5; pointer-events: none; }
+.dz-memb { display: block; width: 74%; aspect-ratio: 1; } .dz-memb svg { width: 100%; height: 100%; display: block; } .dz-memb .ke-menace { font: 400 calc(var(--zw) * .6)/1 'Dela Gothic One'; }
+.dz-mkanji { font: 400 calc(var(--zw) * .38)/1 'Dela Gothic One', serif; } .dz-mname { font: 700 8px/1.2 var(--f-mono); letter-spacing: .2em; text-align: center; color: color-mix(in srgb, var(--m3) 70%, #fff); }
+/* the piles: a stack of card edges whose height follows the count, the top card(s) turned a little */
+.dz-pz { width: var(--pc); height: calc(var(--zw) * 1.42); }
+.dz-row.ac .dz-pz { height: calc(var(--zw) * 1.1); }
+.dz-pz.deck { cursor: default; }
+.dz-pile3 { --pw: calc(var(--zw) * .72); --th: 0px; position: relative; width: var(--pw); aspect-ratio: 63 / 88; margin-top: var(--th); }
+.dz-pz .vcard { --cw: var(--pw); }
+.dz-pedge { position: absolute; inset: 0; border-radius: calc(var(--pw) * .04); background: repeating-linear-gradient(180deg, #e3dccb 0 1px, #958e7f 1px 2px); box-shadow: 0 calc(var(--th) * .4 + 2px) calc(var(--th) * .8 + 5px) rgba(0,0,0,.55); }
+.dz-ptop { position: absolute !important; left: 0; top: 0; transform: translate(var(--ox, 0px), calc(var(--oy, 0px) - var(--th))) rotate(var(--r, 0deg)); }
+.dz-ptop .vc-front, .vcard.dz-back.dz-ptop { box-shadow: 0 1px 2px rgba(0,0,0,.55); }
+.dz-ptop.under { filter: brightness(.82); }
+.dz-pcount { position: absolute; right: 3px; bottom: 3px; z-index: 30; min-width: 18px; padding: 2px 5px; border-radius: 7px; background: rgba(0,0,0,.72); font: 800 11px/1 var(--f-mono); color: #eef2f7; text-align: center; pointer-events: none; }
+.dz-pz.free .dz-pcount { display: none; }
+.dz-pz.gy:hover, .dz-pz.gy:focus-visible { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--m3) 80%, #fff), inset 0 2px 7px rgba(0,0,0,.5); outline: none; }
+/* cards on the mat sit flat: a thin card-stock edge and a tight contact shadow; Defense turns the edge with the card */
+.dz-zone .vcard .vc-front, .dz-zone .vcard.dz-back { box-shadow: 0 1px 0 #d6d0c2, 0 2px 0 #7b7569, 0 3px 4px rgba(0,0,0,.55), 0 9px 14px -5px rgba(0,0,0,.5); }
+.dz-zone.pos-def .vcard .vc-front { box-shadow: -1px 0 0 #d6d0c2, -2px 0 0 #7b7569, -3px 0 4px rgba(0,0,0,.55), -9px 0 14px -5px rgba(0,0,0,.5); }
+/* cards in the hand are held above the table: a softer, wider shadow that grows when one is lifted */
+.dz-hand .vcard .vc-front { box-shadow: 0 1px 0 #d6d0c2, 0 2px 0 #7b7569, 0 8px 14px rgba(0,0,0,.5); transition: box-shadow .2s; }
+.dz-hc:hover .vc-front, .dz-hc:focus-visible .vc-front, .dz-hc.selected .vc-front { box-shadow: 0 1px 0 #d6d0c2, 0 2px 0 #7b7569, 0 22px 26px -4px rgba(0,0,0,.55); }
+.dz.lite .dz-hand .vcard .vc-front { transition: none; }
 .dz-row.ac .dz-zone { height: calc(var(--zw) * 1.1); width: calc(var(--zw) * 1.1); }
 .dz-row.ac .dz-zone .vcard { --cw: calc(var(--zw) * .72); }
 .dz-zone .vcard { --cw: var(--zw); transition: transform .45s cubic-bezier(.2,.8,.2,1); }
 .dz-zone.pos-def .vcard { transform: rotate(-90deg); }
 .dz-zone.silenced .vcard { filter: saturate(.3) brightness(.8); }
-.dz-zl { font: 700 10px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.25); }
 .dz-stats { position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); display: flex; gap: 3px; z-index: 3; }
 .dz-stats b { padding: 2px 6px; border-radius: 6px; font: 800 12px/1.2 var(--f-mono); color: #fff; text-shadow: 0 1px 1px #000; } .dz-stats .atk { background: #b8350f; } .dz-stats .def { background: #1d5fd0; } .dz-stats .up { box-shadow: 0 0 0 2px #3ddc84; } .dz-stats .down { box-shadow: 0 0 0 2px #ff5a5f; }
 .dz-zone.pos-def .dz-stats .atk { opacity: .55; } .dz-zone:not(.pos-def) .dz-stats .def { opacity: .7; }
@@ -158,7 +209,9 @@ button.dz-plate { cursor: pointer; } .dz-plate.focus { box-shadow: inset 0 0 0 2
     .dz-mid { grid-template-columns: 1fr; justify-items: center; }
     .dz-phases .dz-ph b { display: none; }
     .dz-plate { min-width: 0; flex: 1 1 160px; grid-template-columns: auto minmax(0, 1fr); padding: 6px 10px; } .dz-piles { grid-column: 1 / -1; flex-wrap: wrap; } .dz-top { width: 100%; } .dz-hbacks { display: none; }
-    .dz-zone { width: calc(var(--zw) * 1.3); height: calc(var(--zw) * 1.42); }
+    .dz-side { --zc: calc(var(--zw) * 1.3); --pc: calc(var(--zw) * .9); padding: 10px 8px; gap: 6px 5px; border-radius: 16px; }
+    .dz-side::before { inset: 4px; border-radius: 12px; }
+    .dz-medal .dz-mname { display: none; }
     /* the tools: one row of icons (the names stay for screen readers and as tooltips); Leave keeps its word */
     .dz-tools { flex-wrap: nowrap; gap: 6px; }
     .dz-tools > .btn:not(.dz-exit) .bl { display: none; }
