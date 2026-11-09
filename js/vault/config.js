@@ -87,6 +87,55 @@ export const SKINS = {
     pauseOffscreen: true                         // animated frames / backgrounds pause while scrolled out of view
 };
 
+/* ---------- A3c. Season 2 skins: the same 11 tiers, a new Frame and Background each (js/skins2.js + css/skins2.css) ----------
+   Prices = Season 1 price x1.5, rounded to the nearest 50 below 1,000 and to the nearest 100 above (halves round up).
+   The bundle discount and the duplicate refund are SKINS.bundleOff / SKINS.dupRefund (the same rules as Season 1).
+   Item ids: "sf_<tier>2" / "bg_<tier>2" (e.g. sf_iron2); the public look carries "<tier>2", so older clients just
+   show a plain picture instead of breaking.
+   picture = the share of the avatar box the picture keeps (the rest is the frame); compactBelow = avatars of this many
+   px or fewer (tokens, chips, lists) get the simplified compact frame; canvasFrom = frames this big or larger add the
+   canvas flames / water (smaller ones keep the SVG version); fps = the canvas effects' frame rate cap. */
+export const SKINS2 = {
+    season: 2,
+    newTag: true,                                // "NEW" badge on Season 2 items in the Shop
+    tiers: [
+        { id: "iron",         name: "Iron",         price: 250,  speed: 1 },
+        { id: "bronze",       name: "Bronze",       price: 400,  speed: 1 },
+        { id: "silver",       name: "Silver",       price: 600,  speed: 1 },
+        { id: "gold",         name: "Gold",         price: 900,  speed: 1 },
+        { id: "platinum",     name: "Platinum",     price: 1400, speed: 1 },
+        { id: "emerald",      name: "Emerald",      price: 2000, speed: 1 },
+        { id: "diamond",      name: "Diamond",      price: 2700, speed: 1 },
+        { id: "flame",        name: "Flame",        price: 3300, speed: 1 },
+        { id: "water",        name: "Water",        price: 3300, speed: 1 },
+        { id: "transcendent", name: "Transcendent", price: 3800, speed: 1 },
+        { id: "prismatic",    name: "Prismatic",    price: 4500, speed: 1 }
+    ],
+    earnOnly: [],
+    picture: 0.70,
+    compactBelow: 34,
+    canvasFrom: 56,
+    fps: 30
+};
+
+/* ---------- A3d. Owner-only coin tool (hidden; js/vault/devgrant.js) ----------
+   Hold the AAP Coin counter for holdMs, then a code; only a code whose PBKDF2 hash matches AND a player on the owner
+   allow-list gets the amount field. The code itself is never in the source: tools/devgrant-setup.mjs writes salt + hash.
+   owners = SHA-256 hashes of allowed player ids (the Firebase user id shown in the Wardrobe, salted with ownerSalt).
+   This site has no server: see the comment in devgrant.js for what this does and does not protect. */
+export const DEV_TOOL = {
+    holdMs: 10000,                               // press and hold the coin counter this long (no hint while holding)
+    moveCancelPx: 24,                            // moving further than this from where the press started cancels it
+    maxTries: 3, lockMinutes: 10,                // wrong codes before the tool locks, and for how long
+    maxGrant: 100000,                            // the most coins one grant may add
+    logKeep: 50,                                 // failed attempts kept in this browser's log
+    kdf: { name: "PBKDF2", hash: "SHA-256", iterations: 310000 },
+    salt: "C4MF2SArEAI+oNPbeWPSZA==",      // filled by tools/devgrant-setup.mjs (base64)
+    hash: "1pSvSENiyuRIKWYMNRmbnqrS+lwnUCKXe1rY4WhEaqY=",      // PBKDF2(code, salt) (base64)
+    ownerSalt: "ryFK7kWVw2jIgaAF/70/rQ==",
+    owners: []                                   // SHA-256(ownerSalt + player id), base64
+};
+
 /* ---------- A3b. The card reader under the Arcade Pass (main menu): pick the pass up, insert it, the Wardrobe opens ----------
    Read by js/cardslot.js. Times in ms. */
 export const CARD_SLOT = {

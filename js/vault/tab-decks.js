@@ -6,13 +6,13 @@
    card-type counts, the ATK curve, tribute cards, warnings. Test hand (5 random cards, again and again) and
    Auto-build (fills the empty slots from your collection). Rules: DECK in js/vault/config.js.
    ===================================================================== */
-import { DECK } from "./config.js?v=16";
-import { owned, isHolo, ownedIds, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, renameDeck, copyDeck } from "./packs.js?v=14";
+import { DECK } from "./config.js?v=17";
+import { owned, isHolo, ownedIds, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, renameDeck, copyDeck } from "./packs.js?v=15";
 import { CARDS, CARD_SERIES, RARITY_NAMES, ARCHETYPES } from "./carddb.js?v=6";
-import { cardEl, theme, SHOW } from "./cardui.js?v=15";
+import { cardEl, theme, SHOW } from "./cardui.js?v=16";
 import { icon, RARITY_ICON } from "./icons.js?v=3";
-import { ACTIONS, ACTION_IDS } from "../duel/cards.js?v=2";
-import { actionEl } from "../duel/ui.js?v=2";
+import { ACTIONS, ACTION_IDS } from "../duel/cards.js?v=3";
+import { actionEl } from "../duel/ui.js?v=3";
 
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 const btn = (txt, cls, fn, ic) => { const b = mk("button", "btn " + (cls || "")); b.type = "button"; if (ic) b.innerHTML = icon(ic); b.appendChild(document.createTextNode(txt)); if (fn) b.onclick = fn; return b; };

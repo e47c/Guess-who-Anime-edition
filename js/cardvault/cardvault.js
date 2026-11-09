@@ -19,11 +19,11 @@
    Practice vs Bot runs the same engine locally (no coins, no stats, no missions).
    ===================================================================== */
 import { newDuel, act, tick, forceEnd, viewFor, placements, useDefs, lifeOf, alive, P, arr } from "../duel/engine.js?v=1";
-import { DEFS, deckList, ACTIONS, ACTION_IDS } from "../duel/cards.js?v=2";
-import { botMove } from "../duel/bot.js?v=2";
-import { mountDuel } from "../duel/ui.js?v=2";
+import { DEFS, deckList, ACTIONS, ACTION_IDS } from "../duel/cards.js?v=3";
+import { botMove } from "../duel/bot.js?v=3";
+import { mountDuel } from "../duel/ui.js?v=3";
 import { myKeys, seal, open, sealFull, openFull, hasHostKey, cryptoOk } from "../duel/net.js?v=1";
-import { DUEL, DECK } from "../vault/config.js?v=16";
+import { DUEL, DECK } from "../vault/config.js?v=17";
 import { CARDS } from "../vault/carddb.js?v=6";
 import { newSeed } from "../vault/rng.js?v=2";
 import { duelResultOf, resultToDb, resultFromDb } from "../vault/result.js?v=6";

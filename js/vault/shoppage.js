@@ -1,16 +1,26 @@
 /* =====================================================================
    THE SHOP: its own section (not a game mode, not in the Vault / Anime TCG). A full-screen sheet over the main menu
    or the lobby, so closing it puts you back exactly where you were (room, friends, state intact).
-     Season 1 skins: each tier as a Frame and a Background, bundle discount (prices in config.js SKINS)
-     Scratch cards: Basic, Silver, Gold -> titles, title skins, username styles (odds / refunds in config.js SCRATCH)
+   Two tabs, one per season:
+     SEASON 1: the Season 1 skins (each tier as a Frame and a Background, bundle discount) AND the scratch cards
+               (Basic, Silver, Gold -> titles, title skins, username styles). Scratch cards live only here.
+     SEASON 2: the Season 2 skins (new Frame + Background per tier, "NEW" tags). Prices: config.js SKINS / SKINS2.
+   THE PREVIEW: one persistent panel with the real credit-card Arcade Pass (your name, title, level and XP) wearing the
+   frame and / or background being tried. Wide screens: a side panel that stays in view while the grid scrolls; on a
+   PC, hovering a tile previews it and a click pins it (the hover only redraws the panel). Phones: the same panel as a
+   bottom sheet. A frame and a background can be tried together, from any tier and season.
+   (Root cause of the old "no preview on PC": the try-on sat in a grid column sized `auto`, and the pass is a
+   size-contained card (container-type: inline-size) with width:100%, so on screens >= 640px the column measured
+   0 px and the pass was drawn 0 px wide. Phones used one full-width column, so it showed there. The panel now has
+   explicit widths.)
    BUYING and EQUIPPING are separate: the Shop buys, the Wardrobe equips. After every purchase (and every new scratch
    prize) the "Equip now" shortcut sits next to "Keep browsing": it equips the item in the right slot at once and
-   shows the result on the Arcade Pass preview. The try-on and every preview is the credit-card Arcade Pass.
-   Every purchase is an intent sent to the bank (bank.apply with an operation id): a double click never pays twice.
+   shows the result on the Arcade Pass. Every purchase is an intent sent to the bank (bank.apply with an operation
+   id): a double click never pays twice.
    ===================================================================== */
-import { SKINS, SCRATCH } from "./config.js?v=16";
-import { SKIN_ITEMS, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=14";
-import { bank, vaultEvent } from "./vault.js?v=19";
+import { SKINS, SKINS2, SCRATCH } from "./config.js?v=17";
+import { SKIN_TIERS, tierInfo, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=15";
+import { bank, vaultEvent } from "./vault.js?v=20";
 import { newSeed } from "./rng.js?v=2";
 import { motionOK } from "../fx.js";
 
@@ -25,11 +35,15 @@ const intents = {};
 const intent = k => intents[k] || (intents[k] = k + ":" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7));
 const used = k => { delete intents[k]; };
 
-let view = "skins";
-const pv = { sf: null, bg: null };          // what's being tried on (null = what you wear now, "" = none)
-const tierOf = id => SKINS.tiers.find(t => t.id === id);
+const SEASON_TABS = [{ id: "s1", season: SKINS.season, label: "Season 1", ico: "◆" }, { id: "s2", season: SKINS2.season, label: "Season 2", ico: "✦", isNew: !!SKINS2.newTag }];
+let view = "s1", tabAnim = false;
+const pv = { sf: null, bg: null };          // the pinned try-on (null = what you wear now, "" = none)
+let hov = null;                             // { slot, tier } while a fine pointer rests on a tile (PC)
+const tierOf = id => tierInfo(id);
 const lookWith = over => Object.assign({}, X.profilePub(), publicLook(bank.get()), over || {});
 const pass = (over, cls) => X.passCard(lookWith(over), { xp: X.level(), cls: "pass-preview" + (cls ? " " + cls : "") });
+const finePointer = () => !!(window.matchMedia && matchMedia("(hover: hover) and (pointer: fine)").matches);
+const seasonOfView = v => (SEASON_TABS.find(t => t.id === v) || SEASON_TABS[0]).season;
 
 export function initShop(ctx) {
     X = Object.assign(X, ctx);
@@ -38,101 +52,175 @@ export function initShop(ctx) {
     const o = $("shop"); if (o) o.addEventListener("click", e => { if (e.target === o) closeShop(); });
 }
 export const isOpen = () => !!$("shop") && !$("shop").classList.contains("hidden");
-/* where = { tab: "skins" | "scratch", tier, slot, sct (scratch tier), from: "wardrobe", name }
+/* where = { tab: "s1" | "s2" | "skins" | "scratch", tier, slot, sct (scratch tier), from: "wardrobe", name }
+   ("skins" opens the season of `tier`; "scratch" opens Season 1 at the scratch cards.)
    The Wardrobe's "Get in Shop" button comes in with the item: the Shop opens on it (a skin tried on, or the scratch
    cards that can win it highlighted) ABOVE the Wardrobe, so "‹ Wardrobe" (or ✕ / Esc) goes straight back to it. */
 let focus = null;
 const fromWardrobe = () => !!$("profile") && !$("profile").classList.contains("hidden");
 export function openShop(where) {
     where = where && typeof where === "object" ? where : {};
-    if (where.tab === "scratch" || where.tab === "skins") view = where.tab;
-    pv.sf = null; pv.bg = null;
-    if (where.tier && tierOf(where.tier)) { if (where.slot === "bg") pv.bg = where.tier; else pv.sf = where.tier; }
-    focus = where.from === "wardrobe" && where.name ? { name: where.name, tab: view, sct: where.sct || null, item: where.item || null } : null;
+    const t = where.tier ? tierOf(where.tier) : null;
+    if (where.tab === "s1" || where.tab === "s2") view = where.tab;
+    else if (where.tab === "scratch") view = "s1";
+    else if (t) view = t.season === SKINS2.season ? "s2" : "s1";
+    pv.sf = null; pv.bg = null; hov = null; tabAnim = false;
+    if (t) { if (where.slot === "bg") pv.bg = t.id; else pv.sf = t.id; }
+    focus = where.from === "wardrobe" && where.name ? { name: where.name, tab: view, scratch: where.tab === "scratch", sct: where.sct || null, item: where.item || null } : null;
     const back = $("shopBack"); if (back) back.textContent = fromWardrobe() ? "‹ Wardrobe" : X.inRoom() ? "‹ Lobby" : "‹ Menu";
     X.sfx("start"); render(); X.openOverlay("shop");
-    const b = $("shopBody"); if (b) b.scrollTop = 0;
-    const target = where.tier ? '#shopBody .vt-tier.tier-' + where.tier : where.sct ? '#shopBody .vt-sct.t-' + where.sct : "";
-    if (target) setTimeout(() => { const t = document.querySelector(target); if (t && t.scrollIntoView) t.scrollIntoView({ block: "center", behavior: motionOK() ? "smooth" : "auto" }); }, 80);
+    const o = $("shop"); if (o) o.scrollTop = 0;
+    const target = t ? '#shopBody .sh-item[data-tier="' + t.id + '"]' : where.sct ? '#shopBody .vt-sct.t-' + where.sct : where.tab === "scratch" ? "#shopBody .sh-scratch" : "";
+    if (target) setTimeout(() => { const el = document.querySelector(target); if (el && el.scrollIntoView) el.scrollIntoView({ block: "center", behavior: motionOK() ? "smooth" : "auto" }); }, 80);
 }
 /* "You came here for ..." line at the top of the Shop, when the Wardrobe sent you */
 function focusBar() {
     if (!focus || focus.tab !== view) return null;
     const d = mk("div", "sh-focus"), it = focus.item ? itemById(focus.item) : null;
     d.append(mk("small", null, "FROM YOUR WARDROBE"), mk("b", null, focus.name));
-    d.appendChild(mk("span", null, view === "scratch" ? (it && owns(bank.get(), it.id) ? "You own it now. Go back to the Wardrobe to equip it." : "Won from the highlighted scratch cards (the prize is random).") : "Tried on below. Buy it, then tap Equip now or equip it back in the Wardrobe."));
+    d.appendChild(mk("span", null, focus.scratch ? (it && owns(bank.get(), it.id) ? "You own it now. Go back to the Wardrobe to equip it." : "Won from the highlighted scratch cards (the prize is random).") : "It's on the preview. Buy it, then tap Equip now or equip it back in the Wardrobe."));
     const back = btn("‹ Back to the Wardrobe", "ghost sm", () => closeShop()); d.appendChild(back);
     return d;
 }
-export function closeShop() { pv.sf = pv.bg = null; X.closeOverlay("shop"); }
+export function closeShop() { pv.sf = pv.bg = null; hov = null; X.closeOverlay("shop"); }
 export function shopView() { return view; }
 
 function render() {
     const body = $("shopBody"), nav = $("shopTabs"); if (!body || !nav) return;
     nav.innerHTML = "";
-    [["skins", "Season 1 skins", "◆"], ["scratch", "Scratch cards", "✦"]].forEach(([k, l, ico]) => {
-        const b = mk("button", "sh-tab" + (k === view ? " on" : "")); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(k === view));
-        b.append(mk("i", null, ico), mk("span", null, l)); b.onclick = () => { if (view === k) return; view = k; X.sfx("toggle"); render(); body.scrollTop = 0; };
+    SEASON_TABS.forEach(T => {
+        const b = mk("button", "sh-tab" + (T.id === view ? " on" : "")); b.type = "button"; b.id = "shTab-" + T.id; b.dataset.tab = T.id;
+        b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(T.id === view)); b.setAttribute("aria-controls", "shopBody");
+        b.append(mk("i", null, T.ico), mk("span", null, T.label));
+        if (T.isNew) b.appendChild(mk("em", "sh-new", "NEW"));
+        b.onclick = () => { if (view === T.id) return; view = T.id; hov = null; tabAnim = true; X.sfx("toggle"); render(); const o = $("shop"); if (o) o.scrollTop = 0; };
         nav.appendChild(b);
     });
-    const y = body.scrollTop; body.innerHTML = "";
-    const fb = fromWardrobe() ? focusBar() : null; if (fb) body.appendChild(fb);
-    body.appendChild(view === "scratch" ? scratchView() : skinsView());
-    body.scrollTop = y;
+    nav.onkeydown = e => {
+        if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+        const i = SEASON_TABS.findIndex(t => t.id === view), n = SEASON_TABS[(i + 1) % SEASON_TABS.length];
+        e.preventDefault(); view = n.id; tabAnim = true; render(); const b = $("shTab-" + n.id); if (b) b.focus();
+    };
+    const o = $("shop"), y = o ? o.scrollTop : 0;
+    body.innerHTML = ""; body.setAttribute("aria-labelledby", "shTab-" + view);
+    const lay = mk("div", "sh-layout"), main = mk("div", "sh-main"), panel = mk("aside", "sh-pv");
+    panel.id = "shopPv"; panel.setAttribute("aria-label", "Preview on your Arcade Pass"); panel.setAttribute("aria-live", "polite");
+    const fb = fromWardrobe() ? focusBar() : null; if (fb) main.appendChild(fb);
+    main.appendChild(seasonView(seasonOfView(view)));
+    lay.append(main, panel); body.appendChild(lay);
+    renderPreview();
+    if (o) o.scrollTop = y;
+    tabAnim = false;
     const bal = $("shopBal"); if (bal) bal.textContent = fmt(bank.coins());
 }
 
-/* =========================== SEASON 1 SKINS =========================== */
-const nameOf = (slot, tier) => tier ? tierOf(tier).name + (slot === "sf" ? " Frame" : " Background") : (slot === "sf" ? "No frame" : "No background");
-function skinsView() {
-    const w = bank.get(), v = mk("div", "vt-skins sh-skins"), cur = publicLook(w);
-    const tf = pv.sf == null ? cur.sf : pv.sf, tb = pv.bg == null ? cur.bg : pv.bg;
-    const top = mk("section", "vt-tryon sh-tryon");
-    const pw = mk("div", "sh-passwrap"); pw.appendChild(pass({ sf: tf, bg: tb })); top.appendChild(pw);
-    const side = mk("div", "vt-tryside");
-    side.appendChild(mk("b", "vt-trytitle", "Try-on"));
-    side.appendChild(mk("p", "vt-seatcap", "Your Arcade Pass with the picked frame and background (the lobby card shows the same). Tap Frame or Background on any tier to try it; mix them freely. Buying never changes what you wear: equip in the Wardrobe, or with Equip now right after buying."));
-    [["sf", tf], ["bg", tb]].forEach(([slot, tier]) => {
-        const row = mk("div", "vt-tryrow"), id = (slot === "sf" ? "sf_" : "bg_") + tier, own = !tier || owns(w, id), worn = (slot === "sf" ? cur.sf : cur.bg) === tier;
-        row.append(mk("small", null, slot === "sf" ? "FRAME" : "BACKGROUND"), mk("b", null, nameOf(slot, tier)));
-        const act = mk("div", "vt-tryact");
-        if (tier && !own) { if (SKINS.earnOnly.includes(tier)) act.appendChild(mk("span", "vt-owned", "Earn only")); else { const b = btn("", "alt sm", () => doBuySkin(id)); b.append(mk("small", null, "Buy"), coin(tierOf(tier).price)); act.appendChild(b); } }
-        else if (tier && worn) act.appendChild(mk("span", "vt-owned", "Wearing ✓"));
-        else if (tier) act.appendChild(mk("span", "vt-owned", "Owned ✓ · equip in the Wardrobe"));
-        row.appendChild(act); side.appendChild(row);
-    });
-    if (tf && tf === tb && !owns(w, "sf_" + tf) && !owns(w, "bg_" + tf) && !SKINS.earnOnly.includes(tf)) {
-        const b = btn("", "alt", () => doBundle(tf)); b.append(mk("small", null, tierOf(tf).name + " bundle −" + Math.round(SKINS.bundleOff * 100) + "%"), coin(bundlePrice(tf))); side.appendChild(b);
-    }
-    if (pv.sf != null || pv.bg != null) side.appendChild(btn("Back to my look", "ghost sm", () => { pv.sf = pv.bg = null; X.sfx("close"); render(); }));
-    top.appendChild(side);
-    v.appendChild(top);
-    const grid = mk("div", "vt-tiers");
-    SKINS.tiers.forEach(t => {
-        const fId = "sf_" + t.id, bId = "bg_" + t.id, of = owns(w, fId), ob = owns(w, bId), earn = SKINS.earnOnly.includes(t.id);
-        const c = mk("article", "vt-tier tier-" + t.id + (tf === t.id || tb === t.id ? " on" : ""));
-        const h = mk("header"); h.append(mk("b", null, t.name), mk("small", null, "Season " + SKINS.season)); c.appendChild(h);
-        const tiles = mk("div", "vt-ttiles");
-        const fTile = mk("button", "vt-ttile" + (tf === t.id ? " on" : "")); fTile.type = "button"; fTile.setAttribute("aria-label", "Try the " + t.name + " Frame");
-        fTile.append(X.avatarEl(lookWith({ sf: t.id }), { size: 64 }), mk("small", null, "Frame"));
-        fTile.onclick = () => { pv.sf = tf === t.id ? (cur.sf === t.id ? "" : null) : t.id; X.sfx("pick"); render(); };
-        const bTile = mk("button", "vt-ttile vt-tbg" + (tb === t.id ? " on" : "")); bTile.type = "button"; bTile.setAttribute("aria-label", "Try the " + t.name + " Background");
-        const mini = mk("div", "sh-minipass"); mini.appendChild(X.passCard(lookWith({ bg: t.id, sf: "" }), { cls: "pass-mini" })); bTile.append(mini, mk("small", null, "Background"));
-        bTile.onclick = () => { pv.bg = tb === t.id ? (cur.bg === t.id ? "" : null) : t.id; X.sfx("pick"); render(); };
-        tiles.append(fTile, bTile); c.appendChild(tiles);
-        const row = mk("div", "vt-tbuy");
-        const buyOne = (id, label, price, own) => {
-            if (own) return mk("span", "vt-owned", label + " ✓");
-            if (earn) return mk("span", "vt-owned", label + ": earn only");
-            const b = btn("", "ghost sm", () => doBuySkin(id)); b.append(mk("small", null, label), coin(price)); return b;
-        };
-        row.append(buyOne(fId, "Frame", t.price, of), buyOne(bId, "Background", t.price, ob));
-        if (!of && !ob && !earn) { const b = btn("", "alt sm", () => doBundle(t.id)); b.append(mk("small", null, "Both −" + Math.round(SKINS.bundleOff * 100) + "%"), coin(bundlePrice(t.id))); row.appendChild(b); }
-        c.appendChild(row); grid.appendChild(c);
-    });
+/* =========================== SEASON TABS: skins (+ scratch cards in Season 1) =========================== */
+const slotName = slot => slot === "sf" ? "Frame" : "Background";
+const nameOf = (slot, tier) => tier ? tierOf(tier).name + " " + slotName(slot) + " · S" + tierOf(tier).season : (slot === "sf" ? "No frame" : "No background");
+const tried = () => { const cur = publicLook(bank.get()); return { cur, tf: pv.sf == null ? cur.sf : pv.sf, tb: pv.bg == null ? cur.bg : pv.bg }; };
+function seasonView(season) {
+    const w = bank.get(), { cur, tf, tb } = tried(), s2 = season === SKINS2.season;
+    const v = mk("div", "sh-season s" + season + (tabAnim && motionOK() ? " enter" : ""));
+    const head = mk("header", "sh-shead");
+    head.append(mk("small", null, s2 ? "NEW SEASON" : "THE ORIGINAL SET"), mk("h2", null, "Season " + season + " skins"));
+    head.appendChild(mk("p", null, s2
+        ? "A new Frame and Background for every tier: realistic materials, light that moves, frames that reach past your picture. Hover or tap a tile to try it on the preview."
+        : "Every tier as a Frame (around your picture) and a Background (your whole Arcade Pass and lobby card). Hover or tap a tile to try it on the preview."));
+    v.appendChild(head);
+    const grid = mk("div", "sh-grid");
+    SKIN_TIERS.filter(t => t.season === season).forEach(t => grid.appendChild(tierCard(t, w, cur, tf, tb)));
     v.appendChild(grid);
-    v.appendChild(mk("p", "vt-rule", "Each tier comes as a Frame (the animated ring around your picture) and a Background (your whole Arcade Pass and lobby card). Wear any frame with any background; everyone in the room sees both. Buying both of a tier together is " + Math.round(SKINS.bundleOff * 100) + "% off. Cosmetics can't be traded or gifted; if you ever get one twice (future rewards) you get " + Math.round(SKINS.dupRefund * 100) + "% of its price back."));
+    v.appendChild(mk("p", "vt-rule", "Wear any frame with any background, from either season; everyone in the room sees both. Buying the Frame and Background of a tier together is " + Math.round(SKINS.bundleOff * 100) + "% off. Cosmetics can't be traded or gifted; if you ever get one twice (future rewards) you get " + Math.round(SKINS.dupRefund * 100) + "% of its price back."));
+    if (!s2) v.appendChild(scratchSection());
     return v;
+}
+function tierCard(t, w, cur, tf, tb) {
+    const fId = "sf_" + t.id, bId = "bg_" + t.id, of = owns(w, fId), ob = owns(w, bId), s2 = t.season === SKINS2.season;
+    const c = mk("article", "sh-item tier-" + t.base + " s" + t.season + (tf === t.id || tb === t.id ? " on" : ""));
+    c.dataset.tier = t.id;
+    const h = mk("header", "sh-ih");
+    const badge = mk("span", "sh-tb t-" + t.base, t.name); h.appendChild(badge);
+    h.appendChild(mk("small", "sh-sn", "S" + t.season));
+    if (s2 && SKINS2.newTag && !of && !ob) h.appendChild(mk("em", "sh-new", "NEW"));
+    c.appendChild(h);
+    const tiles = mk("div", "sh-tiles");
+    const tile = (slot, art, own, worn) => {
+        const on = (slot === "sf" ? tf : tb) === t.id;
+        const b = mk("button", "sh-tile " + (slot === "sf" ? "sh-tf" : "sh-tbg") + (on ? " on" : "")); b.type = "button";
+        b.dataset.slot = slot; b.dataset.tier = t.id; b.setAttribute("aria-pressed", String(on));
+        b.setAttribute("aria-label", "Try the " + t.name + " " + slotName(slot) + " (Season " + t.season + ")" + (worn ? ", equipped" : own ? ", owned" : ", " + fmt(t.price) + " coins"));
+        const a = mk("span", "sh-art"); a.appendChild(art); b.appendChild(a);
+        const meta = mk("span", "sh-tm"); meta.appendChild(mk("b", null, slotName(slot)));
+        meta.appendChild(worn ? mk("small", "sh-st eq", "Equipped") : own ? mk("small", "sh-st own", "Owned ✓") : mk("small", "sh-st try", on ? "On the preview" : "Try it on"));
+        b.appendChild(meta);
+        b.onclick = () => pin(slot, t.id);
+        b.addEventListener("pointerenter", e => { if (e.pointerType === "mouse" && finePointer()) hover({ slot, tier: t.id }); });
+        b.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") hover(null); });
+        b.addEventListener("focus", () => { if (finePointer()) hover({ slot, tier: t.id }); });
+        b.addEventListener("blur", () => hover(null));
+        return b;
+    };
+    const fa = X.avatarEl(lookWith({ sf: t.id }), { size: 64 });
+    const mini = mk("div", "sh-minipass"); mini.appendChild(X.passCard(lookWith({ bg: t.id, sf: "" }), { cls: "pass-mini" }));
+    tiles.append(tile("sf", fa, of, cur.sf === t.id), tile("bg", mini, ob, cur.bg === t.id));
+    c.appendChild(tiles);
+    const row = mk("div", "sh-buy");
+    const buyOne = (id, label, own) => {
+        if (own) return mk("span", "sh-owned", label + " ✓");
+        if (t.earnOnly) return mk("span", "sh-owned", label + ": earn only");
+        const b = btn("", "ghost sm", () => doBuySkin(id)); b.append(mk("small", null, label), coin(t.price)); return b;
+    };
+    row.append(buyOne(fId, "Frame", of), buyOne(bId, "Background", ob));
+    if (!of && !ob && !t.earnOnly) { const b = btn("", "alt sm sh-bundle", () => doBundle(t.id)); b.append(mk("small", null, "Both −" + Math.round(SKINS.bundleOff * 100) + "%"), coin(bundlePrice(t.id))); b.title = "Instead of " + fmt(t.price * 2); row.appendChild(b); }
+    else if (of && ob) row.appendChild(mk("span", "sh-owned all", "Complete set ✓"));
+    c.appendChild(row);
+    return c;
+}
+/* a click / tap pins a tile on the preview (a second click on the same tile goes back to what you wear) */
+function pin(slot, tier) {
+    const cur = publicLook(bank.get()), was = slot === "sf" ? (pv.sf == null ? cur.sf : pv.sf) : (pv.bg == null ? cur.bg : pv.bg);
+    const next = was === tier ? null : tier;
+    if (slot === "sf") pv.sf = next; else pv.bg = next;
+    hov = null; X.sfx("pick"); markOn(); renderPreview(true);
+}
+/* hovering (PC): preview without pinning; only the panel redraws */
+let hovT = 0;
+function hover(h) {
+    clearTimeout(hovT);
+    hovT = setTimeout(() => { const same = (hov && h && hov.slot === h.slot && hov.tier === h.tier) || (!hov && !h); if (same) return; hov = h; renderPreview(); }, h ? 60 : 140);
+}
+function markOn() {
+    const { tf, tb } = tried();
+    document.querySelectorAll("#shopBody .sh-tile").forEach(b => { const on = (b.dataset.slot === "sf" ? tf : tb) === b.dataset.tier; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); const st = b.querySelector(".sh-st.try"); if (st) st.textContent = on ? "On the preview" : "Try it on"; });
+    document.querySelectorAll("#shopBody .sh-item").forEach(c => c.classList.toggle("on", c.dataset.tier === tf || c.dataset.tier === tb));
+}
+/* the persistent preview: the real Arcade Pass with what is tried (hovered > pinned > worn), and what to do about it */
+function renderPreview(pop) {
+    const box = $("shopPv"); if (!box) return;
+    const w = bank.get(), { cur } = tried();
+    const tf = hov && hov.slot === "sf" ? hov.tier : (pv.sf == null ? cur.sf : pv.sf);
+    const tb = hov && hov.slot === "bg" ? hov.tier : (pv.bg == null ? cur.bg : pv.bg);
+    const trying = tf !== cur.sf || tb !== cur.bg;
+    box.innerHTML = ""; box.classList.toggle("trying", trying); box.classList.toggle("hovering", !!hov);
+    const hd = mk("header", "sh-pvh"); hd.append(mk("small", null, hov ? "PREVIEW · HOVER" : trying ? "PREVIEW · TRYING ON" : "PREVIEW · YOUR LOOK"), mk("b", null, "Your Arcade Pass"));
+    box.appendChild(hd);
+    const pw = mk("div", "sh-pvpass"); const card = X.passCard(lookWith({ sf: tf, bg: tb }), { xp: X.level(), cls: "pass-preview" + (pop && motionOK() ? " equipped" : ""), tilt: true }); pw.appendChild(card); box.appendChild(pw);
+    const info = mk("div", "sh-pvinfo");
+    [["sf", tf], ["bg", tb]].forEach(([slot, tier]) => {
+        const row = mk("div", "sh-pvrow"), id = slot + "_" + tier, own = !tier || owns(w, id), worn = (slot === "sf" ? cur.sf : cur.bg) === tier;
+        const tx = mk("div", "sh-pvt"); tx.append(mk("small", null, slot === "sf" ? "FRAME" : "BACKGROUND"), mk("b", null, nameOf(slot, tier))); row.appendChild(tx);
+        const act = mk("div", "sh-pvact");
+        if (tier && !own) { const T = tierOf(tier); if (T.earnOnly) act.appendChild(mk("span", "sh-owned", "Earn only")); else { const b = btn("", "alt sm", () => doBuySkin(id)); b.append(mk("small", null, "Buy"), coin(T.price)); act.appendChild(b); } }
+        else if (tier && worn) act.appendChild(mk("span", "sh-st eq", "Equipped"));
+        else if (tier) act.appendChild(mk("span", "sh-st own", "Owned ✓"));
+        row.appendChild(act); info.appendChild(row);
+    });
+    if (tf && tf === tb && !owns(w, "sf_" + tf) && !owns(w, "bg_" + tf) && !tierOf(tf).earnOnly) {
+        const b = btn("", "alt sh-bundle", () => doBundle(tf)); b.append(mk("small", null, tierOf(tf).name + " S" + tierOf(tf).season + " bundle −" + Math.round(SKINS.bundleOff * 100) + "%"), coin(bundlePrice(tf))); info.appendChild(b);
+    }
+    if (pv.sf != null || pv.bg != null) info.appendChild(btn("Back to my look", "ghost sm", () => { pv.sf = pv.bg = null; hov = null; X.sfx("close"); markOn(); renderPreview(); }));
+    info.appendChild(mk("p", "sh-pvnote", "Buying never changes what you wear: equip in the Wardrobe, or with Equip now right after buying."));
+    box.appendChild(info);
 }
 async function doBuySkin(id) {
     const it = itemById(id); if (!(await ask({ title: "Buy " + it.name + "?", text: fmt(it.price) + " AAP Coins. You have " + fmt(bank.coins()) + ".", ok: "Buy" }))) return;
@@ -141,7 +229,7 @@ async function doBuySkin(id) {
     used("buy:" + id); X.sfx("coin"); bought([id]);
 }
 async function doBundle(tier) {
-    const t = tierOf(tier); if (!(await ask({ title: "Buy the " + t.name + " bundle?", text: "Frame + Background for " + fmt(bundlePrice(tier)) + " AAP Coins (instead of " + fmt(t.price * 2) + ").", ok: "Buy" }))) return;
+    const t = tierOf(tier); if (!(await ask({ title: "Buy the " + t.name + " Season " + t.season + " bundle?", text: "Frame + Background for " + fmt(bundlePrice(tier)) + " AAP Coins (instead of " + fmt(t.price * 2) + ").", ok: "Buy" }))) return;
     const r = await bank.apply(intent("bundle:" + tier), "bundle", w => buyBundle(w, tier));
     if (!r.ok) { X.toast(r.error); return; }
     used("bundle:" + tier); X.sfx("coin"); bought(r.result.items);
@@ -186,7 +274,13 @@ function bought(ids, o = {}) {
     setTimeout(() => eq.focus(), 40);
 }
 
-/* =========================== SCRATCH CARDS =========================== */
+/* =========================== SCRATCH CARDS (Season 1 tab only) =========================== */
+function scratchSection() {
+    const s = mk("section", "sh-scratch"); s.id = "shScratch";
+    const h = mk("header", "sh-shead"); h.append(mk("small", null, "SEASON 1 · SCRATCH CARDS"), mk("h2", null, "Scratch cards"), mk("p", null, "Each card wins a title, a title skin or a username style. The better the card, the rarer the prize."));
+    s.append(h, scratchView());
+    return s;
+}
 function scratchView() {
     const v = mk("div", "vt-scratch");
     Object.entries(SCRATCH.tiers).forEach(([k, T]) => {

@@ -5,7 +5,8 @@
    player node so everybody sees the same card in every mode.
    ===================================================================== */
 
-import { SKINS } from "./vault/config.js?v=16";
+import { SKINS, SKINS2 } from "./vault/config.js?v=17";
+import { s2Base, decorateAvatar, decorateCard, installTextures } from "./skins2.js?v=1";
 import { NIGHT_PARTY } from "./party/config.js?v=2";
 
 const KEY = "gw_profile_v1";
@@ -132,6 +133,8 @@ export function cleanAvatar(av) {
    Season frame (p.sf) = the ring around the picture: the ring's base colours, a ring-shaped layer for effects that run
    along the ring (.ava-ring, masked to the ring) and a free layer just outside it for particles (.ava-fx: sparkles,
    flames, bubbles, orbiting lights). All CSS (css/vault.css); paused while off-screen, static under Reduced effects.
+   A Season 2 frame ("<tier>2") is drawn by js/skins2.js instead: an SVG frame around the picture (compact under
+   SKINS2.compactBelow px) plus canvas flames / water on big Flame / Water avatars (css/skins2.css).
    The Season background (p.bg) is NOT drawn here: it restyles the whole player card (seatCard below). */
 const COSM = /^[a-z0-9]{1,24}$/;
 export function avatarEl(p, { size = 48, cls = "", badge = false } = {}) {
@@ -150,7 +153,12 @@ export function avatarEl(p, { size = 48, cls = "", badge = false } = {}) {
         inner.style.setProperty("--gc", av && av.c ? av.c : col);
     }
     el.appendChild(inner);
-    if (sf) { ["ava-ring", "ava-fx"].forEach(c => { const i = document.createElement("i"); i.className = c; i.setAttribute("aria-hidden", "true"); el.appendChild(i); }); fxWatch(el); }
+    if (sf) {
+        const b2 = s2Base(sf);
+        if (b2) decorateAvatar(el, b2, size);         // Season 2: an SVG frame around a slightly smaller picture (js/skins2.js)
+        else ["ava-ring", "ava-fx"].forEach(c => { const i = document.createElement("i"); i.className = c; i.setAttribute("aria-hidden", "true"); el.appendChild(i); });
+        fxWatch(el);
+    }
     if (badge && p.lvl) { const b = document.createElement("span"); b.className = "ava-lvl"; b.textContent = p.lvl; el.appendChild(b); }
     return el;
 }
@@ -162,7 +170,7 @@ export function seatCard(p, { slot = 1, me = false, col = "", cls = "", size = 7
     const s = document.createElement("div"), bg = COSM.test(p.bg || "") ? p.bg : "";
     s.className = "seat" + (me ? " me" : "") + (bg ? " sbg" : "") + (cls ? " " + cls : "");
     s.style.setProperty("--pc", col || (/^#[0-9a-f]{3,8}$/i.test(p.col || "") ? p.col : "#e11b1b"));
-    if (bg) { s.dataset.bg = bg; const f = document.createElement("i"); f.className = "sbg-fx"; f.setAttribute("aria-hidden", "true"); s.appendChild(f); fxWatch(s); }
+    if (bg) { s.dataset.bg = bg; const f = document.createElement("i"); f.className = "sbg-fx"; f.setAttribute("aria-hidden", "true"); s.appendChild(f); if (s2Base(bg)) decorateCard(s, s2Base(bg)); fxWatch(s); }
     const no = document.createElement("span"); no.className = "seat-no"; no.textContent = slot + "P";
     const id = document.createElement("div"); id.className = "seat-id";
     const nm = document.createElement("b"); nm.textContent = p.name || "Player " + slot; styleName(nm, p);
@@ -183,7 +191,7 @@ export function passCard(p, o = {}) {
     c.className = "pass" + (bg ? " sbg" : "") + (o.cls ? " " + o.cls : "");
     c.style.setProperty("--pc", col);
     if (o.tilt) c.setAttribute("data-tilt", "");
-    if (bg) { c.dataset.bg = bg; const f = document.createElement("i"); f.className = "sbg-fx"; f.setAttribute("aria-hidden", "true"); c.appendChild(f); fxWatch(c); }
+    if (bg) { c.dataset.bg = bg; const f = document.createElement("i"); f.className = "sbg-fx"; f.setAttribute("aria-hidden", "true"); c.appendChild(f); if (s2Base(bg)) decorateCard(c, s2Base(bg)); fxWatch(c); }
     const el = (tag, cls, txt, id) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (id && o.ids) e.id = id; return e; };
     const sheen = el("i", "pass-sheen"); sheen.setAttribute("aria-hidden", "true");
     const top = el("div", "pass-top");
@@ -218,6 +226,9 @@ export function fxWatch(el) {
 if (typeof document !== "undefined" && SKINS) {
     const r = document.documentElement.style;
     (SKINS.tiers || []).forEach(t => r.setProperty("--sp-" + t.id, String(Number(t.speed) > 0 ? Number(t.speed) : 1)));
+    (SKINS2.tiers || []).forEach(t => r.setProperty("--sp-" + t.id + "2", String(Number(t.speed) > 0 ? Number(t.speed) : 1)));
+    if (Number(SKINS2.picture) > 0 && Number(SKINS2.picture) < 1) r.setProperty("--s2pad", String((1 - Number(SKINS2.picture)) / 2));
+    installTextures();
     if (Number(SKINS.ringWidth) > 0) r.setProperty("--ring", String(SKINS.ringWidth));
 }
 /* username style + title skin (Anime TCG scratch-card rewards) on any element showing a name / title */

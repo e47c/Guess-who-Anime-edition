@@ -15,23 +15,23 @@
    Profile side (name, picture, colour, arcade frame, level title) -> profile.js; Shop side (Season frame /
    background, Shop title, title skin, username style, sleeve) -> the Vault bank's equip slots (shop.js equip).
    ===================================================================== */
-import { profile, TITLES, FRAMES, ACH, COLORS, isUnlocked, titleName, levelOf, cleanAvatar, avatarEl, passCard, galleryTabs, galleryFor, shrinkImage, commitProfile } from "./profile.js?v=15";
-import { bank } from "./vault/vault.js?v=19";
-import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, owns, equip, publicLook } from "./vault/shop.js?v=14";
-import { SKINS, SCRATCH } from "./vault/config.js?v=16";
+import { profile, TITLES, FRAMES, ACH, COLORS, isUnlocked, titleName, levelOf, cleanAvatar, avatarEl, passCard, galleryTabs, galleryFor, shrinkImage, commitProfile } from "./profile.js?v=16";
+import { bank } from "./vault/vault.js?v=20";
+import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, owns, equip, publicLook, tierInfo } from "./vault/shop.js?v=15";
+import { SKINS, SCRATCH } from "./vault/config.js?v=17";
 import { CARD_SERIES } from "./vault/carddb.js?v=6";
-import { theme, backCard } from "./vault/cardui.js?v=15";
+import { theme, backCard } from "./vault/cardui.js?v=16";
 
 const $ = id => document.getElementById(id);
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
-let X = { sfx: () => {}, toast: () => {}, openShop: () => {}, closeOverlay: () => {} };
+let X = { sfx: () => {}, toast: () => {}, openShop: () => {}, closeOverlay: () => {}, uid: () => "" };
 let D = null, picTab = "emblem", tab = "profile", sel = null;
 const VSLOTS = ["sf", "bg", "title", "ts", "uc", "sleeve"];
 const TABS = [
     { id: "profile", name: "Profile" }, { id: "frames", name: "Frames" }, { id: "bgs", name: "Backgrounds" }, { id: "titles", name: "Titles" },
     { id: "tskins", name: "Title Skins" }, { id: "ustyles", name: "Username Styles" }, { id: "sleeves", name: "Card Sleeves" }, { id: "ach", name: "Achievements" }
 ];
-const tierName = t => (SKINS.tiers.find(x => x.id === t) || {}).name || t;
+const tierName = t => (tierInfo(t) || {}).name || t;
 const cap = s => s ? s[0].toUpperCase() + s.slice(1) : "";
 const fmt = n => Number(n || 0).toLocaleString("en-US");
 const achName = id => (ACH.find(a => a.id === id) || {}).name || "an achievement";
@@ -90,12 +90,12 @@ function itemsFor(id) {
     const plateOf = over => () => { const l = lookOf(over); return plate(l.name, l.ttl, l); };
     if (id === "frames") {
         const out = [{ key: "none", name: "No frame", grade: "Default", owned: true, def: true, on: !D.sf && D.fr === "none", how: "Always yours", over: { sf: "", fr: "none" }, pick: () => { D.sf = ""; D.fr = "none"; } }];
-        SKIN_ITEMS.filter(i => i.kind === "frame").forEach(i => out.push({ key: i.id, name: tierName(i.tier) + " Frame", grade: tierName(i.tier) + " tier · Season " + SKINS.season, owned: owns(w, i.id), on: D.sf === i.id,
-            how: i.earnOnly ? "Earned, not sold" : "Sold in the Shop (Season " + SKINS.season + " skins)", price: i.earnOnly ? null : i.price, shop: i.earnOnly ? null : { tab: "skins", tier: i.tier, slot: "sf" },
+        SKIN_ITEMS.filter(i => i.kind === "frame").forEach(i => out.push({ key: i.id, name: tierName(i.tier) + " Frame", grade: tierName(i.tier) + " tier · Season " + i.season, group: "Season " + i.season, owned: owns(w, i.id), on: D.sf === i.id,
+            how: i.earnOnly ? "Earned, not sold" : "Sold in the Shop (Season " + i.season + " tab)", price: i.earnOnly ? null : i.price, shop: i.earnOnly ? null : { tab: "skins", tier: i.tier, slot: "sf" },
             over: { sf: i.tier }, pick: () => { D.sf = i.id; } }));
         FRAMES.filter(f => f.id !== "none").forEach(f => {
             const ok = isUnlocked(f); if (f.hidden && !ok) return;
-            out.push({ key: "fr_" + f.id, name: f.name, grade: "Arcade frame", owned: ok, on: !D.sf && D.fr === f.id, how: f.ach ? "Unlock the achievement “" + achName(f.ach) + "”" : "Reach level " + f.lvl,
+            out.push({ key: "fr_" + f.id, name: f.name, grade: "Arcade frame", group: "Arcade frames", owned: ok, on: !D.sf && D.fr === f.id, how: f.ach ? "Unlock the achievement “" + achName(f.ach) + "”" : "Reach level " + f.lvl,
                 over: { sf: "", fr: f.id }, pick: () => { D.sf = ""; D.fr = f.id; } });
         });
         out.forEach(o => { o.art = ava(o.over); });
@@ -103,8 +103,8 @@ function itemsFor(id) {
     }
     if (id === "bgs") {
         const out = [{ key: "none", name: "Arcade default", grade: "Default", owned: true, def: true, on: !D.bg, how: "Always yours", over: { bg: "" }, pick: () => { D.bg = ""; } }];
-        SKIN_ITEMS.filter(i => i.kind === "bg").forEach(i => out.push({ key: i.id, name: tierName(i.tier) + " Background", grade: tierName(i.tier) + " tier · Season " + SKINS.season, owned: owns(w, i.id), on: D.bg === i.id,
-            how: i.earnOnly ? "Earned, not sold" : "Sold in the Shop (Season " + SKINS.season + " skins)", price: i.earnOnly ? null : i.price, shop: i.earnOnly ? null : { tab: "skins", tier: i.tier, slot: "bg" },
+        SKIN_ITEMS.filter(i => i.kind === "bg").forEach(i => out.push({ key: i.id, name: tierName(i.tier) + " Background", grade: tierName(i.tier) + " tier · Season " + i.season, group: "Season " + i.season, owned: owns(w, i.id), on: D.bg === i.id,
+            how: i.earnOnly ? "Earned, not sold" : "Sold in the Shop (Season " + i.season + " tab)", price: i.earnOnly ? null : i.price, shop: i.earnOnly ? null : { tab: "skins", tier: i.tier, slot: "bg" },
             over: { bg: i.tier }, pick: () => { D.bg = i.id; } }));
         out.forEach(o => { o.art = mini(Object.assign({ sf: "" }, o.over)); });
         return out;
@@ -186,19 +186,32 @@ function renderBody() {
     body.scrollTop = y;
 }
 const SUBS = {
-    frames: "The ring around your picture. Season 1 frames come from the Shop, arcade frames from levels and achievements.",
+    frames: "The decoration around your picture. Season 1 and Season 2 frames come from the Shop, arcade frames from levels and achievements.",
     bgs: "Covers your whole Arcade Pass and your lobby card.",
     titles: "Shown under your name. Level titles unlock as you play, the rest are won from Shop scratch cards.",
     tskins: "The colour and effect of your title.",
     ustyles: "The colour and effect of your name.",
     sleeves: "The back of your Anime TCG cards. Complete a series to unlock its sleeve."
 };
+/* Frames and Backgrounds are grouped under "Season 1" / "Season 2" (and "Arcade frames") headings; the default
+   item (No frame / Arcade default) sits on top of the first group */
+const GROUP_NOTE = { "Season 1": "The original Shop set", "Season 2": "New in the Shop: realistic materials, frames that reach past your picture", "Arcade frames": "From levels and achievements" };
 function gridTab(id) {
     const wrap = mk("div", "wd-cat"), list = itemsFor(id);
     wrap.appendChild(mk("p", "wd-sub", SUBS[id] || ""));
-    const grid = mk("div", "wd-grid g-" + id); grid.setAttribute("role", "list");
-    list.forEach(it => grid.appendChild(itemCard(it)));
-    wrap.appendChild(grid);
+    const groups = [];
+    list.forEach(it => { const g = it.group || (groups.length ? groups[groups.length - 1].name : ""); let G = groups.find(x => x.name === g); if (!G) { G = { name: g, items: [] }; groups.push(G); } G.items.push(it); });
+    if (groups.length > 1 && !groups[0].name) { const d = groups.shift(); groups[0].items.unshift(...d.items); }
+    groups.forEach(G => {
+        if (G.name && groups.length > 1) {
+            const own = G.items.filter(i => !i.def), h = mk("header", "wd-gh"); h.dataset.group = G.name;
+            h.append(mk("b", null, G.name), mk("small", null, (GROUP_NOTE[G.name] ? GROUP_NOTE[G.name] + " · " : "") + own.filter(i => i.owned).length + "/" + own.length + " owned"));
+            wrap.appendChild(h);
+        }
+        const grid = mk("div", "wd-grid g-" + id); grid.setAttribute("role", "list"); if (G.name) grid.setAttribute("aria-label", G.name);
+        G.items.forEach(it => grid.appendChild(itemCard(it)));
+        wrap.appendChild(grid);
+    });
     return wrap;
 }
 function itemCard(it) {
@@ -276,6 +289,14 @@ function profileTab() {
     const sw = mk("div", "swatches"); COLORS.forEach(c => { const b = mk("button", "swatch" + (c === D.col ? " on" : "")); b.type = "button"; b.style.background = c; b.setAttribute("aria-label", "Accent colour " + c); b.onclick = () => { D.col = c; if (D.av && D.av.t === "g") D.av.c = c; X.sfx("pick"); render(); }; sw.appendChild(b); });
     pic.append(tabs, grid, up, mk("span", "field-label", "Accent colour"), sw);
     ps.append(ph, pic); wrap.appendChild(ps);
+    // player id: this browser's account id (rooms show it to everyone in them; support and setup tools use it)
+    const pid = String((X.uid && X.uid()) || bank.get().owner || "");
+    if (pid) {
+        const is = mk("section", "wd-sec wd-pid"), ih = mk("header", "wd-h"); ih.append(mk("b", null, "Player ID"), mk("small", null, "this browser's account"));
+        const code = mk("code", "wd-pidv", pid), cp = mk("button", "btn ghost sm", "Copy"); cp.type = "button";
+        cp.onclick = async () => { try { await navigator.clipboard.writeText(pid); X.toast("Player ID copied"); } catch (e) { const r = document.createRange(); r.selectNodeContents(code); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } };
+        const row = mk("div", "wd-pidrow"); row.append(code, cp); is.append(ih, row); wrap.appendChild(is);
+    }
     return wrap;
 }
 async function fillGrid(box, want) {

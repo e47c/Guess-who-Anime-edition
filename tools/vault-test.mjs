@@ -3,14 +3,14 @@
 // atomic, never negative), the seeded RNG, the config. Phase 2: coins per placement, anti-farming, the daily
 // cap, missions and the login streak.
 import { resultOf, resultToDb, resultFromDb, placeRows, RESULT_MODES, duelResultOf } from "../js/vault/result.js";
-import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=16";
+import { createBank, memoryBackend, migrate, blankVault } from "../js/vault/store.js?v=17";
 import { rngFrom, newSeed, pickWeighted, shuffleWith } from "../js/vault/rng.js?v=2";
-import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=16";
-import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, nightPartyValid, applyNightParty, gameCoinsOn, FEATURES } from "../js/vault/economy.js?v=15";
-import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=14";
-import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordDuel, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=14";
+import { MODE_META, EARN, PACKS, RARITY_ORDER, SKINS, SKINS2, DAILY_LOGIN, VAULT, MISSIONS } from "../js/vault/config.js?v=17";
+import { posValue, placeValues, gameValid, gameCoins, applyGame, claimDaily, loginState, ensureMissions, missionEvent, dayKey, dayBefore, nightPartyCoins, nightPartyValid, applyNightParty, gameCoinsOn, FEATURES } from "../js/vault/economy.js?v=16";
+import { SKIN_ITEMS, SKIN_TIERS, tierInfo, SCRATCH_ITEMS, itemById, buySkin, buyBundle, bundlePrice, grantCosmetic, rollScratch, equip, publicLook } from "../js/vault/shop.js?v=15";
+import { rollPack, markOpened, unopened, owned, addCard, removeCard, grantStarter, saveDeck, deleteDeck, setActiveDeck, activeDeck, deckProblem, recordDuel, veteran, lockTrade, unlockTrade, applyTrade, tradeProblem, seriesDone, grantToken } from "../js/vault/packs.js?v=15";
 import { CARDS, BY_SERIES, CARD_SERIES } from "../js/vault/carddb.js?v=6";
-import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=16";
+import { SCRATCH, SHARDS, DECK } from "../js/vault/config.js?v=17";
 
 let ok = 0, bad = 0;
 const t = (c, m) => { if (c) ok++; else { bad++; console.log("  ✘", m); } };
@@ -255,9 +255,10 @@ t(nightPartyCoins(true, 4) === 140 && nightPartyCoins(false, 3) === 30, "Night P
 
 sect("shop: Season 1 skins");
 const rich = () => Object.assign(blankVault(T0), { coins: 100000 });
-t(SKIN_ITEMS.length === 22 && SKIN_ITEMS.some(i => i.name === "Iron Frame - Season 1") && SKIN_ITEMS.some(i => i.name === "Prismatic Background - Season 1"), "11 tiers x (Frame + Background), named like \"Iron Frame - Season 1\"");
+const S1I = SKIN_ITEMS.filter(i => i.season === 1);
+t(S1I.length === 22 && SKIN_ITEMS.some(i => i.name === "Iron Frame - Season 1") && SKIN_ITEMS.some(i => i.name === "Prismatic Background - Season 1"), "11 tiers x (Frame + Background), named like \"Iron Frame - Season 1\"");
 t(eq(SKINS.tiers.map(x => x.price), [150, 250, 400, 600, 900, 1300, 1800, 2200, 2200, 2500, 3000]) && SKINS.tiers.every(x => Number(x.speed) > 0), "prices as specified; every tier has an animation speed (all frames and backgrounds animate)");
-t(SKIN_ITEMS.filter(i => i.kind === "frame").every(i => / Frame - Season 1$/.test(i.name)) && SKIN_ITEMS.filter(i => i.kind === "bg").every(i => / Background - Season 1$/.test(i.name)), "names: \"Iron Frame - Season 1\", \"Iron Background - Season 1\"");
+t(S1I.filter(i => i.kind === "frame").every(i => / Frame - Season 1$/.test(i.name)) && S1I.filter(i => i.kind === "bg").every(i => / Background - Season 1$/.test(i.name)), "names: \"Iron Frame - Season 1\", \"Iron Background - Season 1\"");
 w = Object.assign(blankVault(T0), { coins: 200 });
 let sres = buySkin(w, "sf_iron");
 t(!sres.error && w.coins === 50 && w.inv.sf_iron === 1, "buy the Iron Frame: -150");
@@ -271,6 +272,24 @@ w = rich(); buySkin(w, "sf_flame"); const c0s = w.coins; const dupR = grantCosme
 t(dupR.dup && w.coins - c0s === 1100, "a duplicate cosmetic (any future source) refunds 50% of its price");
 t(equip(w, "sf", "sf_flame").slot === "sf" && publicLook(w).sf === "flame" && equip(w, "bg", "bg_flame").error, "equip what you own, not what you don't");
 w.inv.sf_flame = 0; t(publicLook(w).sf === "", "the public look never shows something not owned");
+
+sect("shop: Season 2 skins");
+const S2I = SKIN_ITEMS.filter(i => i.season === 2), TIERS = ["iron", "bronze", "silver", "gold", "platinum", "emerald", "diamond", "flame", "water", "transcendent", "prismatic"];
+t(SKIN_ITEMS.length === 44 && S2I.length === 22 && TIERS.every(b => itemById("sf_" + b + "2") && itemById("bg_" + b + "2")), "Season 2: a Frame and a Background for each of the 11 tiers (44 skins in all)");
+t(itemById("sf_iron2").name === "Iron Frame - Season 2" && itemById("bg_prismatic2").name === "Prismatic Background - Season 2", "names: \"Iron Frame - Season 2\", \"Prismatic Background - Season 2\"");
+const r50 = v => v < 1000 ? Math.ceil(v / 50 - 0.5 + 1e-9) * 50 : Math.ceil(v / 100 - 0.5 + 1e-9) * 100;
+t(SKINS2.tiers.every((x, i) => x.price === r50(SKINS.tiers[i].price * 1.5)) && eq(SKINS2.tiers.map(x => x.price), [250, 400, 600, 900, 1400, 2000, 2700, 3300, 3300, 3800, 4500]), "Season 2 price = Season 1 x1.5 rounded (50s under 1,000, 100s above)");
+t(bundlePrice("iron2") === 400 && bundlePrice("prismatic2") === 7200 && bundlePrice("water2") === 5280, "Season 2 bundles keep 20% off (Iron 400, Water 5280, Prismatic 7200)");
+w = rich(); t(!buySkin(w, "sf_gold2").error && w.coins === 100000 - 900 && w.inv.sf_gold2 && !w.inv.sf_gold, "buy the Gold Frame S2: -900, a different item from Season 1's");
+w = rich(); buySkin(w, "sf_gold"); t(!buyBundle(w, "gold2").error && w.inv.sf_gold2 && w.inv.bg_gold2, "owning a Season 1 part doesn't block the Season 2 bundle");
+w = rich(); buySkin(w, "bg_flame2"); const c2 = w.coins; t(grantCosmetic(w, "bg_flame2").refund === 1650 && w.coins - c2 === 1650, "a duplicate Season 2 skin refunds 50% (1650 of 3300)");
+t(equip(w, "bg", "bg_flame2").slot === "bg" && publicLook(w).bg === "flame2" && equip(w, "sf", "sf_flame2").error, "equip a Season 2 background; the public look carries \"flame2\"");
+SKINS2.earnOnly.push("water"); w = rich(); t(buySkin(w, "sf_water2").error && !buySkin(w, "sf_water").error, "Season 2 earn-only list is its own"); SKINS2.earnOnly.pop();
+t(tierInfo("iron2").season === 2 && tierInfo("iron2").base === "iron" && tierInfo("iron").season === 1 && !tierInfo("iron3"), "tier lookup: iron = Season 1, iron2 = Season 2");
+const keep = Object.assign(blankVault(T0), { coins: 777, inv: { sf_gold: 1, bg_iron: 1, t_plotarmor: 1 }, equip: { sf: "sf_gold", bg: "bg_iron", title: "t_plotarmor" } });
+const mig = migrate(JSON.parse(JSON.stringify(keep)), T0);
+t(mig.coins === 777 && mig.inv.sf_gold && mig.inv.bg_iron && mig.equip.sf === "sf_gold" && publicLook(mig).sf === "gold" && publicLook(mig).bg === "iron", "existing coins, owned and equipped Season 1 items are kept as they were");
+t(!SKIN_TIERS.some(x => x.tradable) && !S2I.some(i => i.kind === "card"), "Season 2 cosmetics are not tradable");
 
 sect("scratch cards");
 w = Object.assign(blankVault(T0), { coins: 60 });

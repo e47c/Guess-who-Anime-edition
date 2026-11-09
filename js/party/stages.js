@@ -12,7 +12,7 @@
    Adding a stage later (for example ANIME TCG card duels) = one registerStage(id, meta) call with its
    metadata, settings schema and format; nothing else here changes.
    ===================================================================== */
-import { MODE_META } from "../vault/config.js?v=16";
+import { MODE_META } from "../vault/config.js?v=17";
 import { FEUD_RULES as R } from "../feud/engine.js?v=5";
 import { SK } from "../sketch/engine.js?v=5";
 import { NIGHT_PARTY as NP } from "./config.js?v=2";

@@ -1,19 +1,28 @@
 /* =====================================================================
    ANIME TCG · SHOP RULES (pure; tested in tools/vault-test.mjs)
-   Season 1 skins (each tier as a Frame = the ring around the picture, and a Background = the whole player card;
-   bundle -20%), scratch cards,
-   the wardrobe (what's equipped) and duplicate refunds. Cosmetics can't be traded or gifted.
+   Season 1 and Season 2 skins (each tier as a Frame = the decoration around the picture, and a Background = the whole
+   player card; bundle -20%), scratch cards, the wardrobe (what's equipped) and duplicate refunds.
+   Cosmetics can't be traded or gifted.
    Inventory: w.inv[itemId] = 1. Equipped: w.equip = { sf, bg, title, ts, uc, sleeve } (item ids, "" = none).
+   Skin tier keys: Season 1 "iron" (items sf_iron / bg_iron), Season 2 "iron2" (items sf_iron2 / bg_iron2).
    ===================================================================== */
-import { SKINS, SCRATCH } from "./config.js?v=16";
+import { SKINS, SKINS2, SCRATCH } from "./config.js?v=17";
 import { rngFrom, pickWeighted, pickInt } from "./rng.js?v=2";
 
 /* ---------- the catalogue ---------- */
+/* every skin tier of every season: { id (tier key), base (the Season 1 id), season, name, price, speed, earnOnly } */
+export const SKIN_TIERS = [
+    ...SKINS.tiers.map(t => ({ id: t.id, base: t.id, season: SKINS.season, name: t.name, price: t.price, speed: t.speed, earnOnly: SKINS.earnOnly.includes(t.id) })),
+    ...SKINS2.tiers.map(t => ({ id: t.id + "2", base: t.id, season: SKINS2.season, name: t.name, price: t.price, speed: t.speed, earnOnly: SKINS2.earnOnly.includes(t.id) }))
+];
+export const SEASONS = [SKINS.season, SKINS2.season];
+export const tierInfo = id => SKIN_TIERS.find(t => t.id === id) || null;
+/* read live (the config list can change without a reload) */
+export const earnOnlyTier = id => { const t = tierInfo(id); return !!t && (t.season === SKINS2.season ? SKINS2.earnOnly : SKINS.earnOnly).includes(t.base); };
 export const SKIN_ITEMS = [];
-SKINS.tiers.forEach(t => {
-    const earnOnly = SKINS.earnOnly.includes(t.id);
-    SKIN_ITEMS.push({ id: "sf_" + t.id, kind: "frame", slot: "sf", tier: t.id, name: t.name + " Frame - Season " + SKINS.season, price: t.price, earnOnly });
-    SKIN_ITEMS.push({ id: "bg_" + t.id, kind: "bg", slot: "bg", tier: t.id, name: t.name + " Background - Season " + SKINS.season, price: t.price, earnOnly });
+SKIN_TIERS.forEach(t => {
+    SKIN_ITEMS.push({ id: "sf_" + t.id, kind: "frame", slot: "sf", tier: t.id, base: t.base, season: t.season, name: t.name + " Frame - Season " + t.season, price: t.price, earnOnly: t.earnOnly });
+    SKIN_ITEMS.push({ id: "bg_" + t.id, kind: "bg", slot: "bg", tier: t.id, base: t.base, season: t.season, name: t.name + " Background - Season " + t.season, price: t.price, earnOnly: t.earnOnly });
 });
 const mkList = (kind, slot, rarity, names) => names.map(n => ({ id: (kind === "title" ? "t_" : kind === "tskin" ? "ts_" : "uc_") + n.toLowerCase().replace(/[^a-z0-9]+/g, ""), kind, slot, rarity, name: n }));
 export const SCRATCH_ITEMS = [
@@ -35,12 +44,12 @@ export const sleeveItem = series => ({ id: "sl_" + series, kind: "sleeve", slot:
 const BY_ID = Object.fromEntries([...SKIN_ITEMS, ...SCRATCH_ITEMS].map(i => [i.id, i]));
 export const itemById = id => BY_ID[id] || (/^sl_/.test(id) ? sleeveItem(id.slice(3)) : null);
 export const owns = (w, id) => !!(w.inv || {})[id];
-export const bundlePrice = tier => { const t = SKINS.tiers.find(x => x.id === tier); return t ? Math.round(t.price * 2 * (1 - SKINS.bundleOff)) : 0; };
+export const bundlePrice = tier => { const t = tierInfo(tier); return t ? Math.round(t.price * 2 * (1 - SKINS.bundleOff)) : 0; };
 
 /* ---------- buying skins ---------- */
 export function buySkin(w, id) {
     const it = BY_ID[id]; if (!it || !/^(sf|bg)_/.test(id)) return { error: "Unknown item" };
-    if (it.earnOnly || SKINS.earnOnly.includes(it.tier)) return { error: "This one can't be bought: it's earned." };
+    if (earnOnlyTier(it.tier)) return { error: "This one can't be bought: it's earned." };
     if (owns(w, id)) return { error: "You already own it." };
     if (w.coins < it.price) return { error: "Not enough coins" };
     w.coins -= it.price; w.inv = Object.assign({}, w.inv, { [id]: 1 });
@@ -48,7 +57,7 @@ export function buySkin(w, id) {
 }
 export function buyBundle(w, tier) {
     const f = BY_ID["sf_" + tier], b = BY_ID["bg_" + tier]; if (!f || !b) return { error: "Unknown tier" };
-    if (f.earnOnly || SKINS.earnOnly.includes(tier)) return { error: "This one can't be bought: it's earned." };
+    if (earnOnlyTier(tier)) return { error: "This one can't be bought: it's earned." };
     if (owns(w, f.id) || owns(w, b.id)) return { error: "You already own part of this bundle: buy the other part on its own." };
     const price = bundlePrice(tier); if (w.coins < price) return { error: "Not enough coins" };
     w.coins -= price; w.inv = Object.assign({}, w.inv, { [f.id]: 1, [b.id]: 1 });

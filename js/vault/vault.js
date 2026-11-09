@@ -11,15 +11,15 @@
    Every coin change goes through bank.apply(opId, ...), so a reload, a reconnect or a double click
    never pays twice.
    ===================================================================== */
-import { createBank, localBackend } from "./store.js?v=16";
-import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=16";
-import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=15";
+import { createBank, localBackend } from "./store.js?v=17";
+import { MODE_META, DAILY_LOGIN, VAULT as VCFG } from "./config.js?v=17";
+import { applyGame, applyNightParty, claimDaily, loginState, ensureMissions, missionEvent, dayKey, gameCoinsOn, FEATURES } from "./economy.js?v=16";
 import { newSeed } from "./rng.js?v=2";
-import { grantStarter, recordDuel, activeDeck, deckProblem, migrateDecks20, setActionLevels } from "./packs.js?v=14";
-import { ACTIONS } from "../duel/cards.js?v=2";
-import { publicLook } from "./shop.js?v=14";
-import { initOpening } from "./opening.js?v=15";
-import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig, addToDeck, closeTrainingOffer } from "./tabs.js?v=16";
+import { grantStarter, recordDuel, activeDeck, deckProblem, migrateDecks20, setActionLevels } from "./packs.js?v=15";
+import { ACTIONS } from "../duel/cards.js?v=3";
+import { publicLook } from "./shop.js?v=15";
+import { initOpening } from "./opening.js?v=16";
+import { renderTab, initTabs, roomSync as tabsRoomSync, roomSig, addToDeck, closeTrainingOffer } from "./tabs.js?v=17";
 import { motionOK } from "../fx.js";
 import { icon } from "./icons.js?v=3";
 
@@ -271,7 +271,7 @@ function rewardsTab() {
     wrap.appendChild(ec);
     // history
     const hc = mk("details", "vt-card vt-hist"); hc.appendChild(mk("summary", null, "Coin history"));
-    const LBL = { nightparty: "Night Party", game: "Game", daily: "Daily login", mission: "Mission", missions: "New missions", grant: "Gift", spend: "Spent", start: "Welcome", skin: "Shop", bundle: "Shop bundle", scratch: "Scratch card", pack: "Pack", craft: "Crafted pack", starter: "Starter deck", trade: "Trade", token: "Free pack" };
+    const LBL = { nightparty: "Night Party", game: "Game", daily: "Daily login", mission: "Mission", missions: "New missions", grant: "Gift", spend: "Spent", start: "Welcome", skin: "Shop", bundle: "Shop bundle", scratch: "Scratch card", pack: "Pack", craft: "Crafted pack", starter: "Starter deck", trade: "Trade", token: "Free pack", devgrant: "Dev grant" };
     const lines = bank.ledger().filter(l => l.d || l.kind === "missions").slice(-25).reverse();
     if (!lines.length) hc.appendChild(mk("p", "vt-rule", "Nothing yet. Finish a game or claim your daily bonus."));
     lines.forEach(l => {

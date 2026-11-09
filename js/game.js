@@ -20,21 +20,22 @@ import {
 
 import { audio } from "./audio.js?v=4";
 import { ambient, titleCard, shake, ring, burstText, countUp, flyClone, motionOK, setReduced, isReduced } from "./fx.js";
-import { profile, avatarEl, seatCard, passCard, styleName, styleTitle, initGallery, setProfileHooks, renderProfileCard } from "./profile.js?v=15";
-import * as WARD from "./wardrobe.js?v=11";
-import * as SLOT from "./cardslot.js?v=6";
-import { showResults, closeResults } from "./results.js?v=12";
+import { profile, avatarEl, seatCard, passCard, styleName, styleTitle, initGallery, setProfileHooks, renderProfileCard } from "./profile.js?v=16";
+import * as WARD from "./wardrobe.js?v=12";
+import * as SLOT from "./cardslot.js?v=7";
+import { showResults, closeResults } from "./results.js?v=13";
 import * as DRAFT from "./draft/draft.js?v=9";
 import * as FEUD from "./feud/feud.js?v=7";
 import { srvNow } from "./feud/common.js?v=4";
 import * as LIKELY from "./feud/likely.js?v=4";
 import * as SKETCH from "./sketch/sketch.js?v=9";
-import * as VAULT from "./vault/vault.js?v=19";
-import * as SHOP from "./vault/shoppage.js?v=11";
-import * as CV from "./cardvault/cardvault.js?v=17";
-import * as NP from "./party/party.js?v=9";
+import * as VAULT from "./vault/vault.js?v=20";
+import * as SHOP from "./vault/shoppage.js?v=12";
+import { initDevGrant } from "./vault/devgrant.js?v=1";
+import * as CV from "./cardvault/cardvault.js?v=18";
+import * as NP from "./party/party.js?v=10";
 import { resultOf, resultToDb, resultFromDb } from "./vault/result.js?v=6";
-import { stageMeta, normalizeSettings, teamPatch } from "./party/stages.js?v=11";
+import { stageMeta, normalizeSettings, teamPatch } from "./party/stages.js?v=12";
 import { initCine, cineHook, cineHas } from "./cine/engine.js?v=15";
 import { hand as cineHand } from "./cine/hands.js?v=11";
 import * as CK from "./cine/kit.js?v=11";
@@ -4843,7 +4844,8 @@ async function initApp() {
         crinkle: v => audio.crinkle(v), hostParty: () => window.createRoom({ vault: true }), joinParty: code => { $("joinCode").value = code; window.joinRoom(); } });
     SHOP.initShop({ sfx, toast, uiConfirm, openOverlay, closeOverlay, passCard, avatarEl, profilePub: () => profile.public(), level: () => profile.level(), inRoom: () => !!room,
         setLook: look => { const P = profile.get(); if (["sf", "bg", "ts", "uc", "vtn"].some(k => (P[k] || "") !== (look[k] || ""))) profile.update(look); } });
-    WARD.initWardrobe({ sfx, toast, closeOverlay, openShop: where => SHOP.openShop(where) });
+    WARD.initWardrobe({ sfx, toast, closeOverlay, openShop: where => SHOP.openShop(where), uid: () => (user && user.uid) || "" });
+    initDevGrant({ uid: () => (user && user.uid) || "", sfx, toast });       // hidden owner tool: hold the coin counter (js/vault/devgrant.js)
     SLOT.initCardSlot({ sfx, open: () => window.openProfile() });
     bindSettings(); syncDock(); renderProfileCard(); buildHomeModes();
     $("name").value = profile.get().name || "";

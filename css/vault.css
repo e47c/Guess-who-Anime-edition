@@ -611,3 +611,13 @@ body.fx-lite .av-grid, body.fx-lite .av-page .av-marquee h1, body.fx-lite .cv-in
 .av-joinf { display: flex; gap: 6px; flex-basis: 100%; justify-content: center; }
 .av-joinf input { width: 9em; min-height: 40px; padding: 4px 10px; border: 0; border-radius: 8px; background: #050208; color: #fff; text-align: center; font: 700 18px/1 var(--f-mono); letter-spacing: .2em; box-shadow: inset 0 0 0 1px #b38bff; }
 .vt-bnoroom { display: grid; gap: 6px; text-align: center; justify-items: center; }
+
+/* ---------- the hidden owner coin tool (js/vault/devgrant.js): a plain, small window; no menu shows it ---------- */
+#credit, .vault-chip { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+.dt-ov { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 16px; background: rgba(0,0,0,.72); }
+.dt-box { position: relative; display: grid; gap: 8px; width: min(320px, 100%); padding: 18px 16px 14px; border-radius: 12px; background: #0f0c12; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14), 0 20px 50px rgba(0,0,0,.6); }
+.dt-l { font: 700 11px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.dt-row { display: flex; gap: 8px; }
+.dt-in { flex: 1; min-width: 0; min-height: 40px; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.18); background: #000; color: #fff; font: 600 16px/1.2 var(--f-mono); }
+.dt-msg { min-height: 1.3em; margin: 0; font: 500 13px/1.35 var(--f-ui); color: var(--muted); }
+.dt-x { position: absolute; right: 6px; top: 6px; width: 30px; height: 30px; border: 0; border-radius: 6px; background: none; color: var(--muted); cursor: pointer; }
