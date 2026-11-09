@@ -124,7 +124,7 @@ export const SKINS2 = {
    owners = SHA-256 hashes of allowed player ids (the Firebase user id shown in the Wardrobe, salted with ownerSalt).
    This site has no server: see the comment in devgrant.js for what this does and does not protect. */
 export const DEV_TOOL = {
-    holdMs: 10000,                               // press and hold the coin counter this long (no hint while holding)
+    holdMs: 4000,                                // press and hold the coin counter this long (no hint while holding)
     moveCancelPx: 24,                            // moving further than this from where the press started cancels it
     maxTries: 3, lockMinutes: 10,                // wrong codes before the tool locks, and for how long
     maxGrant: 100000,                            // the most coins one grant may add
@@ -133,7 +133,7 @@ export const DEV_TOOL = {
     salt: "C4MF2SArEAI+oNPbeWPSZA==",      // filled by tools/devgrant-setup.mjs (base64)
     hash: "1pSvSENiyuRIKWYMNRmbnqrS+lwnUCKXe1rY4WhEaqY=",      // PBKDF2(code, salt) (base64)
     ownerSalt: "ryFK7kWVw2jIgaAF/70/rQ==",
-    owners: []                                   // SHA-256(ownerSalt + player id), base64
+    owners: ["3ICV/lFmv3JFPUJXBsYu3woO3gHRf/r9Dw8fKzahNac="]                                   // SHA-256(ownerSalt + player id), base64
 };
 
 /* ---------- A3b. The card reader under the Arcade Pass (main menu): pick the pass up, insert it, the Wardrobe opens ----------

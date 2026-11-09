@@ -22,8 +22,8 @@
        could edit their localStorage. A real guarantee needs a server (e.g. a Cloud Function holding the hash and the
        allow-list, writing a server-side balance).
    ===================================================================== */
-import { DEV_TOOL } from "./config.js?v=17";
-import { bank } from "./vault.js?v=20";
+import { DEV_TOOL } from "./config.js?v=18";
+import { bank } from "./vault.js?v=21";
 
 const LS = "aap_dt";
 let X = { uid: () => "", sfx: () => {}, toast: () => {} };

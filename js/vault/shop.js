@@ -6,7 +6,7 @@
    Inventory: w.inv[itemId] = 1. Equipped: w.equip = { sf, bg, title, ts, uc, sleeve } (item ids, "" = none).
    Skin tier keys: Season 1 "iron" (items sf_iron / bg_iron), Season 2 "iron2" (items sf_iron2 / bg_iron2).
    ===================================================================== */
-import { SKINS, SKINS2, SCRATCH } from "./config.js?v=17";
+import { SKINS, SKINS2, SCRATCH } from "./config.js?v=18";
 import { rngFrom, pickWeighted, pickInt } from "./rng.js?v=2";
 
 /* ---------- the catalogue ---------- */

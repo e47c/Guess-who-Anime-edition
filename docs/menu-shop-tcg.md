@@ -109,8 +109,8 @@ Checklist:
     saving a Season 2 background puts it on the menu pass
   - [x] every frame and background at large, pass, lobby, 72 / 54 / 44, compact 34-22, race-track token and mini pass
     sizes (`dev/skins.html`), with and without Reduced effects
-  - [x] coin tool: a 3 s hold opens Daily rewards as before; moving off cancels; no window or hint before 10 s; after
-    10 s the code window opens and the release doesn't open Daily rewards; the right code on a non-owner profile and
+  - [x] coin tool: a 2 s hold opens Daily rewards as before; moving off cancels; no window or hint before 4 s; after
+    4 s (DEV_TOOL.holdMs, was 10 s) the code window opens and the release doesn't open Daily rewards; the right code on a non-owner profile and
     wrong codes say "Invalid code"; 3 failures lock for 10 minutes (logged); an owner gets the amount field; 0, -5,
     1.5, text and over-the-max are refused; a triple click on Confirm grants once; the grant is logged (ledger "Dev
-    grant" + devGrants: id, amount, time); missions, streaks, XP and stats untouched; a 10 s long touch works on phones
+    grant" + devGrants: id, amount, time); missions, streaks, XP and stats untouched; a 4 s long touch works on phones

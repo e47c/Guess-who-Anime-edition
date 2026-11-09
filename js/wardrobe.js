@@ -15,12 +15,12 @@
    Profile side (name, picture, colour, arcade frame, level title) -> profile.js; Shop side (Season frame /
    background, Shop title, title skin, username style, sleeve) -> the Vault bank's equip slots (shop.js equip).
    ===================================================================== */
-import { profile, TITLES, FRAMES, ACH, COLORS, isUnlocked, titleName, levelOf, cleanAvatar, avatarEl, passCard, galleryTabs, galleryFor, shrinkImage, commitProfile } from "./profile.js?v=16";
-import { bank } from "./vault/vault.js?v=20";
-import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, owns, equip, publicLook, tierInfo } from "./vault/shop.js?v=15";
-import { SKINS, SCRATCH } from "./vault/config.js?v=17";
+import { profile, TITLES, FRAMES, ACH, COLORS, isUnlocked, titleName, levelOf, cleanAvatar, avatarEl, passCard, galleryTabs, galleryFor, shrinkImage, commitProfile } from "./profile.js?v=17";
+import { bank } from "./vault/vault.js?v=21";
+import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, owns, equip, publicLook, tierInfo } from "./vault/shop.js?v=16";
+import { SKINS, SCRATCH } from "./vault/config.js?v=18";
 import { CARD_SERIES } from "./vault/carddb.js?v=6";
-import { theme, backCard } from "./vault/cardui.js?v=16";
+import { theme, backCard } from "./vault/cardui.js?v=17";
 
 const $ = id => document.getElementById(id);
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };

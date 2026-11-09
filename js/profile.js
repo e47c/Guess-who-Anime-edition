@@ -5,8 +5,8 @@
    player node so everybody sees the same card in every mode.
    ===================================================================== */
 
-import { SKINS, SKINS2 } from "./vault/config.js?v=17";
-import { s2Base, decorateAvatar, decorateCard, installTextures } from "./skins2.js?v=1";
+import { SKINS, SKINS2 } from "./vault/config.js?v=18";
+import { s2Base, decorateAvatar, decorateCard, installTextures } from "./skins2.js?v=2";
 import { NIGHT_PARTY } from "./party/config.js?v=2";
 
 const KEY = "gw_profile_v1";

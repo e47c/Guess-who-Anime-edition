@@ -355,7 +355,7 @@ hidden by the interface, as in the other modes.
   chips, lists) get a compact version; big Flame / Water frames and the Flame background add one shared canvas loop
   (30 fps cap). Everything pauses off-screen and is still under Reduced effects. Review page: `dev/skins.html` (every
   frame and background of both seasons at every size).
-- **Owner coin tool** (`js/vault/devgrant.js`, hidden): holding the coin counter for 10 s opens a code prompt; only the
+- **Owner coin tool** (`js/vault/devgrant.js`, hidden): holding the coin counter for 4 s opens a code prompt; only the
   right code on an allow-listed player id unlocks a grant (logged as "Dev grant", counts for nothing else). The code
   is stored only as a salted PBKDF2 hash; set it and the allow-list with `tools/devgrant-setup.mjs`. There is no
   server, so this is a convenience, not a security boundary (see the file's header).
