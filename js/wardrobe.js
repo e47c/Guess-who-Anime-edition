@@ -15,12 +15,12 @@
    Profile side (name, picture, colour, arcade frame, level title) -> profile.js; Shop side (Season frame /
    background, Shop title, title skin, username style, sleeve) -> the Vault bank's equip slots (shop.js equip).
    ===================================================================== */
-import { profile, TITLES, FRAMES, ACH, COLORS, isUnlocked, titleName, levelOf, cleanAvatar, avatarEl, passCard, galleryTabs, galleryFor, shrinkImage, commitProfile } from "./profile.js?v=17";
-import { bank } from "./vault/vault.js?v=21";
-import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, owns, equip, publicLook, tierInfo } from "./vault/shop.js?v=16";
-import { SKINS, SCRATCH } from "./vault/config.js?v=18";
+import { profile, TITLES, FRAMES, ACH, COLORS, isUnlocked, titleName, levelOf, cleanAvatar, avatarEl, passCard, galleryTabs, galleryFor, shrinkImage, commitProfile } from "./profile.js?v=18";
+import { bank } from "./vault/vault.js?v=22";
+import { SKIN_ITEMS, SCRATCH_ITEMS, itemById, owns, equip, publicLook, tierInfo, seasonLive } from "./vault/shop.js?v=17";
+import { SKINS, SCRATCH } from "./vault/config.js?v=19";
 import { CARD_SERIES } from "./vault/carddb.js?v=6";
-import { theme, backCard } from "./vault/cardui.js?v=17";
+import { theme, backCard } from "./vault/cardui.js?v=18";
 
 const $ = id => document.getElementById(id);
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -90,7 +90,7 @@ function itemsFor(id) {
     const plateOf = over => () => { const l = lookOf(over); return plate(l.name, l.ttl, l); };
     if (id === "frames") {
         const out = [{ key: "none", name: "No frame", grade: "Default", owned: true, def: true, on: !D.sf && D.fr === "none", how: "Always yours", over: { sf: "", fr: "none" }, pick: () => { D.sf = ""; D.fr = "none"; } }];
-        SKIN_ITEMS.filter(i => i.kind === "frame").forEach(i => out.push({ key: i.id, name: tierName(i.tier) + " Frame", grade: tierName(i.tier) + " tier · Season " + i.season, group: "Season " + i.season, owned: owns(w, i.id), on: D.sf === i.id,
+        SKIN_ITEMS.filter(i => i.kind === "frame" && seasonLive(i.season)).forEach(i => out.push({ key: i.id, name: tierName(i.tier) + " Frame", grade: tierName(i.tier) + " tier · Season " + i.season, group: "Season " + i.season, owned: owns(w, i.id), on: D.sf === i.id,
             how: i.earnOnly ? "Earned, not sold" : "Sold in the Shop (Season " + i.season + " tab)", price: i.earnOnly ? null : i.price, shop: i.earnOnly ? null : { tab: "skins", tier: i.tier, slot: "sf" },
             over: { sf: i.tier }, pick: () => { D.sf = i.id; } }));
         FRAMES.filter(f => f.id !== "none").forEach(f => {
@@ -103,7 +103,7 @@ function itemsFor(id) {
     }
     if (id === "bgs") {
         const out = [{ key: "none", name: "Arcade default", grade: "Default", owned: true, def: true, on: !D.bg, how: "Always yours", over: { bg: "" }, pick: () => { D.bg = ""; } }];
-        SKIN_ITEMS.filter(i => i.kind === "bg").forEach(i => out.push({ key: i.id, name: tierName(i.tier) + " Background", grade: tierName(i.tier) + " tier · Season " + i.season, group: "Season " + i.season, owned: owns(w, i.id), on: D.bg === i.id,
+        SKIN_ITEMS.filter(i => i.kind === "bg" && seasonLive(i.season)).forEach(i => out.push({ key: i.id, name: tierName(i.tier) + " Background", grade: tierName(i.tier) + " tier · Season " + i.season, group: "Season " + i.season, owned: owns(w, i.id), on: D.bg === i.id,
             how: i.earnOnly ? "Earned, not sold" : "Sold in the Shop (Season " + i.season + " tab)", price: i.earnOnly ? null : i.price, shop: i.earnOnly ? null : { tab: "skins", tier: i.tier, slot: "bg" },
             over: { bg: i.tier }, pick: () => { D.bg = i.id; } }));
         out.forEach(o => { o.art = mini(Object.assign({ sf: "" }, o.over)); });

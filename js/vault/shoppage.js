@@ -18,9 +18,9 @@
    shows the result on the Arcade Pass. Every purchase is an intent sent to the bank (bank.apply with an operation
    id): a double click never pays twice.
    ===================================================================== */
-import { SKINS, SKINS2, SCRATCH } from "./config.js?v=18";
-import { SKIN_TIERS, tierInfo, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=16";
-import { bank, vaultEvent } from "./vault.js?v=21";
+import { SKINS, SKINS2, SCRATCH } from "./config.js?v=19";
+import { SKIN_TIERS, tierInfo, SCRATCH_ITEMS, KIND_NAME, itemById, owns, bundlePrice, buySkin, buyBundle, rollScratch, equip, publicLook } from "./shop.js?v=17";
+import { bank, vaultEvent } from "./vault.js?v=22";
 import { newSeed } from "./rng.js?v=2";
 import { motionOK } from "../fx.js";
 

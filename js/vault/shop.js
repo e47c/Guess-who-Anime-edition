@@ -6,19 +6,23 @@
    Inventory: w.inv[itemId] = 1. Equipped: w.equip = { sf, bg, title, ts, uc, sleeve } (item ids, "" = none).
    Skin tier keys: Season 1 "iron" (items sf_iron / bg_iron), Season 2 "iron2" (items sf_iron2 / bg_iron2).
    ===================================================================== */
-import { SKINS, SKINS2, SCRATCH } from "./config.js?v=18";
+import { SKINS, SKINS2, SKINS3, SCRATCH } from "./config.js?v=19";
 import { rngFrom, pickWeighted, pickInt } from "./rng.js?v=2";
 
 /* ---------- the catalogue ---------- */
 /* every skin tier of every season: { id (tier key), base (the Season 1 id), season, name, price, speed, earnOnly } */
 export const SKIN_TIERS = [
     ...SKINS.tiers.map(t => ({ id: t.id, base: t.id, season: SKINS.season, name: t.name, price: t.price, speed: t.speed, earnOnly: SKINS.earnOnly.includes(t.id) })),
-    ...SKINS2.tiers.map(t => ({ id: t.id + "2", base: t.id, season: SKINS2.season, name: t.name, price: t.price, speed: t.speed, earnOnly: SKINS2.earnOnly.includes(t.id) }))
+    ...SKINS2.tiers.map(t => ({ id: t.id + "2", base: t.id, season: SKINS2.season, name: t.name, price: t.price, speed: t.speed, earnOnly: SKINS2.earnOnly.includes(t.id) })),
+    ...SKINS3.tiers.map(t => ({ id: t.id + "3", base: t.id, season: SKINS3.season, name: t.name, price: t.price, speed: t.speed, earnOnly: SKINS3.earnOnly.includes(t.id), s3: true }))
 ];
-export const SEASONS = [SKINS.season, SKINS2.season];
+const SEASON_CFG = { [SKINS.season]: SKINS, [SKINS2.season]: SKINS2, [SKINS3.season]: SKINS3 };
+/* a season is in the Shop / Wardrobe unless its config says live: false (read live) */
+export const seasonLive = season => !SEASON_CFG[season] || SEASON_CFG[season].live !== false;
+export const SEASONS = [SKINS.season, SKINS2.season, SKINS3.season];
 export const tierInfo = id => SKIN_TIERS.find(t => t.id === id) || null;
 /* read live (the config list can change without a reload) */
-export const earnOnlyTier = id => { const t = tierInfo(id); return !!t && (t.season === SKINS2.season ? SKINS2.earnOnly : SKINS.earnOnly).includes(t.base); };
+export const earnOnlyTier = id => { const t = tierInfo(id); return !!t && (SEASON_CFG[t.season].earnOnly || []).includes(t.base); };
 export const SKIN_ITEMS = [];
 SKIN_TIERS.forEach(t => {
     SKIN_ITEMS.push({ id: "sf_" + t.id, kind: "frame", slot: "sf", tier: t.id, base: t.base, season: t.season, name: t.name + " Frame - Season " + t.season, price: t.price, earnOnly: t.earnOnly });
@@ -49,6 +53,7 @@ export const bundlePrice = tier => { const t = tierInfo(tier); return t ? Math.r
 /* ---------- buying skins ---------- */
 export function buySkin(w, id) {
     const it = BY_ID[id]; if (!it || !/^(sf|bg)_/.test(id)) return { error: "Unknown item" };
+    if (!seasonLive(it.season)) return { error: "Not in the Shop yet." };
     if (earnOnlyTier(it.tier)) return { error: "This one can't be bought: it's earned." };
     if (owns(w, id)) return { error: "You already own it." };
     if (w.coins < it.price) return { error: "Not enough coins" };
@@ -57,6 +62,7 @@ export function buySkin(w, id) {
 }
 export function buyBundle(w, tier) {
     const f = BY_ID["sf_" + tier], b = BY_ID["bg_" + tier]; if (!f || !b) return { error: "Unknown tier" };
+    if (!seasonLive(f.season)) return { error: "Not in the Shop yet." };
     if (earnOnlyTier(tier)) return { error: "This one can't be bought: it's earned." };
     if (owns(w, f.id) || owns(w, b.id)) return { error: "You already own part of this bundle: buy the other part on its own." };
     const price = bundlePrice(tier); if (w.coins < price) return { error: "Not enough coins" };

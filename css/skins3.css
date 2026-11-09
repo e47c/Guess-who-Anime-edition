@@ -1,0 +1,113 @@
+/* =====================================================================
+   SEASON 3 COSMETICS (js/skins3.js draws the scenes; numbers in js/vault/config.js SKINS3)
+   FRAME (.ava.s3.sf-<tier>3, level classes .s3-full / .s3-medium / .s3-compact): the picture keeps --s3pad of padding;
+     .s3f is the SVG object behind it (.s3f-w reaches 30% past the box in its coordinates, the drawing itself stays
+     within ~20%; .s3f-c for compact); .s3-cvf the canvas (full Flame). .s3-in = the entrance (once), .s3-crowd = a
+     skin that is not the hero: its secondary loops (.s3-sec) are off.
+   BACKGROUND (.sbg.sbg3[data-bg=<tier>3]): .s3bg holds the depth layers (.s3-l, --d) moved by --px / --py (-1..1, set
+     by js/skins3.js from the pointer, the device tilt or the idle drift), overlays (.s3-ov SVG, .s3-x CSS), the canvas
+     (.s3-cvb) and .s3-shine; .s3-scrim keeps the text readable. No diagonal stripes.
+   Reduced effects / reduced motion: no parallax, no entrance, no loops, no canvas: a still scene.
+   ===================================================================== */
+:root { --s3pad: .17; --s3padc: .1; --s3plx: 3%; }
+
+/* ---------- frames ---------- */
+.ava.sf.s3 { padding: calc(var(--ava) * var(--s3pad)); background: transparent; box-shadow: none; }
+.ava.sf.s3.s3-compact { padding: calc(var(--ava) * var(--s3padc)); }
+.ava.s3 .ava-in { position: relative; z-index: 2; box-shadow: 0 0 0 1px rgba(0,0,0,.65), 0 3px 8px rgba(0,0,0,.5); }
+.s3f, .s3-cvf { position: absolute; pointer-events: none; }
+.s3f-w { inset: calc(var(--ava) * -.3); z-index: 1; }
+.s3f-c { inset: calc(var(--ava) * -.12); z-index: 1; }
+.s3-cvf { left: calc(var(--ava) * -.3); top: calc(var(--ava) * -.3); width: calc(var(--ava) * 1.6); height: calc(var(--ava) * 1.6); z-index: 1; }
+.s3f svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.s3f svg * { transform-box: view-box; }
+.pass .pass-ava.s3:not(.s3-compact) { --ava: 27cqw !important; }
+
+/* idle loops */
+.s3-glow { animation: s3Glow 2.6s ease-in-out infinite; }
+.s3-glowpulse { animation: s3Glow 2.2s ease-in-out infinite; }
+.s3-twinkle { animation: s3Twinkle 3s ease-in-out infinite; }
+.s3-flick { animation: s3Flicker 2.4s steps(2, jump-none) infinite; }
+.s3-beam { animation: s3Beam 3.4s ease-in-out infinite; }
+.s3-beam-m { animation: s3BeamM 5s ease-in-out infinite; }
+.s3-wing { animation: s3Wing 2.8s ease-in-out infinite alternate; }
+.s3-wing-m { animation: s3WingM 4.2s ease-in-out infinite alternate; }
+.s3-tail { animation: s3Tail 3.2s ease-in-out infinite alternate; }
+.s3-sway { transform-origin: 50px 90px; animation: s3Tail 2.6s ease-in-out infinite alternate; }
+.s3-crest { animation: s3Crest .9s ease-in-out infinite; }
+.s3-eye { animation: s3Eye 1.6s ease-in-out infinite; }
+/* crowd skins (not yours, not previewed): every SVG loop stops (an SVG loop repaints the whole drawing each frame);
+   the frame floats gently as one composited layer instead. Entrances (.s3-e-*) still play. */
+.s3-crowd :is(.s3-sec, .s3-glow, .s3-glowpulse, .s3-twinkle, .s3-flick, .s3-beam, .s3-beam-m, .s3-wing, .s3-wing-m, .s3-tail, .s3-crest, .s3-eye, .s3-sway, .s3-flow) { animation: none !important; }
+.ava.s3-crowd:not(.s3-compact) .s3f { animation: s3Float 4.6s ease-in-out infinite alternate; }
+@keyframes s3Float { from { transform: translateY(-1.2%) scale(1); } to { transform: translateY(1.2%) scale(1.012); } }
+@keyframes s3Glow { 0%, 100% { opacity: .35; } 50% { opacity: .95; } }
+@keyframes s3Twinkle { 0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; } 45% { transform: scale(1) rotate(45deg); opacity: 1; } 70% { transform: scale(.35) rotate(80deg); opacity: .6; } }
+@keyframes s3Flicker { 0% { opacity: .25; } 100% { opacity: 1; } }
+@keyframes s3Beam { 0%, 100% { transform: rotate(-5deg); opacity: .35; } 40% { opacity: 1; } 60% { transform: rotate(5deg); opacity: .7; } }
+@keyframes s3BeamM { 0%, 100% { opacity: .35; } 50% { opacity: .85; } }
+@keyframes s3Wing { from { transform: rotate(-16deg); } to { transform: rotate(7deg); } }
+@keyframes s3WingM { from { transform: rotate(-8deg); } to { transform: rotate(4deg); } }
+@keyframes s3Tail { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+@keyframes s3Crest { 0%, 100% { transform: scale(1, 1) skewX(0deg); } 30% { transform: scale(.94, 1.12) skewX(3deg); } 65% { transform: scale(1.04, .92) skewX(-2deg); } }
+@keyframes s3Eye { 0%, 100% { opacity: .8; } 50% { opacity: 1; } }
+
+/* entrances (once, while .s3-in is set): the ruby arms draw in and the stones drop into their claws; the diamond
+   crown descends and its beams flare; the phoenix rises with folded wings, the crest ignites, the wings open */
+.s3-in .s3-e-draw path { stroke-dasharray: 1; animation: s3Draw .75s ease-out both; animation-delay: inherit; }
+.s3-in .s3-e-draw { animation: none; }
+.s3-in .s3-e-pop { animation: s3Pop .55s cubic-bezier(.2, 1.6, .4, 1) both; }
+.s3-in .s3-e-descend { animation: s3Descend .8s cubic-bezier(.2, .9, .3, 1) both; }
+.s3-in .s3-e-flare { animation: s3Flare 1.4s ease-out both; }
+.s3-in .s3-e-rise { animation: s3Rise .9s cubic-bezier(.2, .9, .3, 1) both; }
+.s3-in .s3-e-unfold { animation: s3Unfold 1.1s cubic-bezier(.3, 1.4, .5, 1) .35s both; }
+.s3-in .s3-e-ignite { animation: s3Ignite .6s cubic-bezier(.2, 1.5, .4, 1) .55s both; }
+@keyframes s3Draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes s3Pop { 0% { transform: translateY(-6px) scale(0); opacity: 0; } 60% { opacity: 1; } 100% { transform: none; opacity: 1; } }
+@keyframes s3Descend { 0% { transform: translateY(-18px); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes s3Flare { 0%, 50% { opacity: 0; } 70% { opacity: 1; } 100% { opacity: 1; } }
+@keyframes s3Rise { 0% { transform: translateY(18px) scale(.86); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes s3Unfold { 0% { transform: rotate(-42deg); } 100% { transform: none; } }
+@keyframes s3Ignite { 0% { transform: scale(0); opacity: 0; } 100% { transform: none; opacity: 1; } }
+
+/* ---------- backgrounds ---------- */
+.sbg.sbg3 { background: #0c0306 !important; }
+.sbg.sbg3 > .sbg-fx { display: none; }
+.pass.sbg.sbg3::before, :is(#lobby, #arcadeVault) .seat.sbg.sbg3[data-bg]::before { background: none; }
+.sbg[data-bg="ruby3"] { --sbg-edge: #e0304e; } .sbg[data-bg="diamond3"] { --sbg-edge: #cfeaff; } .sbg[data-bg="flame3"] { --sbg-edge: #ff7a1a; }
+.s3bg { position: absolute; inset: 0; z-index: -2; overflow: hidden; pointer-events: none; border-radius: inherit; background: #0a0306; }
+.s3-l { position: absolute; inset: -7%; background-position: center; background-size: cover; background-repeat: no-repeat;
+    transform: translate3d(calc(var(--px, 0) * var(--d) * var(--s3plx) * -1), calc(var(--py, 0) * var(--d) * var(--s3plx) * -1), 0); will-change: transform; }
+.s3-ov { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.s3-ov * { transform-box: fill-box; transform-origin: center; }
+.s3-x { position: absolute; pointer-events: none; }
+.s3-cvb { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.s3-shine { position: absolute; inset: 0; mix-blend-mode: screen; background: radial-gradient(circle at calc(50% + var(--px, 0) * 40%) calc(35% + var(--py, 0) * 40%), rgba(255,255,255,.15), transparent 45%); }
+.s3-scrim { position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
+    background: linear-gradient(90deg, rgba(0,0,0,var(--scrimL, .4)), rgba(0,0,0,calc(var(--scrimL, .4) * .4)) 60%, transparent 92%), linear-gradient(0deg, rgba(0,0,0,var(--scrimB, .3)), transparent 34%); }
+/* Diamond: two lighting states of the mid facets cross-fade with the tilt; the fire layer adds light */
+.s3-xa { opacity: calc(.5 + var(--px, 0) * .5); }
+.s3-xb { opacity: calc(.5 - var(--px, 0) * .5); }
+.s3-fire { mix-blend-mode: screen; }
+/* Ruby: a warm flickering glow breathing over the velvet */
+.s3-ruby-flick { left: -25%; top: 18%; width: 78%; height: 110%; mix-blend-mode: screen; background: radial-gradient(closest-side, rgba(255,165,95,.55), rgba(255,70,50,.18) 55%, transparent); animation: s3Candle 3.1s linear infinite; }
+.s3-ruby-flick.s3-f2 { left: auto; right: -22%; top: -32%; width: 62%; height: 92%; opacity: .7; animation-duration: 4.3s; animation-delay: -1.2s; }
+@keyframes s3Candle { 0% { opacity: .62; transform: scale(1); } 11% { opacity: .92; } 19% { opacity: .7; } 33% { opacity: 1; transform: scale(1.04); } 47% { opacity: .66; } 58% { opacity: .88; } 71% { opacity: .74; transform: scale(.98); } 86% { opacity: .96; } 100% { opacity: .62; transform: scale(1); } }
+/* Flame: heat haze over the lava, flowing molten highlights, embers (medium cards: CSS embers instead of the canvas) */
+.s3-haze { left: -10%; right: -10%; top: 38%; bottom: -30%; background: var(--tx-liquid) 0 0 / 260px 160px; mix-blend-mode: overlay; opacity: .3;
+    -webkit-mask: linear-gradient(180deg, transparent, #000 30%); mask: linear-gradient(180deg, transparent, #000 30%); animation: s3Haze 6s linear infinite; }
+@keyframes s3Haze { to { transform: translateY(-160px); } }
+.s3-flow { animation: s3Flow 2.6s linear infinite; }
+@keyframes s3Flow { to { stroke-dashoffset: -48; } }
+.s3-embers { inset: 0 0 -40%; background: radial-gradient(circle at 18% 70%, #ffd36a 0 1.2px, transparent 2.4px), radial-gradient(circle at 46% 84%, #ffb347 0 1px, transparent 2.2px), radial-gradient(circle at 72% 62%, #ffe27a 0 1.2px, transparent 2.4px), radial-gradient(circle at 88% 90%, #ffb347 0 1px, transparent 2px);
+    animation: s3Rise2 4.5s linear infinite; }
+@keyframes s3Rise2 { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-40%); opacity: 0; } }
+
+/* ---------- Reduced effects / reduced motion: still scenes ---------- */
+body.fx-lite :is(.s3f, .s3bg) *, body.fx-lite :is(.s3f, .s3bg) { animation: none !important; }
+body.fx-lite .s3-crowd .s3f { animation: none !important; }
+body.fx-lite .s3-l { transform: none !important; }
+body.fx-lite .s3-cv { display: none; }
+body.fx-lite .s3-xa, body.fx-lite .s3-xb { opacity: .5; }
+body.fx-lite .s3-heat { filter: none; }
+@media (prefers-reduced-motion: reduce) { :is(.s3f, .s3bg) * { animation: none !important; } .s3-l { transform: none !important; } .s3-cv { display: none; } .s3-heat { filter: none; } }

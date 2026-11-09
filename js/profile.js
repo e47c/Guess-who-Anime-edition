@@ -5,8 +5,9 @@
    player node so everybody sees the same card in every mode.
    ===================================================================== */
 
-import { SKINS, SKINS2 } from "./vault/config.js?v=18";
-import { s2Base, decorateAvatar, decorateCard, installTextures } from "./skins2.js?v=2";
+import { SKINS, SKINS2, SKINS3 } from "./vault/config.js?v=19";
+import { s2Base, decorateAvatar, decorateCard, installTextures } from "./skins2.js?v=3";
+import { s3Base, decorateAvatar3, decorateCard3 } from "./skins3.js?v=1";
 import { NIGHT_PARTY } from "./party/config.js?v=2";
 
 const KEY = "gw_profile_v1";
@@ -137,7 +138,7 @@ export function cleanAvatar(av) {
    SKINS2.compactBelow px) plus canvas flames / water on big Flame / Water avatars (css/skins2.css).
    The Season background (p.bg) is NOT drawn here: it restyles the whole player card (seatCard below). */
 const COSM = /^[a-z0-9]{1,24}$/;
-export function avatarEl(p, { size = 48, cls = "", badge = false } = {}) {
+export function avatarEl(p, { size = 48, cls = "", badge = false, level = "", hero = false, entrance = false } = {}) {
     p = p || {};
     const el = document.createElement("div"), av = cleanAvatar(p.av), col = /^#[0-9a-f]{3,8}$/i.test(p.col || "") ? p.col : "#e11b1b";
     const sf = COSM.test(p.sf || "") ? p.sf : "";
@@ -154,8 +155,9 @@ export function avatarEl(p, { size = 48, cls = "", badge = false } = {}) {
     }
     el.appendChild(inner);
     if (sf) {
-        const b2 = s2Base(sf);
-        if (b2) decorateAvatar(el, b2, size);         // Season 2: an SVG frame around a slightly smaller picture (js/skins2.js)
+        const b2 = s2Base(sf), b3 = s3Base(sf);
+        if (b3) decorateAvatar3(el, b3, size, { level, hero, entrance });     // Season 3: a living object around the picture (js/skins3.js)
+        else if (b2) decorateAvatar(el, b2, size);    // Season 2: an SVG frame around a slightly smaller picture (js/skins2.js)
         else ["ava-ring", "ava-fx"].forEach(c => { const i = document.createElement("i"); i.className = c; i.setAttribute("aria-hidden", "true"); el.appendChild(i); });
         fxWatch(el);
     }
@@ -170,13 +172,14 @@ export function seatCard(p, { slot = 1, me = false, col = "", cls = "", size = 7
     const s = document.createElement("div"), bg = COSM.test(p.bg || "") ? p.bg : "";
     s.className = "seat" + (me ? " me" : "") + (bg ? " sbg" : "") + (cls ? " " + cls : "");
     s.style.setProperty("--pc", col || (/^#[0-9a-f]{3,8}$/i.test(p.col || "") ? p.col : "#e11b1b"));
-    if (bg) { s.dataset.bg = bg; const f = document.createElement("i"); f.className = "sbg-fx"; f.setAttribute("aria-hidden", "true"); s.appendChild(f); if (s2Base(bg)) decorateCard(s, s2Base(bg)); fxWatch(s); }
+    const enter = /(^|\s)enter(\s|$)/.test(cls);       // a player arriving in the lobby: Season 3 frames play their entrance
+    if (bg) { s.dataset.bg = bg; const f = document.createElement("i"); f.className = "sbg-fx"; f.setAttribute("aria-hidden", "true"); s.appendChild(f); if (s3Base(bg)) decorateCard3(s, s3Base(bg), { level: "medium", hero: me }); else if (s2Base(bg)) decorateCard(s, s2Base(bg)); fxWatch(s); }
     const no = document.createElement("span"); no.className = "seat-no"; no.textContent = slot + "P";
     const id = document.createElement("div"); id.className = "seat-id";
     const nm = document.createElement("b"); nm.textContent = p.name || "Player " + slot; styleName(nm, p);
     const sm = document.createElement("small"), tt = document.createElement("span"); tt.textContent = p.ttl || "Rookie"; styleTitle(tt, p);
     sm.append(tt, document.createTextNode(p.lvl ? " · LV " + p.lvl : "")); id.append(nm, sm);
-    s.append(no, avatarEl(p, { size, badge: true }), id);
+    s.append(no, avatarEl(p, { size, badge: true, hero: me, entrance: enter }), id);
     return s;
 }
 /* THE ARCADE PASS: a credit-card-shaped player card (1.586:1). Picture with the equipped FRAME (avatarEl), the
@@ -191,7 +194,10 @@ export function passCard(p, o = {}) {
     c.className = "pass" + (bg ? " sbg" : "") + (o.cls ? " " + o.cls : "");
     c.style.setProperty("--pc", col);
     if (o.tilt) c.setAttribute("data-tilt", "");
-    if (bg) { c.dataset.bg = bg; const f = document.createElement("i"); f.className = "sbg-fx"; f.setAttribute("aria-hidden", "true"); c.appendChild(f); if (s2Base(bg)) decorateCard(c, s2Base(bg)); fxWatch(c); }
+    /* Season 3: the mini pass is compact; any other pass is full. Hero (full animation budget) = your home card or a
+       preview; the entrance plays when the pass shows something just equipped / pinned (cls "equipped" or o.entrance) */
+    const mini = /pass-mini/.test(o.cls || ""), hero = !!(o.ids || o.hero || /pass-preview/.test(o.cls || "")), enter = !!(o.entrance || /(^|\s)equipped(\s|$)/.test(o.cls || ""));
+    if (bg) { c.dataset.bg = bg; const f = document.createElement("i"); f.className = "sbg-fx"; f.setAttribute("aria-hidden", "true"); c.appendChild(f); if (s3Base(bg)) decorateCard3(c, s3Base(bg), { level: mini ? "compact" : "full", hero }); else if (s2Base(bg)) decorateCard(c, s2Base(bg)); fxWatch(c); }
     const el = (tag, cls, txt, id) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (id && o.ids) e.id = id; return e; };
     const sheen = el("i", "pass-sheen"); sheen.setAttribute("aria-hidden", "true");
     const top = el("div", "pass-top");
@@ -200,7 +206,7 @@ export function passCard(p, o = {}) {
     top.append(brand, el("span", "pass-lv", "LV " + ((xp && xp.lvl) || p.lvl || 1), "pcLvl"));
     const chip = el("span", "pass-chip"); chip.setAttribute("aria-hidden", "true"); chip.innerHTML = "<i></i><i></i><i></i>";
     const mid = el("div", "pass-mid");
-    const ava = avatarEl(p, { size: 72 }); ava.classList.add("pass-ava"); if (o.ids) ava.id = "pcAva";
+    const ava = avatarEl(p, { size: 72, level: mini ? "compact" : "full", hero, entrance: enter }); ava.classList.add("pass-ava"); if (o.ids) ava.id = "pcAva";
     const id = el("div", "pass-id");
     const nm = el("b", "pass-name", o.empty ? "Set your name" : (p.name || "Player"), "pcName"); styleName(nm, p);
     const tt = el("span", "pass-title", p.ttl || "Rookie", "pcTitle"); styleTitle(tt, p);
@@ -229,6 +235,9 @@ if (typeof document !== "undefined" && SKINS) {
     (SKINS2.tiers || []).forEach(t => r.setProperty("--sp-" + t.id + "2", String(Number(t.speed) > 0 ? Number(t.speed) : 1)));
     if (Number(SKINS2.picture) > 0 && Number(SKINS2.picture) < 1) r.setProperty("--s2pad", String((1 - Number(SKINS2.picture)) / 2));
     installTextures();
+    if (Number(SKINS3.picture) > 0) r.setProperty("--s3pad", String((1 - Number(SKINS3.picture)) / 2));
+    if (Number(SKINS3.pictureCompact) > 0) r.setProperty("--s3padc", String((1 - Number(SKINS3.pictureCompact)) / 2));
+    if (Number(SKINS3.parallax) >= 0) r.setProperty("--s3plx", Number(SKINS3.parallax) + "%");
     if (Number(SKINS.ringWidth) > 0) r.setProperty("--ring", String(SKINS.ringWidth));
 }
 /* username style + title skin (Anime TCG scratch-card rewards) on any element showing a name / title */

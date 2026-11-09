@@ -118,6 +118,46 @@ export const SKINS2 = {
     fps: 30
 };
 
+/* ---------- A3e. Season 3 skins: 12 tiers (Ruby is new), each a small living scene (js/skins3.js + css/skins3.css) ----------
+   Prices = Season 2 price x1.5, rounded to the nearest 50 below 1,000 and to the nearest 100 above (halves round up);
+   Ruby (no Season 2 price) sits between Emerald and Diamond. Bundle / duplicate rules: SKINS.bundleOff / dupRefund.
+   Item ids "sf_<tier>3" / "bg_<tier>3". live = false keeps Season 3 out of the Shop and the Wardrobe (the dev gallery
+   still shows it) until every tier is built and approved.
+   RENDER LEVELS: full (own card, previews, large avatars: every layer, canvas fire / water / refraction), medium (lobby
+   cards, grid tiles: same silhouette, fewer details, CSS / SVG only), compact (tokens, chips, lists: a simplified still
+   shape). Avatars of compactBelow px or fewer are compact; fullFrom px or more (or a pass / preview) are full.
+   LOBBY BUDGET: "hero" skins (your own card, the one being previewed) animate fully at heroFps; every other skin is a
+   "crowd" skin: a simplified loop, parallax updated at crowdFps. At most maxHeavy canvas / filter effects run at once
+   (heroes first); the rest show their still frame. Everything pauses off-screen and while the tab is hidden.
+   parallax = how far (% of the layer, at depth 1) background layers move with the pointer / tilt / idle drift; tiltDeg = the device
+   tilt (degrees) that reaches the full shift; idleDrift = the drift's speed (cycles per second); enterMs = how long the
+   entrance animation can last before the idle loop takes over. */
+export const SKINS3 = {
+    season: 3,
+    newTag: true,
+    live: false,
+    tiers: [
+        { id: "iron",         name: "Iron",         price: 400,  speed: 1 },
+        { id: "bronze",       name: "Bronze",       price: 600,  speed: 1 },
+        { id: "silver",       name: "Silver",       price: 900,  speed: 1 },
+        { id: "gold",         name: "Gold",         price: 1400, speed: 1 },
+        { id: "platinum",     name: "Platinum",     price: 2100, speed: 1 },
+        { id: "emerald",      name: "Emerald",      price: 3000, speed: 1 },
+        { id: "ruby",         name: "Ruby",         price: 3500, speed: 1 },      // new tier: between Emerald and Diamond
+        { id: "diamond",      name: "Diamond",      price: 4100, speed: 1 },
+        { id: "flame",        name: "Flame",        price: 5000, speed: 1 },
+        { id: "water",        name: "Water",        price: 5000, speed: 1 },
+        { id: "transcendent", name: "Transcendent", price: 5700, speed: 1 },
+        { id: "prismatic",    name: "Prismatic",    price: 6800, speed: 1 }
+    ],
+    earnOnly: [],
+    picture: 0.66, pictureCompact: 0.8,
+    compactBelow: 36, fullFrom: 100,
+    heroFps: 30, crowdFps: 12, maxHeavy: 3,
+    parallax: 3, tiltDeg: 28, idleDrift: 0.05,
+    enterMs: 1800
+};
+
 /* ---------- A3d. Owner-only coin tool (hidden; js/vault/devgrant.js) ----------
    Hold the AAP Coin counter for holdMs, then a code; only a code whose PBKDF2 hash matches AND a player on the owner
    allow-list gets the amount field. The code itself is never in the source: tools/devgrant-setup.mjs writes salt + hash.

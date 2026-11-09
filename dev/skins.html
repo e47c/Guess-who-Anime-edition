@@ -9,79 +9,106 @@
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600;700&family=Dela+Gothic+One&family=Pirata+One&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/base.css?v=13">
 <link rel="stylesheet" href="css/lobby.css?v=3">
-<link rel="stylesheet" href="css/vault.css?v=6">
+<link rel="stylesheet" href="css/vault.css?v=7">
 <link rel="stylesheet" href="css/skins2.css?v=1">
+<link rel="stylesheet" href="css/skins3.css?v=1">
 <link rel="stylesheet" href="css/party.css?v=2">
-<link rel="stylesheet" href="css/shop.css?v=3">
+<link rel="stylesheet" href="css/shop.css?v=4">
 <style>
-/* DEV ONLY: every Season 1 and Season 2 frame and background at every size the game uses, for review. Not linked from the game. */
+/* DEV ONLY: every Season 1, 2 and 3 frame and background at FULL, MEDIUM and COMPACT, for review. Not linked from the game. */
 body { margin: 0; padding: 16px; background: #0d0a10; color: #eee; font: 500 14px/1.4 Inter, sans-serif; }
 h1 { margin: 0 0 6px; font: 400 26px/1 'Dela Gothic One'; }
-p.lead { margin: 0 0 10px; color: #bbb; max-width: 980px; }
-.bar { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 10px 0; background: #0d0a10; }
+p.lead { margin: 0 0 10px; color: #bbb; max-width: 1000px; }
+.bar { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 0; background: #0d0a10; }
 .bar button { padding: 6px 10px; border-radius: 6px; border: 1px solid #555; background: #1c1824; color: #eee; font: 600 13px Inter; cursor: pointer; }
 .bar button.on { background: #ffd76a; color: #1a1206; border-color: #ffd76a; }
+#fps { font: 700 12px 'JetBrains Mono'; color: #7cf7e0; }
 .tier { margin: 18px 0 26px; padding: 14px; border-radius: 14px; background: #15111b; box-shadow: inset 0 0 0 1px #2a2433; }
 .tier h2 { margin: 0 0 12px; font: 600 24px/1 Teko; letter-spacing: .06em; text-transform: uppercase; }
 .tier h2 small { margin-left: 8px; font: 600 12px/1 'JetBrains Mono'; color: #aaa; letter-spacing: 0; text-transform: none; }
+.lvl { margin: 12px 0 6px; font: 700 11px/1 'JetBrains Mono'; letter-spacing: .2em; color: #ffd76a; }
 .row { display: flex; flex-wrap: wrap; gap: 22px; align-items: center; }
 .cell { display: grid; justify-items: center; gap: 6px; }
 .cell > small { font: 700 10px/1 'JetBrains Mono'; color: #8a8494; text-transform: uppercase; letter-spacing: .08em; }
-.passbox { width: 340px; max-width: 86vw; }
+.passbox { width: 360px; max-width: 86vw; }
 .seatbox { width: 210px; }
-#lobby { display: contents; }
+.lobby8 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; max-width: 1000px; }
+@media (max-width: 700px) { .lobby8 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .lane { position: relative; width: 220px; height: 38px; border-radius: 8px; background: linear-gradient(90deg, rgba(255,255,255,.05), transparent); overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,159,67,.3); }
 .lane .np-tok { left: 70%; }
 .minis { display: flex; gap: 10px; align-items: center; }
-.grid-lines { background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px); background-size: 12px 12px; padding: 18px; border-radius: 10px; }
+.pad { background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px); background-size: 12px 12px; padding: 22px; border-radius: 10px; }
 </style>
 </head>
 <body>
 <h1>Skins gallery · dev</h1>
-<p class="lead">Every frame and background of Season 1 and Season 2 at the sizes the game uses: large (Wardrobe / results), the Arcade Pass (menu, Wardrobe, Shop preview),
-the lobby player card, list avatars, and the Night Party race-track token (compact frames under 34 px). The checkered pads show where a frame reaches past its avatar box.
-Toggle Reduced effects for the still versions. Hover a pass to tilt it (the pointer shine).</p>
+<p class="lead">Every frame and background at FULL (own card, previews, big avatars), MEDIUM (lobby cards, Shop / Wardrobe tiles) and COMPACT (race-track tokens, chips,
+lists, mini passes). The checkered pads show how far a frame reaches past its avatar box. Season 3: move the pointer over a card (PC), drag it (touch) or turn
+on tilt (phones); otherwise it drifts slowly. "Replay entrances" plays the entrance animations again. The 8-player lobby shows the performance budget:
+only your card (1P) animates fully, the others run a simplified loop. Season 3 built so far: Ruby, Diamond, Flame.</p>
 <div class="bar">
-<button data-s="2" class="on">Season 2</button><button data-s="1">Season 1</button><button data-s="all">Both</button>
-<button id="lite">Reduced effects</button>
-<span id="info" style="color:#aaa;font:600 12px 'JetBrains Mono'"></span>
+<button data-s="3" class="on">Season 3</button><button data-s="2">Season 2</button><button data-s="1">Season 1</button><button data-s="lobby">8-player lobby</button>
+<button id="lite">Reduced effects</button><button id="replay">Replay entrances</button><button id="tilt">Use device tilt</button>
+<span id="fps"></span>
 </div>
 <main id="out"></main>
 <script type="module">
-import { avatarEl, passCard, seatCard } from "./js/profile.js?v=17";
-import { SKIN_TIERS } from "./js/vault/shop.js?v=16";
+import { avatarEl, passCard, seatCard } from "./js/profile.js?v=18";
+import { SKIN_TIERS } from "./js/vault/shop.js?v=17";
+import { s3Base, requestTilt } from "./js/skins3.js?v=1";
 import { setReduced, isReduced } from "./js/fx.js";
 const mk = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
-const look = (over) => Object.assign({ name: "Ayoub", av: { t: "c", u: "images/character1.jpg" }, col: "#3ea6ff", fr: "none", ttl: "Peak Fiction", lvl: 23, sf: "", bg: "", ts: "", uc: "" }, over);
+const look = over => Object.assign({ name: "Ayoub", av: { t: "c", u: "images/character1.jpg" }, col: "#3ea6ff", fr: "none", ttl: "Peak Fiction", lvl: 23, sf: "", bg: "", ts: "", uc: "" }, over);
 const xp = { lvl: 23, into: 640, need: 1420, pct: .45 };
-let season = "2";
-function cell(label, el) { const c = mk("div", "cell"); c.append(el, mk("small", null, label)); return c; }
-function render() {
-    const out = document.getElementById("out"); out.innerHTML = "";
-    SKIN_TIERS.filter(t => season === "all" || String(t.season) === season).forEach(t => {
-        const sec = mk("section", "tier"); const h = mk("h2", null, t.name + " · Season " + t.season); h.appendChild(mk("small", null, "sf_" + t.id + " / bg_" + t.id + " · " + t.price + " coins")); sec.appendChild(h);
-        const r1 = mk("div", "row");
-        const pad = mk("div", "grid-lines"); pad.appendChild(avatarEl(look({ sf: t.id }), { size: 120 })); r1.appendChild(cell("frame · large 120", pad));
-        const pb = mk("div", "passbox"); pb.appendChild(passCard(look({ sf: t.id, bg: t.id }), { xp, tilt: true })); r1.appendChild(cell("Arcade Pass · frame + background", pb));
-        const pb2 = mk("div", "passbox"); pb2.appendChild(passCard(look({ bg: t.id }), { xp, tilt: true })); r1.appendChild(cell("background only", pb2));
-        sec.appendChild(r1);
-        const r2 = mk("div", "row"); r2.style.marginTop = "16px";
-        const lob = mk("div"); lob.id = "lobby"; const sb = mk("div", "seatbox"); sb.appendChild(seatCard(look({ sf: t.id, bg: t.id }), { slot: 1, me: true })); lob.appendChild(sb); r2.appendChild(cell("lobby card", lob));
-        [72, 54, 44].forEach(n => { const p = mk("div", "grid-lines"); p.appendChild(avatarEl(look({ sf: t.id }), { size: n })); r2.appendChild(cell("frame · " + n, p)); });
-        const m = mk("div", "minis grid-lines"); [34, 30, 26, 22].forEach(n => m.appendChild(avatarEl(look({ sf: t.id }), { size: n }))); r2.appendChild(cell("compact · 34 30 26 22", m));
-        const lane = mk("div", "lane"), tok = mk("div", "np-tok"); tok.appendChild(avatarEl(look({ sf: t.id }), { size: 30 })); const tag = mk("div", "np-tag"); tag.append(mk("b", null, "Ayoub"), mk("em", null, "12.5 pts")); tok.appendChild(tag); lane.appendChild(tok);
-        r2.appendChild(cell("race-track token", lane));
-        const mini = mk("div"); mini.style.width = "118px"; mini.appendChild(passCard(look({ bg: t.id }), { cls: "pass-mini" })); r2.appendChild(cell("mini pass (Shop tile)", mini));
-        sec.appendChild(r2); out.appendChild(sec);
-    });
-    document.getElementById("info").textContent = document.querySelectorAll(".ava").length + " avatars on the page";
+let season = "3";
+const cell = (label, el) => { const c = mk("div", "cell"); c.append(el, mk("small", null, label)); return c; };
+const pad = el => { const p = mk("div", "pad"); p.appendChild(el); return p; };
+const tiers = () => SKIN_TIERS.filter(t => String(t.season) === season && (t.season !== 3 || s3Base(t.id)));
+function tierSection(t, entrance) {
+    const sec = mk("section", "tier"); const h = mk("h2", null, t.name + " · Season " + t.season); h.appendChild(mk("small", null, "sf_" + t.id + " / bg_" + t.id + " · " + t.price + " coins")); sec.appendChild(h);
+    sec.appendChild(mk("div", "lvl", "FULL · own card, previews, big avatars"));
+    const r1 = mk("div", "row");
+    r1.appendChild(cell("frame · 140", pad(avatarEl(look({ sf: t.id }), { size: 140, level: "full", hero: true, entrance }))));
+    const pb = mk("div", "passbox"); pb.appendChild(passCard(look({ sf: t.id, bg: t.id }), { xp, tilt: true, hero: true, entrance })); r1.appendChild(cell("Arcade Pass · frame + background", pb));
+    const pb2 = mk("div", "passbox"); pb2.appendChild(passCard(look({ bg: t.id }), { xp, tilt: true, hero: true })); r1.appendChild(cell("background only", pb2));
+    sec.appendChild(r1);
+    sec.appendChild(mk("div", "lvl", "MEDIUM · lobby cards, Shop and Wardrobe tiles"));
+    const r2 = mk("div", "row");
+    const lob = mk("div"); lob.id = "lobby"; lob.style.display = "contents"; const sb = mk("div", "seatbox"); sb.appendChild(seatCard(look({ sf: t.id, bg: t.id }), { slot: 2, cls: entrance ? "enter" : "" })); lob.appendChild(sb); r2.appendChild(cell("lobby card (another player)", lob));
+    [72, 64, 54].forEach(n => r2.appendChild(cell("frame · " + n, pad(avatarEl(look({ sf: t.id }), { size: n, entrance })))));
+    sec.appendChild(r2);
+    sec.appendChild(mk("div", "lvl", "COMPACT · tokens, chips, lists, mini passes"));
+    const r3 = mk("div", "row");
+    const m = mk("div", "minis pad"); [34, 30, 26, 22].forEach(n => m.appendChild(avatarEl(look({ sf: t.id }), { size: n }))); r3.appendChild(cell("compact · 34 30 26 22", m));
+    const lane = mk("div", "lane"), tok = mk("div", "np-tok"); tok.appendChild(avatarEl(look({ sf: t.id }), { size: 30 })); const tag = mk("div", "np-tag"); tag.append(mk("b", null, "Ayoub"), mk("em", null, "12.5 pts")); tok.appendChild(tag); lane.appendChild(tok);
+    r3.appendChild(cell("race-track token", lane));
+    const mini = mk("div"); mini.style.width = "118px"; mini.appendChild(passCard(look({ bg: t.id }), { cls: "pass-mini" })); r3.appendChild(cell("mini pass (Shop tile)", mini));
+    sec.appendChild(r3);
+    return sec;
 }
-document.querySelectorAll("[data-s]").forEach(b => b.onclick = () => { season = b.dataset.s; document.querySelectorAll("[data-s]").forEach(x => x.classList.toggle("on", x === b)); render(); });
+function lobby8(entrance) {
+    const sec = mk("section", "tier"); sec.appendChild(mk("h2", null, "8 players with Season 3 skins"));
+    const s3 = SKIN_TIERS.filter(t => t.season === 3 && s3Base(t.id));
+    const lob = mk("div"); lob.id = "lobby"; lob.style.display = "contents"; const wrap = mk("div", "lobby8"); lob.appendChild(wrap);
+    for (let i = 1; i <= 8; i++) { const t = s3[(i - 1) % s3.length], u = s3[i % s3.length]; wrap.appendChild(seatCard(look({ name: i === 1 ? "You" : "Player " + i, sf: t.id, bg: u.id }), { slot: i, me: i === 1, cls: entrance ? "enter" : "" })); }
+    sec.appendChild(lob);
+    sec.appendChild(mk("p", "lead", "1P is your card (hero: full loops, 30 fps parallax); 2P-8P are crowd cards (simplified loops, 12 fps parallax). Canvas effects are capped (SKINS3.maxHeavy)."));
+    return sec;
+}
+function render(entrance) {
+    const out = document.getElementById("out"); out.innerHTML = "";
+    if (season === "lobby") out.appendChild(lobby8(entrance));
+    else tiers().forEach(t => out.appendChild(tierSection(t, entrance)));
+}
+document.querySelectorAll("[data-s]").forEach(b => b.onclick = () => { season = b.dataset.s; document.querySelectorAll("[data-s]").forEach(x => x.classList.toggle("on", x === b)); render(true); });
 const lite = document.getElementById("lite"); lite.classList.toggle("on", isReduced());
 lite.onclick = () => { setReduced(!isReduced()); lite.classList.toggle("on", isReduced()); };
-// pointer tilt + shine on the passes (the game does this for the menu pass)
-document.addEventListener("pointermove", e => { const el = e.target.closest && e.target.closest("[data-tilt]"); if (!el) return; const r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height; el.style.setProperty("--ry", ((x - .5) * 18).toFixed(2) + "deg"); el.style.setProperty("--rx", ((.5 - y) * 14).toFixed(2) + "deg"); el.style.setProperty("--mx", (x * 100).toFixed(1) + "%"); el.style.setProperty("--my", (y * 100).toFixed(1) + "%"); });
-render();
+document.getElementById("replay").onclick = () => render(true);
+document.getElementById("tilt").onclick = async () => { const ok = await requestTilt(); document.getElementById("tilt").textContent = ok ? "Tilt on" : "Tilt unavailable (idle drift)"; };
+document.addEventListener("pointermove", e => { const el = e.target.closest && e.target.closest("[data-tilt]"); if (!el) return; const r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height; el.style.setProperty("--ry", ((x - .5) * 14).toFixed(2) + "deg"); el.style.setProperty("--rx", ((.5 - y) * 10).toFixed(2) + "deg"); el.style.setProperty("--mx", (x * 100).toFixed(1) + "%"); el.style.setProperty("--my", (y * 100).toFixed(1) + "%"); });
+// frames per second of the page (the performance check)
+let n = 0, t0 = performance.now(); const tick = t => { n++; if (t - t0 > 1000) { document.getElementById("fps").textContent = Math.round(n * 1000 / (t - t0)) + " fps · " + document.querySelectorAll(".ava").length + " avatars"; n = 0; t0 = t; } requestAnimationFrame(tick); }; requestAnimationFrame(tick);
+render(true);
 </script>
 </body>
 </html>
